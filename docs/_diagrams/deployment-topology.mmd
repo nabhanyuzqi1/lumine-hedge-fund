@@ -1,0 +1,45 @@
+%% Lumine Deployment Topology (Phase 11)
+%% Rendered in docs/11-infrastructure/topology.md.
+graph TB
+    subgraph VPS["Linux VPS (single-node V1)"]
+        direction TB
+        SCH[Scheduler]
+        TC[trade-core]
+        AG[AutoGen runtime]
+        GW[LLM Gateway / 9router]
+        API[FastAPI + SSE]
+        BR[MT5 Bridge]
+        PG[(PostgreSQL)]
+        RD[(Redis)]
+        MON[Observability]
+    end
+
+    subgraph External
+        LLM[LLM Providers]
+        MT5[MT5 Broker]
+        WORM[S3 Object Lock / WORM]
+        B2[Backblaze B2 / Backups]
+    end
+
+    subgraph Edge
+        FE[Frontend / Vercel]
+        OPS[Operator]
+    end
+
+    SCH --> TC --> AG --> GW --> LLM
+    TC --> BR <--> MT5
+    TC --> PG
+    TC --> RD
+    AG --> PG
+    BR --> PG
+    API --> PG
+    API --> RD
+    API -.SSE.-> FE
+    OPS --> API
+    PG -.WAL + anchor.-> WORM
+    PG -.pg_dump.-> B2
+    MON --> PG
+    MON --> RD
+
+    classDef critical fill:#0f172a,color:#e2e8f0,stroke:#f59e0b;
+    class TC,BR,PG critical;

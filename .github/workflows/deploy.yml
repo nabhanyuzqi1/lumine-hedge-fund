@@ -1,0 +1,72 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    name: "Deploy to staging"
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t lumine:${GITHUB_SHA::8} backend/
+
+      - name: Deploy to staging server
+        run: |
+          echo "Deploying lumine:${GITHUB_SHA::8} to staging"
+          # SSH + docker compose up -d on staging VPS
+        env:
+          SSH_HOST: ${{ secrets.STAGING_HOST }}
+          SSH_USER: ${{ secrets.STAGING_USER }}
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+
+      - name: Health check
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://${{ secrets.STAGING_HOST }}/health; then
+              echo "Staging healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Staging health check failed"
+          exit 1
+
+  deploy-production:
+    name: "Deploy to production"
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t lumine:${GITHUB_SHA::8} backend/
+
+      - name: Deploy to production server
+        run: |
+          echo "Deploying lumine:${GITHUB_SHA::8} to production"
+          # SSH + docker compose -f docker-compose.prod.yml up -d
+        env:
+          SSH_HOST: ${{ secrets.PROD_HOST }}
+          SSH_USER: ${{ secrets.PROD_USER }}
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Health check
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://${{ secrets.PROD_HOST }}/health; then
+              echo "Production healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Production health check failed"
+          exit 1

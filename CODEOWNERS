@@ -1,0 +1,41 @@
+# Codeowners — review routing
+# Format: <path> <owner1> <owner2> ...
+# Owners are GitHub teams or usernames. Update when ownership changes.
+
+# Default — require architecture review on everything not otherwise owned
+*                               @architects
+
+# Knowledge base & decisions
+/docs/adr/                      @architects
+/docs/90-governance-and-operations/  @architects @cio
+/docs/INDEX.md                  @architects
+
+# Backend critical path — risk, sizing, execution
+/backend/src/lumine/trade_core/ @risk-officer @architects
+/backend/src/lumine/security/   @architects
+/backend/src/lumine/mt5_bridge/ @execution @architects
+
+# AI / LLM / prompts
+/backend/src/lumine/llm_gateway/ @ai-engineers @architects
+/backend/src/lumine/prompts/     @ai-engineers @cio
+/docs/06-ai/                     @ai-engineers @architects
+/docs/04-communication-and-prompts/ @ai-engineers
+
+# Data & schemas
+/backend/src/lumine/data/        @data-engineers @architects
+/backend/alembic/                @data-engineers @architects
+/docs/05-data/                   @data-engineers @architects
+/docs/03-agents-and-contracts/   @data-engineers @architects
+
+# Frontend
+/frontend/                       @frontend @architects
+/docs/10-frontend/               @frontend @architects
+
+# Infrastructure & security
+/docs/11-infrastructure/         @devops @architects
+/docs/12-security/               @architects
+/.github/workflows/              @devops @architects
+
+# Testing
+/docs/13-testing/                @qa @architects
+/backend/tests/                  @qa @architects

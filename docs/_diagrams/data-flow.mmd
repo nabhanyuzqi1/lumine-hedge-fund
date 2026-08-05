@@ -1,0 +1,20 @@
+%% Lumine Data Flow (Phase 1 data-flow.md)
+%% Rendered in docs/01-architecture/data-flow.md.
+graph LR
+    DC[Data Collection<br/>MT5 + news] --> FE[Feature Engineering<br/>feature store]
+    FE --> MA[Market Analysis<br/>4 analysts]
+    MA --> IC[Investment Committee]
+    IC --> CIO[CIO Proposer]
+    CIO --> RV[Risk Validator]
+    RV --> PS[Portfolio Sizer]
+    PS --> ER[Execution Router]
+    ER --> LIN[(lineage_records<br/>blocking ACID)]
+    LIN --> BR[MT5 Bridge]
+    BR --> FILLS[(fills / positions)]
+    FILLS --> J[Journal]
+    J --> PR[Performance Reviewer]
+    PR --> RS[Research / Sandbox]
+    RS --> CIO
+
+    classDef gate fill:#0f172a,color:#e2e8f0,stroke:#f59e0b;
+    class LIN gate;

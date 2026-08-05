@@ -1,0 +1,65 @@
+# ── Secrets ────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+credentials.key
+*.pem
+*.key
+*.enc
+!*.yml.enc
+
+# ── Python ─────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.so
+
+# ── Node / Frontend ────────────────────────────────────────────────────────
+node_modules/
+.next/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# ── IDE & Editor ───────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Docker ─────────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Data ───────────────────────────────────────────────────────────────────
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Logs ───────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── OS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ── Local agent tooling state (not project artifacts) ─────────────────────
+.remember/
+.openclaude/
+
+# ── Dev scratch state ──────────────────────────────────────────────────────
+backend/.data/
+backend/.venv/
+*.db-journal

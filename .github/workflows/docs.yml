@@ -1,0 +1,42 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '*.md'
+      - '.github/workflows/docs.yml'
+      - 'docs/_ci/**'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '*.md'
+      - '.github/workflows/docs.yml'
+      - 'docs/_ci/**'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install markdownlint-cli2
+        run: npm install -g markdownlint-cli2
+      - name: Install lychee
+        run: |
+          curl -sSfL https://github.com/lycheeverse/lychee/releases/latest/download/lychee-x86_64-unknown-linux-gnu.tar.gz | tar xz -C /usr/local/bin
+      - name: Markdown lint
+        run: markdownlint-cli2 'docs/**/*.md' '*.md'
+      - name: Link check
+        run: lychee --no-progress --exclude-loopback 'docs/**/*.md' '*.md'
+      - name: ADR index check
+        run: python3 docs/_ci/adr-index-check.py
+      - name: Doc freshness check
+        run: python3 docs/_ci/doc-freshness-check.py || true  # warn-only for now

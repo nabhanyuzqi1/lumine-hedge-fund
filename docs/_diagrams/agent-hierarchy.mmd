@@ -1,0 +1,34 @@
+%% Lumine Agent Hierarchy (CLAUDE.md)
+%% Source of truth for the agent tree. Rendered in docs/02-departments/.
+graph TD
+    CEO[CEO]
+    CIO[Chief Investment Officer]
+    IC[Investment Committee]
+    TA[Technical Analyst]
+    MA[Macro Analyst]
+    NA[News Analyst]
+    SMCA[SMC Analyst]
+    RO[Risk Officer]
+    PM[Portfolio Manager]
+    EC[Execution Controller]
+    TJ[Trade Journal]
+    PR[Performance Reviewer]
+
+    CEO --> CIO
+    CIO --> IC
+    IC --> TA
+    IC --> MA
+    IC --> NA
+    IC --> SMCA
+    CIO --> RO
+    CIO --> PM
+    PM --> EC
+    EC --> TJ
+    TJ --> PR
+
+    classDef human fill:#1e293b,color:#e2e8f0,stroke:#3b82f6;
+    classDef llm fill:#0f172a,color:#e2e8f0,stroke:#10b981;
+    classDef deterministic fill:#0f172a,color:#e2e8f0,stroke:#f59e0b;
+    class CEO human;
+    class CIO,IC,TA,MA,NA,SMCA,RO llm;
+    class PM,EC,TJ,PR deterministic;

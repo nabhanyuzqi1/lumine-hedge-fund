@@ -1,0 +1,33 @@
+%% Lumine Critical Path — every trade decision
+%% Rendered in docs/01-architecture/ and docs/08-trading/.
+sequenceDiagram
+    participant S as Scheduler
+    participant TC as trade-core
+    participant LLM as LLM Committee
+    participant RV as RiskValidator
+    participant PS as PortfolioSizer
+    participant ER as ExecutionRouter
+    participant DB as Postgres
+    participant BR as MT5 Bridge
+
+    S->>TC: trigger
+    TC->>LLM: analysts (parallel) + debate + IC + CIO
+    LLM-->>TC: proposal
+    TC->>RV: proposal
+    RV-->>TC: APPROVE | REJECT | MODIFY
+    alt APPROVE
+        TC->>PS: proposal
+        PS-->>TC: sized order
+        TC->>ER: sized order
+        ER->>DB: BEGIN TX
+        ER->>DB: INSERT lineage_records (blocking ACID)
+        DB-->>ER: COMMIT (must succeed)
+        alt commit fails
+            ER-->>TC: safe state, NO dispatch
+        else commit succeeds
+            ER->>BR: publish mt5.commands
+            BR-->>ER: fill
+            ER->>DB: INSERT fills, UPDATE positions
+        end
+    end
+    Note over RV: No LLM sits above RiskValidator.<br/>Kill switch read every cycle.

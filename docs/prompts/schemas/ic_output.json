@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lumine.local/schemas/ic_output.json",
+  "title": "ICForumOutput",
+  "description": "Output of the Investment Committee Forum. Synthesizes the four analyst outputs into a single recommendation with weights and dissent.",
+  "type": "object",
+  "required": ["recommendation", "confidence", "summary", "weights", "dissent"],
+  "additionalProperties": false,
+  "properties": {
+    "recommendation": {
+      "type": "string",
+      "enum": ["BUY", "SELL", "HOLD", "REJECT"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "IC confidence in the committee recommendation."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Concise synthesis of the four analyst arguments.",
+      "minLength": 1
+    },
+    "weights": {
+      "type": "object",
+      "description": "Per-analyst influence weights; should sum to 1.0 within epsilon.",
+      "required": ["technical_analyst", "macro_analyst", "news_analyst", "smc_analyst"],
+      "additionalProperties": false,
+      "properties": {
+        "technical_analyst": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "macro_analyst": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "news_analyst": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "smc_analyst": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+      }
+    },
+    "dissent": {
+      "type": "string",
+      "description": "Notable disagreement among analysts; empty string if none."
+    }
+  }
+}

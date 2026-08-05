@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lumine.local/schemas/debate_output.json",
+  "title": "DebateOutput",
+  "description": "Output of the Debate Moderator: a bounded, single-round synthesis (D4-5, D3-7). Only this summary is pinned to lineage; the original analyst outputs are always preserved.",
+  "type": "object",
+  "required": ["summary", "consensus_direction"],
+  "additionalProperties": false,
+  "properties": {
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Concise synthesis of the bounded debate round, including the sharpest challenge and rebuttal."
+    },
+    "consensus_direction": {
+      "type": "string",
+      "enum": ["bullish", "bearish", "neutral", "disagreement"]
+    }
+  }
+}

@@ -1,0 +1,70 @@
+name: supply-chain
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/uv.lock'
+      - 'backend/pyproject.toml'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/supply-chain.yml'
+  pull_request:
+    paths:
+      - 'backend/uv.lock'
+      - 'backend/pyproject.toml'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/supply-chain.yml'
+  schedule:
+    - cron: '0 6 * * *'  # daily 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  python-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        run: pip install uv pip-audit cyclonedx-bom
+      - name: pip-audit (known CVEs)
+        run: pip-audit -r <(uv export --no-hashes --no-dev --no-emit-project 2>/dev/null) || pip-audit
+      - name: Generate SBOM
+        run: cyclonedx-py environment -o sbom.json || true
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-sbom
+          path: backend/sbom.json
+          if-no-files-found: ignore
+
+  osv-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: OSV scan
+        uses: google/osv-scanner-action/osv-scanner-action@v1
+        with:
+          scan-args: |-
+            --lockfile backend/uv.lock
+            --lockfile frontend/package-lock.json
+        continue-on-error: true  # warn-only until baseline established
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

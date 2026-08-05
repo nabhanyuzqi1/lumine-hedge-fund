@@ -1,0 +1,28 @@
+%% Lumine Workflow Lifecycle (Phase 7, D7-1)
+%% Rendered in docs/07-autogen/workflow-lifecycle.md.
+stateDiagram-v2
+    [*] --> RECEIVED
+    RECEIVED --> CONTEXT_PINNED
+    CONTEXT_PINNED --> ANALYSTS_RUNNING
+    ANALYSTS_RUNNING --> ANALYSTS_VALIDATED: checkpoint
+    ANALYSTS_VALIDATED --> DEBATE_EVALUATED
+    DEBATE_EVALUATED --> IC_RUNNING: no debate
+    DEBATE_EVALUATED --> DEBATE_RUNNING: debate triggered
+    DEBATE_RUNNING --> DEBATE_VALIDATED: checkpoint
+    DEBATE_VALIDATED --> IC_RUNNING
+    IC_RUNNING --> IC_VALIDATED: checkpoint
+    IC_VALIDATED --> CIO_RUNNING
+    CIO_RUNNING --> PROPOSAL_VALIDATED: checkpoint
+    PROPOSAL_VALIDATED --> COMPLETED
+
+    COMPLETED --> [*]
+
+    state "Terminal safe states" as Terminal {
+        FAILED_SAFE
+        ABORTED_STALE
+        TERMINATED_KILL
+        CANCELLED_OPERATOR
+    }
+
+    note right of TERMINATED_KILL: No autonomous restart (ADR-0010)
+    note right of ABORTED_STALE: Resume gate failed: freshness / version / supersession
