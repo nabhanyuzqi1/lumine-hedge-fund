@@ -1,0 +1,27 @@
+# =============================================================================
+# lumine-api.service — systemd unit untuk stack Lumine (opsional).
+#
+# Dipakai kalau ingin docker compose ikut jalan saat boot dan di-restart
+# otomatis. Install di VPS:
+#   sudo install -m 0644 lumine-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now lumine-api
+#   sudo systemctl status lumine-api
+# =============================================================================
+[Unit]
+Description=Lumine AI hedge fund stack (postgres, redis, api)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/lumine/backend
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml up -d --remove-orphans
+ExecStop=/usr/bin/docker compose -f docker-compose.prod.yml down
+Restart=no
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
