@@ -260,5 +260,3 @@ class TestSpendByTier:
         self, db_session: AsyncSession, _seed_registry: dict[str, uuid.UUID]
     ) -> None:
         assert await spend_by_tier(db_session) == {}
-
-

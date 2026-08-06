@@ -38,6 +38,9 @@ services:
       - LOG_LEVEL=INFO
       - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
       - LLM_GATEWAY_API_KEY=${LLM_GATEWAY_API_KEY}
+      # 9router gateway (Phase 6 D6-2). In-container DNS resolves `9router` to
+      # the 9router service below. Override per-host via .env if needed.
+      - LLM_GATEWAY_URL=http://9router:20128
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,6 +48,34 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ── 9router LLM gateway (Phase 6 D6-2, Phase 11 deployment) ────────────────
+  # Single egress for all LLM traffic. Dashboard on :20128, OpenAI-compatible
+  # API on :20128/v1. State (provider keys, OAuth, fallback config) persists
+  # in named volume `9router_data` -> /app/data inside container.
+  # Move VPS: `docker volume export` / re-pull image on new host.
+  headroom:
+    image: ghcr.io/chopratejas/headroom:latest
+    container_name: headroom
+    restart: always
+
+  9router:
+    image: decolua/9router:latest
+    container_name: 9router
+    ports:
+      - "20128:20128"
+    environment:
+      - DATA_DIR=/app/data
+      - PORT=20128
+      - HOSTNAME=0.0.0.0
+      - NODE_ENV=production
+      - HEADROOM_URL=http://headroom:8787
+    volumes:
+      - 9router_data:/app/data
+    depends_on:
+      - headroom
+    restart: always
+
 volumes:
   postgres_data:
   redis_data:
+  9router_data:

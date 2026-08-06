@@ -85,16 +85,54 @@ class FakeSession:
     double, not a database.
     """
 
-    def __init__(self, *, fail_commit: bool = False, fail_on_lineage: bool = False) -> None:
-        """Configure failure injection modes for safe-state tests."""
+    def __init__(
+        self,
+        *,
+        fail_commit: bool = False,
+        fail_on_lineage: bool = False,
+        fail_backfill_commit: bool = False,
+    ) -> None:
+        """Configure failure injection modes for safe-state tests.
+
+        ``fail_backfill_commit`` fails the commit *after* the lineage
+        INSERT has flushed — i.e. on the orchestrator's atomic backfill
+        commit. Used to prove A3 atomicity: the lineage row must be
+        rolled back together with the failed backfill.
+        """
         self.added: list[Any] = []
         self.fail_commit = fail_commit
         self.fail_on_lineage = fail_on_lineage
+        self.fail_backfill_commit = fail_backfill_commit
         self.commits = 0
         self.executed: list[Any] = []
+        self._flushed_lineage = False
 
     def add(self, obj: Any) -> None:  # noqa: ANN401
         self.added.append(obj)
+
+    def _stamp_ids(self) -> None:
+        """Stamp server-generated ids (mirrors gen_random_uuid on INSERT)."""
+        for obj in self.added:
+            for attr in ("lineage_id", "trace_id", "id"):
+                if hasattr(obj, attr) and getattr(obj, attr) is None:
+                    setattr(obj, attr, uuid.uuid4())
+
+    async def flush(self) -> None:
+        # Flush mirrors the real DB: server defaults (gen_random_uuid)
+        # fire at INSERT/flush time, not commit. Used by ``write_lineage``
+        # when ``commit=False`` so the orchestrator's atomic backfill
+        # path sees the pre-generated lineage_id.
+        if self.fail_commit:
+            raise RuntimeError("simulated flush failure")
+        if self.fail_on_lineage and any(
+            hasattr(obj, "book") and hasattr(obj, "verdict") for obj in self.added
+        ):
+            raise RuntimeError("simulated lineage flush failure")
+        self._stamp_ids()
+        # Remember that a LineageRecord has flushed so the next commit
+        # can simulate a backfill failure (A3 atomicity test).
+        if any(hasattr(o, "book") and hasattr(o, "verdict") for o in self.added):
+            self._flushed_lineage = True
 
     async def commit(self) -> None:
         # Distinguish a LineageRecord (has ``book``/``verdict``) from a
@@ -106,14 +144,21 @@ class FakeSession:
             hasattr(obj, "book") and hasattr(obj, "verdict") for obj in self.added
         ):
             raise RuntimeError("simulated lineage commit failure")
-        for obj in self.added:
-            for attr in ("lineage_id", "trace_id", "id"):
-                if hasattr(obj, attr) and getattr(obj, attr) is None:
-                    setattr(obj, attr, uuid.uuid4())
+        # A3 path: lineage INSERT flushed successfully, but the backfill
+        # commit (the orchestrator's single commit) fails. The lineage
+        # row must be rolled back, not left orphaned.
+        if self.fail_backfill_commit and self._flushed_lineage:
+            raise RuntimeError("simulated backfill commit failure")
+        self._stamp_ids()
         self.commits += 1
 
     async def rollback(self) -> None:
-        return None
+        # A3: rollback must drop the flushed-but-uncommitted lineage row
+        # so dispatch cannot see it (write-before-dispatch integrity).
+        if self._flushed_lineage:
+            self.added = [
+                o for o in self.added if not (hasattr(o, "book") and hasattr(o, "verdict"))
+            ]
 
     async def refresh(self, _obj: Any) -> None:  # noqa: ANN401
         return None

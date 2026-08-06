@@ -38,7 +38,9 @@ class TestReasoningTraceWriter:
         }
 
     async def test_write_trace_persists_hashes(
-        self, db_session, _model  # type: ignore[no-untyped-def]  # noqa: ANN001
+        self,
+        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        _model,  # type: ignore[no-untyped-def]  # noqa: ANN001
     ) -> None:
         args = self._trace_args(_model.id)
         trace_id = await write_trace(db_session, **args)  # type: ignore[arg-type]
@@ -47,13 +49,20 @@ class TestReasoningTraceWriter:
         trace = (await db_session.execute(stmt)).scalar_one()
         assert trace.role == "technical_analyst"
         assert trace.prompt_hash == "c" * 64
-        assert trace.response_hash == __import__("hashlib").sha256(
-            args["response_raw"].encode("utf-8")  # type: ignore[union-attr]
-        ).hexdigest()
+        assert (
+            trace.response_hash
+            == __import__("hashlib")
+            .sha256(
+                args["response_raw"].encode("utf-8")  # type: ignore[union-attr]
+            )
+            .hexdigest()
+        )
         assert trace.parsed_output is not None  # type: ignore[union-attr]
 
     async def test_invalid_fk_fails_closed(
-        self, db_session, _model  # type: ignore[no-untyped-def]  # noqa: ANN001
+        self,
+        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        _model,  # type: ignore[no-untyped-def]  # noqa: ANN001
     ) -> None:
         args = self._trace_args(uuid.uuid4())  # bogus model FK
         with pytest.raises(ReasoningTraceError):

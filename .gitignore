@@ -44,7 +44,11 @@ Thumbs.db
 docker-compose.override.yml
 
 # ── Data ───────────────────────────────────────────────────────────────────
-data/
+# Root-anchored: ignore only the top-level runtime artifact dir, NOT source
+# directories named `data` (e.g. backend/src/lumine/data/). Per-backend
+# artifact dirs are scoped explicitly below.
+/data/
+backend/.data/
 *.db
 *.sqlite
 *.sqlite3

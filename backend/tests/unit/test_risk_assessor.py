@@ -32,6 +32,14 @@ class TestResolveRiskAdjustment:
         assert resolve_risk_adjustment({"trending": "nope"}, "trending", "low") == Decimal(1)
         assert resolve_risk_adjustment({}, "trending", "low") == Decimal(1)
 
+    def test_malformed_band_value_fails_closed(self) -> None:
+        # Regression: Decimal("not_a_number") raises InvalidOperation (an
+        # ArithmeticError, NOT a ValueError). The fail-closed contract
+        # must catch it and return DEFAULT_MULTIPLIER rather than crash.
+        policy = {"calm": {"low": "not_a_number", "high": "1.5"}}
+        assert resolve_risk_adjustment(policy, "calm", "low") == Decimal(1)
+        assert resolve_risk_adjustment(policy, "calm", "high") == Decimal("1.5")
+
 
 class TestApplyAssessment:
     def test_final_volume_is_base_times_multiplier(self) -> None:

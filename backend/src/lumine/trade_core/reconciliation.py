@@ -56,8 +56,8 @@ def compare_fill(  # noqa: PLR0913 — comparison inputs are a fixed contract
     fill_price: Decimal,
     expected_volume: Decimal,
     fill_volume: Decimal,
-    price_tolerance_pct: Decimal = Decimal("0.005"),   # 0.5%
-    volume_tolerance_pct: Decimal = Decimal("0.01"),   # 1%
+    price_tolerance_pct: Decimal = Decimal("0.005"),  # 0.5%
+    volume_tolerance_pct: Decimal = Decimal("0.01"),  # 1%
 ) -> FillComparison:
     """Compare a fill against its expectation; deviations beyond tolerance mismatch."""
     return FillComparison(
@@ -78,8 +78,8 @@ class SettlementGate:
 
     internal_status: str
     broker_status: str
-    settled: bool        # True when the gate passed
-    drift: bool          # True when internal/broker disagree → arm kill switch
+    settled: bool  # True when the gate passed
+    drift: bool  # True when internal/broker disagree → arm kill switch
 
 
 def reconciliation_gate(*, internal_status: str, broker_status: str) -> SettlementGate:

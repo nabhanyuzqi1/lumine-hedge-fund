@@ -120,9 +120,7 @@ class ExecutionRouter:
         return DispatchResult(
             status=result.status.value,
             ticket=result.ticket,
-            fill_price=(
-                Decimal(str(result.fill_price)) if result.fill_price is not None else None
-            ),
+            fill_price=(Decimal(str(result.fill_price)) if result.fill_price is not None else None),
         )
 
 

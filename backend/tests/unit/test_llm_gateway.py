@@ -190,11 +190,7 @@ def _gateway(
     lane: str | None = None,
 ) -> Gateway:
     # is not None: an empty registry must stay empty (falsy otherwise).
-    registry = (
-        registry
-        if registry is not None
-        else ModelRegistry({_MVID: _row(_MVID)})
-    )
+    registry = registry if registry is not None else ModelRegistry({_MVID: _row(_MVID)})
     budget = budget or BudgetGate(policy=_policy())
     client = client or _FakeClient()
     return Gateway(

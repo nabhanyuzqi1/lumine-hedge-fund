@@ -165,11 +165,7 @@ class TestModelRelationships:
         # ix_positions_open (models.py:420-427) is a partial unique index:
         # one open position per (symbol, book, strategy_id) — closed
         # positions never collide because the predicate excludes them.
-        index = next(
-            i
-            for i in Position.__table__.indexes
-            if i.name == "ix_positions_open"
-        )
+        index = next(i for i in Position.__table__.indexes if i.name == "ix_positions_open")
         assert index.unique is True
         assert index.dialect_options["postgresql"]["where"] is not None
 
@@ -227,40 +223,46 @@ class TestModelVersionParamsColumn:
 class TestLLMUsageSchemaD67:
     """D6-7 / migration 0005: cost-accounting schema for llm_usage."""
 
-    EXPECTED_COLUMNS: ClassVar[frozenset[str]] = frozenset({
-        "id",
-        "ts",
-        "role",
-        "tier",
-        "model_version_id",
-        "prompt_version_id",
-        "tokens_in",
-        "tokens_out",
-        "cost_usd",
-        "fallback_hops",
-        "degraded",
-        "lane",
-        "lineage_id",
-    })
+    EXPECTED_COLUMNS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "id",
+            "ts",
+            "role",
+            "tier",
+            "model_version_id",
+            "prompt_version_id",
+            "tokens_in",
+            "tokens_out",
+            "cost_usd",
+            "fallback_hops",
+            "degraded",
+            "lane",
+            "lineage_id",
+        }
+    )
 
-    LEGACY_COLUMNS_REMOVED: ClassVar[frozenset[str]] = frozenset({
-        "agent_role",
-        "prompt_tokens",
-        "completion_tokens",
-        "provider",
-        "model_id",
-        "latency_ms",
-        "success",
-        "error_message",
-    })
+    LEGACY_COLUMNS_REMOVED: ClassVar[frozenset[str]] = frozenset(
+        {
+            "agent_role",
+            "prompt_tokens",
+            "completion_tokens",
+            "provider",
+            "model_id",
+            "latency_ms",
+            "success",
+            "error_message",
+        }
+    )
 
-    EXPECTED_INDEXES: ClassVar[frozenset[str]] = frozenset({
-        "ix_llm_usage_ts",
-        "ix_llm_usage_role",
-        "ix_llm_usage_tier",
-        "ix_llm_usage_lane",
-        "ix_llm_usage_lineage",
-    })
+    EXPECTED_INDEXES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "ix_llm_usage_ts",
+            "ix_llm_usage_role",
+            "ix_llm_usage_tier",
+            "ix_llm_usage_lane",
+            "ix_llm_usage_lineage",
+        }
+    )
 
     def test_table_name(self) -> None:
         assert LLMUsage.__tablename__ == "llm_usage"
@@ -333,27 +335,31 @@ class TestLLMUsageSchemaD67:
 class TestReasoningTraceSchemaD711:
     """D7-11 / migration 0006: one row per LLM call with full prompt + hashes."""
 
-    EXPECTED_COLUMNS: ClassVar[frozenset[str]] = frozenset({
-        "trace_id",
-        "workflow_run_id",
-        "stage_run_id",
-        "role",
-        "model_version_id",
-        "prompt_version_id",
-        "prompt_sent",
-        "response_raw",
-        "parsed_output",
-        "prompt_hash",
-        "response_hash",
-        "ts",
-        "lineage_id",
-    })
+    EXPECTED_COLUMNS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "trace_id",
+            "workflow_run_id",
+            "stage_run_id",
+            "role",
+            "model_version_id",
+            "prompt_version_id",
+            "prompt_sent",
+            "response_raw",
+            "parsed_output",
+            "prompt_hash",
+            "response_hash",
+            "ts",
+            "lineage_id",
+        }
+    )
 
-    EXPECTED_INDEXES: ClassVar[frozenset[str]] = frozenset({
-        "ix_reasoning_traces_workflow",
-        "ix_reasoning_traces_lineage",
-        "ix_reasoning_traces_role",
-    })
+    EXPECTED_INDEXES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "ix_reasoning_traces_workflow",
+            "ix_reasoning_traces_lineage",
+            "ix_reasoning_traces_role",
+        }
+    )
 
     def test_table_name(self) -> None:
         assert ReasoningTrace.__tablename__ == "reasoning_traces"
@@ -406,18 +412,20 @@ class TestReasoningTraceSchemaD711:
 class TestMessageSchemaVersionTable:
     """Phase 4 inter-agent-message-versioning / migration 0006."""
 
-    EXPECTED_COLUMNS: ClassVar[frozenset[str]] = frozenset({
-        "id",
-        "name",
-        "version",
-        "schema",
-        "compatibility",
-        "code_hash",
-        "status",
-        "superseded_by",
-        "created_at",
-        "retired_at",
-    })
+    EXPECTED_COLUMNS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "id",
+            "name",
+            "version",
+            "schema",
+            "compatibility",
+            "code_hash",
+            "status",
+            "superseded_by",
+            "created_at",
+            "retired_at",
+        }
+    )
 
     EXPECTED_INDEXES: ClassVar[frozenset[str]] = frozenset({"ix_message_schema_status"})
 

@@ -90,6 +90,7 @@ the source of truth.
 | ADR-0065 | 5 sprints, 10 weeks total | Accepted | 14 | `docs/14-implementation/decisions.md` D14-5 |
 | ADR-0066 | Vertical slice ordering, backend-first | Accepted | 14 | `docs/14-implementation/decisions.md` D14-6 |
 | ADR-0067 | Git: trunk-based, conventional commits, feature flags | Accepted | 14 | `docs/14-implementation/decisions.md` D14-7 |
+| ADR-0068 | Orchestration: hand-written deterministic runner, not AutoGen | Accepted | 15 | `docs/15-implementation/deviation-log.md` (2026-08-06, A1) |
 
 ## Maintenance rules
 

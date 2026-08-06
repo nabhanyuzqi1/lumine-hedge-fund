@@ -43,8 +43,7 @@ def _cost_usd(
 ) -> Decimal:
     """Cost in USD at 6-decimal precision (Numeric(12,6))."""
     cost = (
-        Decimal(prompt_tokens) * price_per_1k_in
-        + Decimal(completion_tokens) * price_per_1k_out
+        Decimal(prompt_tokens) * price_per_1k_in + Decimal(completion_tokens) * price_per_1k_out
     ) / Decimal(1000)
     return cost.quantize(Decimal("0.000001"))
 

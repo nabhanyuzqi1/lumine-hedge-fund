@@ -2,7 +2,7 @@
 
 - **Status:** active
 - **Owner:** architects
-- **Last-reviewed:** 2026-08-02
+- **Last-reviewed:** 2026-08-06
 - **Review-cadence:** 30
 
 This document is the integrity check between what `docs/14-implementation/`
@@ -14,10 +14,10 @@ whole KB.
 
 | Phase 14 spec claim | File:line (approx) | Code reality | Gap | Action | ADR |
 |---------------------|--------------------|--------------|-----|--------|-----|
-| `trade_core/decision_engine.py` — `execute_decision_cycle()` | `repository-structure.md` | Does not exist; `trade_core/__init__.py` only | Critical | Implement in Sprint 3 after risk-engine-determinism contract lands | ADR-0016 |
+| `trade_core/decision_engine.py` — `execute_decision_cycle()` | `repository-structure.md` | Implemented as `autogen_pipeline/orchestrator.py` `DecisionOrchestrator.execute` (10-stage cycle). Spec named `trade_core/decision_engine.py`; code lives in `autogen_pipeline/` — see deviation-log `D-004` | Done | Path deviation recorded; substance matches spec. Sprint 3 | ADR-0016 |
 | `trade_core/feature_provider.py` | `repository-structure.md` | Does not exist | Critical | Implement in Sprint 2 against feature-store-contract | ADR-0020 |
-| `trade_core/risk_validator.py` | `repository-structure.md` | Does not exist | Critical | Implement in Sprint 3; advisory-only LLM role per ADR-0016 | ADR-0016 |
-| `trade_core/sizing_calculator.py` | `repository-structure.md` | Does not exist | Critical | Implement in Sprint 3; deterministic multiplier lookup | ADR-0016 |
+| `trade_core/risk_validator.py` | `repository-structure.md` | Implemented at `backend/src/lumine/trade_core/risk_validator.py` (`assess_proposal`, 6 deterministic checks) | Done | Advisory-only LLM role per ADR-0016; deterministic validator. Sprint 3 | ADR-0016 |
+| `trade_core/sizing_calculator.py` | `repository-structure.md` | Implemented at `backend/src/lumine/trade_core/sizing_calculator.py` (`calculate_size`, ATR-based, floor-rounded) | Done | Deterministic multiplier lookup via `risk_adjustment_multiplier` policy pin. Sprint 3 | ADR-0016 |
 | `alembic/versions/` migrations | `repository-structure.md` | `0001_initial_schema.py` and `0002_add_registry_tables_and_lineage_pins.py` exist | Partial | 0002 adds feature_versions, regime_versions, calendar_versions; expands lineage to 7 version pins. Still missing: reasoning_traces, brokers, accounts, tca_records, journal_hash_chain | ADR-0020, ADR-0029, ADR-0024, ADR-0040, ADR-0017 |
 | `lineage_records` version pins | `ARCHITECTURE.md` Invariant #1 | 7 pins declared; 7 now implemented (model_version_ids JSONB, prompt_version_ids JSONB, policy, strategy, feature, regime, calendar) | Done | 0002 migration implements the full pin set. feature/regime/calendar FKs are nullable until registry tables are populated | ADR-0020, ADR-0034, ADR-0037 |
 | Debate trigger functions | `orchestration.md` | `ic_confidence_predicted` and `disagreement_score` now defined with explicit formulas | Done | Definitions added to orchestration.md — deterministic, pure, reproducible | — |

@@ -88,9 +88,7 @@ class TestDebateFormulas:
         assert ic_confidence_predicted(_analysts()) == 0.75
 
     def test_disagreement_score_consensus_is_zero(self) -> None:
-        consensus = [
-            {"confidence": 0.8, "bias": "bullish"} for _ in range(4)
-        ]  # type: ignore[list-item]
+        consensus = [{"confidence": 0.8, "bias": "bullish"} for _ in range(4)]  # type: ignore[list-item]
         assert disagreement_score(consensus) == 0.0
 
     def test_disagreement_score_split(self) -> None:
@@ -104,14 +102,9 @@ class TestDebateFormulas:
         assert disagreement_score(split) == pytest.approx(0.35)
 
     def test_should_debate_triggers_on_low_confidence(self) -> None:
-        low_conf = [
-            {"bias": "bullish", "confidence": 0.3} for _ in range(4)
-        ]  # type: ignore[list-item]
+        low_conf = [{"bias": "bullish", "confidence": 0.3} for _ in range(4)]  # type: ignore[list-item]
         assert (
-            should_debate(
-                low_conf, ic_confidence_threshold=0.6, disagreement_threshold=0.3
-            )
-            is True
+            should_debate(low_conf, ic_confidence_threshold=0.6, disagreement_threshold=0.3) is True
         )
 
     def test_should_debate_triggers_on_disagreement(self) -> None:
@@ -130,14 +123,9 @@ class TestDebateFormulas:
         )
 
     def test_should_debate_quiet_when_consensus_high_confidence(self) -> None:
-        strong = [
-            {"bias": "bullish", "confidence": 0.9} for _ in range(4)
-        ]  # type: ignore[list-item]
+        strong = [{"bias": "bullish", "confidence": 0.9} for _ in range(4)]  # type: ignore[list-item]
         assert (
-            should_debate(
-                strong, ic_confidence_threshold=0.6, disagreement_threshold=0.4
-            )
-            is False
+            should_debate(strong, ic_confidence_threshold=0.6, disagreement_threshold=0.4) is False
         )
 
 

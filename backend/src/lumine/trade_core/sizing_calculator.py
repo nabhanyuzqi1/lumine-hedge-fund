@@ -21,10 +21,10 @@ from decimal import ROUND_DOWN, Decimal, InvalidOperation
 class SizeResult:
     """Outcome of sizing: the clamped trade volume plus its derivation."""
 
-    base_volume: Decimal       # (equity * risk) / (stop * pip_value), unclamped
-    final_volume: Decimal      # base_volume * multiplier, clamped
-    stop_distance: Decimal     # atr_14 * multiplier (price units)
-    stop_price: Decimal        # entry ∓ stop_distance (BUY / SELL)
+    base_volume: Decimal  # (equity * risk) / (stop * pip_value), unclamped
+    final_volume: Decimal  # base_volume * multiplier, clamped
+    stop_distance: Decimal  # atr_14 * multiplier (price units)
+    stop_price: Decimal  # entry ∓ stop_distance (BUY / SELL)
     violations: tuple[str, ...]
 
 

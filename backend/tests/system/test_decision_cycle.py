@@ -271,9 +271,7 @@ class TestDecisionCycle:
         rows = await _lineage_rows(db_session)
         assert any(r.lineage_id == result.lineage_id and r.verdict == "approved" for r in rows)
         # The processed marker was persisted with the real lineage FK.
-        stmt = select(ProcessedCommand).where(
-            ProcessedCommand.lineage_id == result.lineage_id
-        )
+        stmt = select(ProcessedCommand).where(ProcessedCommand.lineage_id == result.lineage_id)
         assert (await db_session.execute(stmt)).scalar_one().result == "filled"
 
     async def test_strong_sell_dispatches_sell(

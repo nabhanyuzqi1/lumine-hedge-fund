@@ -1,7 +1,7 @@
 # Sprint 3 — Decision Engine: Plan & Evidence
 
-**Status:** Plan drafted — pending approval gate before implementation
-**Date:** 2026-08-03
+**Status:** Implementation complete — audit + independent verification done (FAIL → remediated → re-verify pending). Awaiting approval gate.
+**Date:** 2026-08-03 (plan) · 2026-08-06 (audit + verification)
 **Sprint:** 3 (Decision Engine) of Phase 15 — Implementation
 **Owner:** Chief AI Architect
 **Prior sprint:** Sprint 2 (Data Pipeline) — Approved 2026-08-03
@@ -293,3 +293,136 @@ Ordered to unblock dependencies earliest:
 12. **Orchestrator** — wires 5-11 together
 13. **Level 4 system tests** — validates end-to-end
 14. **Paper trading prep** (days 13-15) — staging deploy
+
+---
+
+## 11. Audit & Verification Evidence (2026-08-06)
+
+Sprint 3 was discovered implemented-but-uncommitted. An audit was run
+against this plan and the governing specs, followed by an independent
+verification agent. Findings and remediation below.
+
+### 11.1 Audit findings (architect self-audit)
+
+| # | Finding | Severity | Disposition |
+|---|---------|----------|-------------|
+| A1 | AutoGen declared in CLAUDE.md but NOT imported anywhere under `backend/src/lumine/`. Orchestration is a hand-written runner in `autogen_pipeline/` | Material drift | Recorded in deviation-log (2026-08-06). **Formalized in ADR-0068** (hand-written deterministic runner, not AutoGen). Naming `autogen_pipeline/` retained per spec module path |
+| A2 | Decision engine implemented at `autogen_pipeline/orchestrator.py`, not `trade_core/decision_engine.py` as spec'd | Path drift | Recorded in deviation-log (2026-08-06). `trade_core` stays LLM-free; orchestration lives with the LLM pipeline. spec-reconciliation updated |
+| A3 | `orchestrator.py:584-600` — reasoning-trace → lineage FK backfill runs in a separate transaction from the lineage write | Audit risk (write-before-dispatch integrity gap) | **Fixed (2026-08-06).** `write_lineage()` gained `commit: bool = True`; orchestrator calls it `commit=False` and wraps the backfill UPDATEs + final commit in one try/except that rolls back together. Regression test `test_backfill_failure_rolls_back_lineage_atomically`. Deviation-log entry recorded (ADR-0017) |
+| A4 | Migrations 0004/0005 ordering differs from plan (lane column added via 0005, not 0004) | Cosmetic | Substance covered. No action |
+
+### 11.2 Independent verification verdict: FAIL → remediated
+
+The verification agent independently confirmed A1–A4 and found one
+additional bug:
+
+**V1 (bug, verifier-found):** `risk_assessor.py:58` —
+`resolve_risk_adjustment` catches `(TypeError, ValueError)` but
+`Decimal("not_a_number")` raises `decimal.InvalidOperation` (an
+`ArithmeticError`, NOT a `ValueError` subclass). The fail-closed
+contract (ADR-0016: return `DEFAULT_MULTIPLIER` on bad policy input)
+was violated — a malformed policy value crashed the stage instead of
+degrading to `1.0`.
+
+**Remediation applied (2026-08-06):**
+- `risk_assessor.py`: import `InvalidOperation`, widen except tuple to
+  `(TypeError, ValueError, InvalidOperation)`.
+- Regression test added:
+  `tests/unit/test_risk_assessor.py::test_malformed_band_value_fails_closed`
+  — asserts malformed band value returns `Decimal(1)` and a valid band
+  in the same policy still resolves.
+- Deviation-log entry recorded (2026-08-06, ADR-0016).
+
+**V2 (gate, verifier-confirmed):** `make lint-backend` failed —
+`uv run ruff format --check .` reported 24 files would be reformatted.
+
+**Remediation applied (2026-08-06):**
+- `uv run ruff format .` — 24 files reformatted (whitespace only).
+- 9 residual `ANN001` errors on `db_session` fixture params in
+  integration tests resolved with the established
+  `# type: ignore[no-untyped-def]  # noqa: ANN001` convention.
+
+**V3 (unverifiable, environmental):** Integration + system tests
+(39 tests, including all 8 Level 4 system scenarios) blocked by Docker
+daemon being down (testcontainers cannot start Postgres 16 + Redis 7).
+This is an environment constraint, NOT a code defect. The parallel
+agent owns Docker VPS work; local Docker was deliberately not started
+to avoid resource conflict.
+
+### 11.3 Post-remediation gate status
+
+| Gate | Command | Result |
+|------|---------|--------|
+| Format | `uv run ruff format --check src/ tests/` | PASS — 105 files already formatted |
+| Lint | `uv run ruff check src/ tests/` | PASS — All checks passed |
+| Types | `uv run mypy src/` | PASS — no issues in 51 source files |
+| Full suite | `uv run pytest tests/` | PASS — 487 passed, 12 warnings in 27.13s |
+| Unit tests | `uv run pytest tests/unit -q` | PASS — 447 passed |
+| Bug regression (V1) | `test_malformed_band_value_fails_closed` | PASS |
+| Bug regression (A3) | `test_backfill_failure_rolls_back_lineage_atomically` | PASS |
+| Integration tests | `uv run pytest tests/integration` | PASS — 31 passed in 34.52s (Docker unblocked) |
+| System tests (L4) | `uv run pytest tests/system` | PASS — 8 passed in 21.54s (Docker unblocked) |
+| Independent verifier | Agent dispatch | Re-verify running (A3 fix); see §11.6 |
+
+### 11.4 Open items before approval gate
+
+1. **Re-verify** with the verification agent — now covering V1 (bug), V2
+   (lint gate), V3 (integration/system, Docker unblocked), and the A3
+   atomicity fix. Result recorded in §11.6. **PASS.**
+2. **A1 (AutoGen substitution) ADR** — **written** (ADR-0068,
+   2026-08-06). The deviation is recorded and formalized; the
+   deviation-log A1 row now references ADR-0068 instead of "Pending ADR".
+3. **A3 (trace→lineage backfill atomicity)** — **fixed** (2026-08-06).
+   No longer deferred. See §11.6.
+
+### 11.5 Files changed in this audit cycle
+
+- `backend/src/lumine/autogen_pipeline/risk_assessor.py` — V1 fix
+- `backend/tests/unit/test_risk_assessor.py` — V1 regression test
+- `backend/src/lumine/data/lineage.py` — A3 fix (`commit` parameter)
+- `backend/src/lumine/autogen_pipeline/orchestrator.py` — A3 fix (atomic backfill)
+- `backend/tests/unit/fakes.py` — FakeSession `flush`/`fail_backfill_commit`/`rollback` for A3
+- `backend/tests/unit/test_orchestrator.py` — A3 regression test
+- `backend/tests/integration/test_execution_router.py` — ANN001 noqa (4)
+- `backend/tests/integration/test_lineage.py` — ANN001 noqa (3)
+- `backend/tests/integration/test_reasoning_traces.py` — ANN001 noqa (2)
+- 24 files reformatted by `ruff format` (whitespace only)
+- `docs/15-implementation/spec-reconciliation.md` — rows 17/19/20 → Done
+- `docs/15-implementation/deviation-log.md` — 4 entries added (2026-08-06)
+- `docs/adr/0068-orchestration-hand-written-runner-not-autogen.md` — A1 ADR (new)
+- `docs/adr/INDEX.md` — ADR-0068 row added
+
+### 11.6 A3 fix + Docker-unblocked re-verify (2026-08-06)
+
+Docker daemon started; the previously environment-blocked Level 3
+(integration) and Level 4 (system) suites now run against real
+Postgres 16 + Redis 7 via testcontainers. A3 (trace→lineage backfill
+atomicity), previously deferred as low-risk, was promoted to a fix
+after re-evaluation: an orphan committed `lineage_records` row on
+backfill failure is a write-before-dispatch integrity gap, not just
+orphan audit rows.
+
+**Fix:** `write_lineage(commit=False)` lets the orchestrator own one
+transaction spanning the lineage INSERT + trace/journal FK backfill
+UPDATEs + final commit; any failure rolls both back. `commit=True`
+default preserves all existing callers (factories, integration tests).
+
+**Evidence:**
+- `test_backfill_failure_rolls_back_lineage_atomically` — PASS
+- Integration tests (Level 3): 31 passed in 34.52s
+- System tests (Level 4): 8 passed in 21.54s
+- Full suite: 487 passed, 12 warnings in 27.13s
+- Lint gate: ruff format/check + mypy — all PASS
+
+**Independent verifier:** dispatched to re-verify the A3 fix against
+the four changed files. **Verdict: PASS (2026-08-06).** The verifier
+re-ran all gates (487 passed; ruff format/check + mypy clean), confirmed
+the per-file implementation matches the fix contract, grepped all 5
+`write_lineage` call sites (only the orchestrator uses `commit=False`;
+4 external callers use the default — no silent breakage), and ran two
+adversarial probes: (1) sabotaging `FakeSession.rollback` to a no-op
+correctly failed the A3 test (proving it is not a tautology); (2)
+counting `rollback()` calls on the flush-failure path returned 1 (no
+double-rollback). Spot-checked by the architect: 11 orchestrator tests
+pass, mypy clean.
+

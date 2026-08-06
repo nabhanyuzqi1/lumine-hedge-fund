@@ -60,7 +60,9 @@ def _inputs(
 
 class TestLineageWriter:
     async def test_write_lineage_persists_all_pins(
-        self, db_session, _registry_rows  # type: ignore[no-untyped-def]  # noqa: ANN001
+        self,
+        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        _registry_rows,  # type: ignore[no-untyped-def]  # noqa: ANN001
     ) -> None:
         strategy, policy = _registry_rows
         record = await write_lineage(db_session, _inputs(strategy.id, policy.id))
@@ -81,7 +83,9 @@ class TestLineageWriter:
         assert persisted.book == "main"
 
     async def test_commit_failure_raises_and_records_nothing(
-        self, db_session, _registry_rows  # type: ignore[no-untyped-def]  # noqa: ANN001
+        self,
+        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        _registry_rows,  # type: ignore[no-untyped-def]  # noqa: ANN001
     ) -> None:
         strategy, _policy = _registry_rows
         # A bogus policy_version_id → FK violation on commit.
@@ -98,7 +102,9 @@ class TestLineageWriter:
         assert all(row.policy_version_id != bogus for row in rows)
 
     async def test_append_only_by_construction(
-        self, db_session, _registry_rows  # type: ignore[no-untyped-def]  # noqa: ANN001
+        self,
+        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        _registry_rows,  # type: ignore[no-untyped-def]  # noqa: ANN001
     ) -> None:
         strategy, policy = _registry_rows
         first = await write_lineage(db_session, _inputs(strategy.id, policy.id))

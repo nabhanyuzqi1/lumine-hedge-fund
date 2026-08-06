@@ -81,9 +81,7 @@ def _mock_orm_row(ts_minute: int, close: str) -> MagicMock:
 class TestFeatureProviderGetFeatures:
     """Snapshot assembly from bars + ticks + indicator cache."""
 
-    async def test_get_features_queries_bars_ordered_by_ts(
-        self, redis_mock: AsyncMock
-    ) -> None:
+    async def test_get_features_queries_bars_ordered_by_ts(self, redis_mock: AsyncMock) -> None:
         bars = [_make_bar_dict(i, str(2500 + i)) for i in range(15)]
         session = _mock_session(bars)
         provider = FeatureProvider(redis=redis_mock)

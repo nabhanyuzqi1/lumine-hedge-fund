@@ -99,9 +99,7 @@ class TestFeatureProviderReadsPostgres:
         assert snapshot.as_of_ts == xauusd_bars[-1]["ts"]
 
     @pytest.mark.usefixtures("xauusd_bars")
-    async def test_indicators_written_to_redis_cache(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_indicators_written_to_redis_cache(self, db_session: AsyncSession) -> None:
         provider = FeatureProvider(redis=await get_redis())
         snapshot = await provider.get_features(db_session, "XAUUSD", Timeframe.M1, count=15)
 

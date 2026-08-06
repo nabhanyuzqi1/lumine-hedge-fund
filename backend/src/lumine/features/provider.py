@@ -60,12 +60,7 @@ class FeatureProvider:
         count: int,
     ) -> list[dict[str, Any]]:
         table = self._table_for_timeframe(timeframe)
-        stmt = (
-            select(table)
-            .where(table.symbol == symbol)
-            .order_by(desc(table.ts))
-            .limit(count)
-        )
+        stmt = select(table).where(table.symbol == symbol).order_by(desc(table.ts)).limit(count)
         result = await session.execute(stmt)
         rows = result.scalars().all()
         normalized: list[dict[str, Any]] = []
@@ -86,18 +81,14 @@ class FeatureProvider:
                 )
         return normalized
 
-    async def _get_cached_indicator(
-        self, symbol: str, name: str
-    ) -> Decimal | None:
+    async def _get_cached_indicator(self, symbol: str, name: str) -> Decimal | None:
         raw = await self.redis.get(f"feat:{symbol}:{name}")
         if raw is None:
             return None
         decoded = raw.decode() if isinstance(raw, bytes) else raw
         return Decimal(decoded)
 
-    async def _cache_indicator(
-        self, symbol: str, name: str, value: Decimal, ttl: int
-    ) -> None:
+    async def _cache_indicator(self, symbol: str, name: str, value: Decimal, ttl: int) -> None:
         await self.redis.setex(f"feat:{symbol}:{name}", ttl, str(value))
 
     async def _compute_indicator(
@@ -118,21 +109,14 @@ class FeatureProvider:
         await self._cache_indicator(symbol, config["name"], value, config["ttl"])
         return value
 
-    async def _compute_pivots(
-        self, bars: list[dict[str, Any]]
-    ) -> PivotPoints | None:
+    async def _compute_pivots(self, bars: list[dict[str, Any]]) -> PivotPoints | None:
         if not bars:
             return None
         return pivot_points(bars)
 
-    async def _fetch_recent_ticks(
-        self, symbol: str, count: int = 100
-    ) -> list[dict[str, Any]]:
+    async def _fetch_recent_ticks(self, symbol: str, count: int = 100) -> list[dict[str, Any]]:
         raw = await self.redis.lrange(f"ticks:{symbol}", 0, count - 1)
-        return [
-            json.loads(item.decode() if isinstance(item, bytes) else item)
-            for item in raw
-        ]
+        return [json.loads(item.decode() if isinstance(item, bytes) else item) for item in raw]
 
     async def get_features(
         self,

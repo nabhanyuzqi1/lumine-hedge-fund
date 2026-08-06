@@ -21,7 +21,7 @@ def _inputs(**overrides: object) -> RiskInputs:
     base: dict[str, object] = {
         "equity": _EQUITY,
         "proposed_notional": Decimal(1500),  # 1.5% of equity — under 2%
-        "total_notional": Decimal(3000),     # book 3% + 1.5% = 4.5% < 5%
+        "total_notional": Decimal(3000),  # book 3% + 1.5% = 4.5% < 5%
         "correlated_notional": Decimal(1000),  # 1% + 1.5% = 2.5% < 3%
         "daily_pnl": Decimal(0),
         "open_positions": 3,

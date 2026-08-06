@@ -110,9 +110,7 @@ def budget_decision(
     tier_spend = spend.get(tier.value, 0.0)
     global_spend = sum(spend.values())
 
-    protected = frozenset(
-        cost.get("protected_roles") or list(_DEFAULT_PROTECTED_ROLES)
-    )
+    protected = frozenset(cost.get("protected_roles") or list(_DEFAULT_PROTECTED_ROLES))
     degrade_order = tuple(cost.get("degrade_order") or _DEFAULT_DEGRADE_ORDER)
     soft_pct = float(cost.get("soft_warn_pct", 0.8))
 

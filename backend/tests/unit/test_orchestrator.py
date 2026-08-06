@@ -193,9 +193,9 @@ def _orchestrator(
 
 class TestVolatilityBand:
     def test_band_thresholds(self) -> None:
-        assert volatility_band(Decimal(5), Decimal(2734)) == "low"      # 0.18%
-        assert volatility_band(Decimal(20), Decimal(2734)) == "med"     # 0.73%
-        assert volatility_band(Decimal(50), Decimal(2734)) == "high"    # 1.8%
+        assert volatility_band(Decimal(5), Decimal(2734)) == "low"  # 0.18%
+        assert volatility_band(Decimal(20), Decimal(2734)) == "med"  # 0.73%
+        assert volatility_band(Decimal(50), Decimal(2734)) == "high"  # 1.8%
 
 
 class TestDecisionCycle:
@@ -274,6 +274,21 @@ class TestDecisionCycle:
         with pytest.raises(LineageWriteError):
             await _orchestrator(gateway, session, router).execute(_ctx(), _portfolio())
         assert router.calls == []  # nothing dispatched after a failed write
+
+    async def test_backfill_failure_rolls_back_lineage_atomically(self) -> None:
+        # A3: the lineage INSERT and the trace/journal backfill share one
+        # transaction. If the backfill commit fails, the lineage row must
+        # be rolled back too — no orphan lineage record reaches dispatch.
+        gateway = FakeGateway(handler=_handler())
+        session = FakeSession(fail_backfill_commit=True)
+        router = StubExecutionRouter()
+
+        with pytest.raises(LineageWriteError):
+            await _orchestrator(gateway, session, router).execute(_ctx(), _portfolio())
+        assert router.calls == []  # dispatch never ran
+        # Rollback dropped the flushed lineage row — it is not persisted.
+        lineage = [o for o in session.added if isinstance(o, LineageRecord)]
+        assert lineage == [], "lineage row must be rolled back with the failed backfill"
 
     async def test_trace_write_failure_is_safe_state(self) -> None:
         gateway = FakeGateway(handler=_handler())

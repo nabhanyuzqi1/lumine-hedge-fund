@@ -37,7 +37,7 @@ from lumine.autogen_pipeline.ic_forum import run_ic_forum
 from lumine.autogen_pipeline.journal import log_step
 from lumine.autogen_pipeline.risk_assessor import apply_assessment, run_risk_assessor
 from lumine.bridge.types import BridgeCommand
-from lumine.data.lineage import LineageInputs, write_lineage
+from lumine.data.lineage import LineageInputs, LineageWriteError, write_lineage
 from lumine.shared.errors import DeadlineExceededError
 from lumine.trade_core.risk_validator import RiskInputs, RiskLimits, assess_proposal
 from lumine.trade_core.sizing_calculator import calculate_size
@@ -95,8 +95,7 @@ class _Deadline:
     def ensure(self, reserve_ms: int) -> None:
         if self.remaining() <= reserve_ms:
             message = (
-                f"deadline exceeded (remaining {self.remaining()}ms <= "
-                f"{reserve_ms}ms reserve)"
+                f"deadline exceeded (remaining {self.remaining()}ms <= {reserve_ms}ms reserve)"
             )
             raise DeadlineExceededError(message)
 
@@ -145,8 +144,8 @@ class CycleResult:
     """Outcome of one full decision cycle."""
 
     lineage_id: uuid.UUID
-    verdict: str                     # approved | rejected | noop | safe_state
-    action: str                      # BUY | SELL | HOLD | REJECT
+    verdict: str  # approved | rejected | noop | safe_state
+    action: str  # BUY | SELL | HOLD | REJECT
     volume: Decimal
     reasons: tuple[str, ...]
     dispatch: dict[str, Any] | None = None
@@ -224,7 +223,10 @@ class DecisionOrchestrator:
         analyst_outputs = [r.parsed for r in results]
         trace_ids = [tid for r in results for tid in r.trace_ids]
         await self._journal(
-            ctx, None, "ANALYSTS_VALIDATED", "ok",
+            ctx,
+            None,
+            "ANALYSTS_VALIDATED",
+            "ok",
             output_snapshot={"analysts": analyst_outputs},
         )
 
@@ -316,8 +318,13 @@ class DecisionOrchestrator:
         action = str(proposal["action"])
         if action in {"HOLD", "REJECT"}:
             await self._write_lineage(
-                ctx, lineage_id, proposal, verdict="noop", side="NONE",
-                reasons=("no_trade",), trace_ids=trace_ids,
+                ctx,
+                lineage_id,
+                proposal,
+                verdict="noop",
+                side="NONE",
+                reasons=("no_trade",),
+                trace_ids=trace_ids,
             )
             await self._journal(ctx, lineage_id, "NOOP", "ok")
             return CycleResult(
@@ -549,13 +556,16 @@ class DecisionOrchestrator:
     ) -> None:
         """Append the immutable lineage record (write-before-dispatch).
 
-        After the record is committed, the cycle's reasoning traces are
-        backfilled with the now-existing ``lineage_id`` FK (D3-11): the
-        traces were written before the lineage row existed, so the link
-        is established here, still before any dispatch.
+        The lineage INSERT and the trace/journal backfill share one
+        transaction so they commit or roll back together (A3 fix). If
+        the backfill fails, the lineage row is rolled back too — no
+        orphan lineage record can reach dispatch, and no trace is left
+        with a dangling ``lineage_id`` (D3-11).
         """
         risk_payload = dict(risk_context or {})
         risk_payload.setdefault("violations", list(reasons))
+        # commit=False: the lineage row is flushed but not committed.
+        # The single commit below owns the atomic boundary.
         await write_lineage(
             self._session,
             LineageInputs(
@@ -580,24 +590,38 @@ class DecisionOrchestrator:
                 risk_context=risk_payload,
                 decision_ts=datetime.now(UTC),
             ),
+            commit=False,
         )
-        if trace_ids:
-            from sqlalchemy import update  # noqa: PLC0415
+        try:
+            if trace_ids:
+                from sqlalchemy import update  # noqa: PLC0415
 
-            from lumine.data.models import ReasoningTrace, WorkflowJournal  # noqa: PLC0415
+                from lumine.data.models import (  # noqa: PLC0415
+                    ReasoningTrace,
+                    WorkflowJournal,
+                )
 
-            await self._session.execute(
-                update(ReasoningTrace)
-                .where(ReasoningTrace.trace_id.in_(trace_ids))
-                .values(lineage_id=lineage_id)
-            )
-            # Pre-lineage journal checkpoints are linked the same way.
-            await self._session.execute(
-                update(WorkflowJournal)
-                .where(WorkflowJournal.workflow_id == ctx.workflow_id)
-                .values(lineage_id=lineage_id)
-            )
+                await self._session.execute(
+                    update(ReasoningTrace)
+                    .where(ReasoningTrace.trace_id.in_(trace_ids))
+                    .values(lineage_id=lineage_id)
+                )
+                # Pre-lineage journal checkpoints are linked the same way.
+                await self._session.execute(
+                    update(WorkflowJournal)
+                    .where(WorkflowJournal.workflow_id == ctx.workflow_id)
+                    .values(lineage_id=lineage_id)
+                )
             await self._session.commit()
+        except Exception as exc:
+            # Rollback undoes both the trace/journal backfill AND the
+            # lineage INSERT (flushed, not committed) — atomicity holds.
+            await self._session.rollback()
+            msg = (
+                f"lineage backfill commit failed for {ctx.symbol} "
+                f"(workflow={ctx.workflow_id}): {exc}"
+            )
+            raise LineageWriteError(msg) from exc
 
 
 __all__ = (

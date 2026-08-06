@@ -102,9 +102,7 @@ class TestSettingsPathProperties:
         settings = Settings()
         assert settings.schema_dir.name == "schemas"
 
-    def test_prompt_dir_override_via_constructor(
-        self, tmp_path: Path
-    ) -> None:
+    def test_prompt_dir_override_via_constructor(self, tmp_path: Path) -> None:
         # config.py:74-83 — prompt_dir_env is an absolute-path override;
         # an empty value derives <repo_root>/docs/prompts instead.
         s = Settings(prompt_dir_env=str(tmp_path))

@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any
 
 from lumine.autogen_pipeline._base import StageContext, StageResult, run_llm_stage
@@ -55,7 +55,7 @@ def resolve_risk_adjustment(
         return DEFAULT_MULTIPLIER
     try:
         return Decimal(str(raw))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, InvalidOperation):
         return DEFAULT_MULTIPLIER
 
 

@@ -60,14 +60,14 @@ _FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$")
 class StageContext:
     """Everything needed to run one deterministic single-turn LLM stage."""
 
-    role: str                      # llm_usage.role / trace role
-    prompt_sub_role: str           # registry key, e.g. "technical_analyst"
-    prompt_version: str            # registry key version, e.g. "v1"
-    model_version_id: uuid.UUID    # production model row for this role
+    role: str  # llm_usage.role / trace role
+    prompt_sub_role: str  # registry key, e.g. "technical_analyst"
+    prompt_version: str  # registry key version, e.g. "v1"
+    model_version_id: uuid.UUID  # production model row for this role
     lineage_id: uuid.UUID
     workflow_run_id: str
     stage_run_id: str
-    variables: dict[str, object]   # template variables for the prompt
+    variables: dict[str, object]  # template variables for the prompt
     idempotency_key: str
     prompt_version_id: uuid.UUID | None = None  # prompt_versions.id, if known
     # Reasoning-trace lineage link. Left ``None`` during a cycle because
@@ -81,7 +81,7 @@ class StageResult:
     """Outcome of a single LLM stage: validated parsed output + provenance."""
 
     parsed: dict[str, Any]
-    trace_ids: list[uuid.UUID]     # one per gateway call made (≥1)
+    trace_ids: list[uuid.UUID]  # one per gateway call made (≥1)
     raw_response: str
     model_used: str
     degraded: bool

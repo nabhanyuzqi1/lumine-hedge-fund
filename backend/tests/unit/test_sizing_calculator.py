@@ -115,9 +115,7 @@ class TestCalculateSize:
             pip_value=Decimal(10),
             risk_adjustment_multiplier=Decimal("0.5"),
         )
-        assert scaled.final_volume == (base.final_volume * Decimal("0.5")).quantize(
-            Decimal("0.01")
-        )
+        assert scaled.final_volume == (base.final_volume * Decimal("0.5")).quantize(Decimal("0.01"))
 
     def test_bad_side_rejected(self) -> None:
         with pytest.raises(SizingError):

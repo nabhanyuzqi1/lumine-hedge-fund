@@ -338,7 +338,5 @@ class TestResampleBars:
             )
         ]
         # reference == the bucket start itself → bucket_ts >= last_complete.
-        resampled = resample_bars_until(
-            bars, 300, source="aggregator", now=start.replace(second=0)
-        )
+        resampled = resample_bars_until(bars, 300, source="aggregator", now=start.replace(second=0))
         assert resampled == []

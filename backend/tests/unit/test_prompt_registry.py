@@ -206,9 +206,7 @@ class TestRegistryContainer:
         assert roles == {"technical_analyst", "macro_analyst"}
 
     def test_len_counts_registered_bundles(self, tmp_path: Path) -> None:
-        registry = load_registry(
-            _build_registry(tmp_path, [_analyst_entry("technical_analyst")])
-        )
+        registry = load_registry(_build_registry(tmp_path, [_analyst_entry("technical_analyst")]))
         assert len(registry) == 1
 
     def test_register_replaces_same_key(self, tmp_path: Path) -> None:
