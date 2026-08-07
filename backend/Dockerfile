@@ -10,7 +10,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml uv.lock README.md ./
-RUN pip install --no-cache-dir uv && uv sync --frozen --no-dev
+RUN pip install --no-cache-dir uv && uv sync --frozen --no-dev --no-install-project
+COPY src/ src/
+RUN uv sync --frozen --no-dev
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM python:3.12.5-slim-bookworm AS runtime
