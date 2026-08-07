@@ -32,6 +32,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify required secrets
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_HMAC_SECRET_KEY: ${{ secrets.STAGING_HMAC_SECRET_KEY }}
+          STAGING_LLM_GATEWAY_API_KEY: ${{ secrets.STAGING_LLM_GATEWAY_API_KEY }}
+          STAGING_VNC_PASSWORD: ${{ secrets.STAGING_VNC_PASSWORD }}
+        run: |
+          missing=()
+          [ -z "$STAGING_HOST" ] && missing+=("STAGING_HOST")
+          [ -z "$STAGING_USER" ] && missing+=("STAGING_USER")
+          [ -z "$STAGING_SSH_KEY" ] && missing+=("STAGING_SSH_KEY")
+          [ -z "$STAGING_DB_PASSWORD" ] && missing+=("STAGING_DB_PASSWORD")
+          [ -z "$STAGING_HMAC_SECRET_KEY" ] && missing+=("STAGING_HMAC_SECRET_KEY")
+          [ -z "$STAGING_LLM_GATEWAY_API_KEY" ] && missing+=("STAGING_LLM_GATEWAY_API_KEY")
+          [ -z "$STAGING_VNC_PASSWORD" ] && missing+=("STAGING_VNC_PASSWORD")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing GitHub secrets: ${missing[*]}"
+            echo "::error::Configure at: Settings → Secrets and variables → Actions → New repository secret"
+            echo "::error::See deploy.yml header for the full list and SSH key generation steps."
+            exit 1
+          fi
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -81,6 +106,31 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+          PROD_HMAC_SECRET_KEY: ${{ secrets.PROD_HMAC_SECRET_KEY }}
+          PROD_LLM_GATEWAY_API_KEY: ${{ secrets.PROD_LLM_GATEWAY_API_KEY }}
+          PROD_VNC_PASSWORD: ${{ secrets.PROD_VNC_PASSWORD }}
+        run: |
+          missing=()
+          [ -z "$PROD_HOST" ] && missing+=("PROD_HOST")
+          [ -z "$PROD_USER" ] && missing+=("PROD_USER")
+          [ -z "$PROD_SSH_KEY" ] && missing+=("PROD_SSH_KEY")
+          [ -z "$PROD_DB_PASSWORD" ] && missing+=("PROD_DB_PASSWORD")
+          [ -z "$PROD_HMAC_SECRET_KEY" ] && missing+=("PROD_HMAC_SECRET_KEY")
+          [ -z "$PROD_LLM_GATEWAY_API_KEY" ] && missing+=("PROD_LLM_GATEWAY_API_KEY")
+          [ -z "$PROD_VNC_PASSWORD" ] && missing+=("PROD_VNC_PASSWORD")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing GitHub secrets: ${missing[*]}"
+            echo "::error::Configure at: Settings → Secrets and variables → Actions → New repository secret"
+            echo "::error::See deploy.yml header for the full list and SSH key generation steps."
+            exit 1
+          fi
 
       - name: Setup SSH key
         run: |
