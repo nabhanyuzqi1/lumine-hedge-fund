@@ -48,6 +48,45 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ── MT5 via Wine + XFCE4 + x11vnc + noVNC ───────────────────────────────────
+  # Image dibangun dari scripts/deploy/mt5/{Dockerfile,entrypoint.sh}.
+  # Wine prefix + MT5 install persist di volume mt5_wine (rebuild aman).
+  # Akses:
+  #   - Browser (noVNC): http://<VPS_HOST>:6901/vnc.html   (password VNC_PASSWORD)
+  #   - VNC client     : <VPS_HOST>:5900
+  # Catatan: deviasi dari Phase 8 (MT5 di Windows VPS terpisah). Lihat
+  # scripts/deploy/VPS-GUIDE.md Bagian 0 untuk justifikasi Wine-in-Docker.
+  mt5:
+    build:
+      context: ../scripts/deploy/mt5
+      dockerfile: Dockerfile
+    container_name: lumine-mt5
+    ports:
+      - "5900:5900"
+      - "6901:6901"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD:?VNC_PASSWORD wajib di .env}
+      - RESOLUTION=1280x768x24
+    volumes:
+      - mt5_data:/root/.wine-mt5
+    restart: unless-stopped
+    # Healthcheck: cek Xvfb + x11vnc + terminal64.exe hidup.
+    # Docker restart policy tidak trigger on unhealthy — tapi watchdog di
+    # entrypoint.sh meng-exit container saat proses kritis mati, sehingga
+    # restart: unless-stopped efektif. Healthcheck ini untuk observabilitas
+    # (docker ps menampilkan status) dan dependensi API.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pgrep -x Xvfb >/dev/null 2>&1 &&
+          pgrep -x x11vnc >/dev/null 2>&1 &&
+          pgrep -f 'terminal64\.exe' >/dev/null 2>&1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
   # ── 9router LLM gateway (Phase 6 D6-2, Phase 11 deployment) ────────────────
   # Single egress for all LLM traffic. Dashboard on :20128, OpenAI-compatible
   # API on :20128/v1. State (provider keys, OAuth, fallback config) persists
@@ -79,3 +118,4 @@ volumes:
   postgres_data:
   redis_data:
   9router_data:
+  mt5_data:

@@ -96,145 +96,119 @@ MT5 berjalan di container sendiri yang join **network yang sama dengan stack
 Lumine**, sehingga EA dapat mengakses Redis (`redis:6379`) langsung — bridge
 `mt5:commands` / `mt5:results` tetap sesuai Phase 8.
 
-### 3.1 Struktur folder
+### 3.1 Struktur folder (sumber di repo)
 
-Buat di VPS:
+File konkrit ada di repo, bukan snippet inline:
 
-```bash
-mkdir -p /opt/lumine/mt5
-cd /opt/lumine/mt5
+```
+scripts/deploy/mt5/
+├── Dockerfile       ubuntu:24.04 + Wine + Xvfb + XFCE4 + x11vnc + noVNC
+└── entrypoint.sh    start Xvfb → XFCE4 → x11vnc (password) → noVNC → MT5
 ```
 
-### 3.2 Dockerfile
+Di VPS, `deploy-stack.sh` menaruhnya di `/opt/lumine/scripts/deploy/mt5/`.
+Compose memakai `context: ../scripts/deploy/mt5` (relatif dari
+`/opt/lumine/backend/`) sehingga path konsisten antara repo lokal dan VPS.
 
-```dockerfile
-# /opt/lumine/mt5/Dockerfile
-FROM ubuntu:24.04
+### 3.2 Layer image
 
-# Wine + tooling headless
-RUN dpkg --add-architecture i386 && \
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      wine64 wine32:i386 \
-      xvfb x11vnc wget unzip ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+| Komponen | Fungsi |
+|----------|--------|
+| Wine (i386+amd64) | menjalankan `terminal64.exe` MT5 |
+| Xvfb | display headless `:99` |
+| XFCE4 (minimal) | window manager — taskbar, menu, decor window |
+| x11vnc | VNC server port 5900 (password via `VNC_PASSWORD`) |
+| noVNC + websockify | akses browser port 6901 |
 
-ENV WINEPREFIX=/root/.wine-mt5 \
-    WINEDLLOVERRIDES="mscoree,mshtml=" \
-    DISPLAY=:99
+> **Perubahan dari versi lama**: (1) tambah XFCE4 agar window MT5 punya
+> taskbar/menu; (2) hapus `-nopw` — sekarang wajib password; (3) tambah noVNC
+> agar bisa akses dari browser tanpa install VNC client.
 
-WORKDIR /opt/mt5
+### 3.3 Variabel environment
 
-COPY entrypoint.sh /opt/mt5/entrypoint.sh
-RUN chmod +x /opt/mt5/entrypoint.sh
+| Var | Wajib | Default | Catatan |
+|-----|-------|---------|---------|
+| `VNC_PASSWORD` | ya | — | minimal 6 char. Set di `/opt/lumine/.env` |
+| `RESOLUTION` | tidak | `1280x768x24` | resolusi Xvfb |
+| `DISPLAY` | tidak | `:99` | display Xvfb |
 
-EXPOSE 5900
-CMD ["/opt/mt5/entrypoint.sh"]
-```
+### 3.4 Service di compose
 
-### 3.3 Entrypoint (headless + VNC)
-
-```bash
-#!/usr/bin/env bash
-# /opt/lumine/mt5/entrypoint.sh
-set -e
-
-# Inisialisasi Wine prefix sekali
-if [ ! -d "${WINEPREFIX}" ]; then
-  wineboot -i
-fi
-
-# Display headless
-Xvfb :99 -screen 0 1280x768x24 &
-sleep 2
-
-# VNC viewer untuk login broker manual
-x11vnc -display :99 -forever -nopw -shared -bg -o /var/log/x11vnc.log
-
-# Terminal MT5
-MT5_BIN="${WINEPREFIX}/drive_c/Program Files/MetaTrader 5/terminal64.exe"
-if [ -f "${MT5_BIN}" ]; then
-  wine "${MT5_BIN}" &
-  wait
-else
-  echo "MT5 belum terinstall — jalankan installer dulu (lihat 3.5)."
-  sleep infinity
-fi
-```
-
-### 3.4 Tambahkan service ke compose stack
-
-Edit `/opt/lumine/backend/docker-compose.prod.yml` — tambahkan service ini
-(di bawah `api`):
+Service `mt5` sudah ada di `backend/docker-compose.prod.yml`:
 
 ```yaml
   mt5:
     build:
-      context: /opt/lumine/mt5
+      context: ../scripts/deploy/mt5
       dockerfile: Dockerfile
+    container_name: lumine-mt5
     ports:
-      - "5900:5900"
+      - "5900:5900"    # VNC client tradisional
+      - "6901:6901"    # noVNC via browser
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MT5_LOGIN=
-      - MT5_PASSWORD=
-      - MT5_SERVER=
+      - VNC_PASSWORD=${VNC_PASSWORD:?VNC_PASSWORD wajib di .env}
+      - RESOLUTION=1280x768x24
     volumes:
       - mt5_data:/root/.wine-mt5
     restart: unless-stopped
 ```
 
-Lalu tambahkan `mt5_data:` ke blok `volumes:` di bawah:
-
-```yaml
-volumes:
-  postgres_data:
-  redis_data:
-  mt5_data:
-```
-
-> Kenapa volume `mt5_data`? Wine prefix berisi konfigurasi login broker — kalau
-> container di-recreate, login tidak hilang.
+Volume `mt5_data` menyimpan Wine prefix + install MT5 + kredensial broker.
+Container recreate/rebuild **tidak** menghapus login.
 
 ### 3.5 Build & jalankan pertama kali
 
 ```bash
 cd /opt/lumine/backend
-docker compose up -d --build mt5
+docker compose -f docker-compose.prod.yml up -d --build mt5
 ```
 
-### 3.6 Login broker (manual, sekali)
+### 3.6 Akses desktop MT5
 
-MT5 membutuhkan login interaktif ke server broker. Lakukan via VNC:
+**Opsi A — noVNC via browser (paling mudah):**
 
-1. Di laptop: `open vnc://root@<VPS_IP>:5900` (atau pakai RealVNC/TigerVNC)
-2. Di dalam terminal MT5: `File → Login to Trade Account`
-3. Isi **login, password, server broker**
-4. Setelah masuk, terminal akan menyimpan kredensial di Wine prefix
+```
+http://<VPS_IP>:6901/vnc.html
+```
+
+Masukkan `VNC_PASSWORD` saat diminta. Desktop XFCE4 + jendela MT5 muncul.
+
+**Opsi B — VNC client (TigerVNC, RealVNC):**
+
+```
+<VPS_IP>:5900
+```
+
+Password sama (`VNC_PASSWORD`).
+
+### 3.7 Login broker (manual, sekali)
+
+1. Buka desktop via noVNC (3.6 Opsi A).
+2. Di terminal MT5: `File → Login to Trade Account`.
+3. Isi **login, password, server broker**.
+4. Kredensial tersimpan di Wine prefix (volume `mt5_data`).
 
 > **Instalasi MT5 pertama kali**: jika `terminal64.exe` belum ada di prefix,
-> download installer resmi dan jalankan sekali:
+> download installer resmi dan jalankan dari desktop noVNC, atau:
 >
 > ```bash
-> docker compose exec mt5 bash
+> docker compose -f docker-compose.prod.yml exec mt5 bash
 > cd /tmp
 > wget https://download.mql5.com/cdn/web/metaquotes.software.com/mt5/mt5setup.exe
 > wine /tmp/mt5setup.exe /auto
 > ```
 
-### 3.7 Install EA (Lumine EA bridge)
+### 3.8 Install EA (Lumine EA bridge)
 
-1. Compile EA di MetaEditor (atau gunakan `.ex5` yang sudah dikompilasi)
+1. Compile EA di MetaEditor (atau gunakan `.ex5` yang sudah dikompilasi).
 2. Copy ke Wine prefix:
    ```bash
-   docker compose cp lumine_ea.ex5 mt5:"/root/.wine-mt5/drive_c/Program Files/MetaTrader 5/MQL5/Experts/"
+   docker compose -f docker-compose.prod.yml cp lumine_ea.ex5 mt5:"/root/.wine-mt5/drive_c/Program Files/MetaTrader 5/MQL5/Experts/"
    ```
 3. Agar EA otomatis menempel di chart saat terminal start:
-   - Simpan chart dengan EA sebagai template: `Chart → Template → Save Template` beri nama `LumineEA.tpl`
-   - Letakkan template di `MQL5/Profiles/Templates/`
-   - Entrypoint menjalankan `terminal64.exe` dengan `config` yang memuat template — atau cukup
-     buka chart manual via VNC sekali dan simpan profile default-nya.
+   - Simpan chart dengan EA sebagai template: `Chart → Template → Save Template` beri nama `LumineEA.tpl`.
+   - Letakkan template di `MQL5/Profiles/Templates/`.
+   - Buka chart manual via noVNC sekali dan simpan profile default-nya.
 
 > **EA wajib mengakses Redis** (`REDIS_HOST=redis`, port 6379). Jika EA memakai
 > pustaka Redis MQL5, pastikan sudah di-compile ke dalam EA. Bridge memakai:
@@ -276,9 +250,16 @@ Jika langkah 4 tidak menerima apa pun dalam 30 detik, periksa:
 | Gejala | Kemungkinan Penyebab | Solusi |
 |--------|----------------------|--------|
 | MT5 crash saat start | Build MT5 ≥ 4000 tidak kompatibel dengan Wine | Coba Wine staging (`wine-staging`), atau downgrade build terminal |
+| MT5 crash saat running → container restart otomatis | Watchdog di entrypoint mendeteksi `terminal64.exe`/Xvfb/x11vnc mati → exit container → `restart: unless-stopped` bangun ulang | Tidak perlu intervensi. Cek `docker compose logs mt5 --tail 50` baris `WATCHDOG:`. Login broker tetap (volume `mt5_data`) |
+| `docker compose ps` mt5 = `(unhealthy)` | Healthcheck gagal — salah satu Xvfb/x11vnc/terminal64.exe tidak jalan | `docker compose logs mt5`; jika watchdog belum exit, tunggu restart policy; jika stuck, `docker compose restart mt5` |
 | Login broker gagal | Wine tidak mengizinkan proses tertentu / anti-cheat broker | Periksa log `docker compose logs mt5`; beberapa broker menolak Wine |
 | EA tidak dapat akses Redis | EA tidak join network compose | Pastikan service `mt5` di compose file yang sama |
-| Layar hitam di VNC | Xvfb mati / display salah | `docker compose logs mt5`; pastikan `Xvfb :99` jalan |
+| Layar hitam di VNC / noVNC | Xvfb mati / display salah | `docker compose logs mt5`; pastikan baris `==> Start Xvfb :99` muncul |
+| noVNC: `Connection refused` di browser | websockify belum start atau port 6901 ditutup firewall | `curl -sI http://localhost:6901/vnc.html` harus 200; cek `ufw allow 6901` |
+| noVNC: minta password terus-menerus | `VNC_PASSWORD` beda antara `.env` dan yang dipakai saat container pertama dibangun | `docker compose -f docker-compose.prod.yml up -d --force-recreate mt5` setelah perbaiki `.env` |
+| noVNC: `Server disconnected` (1006) | x11vnc mati setelah MT5 crash | `docker compose logs mt5 --tail 50`; jika `MT5 PID` hilang, terminal crash — restart container |
+| VNC client (5900): auth gagal | Password di client ≠ `VNC_PASSWORD` di `.env` | Re-verify `VNC_PASSWORD` di `/opt/lumine/.env`; recreate container |
+| `err:toolbar:ToolbarWindowProc unknown msg 0465` di log | Noise Wine MT5 (bukan error) | Abaikan — terminal tetap berjalan selama PID aktif |
 | Postgres / Redis restart | RAM habis (Wine + stack > 4GB) | Naikkan RAM VPS ke 8GB; kurangi MT5 memory |
 
 ### Risiko produksi
@@ -287,7 +268,11 @@ Jika langkah 4 tidak menerima apa pun dalam 30 detik, periksa:
   memblokir login / menandai akun.
 - **Eksekusi tidak sinkron**: jika terminal Wine crash, EA berhenti memproses
   `mt5:commands` — Python akan timeout 30 detik dan menandai order FAILED
-  (perilaku aman, sesuai Phase 8).
+  (perilaku aman, sesuai Phase 8). Container MT5 kini auto-restore: watchdog di
+  entrypoint meng-exit container saat `terminal64.exe`/Xvfb/x11vnc mati, lalu
+  `restart: unless-stopped` membangkitkan ulang. Window downtime ±15-60 detik
+  (tergantung kecepatan Wine init + MT5 start). Login broker tetap karena
+  volume `mt5_data` persist.
 - **Backup**: state Wine prefix (volume `mt5_data`) **tidak tercakup** oleh
   `backup.sh` saat ini — tambahkan `docker compose exec mt5 tar` ke cron backup
   bila login broker tidak boleh hilang.
@@ -299,14 +284,12 @@ Jika langkah 4 tidak menerima apa pun dalam 30 detik, periksa:
 ```bash
 # Dari laptop, sekali:
 cd scripts/deploy
-cp .env.sample .env && $EDITOR .env
-./deploy-stack.sh                          # stack + docker
-./import-state.sh state-exports/<stamp>.tar.gz   # state (opsional)
+cp .env.sample .env && $EDITOR .env        # isi VPS_HOST, DB_PASSWORD, HMAC_SECRET_KEY, VNC_PASSWORD
+./deploy-stack.sh                          # stack + docker + mt5 service (file sudah di repo)
 
-# Di VPS, sekali:
-mkdir -p /opt/lumine/mt5
-# (tulis Dockerfile + entrypoint.sh dari Bagian 3.2/3.3)
-cd /opt/lumine/backend && $EDITOR docker-compose.prod.yml   # tambah service mt5
-docker compose up -d --build mt5
-# VNC login broker (Bagian 3.6), install EA (Bagian 3.7)
+# Di VPS, sekali (jika MT5 belum terinstall di volume):
+cd /opt/lumine/backend
+docker compose -f docker-compose.prod.yml up -d --build mt5
+# Buka http://<VPS_HOST>:6901/vnc.html → install MT5 via wine (Bagian 3.7)
+# Login broker (Bagian 3.7), install EA (Bagian 3.8)
 ```

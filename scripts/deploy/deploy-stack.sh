@@ -30,12 +30,20 @@ VPS_USER="${VPS_USER:-root}"
 VPS_SSH_PORT="${VPS_SSH_PORT:-22}"
 SSH_DEST="${VPS_USER}@${VPS_HOST}"
 
+# VNC_PASSWORD wajib untuk service mt5 (compose ${VNC_PASSWORD:?...}).
+if [[ -z "${VNC_PASSWORD:-}" ]] || [[ ${#VNC_PASSWORD} -lt 6 ]]; then
+  echo "ERROR: VNC_PASSWORD wajib di .env dan minimal 6 karakter."
+  echo "  Service mt5 tidak bisa start tanpa password VNC."
+  exit 1
+fi
+
 echo "==> Target: ${SSH_DEST} (port ${VPS_SSH_PORT})"
 
 # ── 1. Pastikan bootstrap & compose terkirim ─────────────────────────────────
 REMOTE_DIR=/opt/lumine
 echo "==> Membuat direktori remote + mengirim file..."
-ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" "mkdir -p ${REMOTE_DIR}/backend"
+ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
+  "mkdir -p ${REMOTE_DIR}/backend ${REMOTE_DIR}/scripts/deploy/mt5"
 scp -P "${VPS_SSH_PORT}" \
   bootstrap-vps.sh \
   "${SSH_DEST}:${REMOTE_DIR}/bootstrap-vps.sh"
@@ -45,6 +53,14 @@ scp -P "${VPS_SSH_PORT}" \
 scp -P "${VPS_SSH_PORT}" \
   "${SCRIPT_DIR}/../../backend/Dockerfile" \
   "${SSH_DEST}:${REMOTE_DIR}/backend/Dockerfile"
+# Kirim context build MT5 (Dockerfile + entrypoint.sh). Compose memakai
+# context: ../scripts/deploy/mt5 relatif dari backend/ — path konsisten.
+scp -P "${VPS_SSH_PORT}" \
+  "${SCRIPT_DIR}/mt5/Dockerfile" \
+  "${SCRIPT_DIR}/mt5/entrypoint.sh" \
+  "${SSH_DEST}:${REMOTE_DIR}/scripts/deploy/mt5/"
+ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
+  "chmod +x ${REMOTE_DIR}/scripts/deploy/mt5/entrypoint.sh"
 
 # ── 2. Bootstrap (idempotent) ────────────────────────────────────────────────
 echo "==> Menjalankan bootstrap-vps.sh di remote (idempotent)..."
@@ -59,25 +75,62 @@ ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
 DB_PASSWORD=${DB_PASSWORD}
 HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
 LLM_GATEWAY_API_KEY=${LLM_GATEWAY_API_KEY}
+VNC_PASSWORD=${VNC_PASSWORD}
 EOF
 ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" "chmod 600 ${REMOTE_DIR}/.env"
 
 # ── 4. Deploy container stack ─────────────────────────────────────────────────
-echo "==> docker compose up -d (postgres, redis, api)..."
+echo "==> docker compose up -d --build (postgres, redis, api, mt5, 9router, headroom)..."
 ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
   "cd ${REMOTE_DIR}/backend && docker compose -f docker-compose.prod.yml up -d --build"
 
 # ── 5. Health check ───────────────────────────────────────────────────────────
-echo "==> Health check /health (maks 90 detik)..."
+# API: HTTP /health (cepat). MT5: container healthcheck (Xvfb + x11vnc +
+# terminal64.exe). MT5 butuh waktu lebih lama untuk Wine init + MT5 start
+# (start_period: 60s di compose), jadi polling 3 menit.
+echo "==> Health check API /health (maks 90 detik)..."
+API_OK=false
 for i in $(seq 1 45); do
   if ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
       "curl -sf http://localhost:8000/health >/dev/null 2>&1"; then
     echo "    OK: API healthy setelah ${i} percobaan."
-    echo "==> Deploy selesai."
-    exit 0
+    API_OK=true
+    break
   fi
   sleep 2
 done
 
-echo "ERROR: API tidak healthy dalam 90 detik. Cek: ssh ${SSH_DEST} 'docker compose -f /opt/lumine/backend/docker-compose.prod.yml logs api'"
-exit 1
+if [[ "${API_OK}" != "true" ]]; then
+  echo "ERROR: API tidak healthy dalam 90 detik. Cek: ssh ${SSH_DEST} 'docker compose -f /opt/lumine/backend/docker-compose.prod.yml logs api'"
+  exit 1
+fi
+
+echo "==> Health check MT5 container (maks 180 detik — Wine init lambat)..."
+MT5_OK=false
+for i in $(seq 1 36); do
+  STATUS=$(ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
+    "docker inspect --format='{{.State.Health.Status}}' lumine-mt5 2>/dev/null || echo missing")
+  if [[ "${STATUS}" == "healthy" ]]; then
+    echo "    OK: MT5 healthy setelah ${i} percobaan."
+    MT5_OK=true
+    break
+  fi
+  # Jika MT5 belum di-install di volume, healthcheck akan unhealthy selamanya.
+  # Itu expected — user install manual via noVNC (VPS-GUIDE Bagian 3.7).
+  # Kita hanya warning, bukan error fatal.
+  if [[ "${STATUS}" == "missing" ]]; then
+    echo "    WARN: container lumine-mt5 tidak ditemukan. Skip MT5 health check."
+    break
+  fi
+  sleep 5
+done
+
+if [[ "${MT5_OK}" != "true" ]] && [[ "${STATUS}" != "missing" ]]; then
+  echo "    WARN: MT5 belum healthy dalam 180 detik."
+  echo "    Jika MT5 belum di-install, install via noVNC: http://${VPS_HOST}:6901/vnc.html"
+  echo "    Jika sudah terinstall, cek: ssh ${SSH_DEST} 'docker compose -f /opt/lumine/backend/docker-compose.prod.yml logs mt5 --tail 50'"
+fi
+
+echo "==> Deploy selesai. Service: postgres, redis, api, mt5, 9router, headroom"
+echo "    noVNC (MT5 desktop): http://${VPS_HOST}:6901/vnc.html"
+exit 0
