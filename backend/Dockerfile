@@ -17,6 +17,12 @@ RUN uv sync --frozen --no-dev
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM python:3.12.5-slim-bookworm AS runtime
 
+# Patch OS packages for known CVEs in base image (libexpat, libgnutls, openssl, libsqlite3).
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system lumine && useradd --system --gid lumine --no-create-home lumine
 
 WORKDIR /app
