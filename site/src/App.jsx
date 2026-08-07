@@ -362,7 +362,7 @@ export default function App() {
           </div>
           <div className="flex flex-col gap-2 font-mono text-[11.5px]">
             <a href="https://github.com/nabhanyuzqi1/lumine-hedge-fund" className="text-ink-dim transition-colors hover:text-ink">
-              github.com/nabhan/lumine-hedge-fund
+              github.com/nabhanyuzqi1/lumine-hedge-fund
             </a>
             <a href="#top" className="text-ink-dim transition-colors hover:text-ink">
               architecture · committee · roadmap · stack
