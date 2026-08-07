@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 RUN pip install --no-cache-dir uv && uv sync --frozen --no-dev
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────

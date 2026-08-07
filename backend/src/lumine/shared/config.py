@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     decision_cycle_timeout_s: int = 60  # total soft deadline for one cycle
 
     # ── API ───────────────────────────────────────────────────────────────
-    api_host: str = "0.0.0.0"
+    api_host: str = "0.0.0.0"  # nosec B104 — wajib bind all-interfaces di container
     api_port: int = 8000
     api_rate_limit_per_minute: int = 120
     hmac_secret_key: str = ""  # Override in production

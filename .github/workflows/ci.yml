@@ -124,7 +124,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "backend/uv.lock"
       - run: uv sync --frozen --group dev
-      - run: uv run pytest tests/unit/ -v --tb=short --suppress-no-test-exit-code
+      - run: uv run pytest tests/unit/ -v --tb=short
         env:
           DATABASE_URL: postgresql+asyncpg://lumine:lumine@localhost:5432/lumine_test
           REDIS_URL: redis://localhost:6379/0
@@ -189,7 +189,12 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "backend/uv.lock"
       - run: uv sync --frozen --group dev
-      - run: uv run pytest tests/contract/ -v --tb=short
+      - run: |
+          if compgen -G "tests/contract/test_*.py" > /dev/null; then
+            uv run pytest tests/contract/ -v --tb=short
+          else
+            echo "tests/contract/ kosong — skip (Sprint 4 belum dimulai)"
+          fi
 
   # ── Stage 3: System tests ────────────────────────────────────────────────────
 
