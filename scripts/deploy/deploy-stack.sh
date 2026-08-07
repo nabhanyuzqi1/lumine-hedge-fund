@@ -131,6 +131,18 @@ if [[ "${MT5_OK}" != "true" ]] && [[ "${STATUS}" != "missing" ]]; then
   echo "    Jika sudah terinstall, cek: ssh ${SSH_DEST} 'docker compose -f /opt/lumine/backend/docker-compose.prod.yml logs mt5 --tail 50'"
 fi
 
+# ── 6. Deploy marketing site (opsional) ───────────────────────────────────────
+# Aktifkan dengan: DEPLOY_SITE=1 ./deploy-stack.sh
+# Site berjalan di nginx :8080 (port 80/443 milik Caddy — tidak disentuh).
+# Default off: alur deploy stack utama tetap sama tanpa variabel ini.
+if [[ "${DEPLOY_SITE:-0}" == "1" ]]; then
+  echo "==> DEPLOY_SITE=1 — menjalankan deploy-site.sh (nginx :8080)..."
+  bash "${SCRIPT_DIR}/deploy-site.sh"
+fi
+
 echo "==> Deploy selesai. Service: postgres, redis, api, mt5, 9router, headroom"
 echo "    noVNC (MT5 desktop): http://${VPS_HOST}:6901/vnc.html"
+if [[ "${DEPLOY_SITE:-0}" == "1" ]]; then
+  echo "    Site (nginx :8080):   http://${VPS_HOST}:8080/"
+fi
 exit 0

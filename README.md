@@ -89,7 +89,7 @@ lumine-hedge-fund/
 ├── frontend/                          # TypeScript/React workspace (Phase 10 stack, pending)
 ├── site/                              # Marketing / landing page (Vite + React + Tailwind)
 │                                      # builds to static dist/ for GitHub Pages or VPS
-├── scripts/                           # Deployment & ops scripts (deploy-stack, watchdog)
+├── scripts/                           # Deployment & ops scripts (deploy-stack, deploy-site, watchdog)
 ├── Makefile                           # Canonical entry commands (CI parity)
 └── .github/workflows/                 # CI, supply-chain, docs, deploy, pages
 ```
@@ -193,7 +193,7 @@ The site builds with a relative base (`base: './'`), so `site/dist/` deploys unc
 
 ## Operations
 
-- [`scripts/`](scripts/) — deployment scripts: SSH-based `deploy-stack.sh`, MT5 watchdog, noVNC
+- [`scripts/`](scripts/) — deployment scripts: SSH-based `deploy-stack.sh`, `deploy-site.sh` (site → nginx :8080), MT5 watchdog, noVNC
 - [`docs/90-governance-and-operations/`](docs/90-governance-and-operations/) — permanent operating standards: onboarding, incident response, runbooks, agent failure matrix
 - Container runtime via `make docker-up` (PostgreSQL, Redis, Temporal, worker, API)
 
