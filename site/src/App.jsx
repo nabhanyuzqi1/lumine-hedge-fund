@@ -130,7 +130,7 @@ export default function App() {
           </nav>
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/nabhan/lumine-hedge-fund"
+              href="https://github.com/nabhanyuzqi1/lumine-hedge-fund"
               className="hidden rounded-[var(--radius-chip)] border border-line px-3 py-1.5 font-mono text-[11.5px] text-ink-dim transition-colors hover:border-accent-soft hover:text-ink sm:block"
             >
               github
@@ -172,7 +172,7 @@ export default function App() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
-                href="https://github.com/nabhan/lumine-hedge-fund"
+                href="https://github.com/nabhanyuzqi1/lumine-hedge-fund"
                 className="rounded-[var(--radius-chip)] bg-accent px-4 py-2.5 text-[13px] font-600 text-abyss transition-opacity hover:opacity-90"
               >
                 View on GitHub
@@ -361,7 +361,7 @@ export default function App() {
             </p>
           </div>
           <div className="flex flex-col gap-2 font-mono text-[11.5px]">
-            <a href="https://github.com/nabhan/lumine-hedge-fund" className="text-ink-dim transition-colors hover:text-ink">
+            <a href="https://github.com/nabhanyuzqi1/lumine-hedge-fund" className="text-ink-dim transition-colors hover:text-ink">
               github.com/nabhan/lumine-hedge-fund
             </a>
             <a href="#top" className="text-ink-dim transition-colors hover:text-ink">
