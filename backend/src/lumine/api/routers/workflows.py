@@ -35,11 +35,11 @@ async def list_workflow_runs(
         ),
     ]
     return PaginatedList(
-     items=items,
-     total=len(items),
-     limit=pagination.limit,
-     offset=pagination.offset,
- )
+        items=items,
+        total=len(items),
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
 
 
 @router.get("/{run_id}", response_model=WorkflowRun)

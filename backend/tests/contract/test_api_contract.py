@@ -255,9 +255,7 @@ def test_rpc_endpoint_envelope(client: TestClient, monkeypatch: pytest.MonkeyPat
     assert data["status"] == "accepted"
 
 
-def test_sse_stream_is_not_enveloped(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_sse_stream_is_not_enveloped(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     async def _single_event(
         request: object, channel: str, interval_s: float = 2.0
     ) -> AsyncIterator[str]:

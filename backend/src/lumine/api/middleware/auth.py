@@ -119,11 +119,15 @@ async def authenticate_request(
     signature: Annotated[str | None, Header(alias="X-Lumine-Signature")] = None,
 ) -> AuthenticatedPrincipal:
     """FastAPI dependency verifying HMAC signature and timestamp freshness."""
-    missing = [h for h, v in {
-        "X-Lumine-API-Key": api_key,
-        "X-Lumine-Timestamp": timestamp,
-        "X-Lumine-Signature": signature,
-    }.items() if not v]
+    missing = [
+        h
+        for h, v in {
+            "X-Lumine-API-Key": api_key,
+            "X-Lumine-Timestamp": timestamp,
+            "X-Lumine-Signature": signature,
+        }.items()
+        if not v
+    ]
     if missing:
         msg = f"missing auth headers: {', '.join(missing)}"
         raise AuthError(msg, code="MISSING_AUTH")

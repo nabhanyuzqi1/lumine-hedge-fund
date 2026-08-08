@@ -36,11 +36,11 @@ async def list_lineage(
         ),
     ]
     return PaginatedList(
-     items=items,
-     total=len(items),
-     limit=pagination.limit,
-     offset=pagination.offset,
- )
+        items=items,
+        total=len(items),
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
 
 
 @router.get("/{lineage_id}", response_model=LineageRecord)
