@@ -90,6 +90,17 @@ const NAV = [
   ['Committee', '#committee'],
   ['Roadmap', '#roadmap'],
   ['Stack', '#stack'],
+  ['Services', '#services'],
+];
+
+const SERVICES = [
+  ['Portal Hub', '/portal/', 'Every service in one screen — the control plane dashboard'],
+  ['System Monitor', '/dashboard/', 'Uptime Kuma — health checks & status pages'],
+  ['SSO', '/auth/', 'Authelia — one login for everything'],
+  ['Hermes', '/hermes/', 'LLM investment committee console'],
+  ['MT5 Terminal', '/mt5/', 'MetaTrader 5 via noVNC'],
+  ['Backend API', '/backend/', 'FastAPI — endpoints, docs, health'],
+  ['9router', 'http://166.88.227.177:20128/', 'LLM gateway — GPT · DeepSeek · Kimi · Qwen'],
 ];
 
 function Eyebrow({ children }) {
@@ -136,10 +147,16 @@ export default function App() {
               github
             </a>
             <a
-              href="#architecture"
+              href="/dashboard/"
+              className="rounded-[var(--radius-chip)] border border-accent-soft bg-accent/10 px-3 py-1.5 text-[12px] font-600 text-accent transition-colors hover:bg-accent/20 hover:border-accent"
+            >
+              Status
+            </a>
+            <a
+              href="/portal/"
               className="rounded-[var(--radius-chip)] bg-accent px-3 py-1.5 text-[12px] font-600 text-abyss transition-opacity hover:opacity-90"
             >
-              Architecture
+              Portal
             </a>
           </div>
         </div>
@@ -172,14 +189,20 @@ export default function App() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
-                href="https://github.com/nabhanyuzqi1/lumine-hedge-fund"
+                href="/portal/"
                 className="rounded-[var(--radius-chip)] bg-accent px-4 py-2.5 text-[13px] font-600 text-abyss transition-opacity hover:opacity-90"
               >
-                View on GitHub
+                Open Portal
+              </a>
+              <a
+                href="/dashboard/"
+                className="rounded-[var(--radius-chip)] border border-line px-4 py-2.5 text-[13px] font-500 text-ink transition-colors hover:border-accent-soft hover:text-accent"
+              >
+                System Monitor
               </a>
               <a
                 href="#architecture"
-                className="rounded-[var(--radius-chip)] border border-line px-4 py-2.5 text-[13px] font-500 text-ink transition-colors hover:border-accent-soft hover:text-accent"
+                className="rounded-[var(--radius-chip)] border border-transparent px-4 py-2.5 text-[13px] font-500 text-ink-faint transition-colors hover:text-ink"
               >
                 Read the architecture
               </a>
@@ -187,7 +210,7 @@ export default function App() {
             <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-line-soft pt-6 font-mono text-[11px]">
               <div>
                 <dt className="text-ink-faint">status</dt>
-                <dd className="mt-1 text-up">phase 15 · sprint 1</dd>
+                <dd className="mt-1 text-up">phase 15 · sprint 4</dd>
               </div>
               <div>
                 <dt className="text-ink-faint">risk gate</dt>
@@ -325,7 +348,7 @@ export default function App() {
             ))}
           </ol>
           <p className="mt-4 font-mono text-[11px] text-ink-faint">
-            phase 15 — implementation · sprint 1 partial, sprint 2 pending. XAUUSD first; then
+            phase 15 — implementation · sprints 1-3 done, sprint 4 in progress. XAUUSD first; then
             Forex, indices, commodities, crypto, equities.
           </p>
         </div>
@@ -350,6 +373,38 @@ export default function App() {
         </div>
       </section>
 
+      {/* services — live control plane */}
+      <section id="services" className="border-b border-line-soft">
+        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <SectionTitle
+            no="06 · services"
+            title="The live control plane"
+            sub="Every service runs as a Docker container behind Authelia single sign-on — one credential opens them all."
+          />
+          <ul className="mt-12 grid gap-px overflow-hidden rounded-[var(--radius-panel)] border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+            {SERVICES.map(([name, href, desc]) => (
+              <li key={name} className="group bg-bg p-6 transition-colors hover:bg-raised">
+                <a href={href} className="block">
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-[13px] text-ink transition-colors group-hover:text-accent">
+                      {name}
+                    </span>
+                    <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-up">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-up" aria-hidden="true" />
+                      live
+                    </span>
+                  </span>
+                  <span className="mt-2 block text-[12.5px] leading-relaxed text-ink-dim">{desc}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 font-mono text-[11px] text-ink-faint">
+            protected by Authelia · hub /portal/ · monitoring /dashboard/ · sso /auth/
+          </p>
+        </div>
+      </section>
+
       {/* footer */}
       <footer className="bg-abyss">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 md:flex-row md:items-end md:justify-between">
@@ -364,9 +419,12 @@ export default function App() {
             <a href="https://github.com/nabhanyuzqi1/lumine-hedge-fund" className="text-ink-dim transition-colors hover:text-ink">
               github.com/nabhanyuzqi1/lumine-hedge-fund
             </a>
-            <a href="#top" className="text-ink-dim transition-colors hover:text-ink">
-              architecture · committee · roadmap · stack
-            </a>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-ink-dim">
+              <a href="/portal/" className="transition-colors hover:text-ink">portal</a>
+              <a href="/dashboard/" className="transition-colors hover:text-ink">dashboard</a>
+              <a href="/status/" className="transition-colors hover:text-ink">status</a>
+              <a href="/auth/" className="transition-colors hover:text-ink">auth</a>
+            </div>
             <p className="text-ink-faint">XAUUSD first — evidence before capital.</p>
           </div>
         </div>

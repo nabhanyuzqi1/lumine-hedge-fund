@@ -12,6 +12,11 @@ from __future__ import annotations
 class LumineError(Exception):
     """Base exception for all Lumine errors."""
 
+    def __init__(self, *args: object, code: str | None = None) -> None:
+        """Initialize with optional API error code."""
+        super().__init__(*args)
+        self.code = code
+
 
 # ── Data layer ────────────────────────────────────────────────────────────────
 

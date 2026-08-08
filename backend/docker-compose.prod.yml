@@ -30,7 +30,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      # Loopback-only: entry publik lewat Caddy (control plane, D11-7).
+      - "127.0.0.1:8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://lumine:${DB_PASSWORD}@postgres:5432/lumine
       - REDIS_URL=redis://redis:6379/0
@@ -62,8 +63,9 @@ services:
       dockerfile: Dockerfile
     container_name: lumine-mt5
     ports:
-      - "5900:5900"
-      - "6901:6901"
+      # Loopback-only: akses VNC/noVNC lewat Caddy + Authelia (D11-7).
+      - "127.0.0.1:5900:5900"
+      - "127.0.0.1:6901:6901"
     environment:
       - VNC_PASSWORD=${VNC_PASSWORD:?VNC_PASSWORD wajib di .env}
       - RESOLUTION=1280x768x24
@@ -101,6 +103,8 @@ services:
     image: decolua/9router:latest
     container_name: 9router
     ports:
+      # TETAP publik: agent eksternal (termasuk agent AI) hit 9router langsung.
+      # JANGAN ubah ke 127.0.0.1 — semua agent luar akan down (D11-7).
       - "20128:20128"
     environment:
       - DATA_DIR=/app/data

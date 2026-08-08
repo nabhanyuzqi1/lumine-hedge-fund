@@ -106,6 +106,46 @@ stateful cluster plus operational burden far beyond V1 needs. Rotation =
 edit, commit, deploy. Access policy details (who may hold the age key,
 audit) belong to Phase 12.
 
+## D11-7 — Control plane: Caddy + Authelia + Homepage + Uptime Kuma
+
+> **ADR:** [ADR-0069](../../adr/INDEX.md#adr-0069) — Control plane: Caddy + Authelia + Homepage + Uptime Kuma, GUI services behind auth
+
+**Choice:** On the production VPS, one `control-plane` Compose stack sits
+in front of the deployed services: Caddy (already D11-2) as the only
+public listener `:80/:443`, Authelia (basepath `/auth`) as the central
+login with TOTP via `forward_auth`, Homepage as the landing portal with
+live Docker status, and Uptime Kuma as the interactive health dashboard.
+Protected routes: `/hermes*` → Hermes dashboard, `/mt5/*` → noVNC,
+`/backend*` → Lumine API, `/status*` + 4 path `/api` frontend Kuma
+(`/api/badge*`, `/api/entry-page*`, `/api/push*`, `/api/status-page*`)
+→ Kuma, sisa `/api*` (hydration Homepage) → Homepage, `/` → Homepage.
+`/site*` → landing page nginx `127.0.0.1:8080` is the one content route
+exempt from auth (public marketing page), but its upstream stays
+loopback-bound. All other upstream services are loopback-bound. TLS is
+`tls internal` (self-signed) until a domain is configured.
+
+**Rationale:**
+- Every service — including the MT5 VNC previously world-exposed on
+  `:5900/:6901` — now sits behind one admin login with TOTP.
+- Hermes dashboard (loopback-only, SSH-tunnel friction) becomes reachable
+  at a public path with auth.
+- Topology is static, so label-based proxying (Traefik) adds nothing;
+  Authentik was rejected for its own Postgres+Redis weight on an 8 GB
+  VPS (see ADR-0069 alternatives).
+- Kuma monitors all seven endpoints from inside the same host; failures
+  are visible without opening the observability stack (D11-4).
+
+**Explicit exception:** `9router` on `:20128` stays public
+(`0.0.0.0`) — external AI agents connect by IP and closing the port
+takes them all offline (observed 2026-08-07). This is the only public
+port beyond `:80/:443`. See ADR-0069 for compensating controls and the
+mTLS/allowlist follow-up.
+
+**Alternatives rejected:** Traefik (dynamic routing for a static
+topology), Authentik (own Postgres+Redis, too heavy), oauth2-proxy (no
+TOTP/user UI), nginx+auth_request (manual TLS), Grafana/Prometheus as
+health UI (deep observability stays D11-4).
+
 ## Principles honored
 
 - Phase 1 minimal-egress: only one new egress added (backup), explicitly.

@@ -91,6 +91,7 @@ the source of truth.
 | ADR-0066 | Vertical slice ordering, backend-first | Accepted | 14 | `docs/14-implementation/decisions.md` D14-6 |
 | ADR-0067 | Git: trunk-based, conventional commits, feature flags | Accepted | 14 | `docs/14-implementation/decisions.md` D14-7 |
 | ADR-0068 | Orchestration: hand-written deterministic runner, not AutoGen | Accepted | 15 | `docs/15-implementation/deviation-log.md` (2026-08-06, A1) |
+| ADR-0069 | Control plane: Caddy + Authelia + Homepage + Uptime Kuma, GUI services behind auth | Accepted | 11 | `docs/11-infrastructure/decisions.md` D11-7 |
 
 ## Maintenance rules
 

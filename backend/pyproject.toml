@@ -88,6 +88,9 @@ ignore = [
     "S104",    # possible-bind-all-interfaces — Docker/API intentional
     "PLW0603", # global-statement — singleton pattern
 ]
+"src/lumine/api/schemas/**/*" = [
+    "TC003",   # stdlib imports stay runtime — Pydantic resolves annotations at model build
+]
 "tests/**/*" = [
     "S101",   # assert — idiomatic in pytest
     "D102",   # missing-docstring-in-public-method — test methods self-documenting

@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 # =============================================================================
-# deploy-site.sh — Build + deploy marketing site (site/) ke VPS via nginx :8080.
+# deploy-site.sh — Build + deploy marketing site (site/) ke VPS.
+#
+# Landing page disajikan lewat Caddy `/` (dan alias legacy `/site*`) →
+# container `control-landing` (nginx:alpine, compose control-plane) yang
+# bind-mount read-only `/var/www/lumine` (2026-08-09 — host nginx sudah
+# dinonaktifkan; jangan hidupkan lagi, port 8080 dipakai container).
 #
 # Alur:
 #   1. Baca .env (kredensial target VPS; JANGAN commit).
 #   2. Build site lokal: npm ci && npm run build (base './' → site/dist).
-#   3. Kirim dist + nginx config ke VPS via scp (staging /tmp, lalu install).
-#   4. Install config nginx (listen 8080 — port 80/443 milik Caddy, JANGAN sentuh).
-#   5. ufw allow 8080/tcp + restart nginx.
-#   6. Health check http://localhost:8080.
+#   3. Kirim dist ke VPS via scp (staging /tmp).
+#   4. Deploy KEDALAM `/var/www/lumine` — jangan pernah `rm -rf` +
+#      `mkdir` ulang direktori ini: bind mount nginx terkunci ke inode,
+#      direktori baru tidak terlihat container (insiden 2026-08-09).
+#   5. Health check http://127.0.0.1:8080 (via container).
 #
 # Pemakaian:  ./deploy-site.sh
-# Prasyarat:  file .env (copy dari .env.sample), ssh key ke VPS, Node.js 20+ lokal.
+# Prasyarat:  file .env (copy dari .env.sample), ssh key ke VPS,
+#             Node.js 20+ lokal.
 # =============================================================================
 set -euo pipefail
 
@@ -32,11 +39,7 @@ VPS_SSH_PORT="${VPS_SSH_PORT:-22}"
 SSH_DEST="${VPS_USER}@${VPS_HOST}"
 
 SITE_DIR="${SCRIPT_DIR}/../../site"
-NGINX_CONF="nginx-lumine-site.conf"
 REMOTE_DIST=/var/www/lumine
-REMOTE_CONF=/etc/nginx/sites-available/lumine
-
-[[ -f "${NGINX_CONF}" ]] || { echo "ERROR: ${NGINX_CONF} tidak ditemukan."; exit 1; }
 
 echo "==> Target: ${SSH_DEST} (port ${VPS_SSH_PORT})"
 
@@ -48,29 +51,23 @@ echo "==> Build site (npm ci + npm run build)..."
   npm run build
 )
 
-# ── 2. Kirim dist + nginx config (staging /tmp, tulis-disk tanpa sudo) ───────
-echo "==> Mengirim dist dan nginx config ke remote..."
+# ── 2. Kirim dist (staging /tmp) ─────────────────────────────────────────────
+echo "==> Mengirim dist ke remote..."
 ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" "rm -rf /tmp/lumine-dist && mkdir -p /tmp/lumine-dist"
 scp -P "${VPS_SSH_PORT}" -r "${SITE_DIR}/dist/." "${SSH_DEST}:/tmp/lumine-dist/"
-scp -P "${VPS_SSH_PORT}" "${NGINX_CONF}" "${SSH_DEST}:/tmp/lumine-site.conf"
 
-# ── 3. Install site + config nginx (idempotent) ───────────────────────────────
-echo "==> Install ke ${REMOTE_DIST} + config nginx (listen 8080)..."
+# ── 3. Install — in-place copy; HANYA hapus isi lama, JANGAN rm direktori
+#        (bind mount nginx terkunci ke inode — insiden 2026-08-09) ────────────
+echo "==> Install ke ${REMOTE_DIST} (in-place; bind mount container)..."
 ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
-  "sudo rm -rf ${REMOTE_DIST} && sudo mkdir -p ${REMOTE_DIST} && sudo cp -r /tmp/lumine-dist/. ${REMOTE_DIST}/ && sudo chown -R www-data:www-data ${REMOTE_DIST}"
-ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
-  "sudo cp /tmp/lumine-site.conf ${REMOTE_CONF} && sudo ln -sf ${REMOTE_CONF} /etc/nginx/sites-enabled/lumine"
-ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" "sudo ufw allow 8080/tcp >/dev/null 2>&1 || true"
-ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" "sudo nginx -t"
-ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
-  "sudo systemctl enable nginx >/dev/null 2>&1 || true; sudo systemctl restart nginx"
+  "find ${REMOTE_DIST} -mindepth 1 -delete && cp -a /tmp/lumine-dist/. ${REMOTE_DIST}/"
 
 # ── 4. Health check ───────────────────────────────────────────────────────────
 echo "==> Health check site (maks 60 detik)..."
 SITE_OK=false
 for i in $(seq 1 30); do
   if ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
-      "curl -sf http://localhost:8080/ >/dev/null 2>&1"; then
+      "curl -sf http://127.0.0.1:8080/ >/dev/null 2>&1"; then
     echo "    OK: site live setelah ${i} percobaan."
     SITE_OK=true
     break
@@ -79,10 +76,11 @@ for i in $(seq 1 30); do
 done
 
 if [[ "${SITE_OK}" != "true" ]]; then
-  echo "ERROR: site tidak respond di :8080. Cek: ssh ${SSH_DEST} 'sudo journalctl -u nginx -n 50'"
+  echo "ERROR: site tidak respond di :8080. Cek: docker logs control-landing"
   exit 1
 fi
 
-echo "==> Deploy site selesai: http://${VPS_HOST}:8080/"
+echo "==> Deploy site selesai: https://${VPS_HOST}/ (lewat Caddy)"
+echo "    Alias legacy: https://${VPS_HOST}/site/"
 echo "    GitHub Pages (jalur kedua): https://nabhanyuzqi1.github.io/lumine-hedge-fund/"
 exit 0

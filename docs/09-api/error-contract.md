@@ -48,6 +48,7 @@ On error, the common envelope has `data: null` and a populated `error`:
 | 401 | `MISSING_AUTH` | Auth headers absent |
 | 401 | `INVALID_SIGNATURE` | HMAC signature does not match |
 | 401 | `EXPIRED_TIMESTAMP` | Timestamp outside 5-minute window |
+| 401 | `REPLAY_DETECTED` | Exact replay (same key, timestamp, body hash) within the window |
 | 401 | `REVOKED_KEY` | API key has been revoked |
 | 403 | `INSUFFICIENT_SCOPE` | Key lacks required scope |
 | 403 | `KILL_SWITCH_ACTIVE` | Write blocked by platform kill switch (Phase 1/7/8) |
