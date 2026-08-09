@@ -119,8 +119,10 @@ marketing landing page lives at `/` (public, container `nginx:alpine`,
 bridge network, read-only mount of `/var/www/lumine`; host nginx
 disabled — 11/11 services containerized). Protected routes:
 `/portal*` → Homepage hub (auth → strip `/portal` via `route{}`),
-`/hermes*` → Hermes dashboard, `/mt5/*` → noVNC, `/backend*` →
-Lumine API, `/status*` + 4 path `/api` frontend Kuma (`/api/badge*`,
+`/hermes*` → Hermes dashboard, `/mt5/*` + `/websockify*` → noVNC
+(websocket client noVNC memakai path absolut `/websockify`), `/backend*` →
+Lumine API, `/assets*` + `/socket.io` + 4 path `/api` frontend Kuma
+(`/api/badge*`,
 `/api/entry-page*`, `/api/push*`, `/api/status-page*`) → Kuma,
 sisa `/api*` (hydration Homepage) + `/_next*` (Next.js assets) →
 Homepage, `/dashboard*` → Kuma (TANPA strip — Kuma redirect root →
