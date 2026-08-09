@@ -21,7 +21,7 @@
   /* ink */
   --color-ink: #e8eef7;
   --color-ink-dim: #a7b3c5;
-  --color-ink-faint: #6b7a90;
+  --color-ink-faint: #6d7c92;
 
   /* semantics */
   --color-accent: #4d8dff;
@@ -36,6 +36,32 @@
   --radius-chip: 4px;
 
   --shadow-panel: 0 0 0 1px rgba(28, 37, 52, 0.8), 0 24px 48px -24px rgba(0, 0, 0, 0.7);
+}
+
+/*
+ * Semantic alias layer — add-only so legacy components using bg-abyss/text-ink/etc.
+ * keep working while new code consumes component/semantic tokens per
+ * docs/10-frontend/design-tokens.md.
+ */
+@theme inline {
+  --color-bg-base: var(--color-bg);
+  --color-bg-raised: var(--color-raised);
+  --color-bg-overlay: var(--color-overlay);
+  --color-border-subtle: var(--color-line);
+  --color-text-primary: var(--color-ink);
+  --color-text-secondary: var(--color-ink-dim);
+  --color-text-muted: var(--color-ink-faint);
+  --color-info: var(--color-cyan);
+  --color-danger: #ff4d5e;
+
+  /* component tokens */
+  --color-table-row-hover: color-mix(in srgb, var(--color-accent) 8%, transparent);
+
+  /* motion */
+  --animate-flash-up: flash-up 150ms ease-out;
+  --animate-flash-down: flash-down 150ms ease-out;
+  --animate-dialog-overlay-in: dialog-overlay-in 250ms ease-out;
+  --animate-dialog-content-in: dialog-content-in 250ms ease-out;
 }
 
 html {
@@ -140,5 +166,56 @@ body {
   .console-cursor {
     animation: none;
     opacity: 1;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+ * F-Sprint 2 primitives: numeric flash + dialog motion
+ * ─────────────────────────────────────────────────────────────── */
+
+@keyframes flash-up {
+  0% {
+    color: var(--color-up);
+  }
+  100% {
+    color: inherit;
+  }
+}
+
+@keyframes flash-down {
+  0% {
+    color: var(--color-down);
+  }
+  100% {
+    color: inherit;
+  }
+}
+
+@keyframes dialog-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flash-up,
+  .animate-flash-down,
+  .animate-dialog-overlay-in,
+  .animate-dialog-content-in {
+    animation: none !important;
   }
 }
