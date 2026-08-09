@@ -100,8 +100,8 @@ Phases are executed strictly in order; each produces documents in `docs/NN-phase
 
 ### Core Platform
 
-| Layer | Choice | |
-|-------|--------|--|
+| Layer | Choice | Link |
+|-------|--------|------|
 | Language | Python 3.12+ | [python.org](https://python.org) |
 | API framework | FastAPI + Uvicorn | [github.com/fastapi/fastapi](https://github.com/fastapi/fastapi) |
 | Database | PostgreSQL (asyncpg) | [github.com/postgres/postgres](https://github.com/postgres/postgres) |
@@ -115,8 +115,8 @@ Phases are executed strictly in order; each produces documents in `docs/NN-phase
 
 ### Frontend (Phase 10 --- locked)
 
-| Choice | |
-|--------|--|
+| Choice | Link |
+|--------|------|
 | React 19 | [github.com/facebook/react](https://github.com/facebook/react) |
 | Vite | [github.com/vitejs/vite](https://github.com/vitejs/vite) |
 | Tailwind CSS | [github.com/tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss) |
@@ -129,8 +129,8 @@ Phases are executed strictly in order; each produces documents in `docs/NN-phase
 
 ### Infrastructure & Control Plane
 
-| Component | Role | |
-|-----------|------|--|
+| Component | Role | Link |
+|-----------|------|------|
 | Docker | Container runtime | [github.com/docker](https://github.com/docker) |
 | Caddy | Reverse proxy + TLS | [github.com/caddyserver/caddy](https://github.com/caddyserver/caddy) |
 | Authelia | SSO + TOTP auth gate | [github.com/authelia/authelia](https://github.com/authelia/authelia) |
@@ -144,8 +144,8 @@ Phases are executed strictly in order; each produces documents in `docs/NN-phase
 
 ### Dev Tooling
 
-| Tool | |
-|------|--|
+| Tool | Link |
+|------|------|
 | uv (Python package manager) | [github.com/astral-sh/uv](https://github.com/astral-sh/uv) |
 | Ruff (linter + formatter) | [github.com/astral-sh/ruff](https://github.com/astral-sh/ruff) |
 | MyPy (type checker) | [github.com/python/mypy](https://github.com/python/mypy) |
