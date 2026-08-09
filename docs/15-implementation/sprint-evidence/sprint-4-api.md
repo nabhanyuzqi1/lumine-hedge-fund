@@ -1,6 +1,6 @@
 # Sprint 4 — API Layer (Phase 9 Contract): Plan & Evidence
 
-**Status:** Implementation complete — full gate PASS (ruff / mypy strict / pytest 478 passed). Awaiting approval gate before frontend F-Sprint 1.
+**Status:** Implementation complete — full gate PASS (ruff / mypy strict / pytest 480 passed). Approval gate granted 2026-08-09 — frontend F-Sprint 1 (G11) in progress.
 **Date:** 2026-08-09 (plan + implementation + gate)
 **Sprint:** 4 (API Layer) of Phase 15 — Implementation
 **Owner:** Chief AI Architect
@@ -78,16 +78,28 @@ full gate (lint, types, unit + contract tests) passes with zero errors.
 | Format | `ruff format --check .` | PASS — 133 files already formatted |
 | Types | `mypy src` (strict) | PASS — Success: no issues found in 68 source files |
 | Unit tests | `pytest tests/unit -q` | PASS — 448 passed in 8.79s |
-| Contract tests (L3) | `pytest tests/contract -q` | PASS — 30 passed in 3.15s |
-| Full suite | `pytest tests/unit tests/contract -q` | PASS — 478 passed in 10.13s |
+| Contract tests (L3) | `pytest tests/contract -q` | PASS — 32 passed (30 + 2 SSE contract tests added post-verifier) |
+| Full suite | `pytest tests/unit tests/contract -q` | PASS — 480 passed |
 | SSE frames | `test_sse_stream_open_and_heartbeat_frames` | PASS (included in 30) |
 | Idempotency | `test_idempotency_replay_returns_original_envelope`, `test_idempotency_conflict_on_different_body` | PASS (after FakeRedis `ex` kwarg fix) |
 | Rate limit | `test_rate_limit_429_with_retry_after`, `test_rate_limit_disabled_when_limit_is_zero` | PASS (included in 30) |
 | Trace id | `test_trace_id_echoed_and_consistent`, `test_trace_id_echoed_on_error_path` | PASS (included in 30) |
+| SSE timestamp Z (verifier finding V1) | `test_sse_frame_timestamp_has_utc_z_suffix` | FIXED — `_iso_utc_ms` now folds the aware `dt` arg via `astimezone(UTC)`; no more deprecated `utcnow()`; envelope timestamp ends with `Z` |
+| SSE replay/gap (verifier finding V2) | `test_sse_replay_resumes_with_gap_detected` | FIXED — direct `stream_resumed` + `gap_detected` + buffered replay coverage added (was untested) |
 
 ---
 
-## 5. Audit Findings & Fixes (2026-08-09)
+## 5. Independent verification & re-verification (2026-08-09)
+
+| Finding | Severity | Disposition |
+|---------|----------|-------------|
+| V1 — SSE envelope timestamps lack `Z` suffix (`_iso_utc_ms` used deprecated naive `dt.utcnow()`; `.replace("+00:00","Z")` never fired). sse-api.md freshness contract requires ISO 8601 ms + `Z`; a spec-conformant client doing `now - meta.timestamp` would hit naive/aware TypeError | High | **Fixed.** `_iso_utc_ms(dt)` now folds the caller's aware `datetime.now(UTC)` via `astimezone(UTC)`; verified `...Z` in frames; contract test `test_sse_frame_timestamp_has_utc_z_suffix` added |
+| V2 `stream_resumed`/`gap_detected`/replay path untested in suite (verified live by agent) | Medium | **Fixed.** `test_sse_replay_resumes_with_gap_detected` added — drives `_event_stream` with a rolled-over ring buffer, asserts `gap_detected: true`, `from_event_id`, replay frame |
+| 41-test adversarial probe (limits via 21/1001 connections, replay, fail-open redis) — no regressions | — | Noted; per-key/per-host limits and fail-open confirmed |
+
+Verdict: FAIL → **FIXED** → **RE-VERIFIED PASS** (2026-08-09, agent `aaa7e051d9a6bd333` — ruff / format / mypy clean; `pytest tests/unit tests/contract` → 480 passed; no files modified by re-verifier).
+
+## 5.1 Audit findings & fixes (2026-08-09, pre-verifier)
 
 | # | Finding | Severity | Disposition |
 |---|---------|----------|-------------|
@@ -108,19 +120,18 @@ full gate (lint, types, unit + contract tests) passes with zero errors.
 | G5 Contract coverage 30 | ✅ | `test_api_contract.py` — 30 passed |
 | G6 Committed | ✅ | commit `b09807c` (API core snapshot before G1 edits) + this sprint's working-tree snapshot pending |
 | G7 Monitoring/logging + trace_id | ✅ | `middleware/logging.py`; 2 trace tests |
-| G8 Evidence + approval gate | ✅ evidence; ⏳ approval | this file; AskUserQuestion after |
+| G8 Evidence + approval gate | ✅ evidence; ✅ approved | this file; user approval via AskUserQuestion 2026-08-09 ("Ya, lanjut frontend") |
 
 **Status legend:** ⏳ pending → ✅ done → 🚫 blocked
 
 ---
 
-## 7. Open items before approval gate
+## 7. Open items
 
-1. Independent verification agent dispatch — required for the non-trivial
-   implementation gate before reporting completion (per CLAUDE.md rule 8).
-2. Commit the working tree (7 modified + 2 new files).
-3. **Approval gate: AskUserQuestion** — approve Sprint 4 API layer before
-   starting frontend F-Sprint 1 (G11).
+1. Commit the working tree — backend fix (SSE `Z` suffix), the 2 contract
+   tests, and this evidence file (this session, G6 remaining action).
+2. **Frontend F-Sprint 1 (G11)** — approved; bootstrap conventions, router
+   shell, `/health` route, CI wiring — in progress.
 
 ---
 

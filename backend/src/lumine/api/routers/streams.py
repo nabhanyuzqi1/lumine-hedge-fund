@@ -74,8 +74,13 @@ _active: dict[str, int] = {}
 
 
 def _iso_utc_ms(dt: datetime) -> str:
-    """ISO 8601 with milliseconds and `Z` suffix (sse-api.md Freshness)."""
-    return dt.utcnow().isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    """ISO 8601 with milliseconds and `Z` suffix (sse-api.md Freshness).
+
+    `dt` must be timezone-aware (callers pass `datetime.now(UTC)`); the
+    offset is converted to `Z` so clients can compute staleness without
+    naive/aware subtraction errors.
+    """
+    return dt.astimezone(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def _frame(

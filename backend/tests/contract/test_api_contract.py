@@ -7,7 +7,10 @@ import asyncio
 import fnmatch
 import hashlib
 import hmac
+import json
 import time
+from collections import deque
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
@@ -594,5 +597,58 @@ def test_sse_stream_open_and_heartbeat_frames() -> None:
     second = stream.__anext__()
     heartbeat = _run(second)
     assert heartbeat == ": heartbeat\n\n"
+
+    _run(stream.aclose())
+
+
+def test_sse_frame_timestamp_has_utc_z_suffix() -> None:
+    """SSE envelope timestamps carry ISO 8601 ms + Z (sse-api.md Freshness)."""
+    frame = streams._emit(  # noqa: SLF001 — test drives the private emitter directly
+        "unit-test-z", "s1", "market_data", {"symbol": "XAUUSD"}
+    )
+    assert frame.startswith("id: 1\n")
+    payload = json.loads(frame.split("data: ", 1)[1].strip())
+    stamp = payload["meta"]["timestamp"]
+    assert stamp.endswith("Z")
+    assert stamp.count(".") == 1  # exactly milliseconds precision
+    # Round-trips as an aware UTC instant — clients may compute staleness.
+    aware_ts = datetime.fromisoformat(stamp)
+    assert aware_ts.tzinfo is not None
+    assert aware_ts.utcoffset() == timedelta(0)
+
+
+def test_sse_replay_resumes_with_gap_detected() -> None:
+    """Reconnect with Last-Event-ID older than the ring buffer → resumed + gap."""
+    channel = "unit-test-replay"
+    req = _FakeStreamRequest()
+    # The client last saw event 3, but the 1000-event / 5-min buffer has
+    # already rolled over to event 7 — simulasi disconnect yang lama.
+    buffers = streams._buffers  # noqa: SLF001 — direct state setup for the test
+    the_channel = buffers.setdefault(channel, deque(maxlen=streams._BUFFER_MAX_EVENTS))  # noqa: SLF001
+    the_channel.clear()
+    the_channel.append(
+        streams._BufferedEvent(  # noqa: SLF001
+            event_id=7,
+            ts=time.time(),
+            frame='id: 7\nevent: test_event\ndata: {"n": 7}\n\n',
+        )
+    )
+    streams._next_ids[channel] = 7  # noqa: SLF001
+    req.headers = {"Last-Event-ID": "3"}
+    stream = streams._event_stream(  # noqa: SLF001 — test drives the private generator directly
+        req, channel, 0.1
+    )
+
+    opened = _run(stream.__anext__())
+    assert "event: stream_open" in opened
+
+    resumed = _run(stream.__anext__())
+    assert "event: stream_resumed" in resumed
+    assert '"gap_detected": true' in resumed
+    assert '"from_event_id": 3' in resumed
+
+    replay = _run(stream.__anext__())
+    assert "event: test_event" in replay
+    assert '"n": 7' in replay
 
     _run(stream.aclose())
