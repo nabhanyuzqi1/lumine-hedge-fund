@@ -1,22 +1,19 @@
 name: Deploy
 
-# CI/CD deploy ke VPS via scripts/deploy/deploy-stack.sh (sumber tunggal).
-# Secrets per environment disimpan di GitHub Actions secrets.
+# Deploy ke VPS — dijalankan manual via workflow_dispatch atau otomatis
+# saat push ke main JIKA secrets sudah dikonfigurasi.
 #
-# Yang dibutuhkan (Settings → Secrets and variables → Actions):
-#   STAGING:  STAGING_HOST, STAGING_USER, STAGING_SSH_KEY (private key),
-#             STAGING_DB_PASSWORD, STAGING_HMAC_SECRET_KEY,
-#             STAGING_LLM_GATEWAY_API_KEY, STAGING_VNC_PASSWORD
-#   PROD    : PROD_HOST, PROD_USER, PROD_SSH_KEY,
-#             PROD_DB_PASSWORD, PROD_HMAC_SECRET_KEY,
-#             PROD_LLM_GATEWAY_API_KEY, PROD_VNC_PASSWORD
+# Secrets yang dibutuhkan (Settings → Secrets and variables → Actions):
+#   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY (private key),
+#   DEPLOY_DB_PASSWORD, DEPLOY_HMAC_SECRET_KEY,
+#   DEPLOY_LLM_GATEWAY_API_KEY, DEPLOY_VNC_PASSWORD
 #
 # SSH key: generate `ssh-keygen -t ed25519 -f lumine_deploy` lalu tambahkan
 # public key ke ~/.ssh/authorized_keys user target di VPS. Private key → secret
-# *_SSH_KEY (format PEM: `-----BEGIN OPENSSH PRIVATE KEY-----` ...).
+# DEPLOY_SSH_KEY (format PEM: `-----BEGIN OPENSSH PRIVATE KEY-----` ...).
 #
-# Catatan: deploy-stack.sh SSH dari runner GitHub ke VPS. Runner butuh akses
-# SSH keluar (port 22) — default ubuntu-latest runner mengizinkan.
+# Saat ini hanya landing page yang di-deploy via deploy-site.sh.
+# Full stack deploy menyusul saat V1 services siap (Phase 15).
 
 on:
   push:
@@ -24,143 +21,61 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-staging:
-    name: "Deploy to staging"
+  check-secrets:
+    name: "Check secrets"
     runs-on: ubuntu-latest
-    environment: staging
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - id: check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_USER" ] && [ -n "$DEPLOY_SSH_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Secrets ditemukan — deploy akan dijalankan."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Secrets belum dikonfigurasi — deploy dilewati."
+            echo "::notice::Konfigurasi di: Settings → Secrets and variables → Actions → New repository secret"
+          fi
+
+  deploy:
+    name: "Deploy to VPS"
+    needs: [check-secrets]
+    if: needs.check-secrets.outputs.configured == 'true'
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify required secrets
-        env:
-          STAGING_HOST: ${{ secrets.STAGING_HOST }}
-          STAGING_USER: ${{ secrets.STAGING_USER }}
-          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
-          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
-          STAGING_HMAC_SECRET_KEY: ${{ secrets.STAGING_HMAC_SECRET_KEY }}
-          STAGING_LLM_GATEWAY_API_KEY: ${{ secrets.STAGING_LLM_GATEWAY_API_KEY }}
-          STAGING_VNC_PASSWORD: ${{ secrets.STAGING_VNC_PASSWORD }}
-        run: |
-          missing=()
-          [ -z "$STAGING_HOST" ] && missing+=("STAGING_HOST")
-          [ -z "$STAGING_USER" ] && missing+=("STAGING_USER")
-          [ -z "$STAGING_SSH_KEY" ] && missing+=("STAGING_SSH_KEY")
-          [ -z "$STAGING_DB_PASSWORD" ] && missing+=("STAGING_DB_PASSWORD")
-          [ -z "$STAGING_HMAC_SECRET_KEY" ] && missing+=("STAGING_HMAC_SECRET_KEY")
-          [ -z "$STAGING_LLM_GATEWAY_API_KEY" ] && missing+=("STAGING_LLM_GATEWAY_API_KEY")
-          [ -z "$STAGING_VNC_PASSWORD" ] && missing+=("STAGING_VNC_PASSWORD")
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Missing GitHub secrets: ${missing[*]}"
-            echo "::error::Configure at: Settings → Secrets and variables → Actions → New repository secret"
-            echo "::error::See deploy.yml header for the full list and SSH key generation steps."
-            exit 1
-          fi
-
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Trust host on first connect (non-interactive).
-          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Make deploy script executable
-        run: chmod +x scripts/deploy/deploy-stack.sh
+      - name: Make deploy scripts executable
+        run: chmod +x scripts/deploy/deploy-site.sh
 
-      - name: Deploy to staging VPS
+      - name: Deploy landing page
         env:
-          VPS_HOST: ${{ secrets.STAGING_HOST }}
-          VPS_USER: ${{ secrets.STAGING_USER }}
+          VPS_HOST: ${{ secrets.DEPLOY_HOST }}
+          VPS_USER: ${{ secrets.DEPLOY_USER }}
           VPS_SSH_PORT: "22"
-          DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
-          HMAC_SECRET_KEY: ${{ secrets.STAGING_HMAC_SECRET_KEY }}
-          LLM_GATEWAY_API_KEY: ${{ secrets.STAGING_LLM_GATEWAY_API_KEY }}
-          VNC_PASSWORD: ${{ secrets.STAGING_VNC_PASSWORD }}
-          # deploy-stack.sh pakai SSH key default ~/.ssh/id_*. Runner tidak
-          # punya, jadi arahkan ke deploy_key via SSH identity.
-          SSH_AUTH_SOCK: ""
         run: |
-          # Paksa pakai deploy_key untuk semua SSH/scp di script.
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new"
-          # deploy-stack.sh pakai ssh/scp biasa — override via ssh config.
           cat > ~/.ssh/config <<SSHCFG
-          Host ${{ secrets.STAGING_HOST }}
-            HostName ${{ secrets.STAGING_HOST }}
-            User ${{ secrets.STAGING_USER }}
+          Host ${{ secrets.DEPLOY_HOST }}
+            HostName ${{ secrets.DEPLOY_HOST }}
+            User ${{ secrets.DEPLOY_USER }}
             IdentityFile ~/.ssh/deploy_key
             StrictHostKeyChecking accept-new
           SSHCFG
           chmod 600 ~/.ssh/config
-          ./scripts/deploy/deploy-stack.sh
-
-      - name: Cleanup SSH key
-        if: always()
-        run: rm -f ~/.ssh/deploy_key
-
-  deploy-production:
-    name: "Deploy to production"
-    needs: [deploy-staging]
-    runs-on: ubuntu-latest
-    environment: production
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify required secrets
-        env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-          PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-          PROD_HMAC_SECRET_KEY: ${{ secrets.PROD_HMAC_SECRET_KEY }}
-          PROD_LLM_GATEWAY_API_KEY: ${{ secrets.PROD_LLM_GATEWAY_API_KEY }}
-          PROD_VNC_PASSWORD: ${{ secrets.PROD_VNC_PASSWORD }}
-        run: |
-          missing=()
-          [ -z "$PROD_HOST" ] && missing+=("PROD_HOST")
-          [ -z "$PROD_USER" ] && missing+=("PROD_USER")
-          [ -z "$PROD_SSH_KEY" ] && missing+=("PROD_SSH_KEY")
-          [ -z "$PROD_DB_PASSWORD" ] && missing+=("PROD_DB_PASSWORD")
-          [ -z "$PROD_HMAC_SECRET_KEY" ] && missing+=("PROD_HMAC_SECRET_KEY")
-          [ -z "$PROD_LLM_GATEWAY_API_KEY" ] && missing+=("PROD_LLM_GATEWAY_API_KEY")
-          [ -z "$PROD_VNC_PASSWORD" ] && missing+=("PROD_VNC_PASSWORD")
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Missing GitHub secrets: ${missing[*]}"
-            echo "::error::Configure at: Settings → Secrets and variables → Actions → New repository secret"
-            echo "::error::See deploy.yml header for the full list and SSH key generation steps."
-            exit 1
-          fi
-
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-
-      - name: Make deploy script executable
-        run: chmod +x scripts/deploy/deploy-stack.sh
-
-      - name: Deploy to production VPS
-        env:
-          VPS_HOST: ${{ secrets.PROD_HOST }}
-          VPS_USER: ${{ secrets.PROD_USER }}
-          VPS_SSH_PORT: "22"
-          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-          HMAC_SECRET_KEY: ${{ secrets.PROD_HMAC_SECRET_KEY }}
-          LLM_GATEWAY_API_KEY: ${{ secrets.PROD_LLM_GATEWAY_API_KEY }}
-          VNC_PASSWORD: ${{ secrets.PROD_VNC_PASSWORD }}
-        run: |
-          cat > ~/.ssh/config <<SSHCFG
-          Host ${{ secrets.PROD_HOST }}
-            HostName ${{ secrets.PROD_HOST }}
-            User ${{ secrets.PROD_USER }}
-            IdentityFile ~/.ssh/deploy_key
-            StrictHostKeyChecking accept-new
-          SSHCFG
-          chmod 600 ~/.ssh/config
-          ./scripts/deploy/deploy-stack.sh
+          ./scripts/deploy/deploy-site.sh
 
       - name: Cleanup SSH key
         if: always()

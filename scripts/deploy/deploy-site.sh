@@ -25,13 +25,19 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
-if [[ ! -f .env ]]; then
-  echo "ERROR: .env tidak ditemukan. Copy dari .env.sample dulu:"
-  echo "  cp .env.sample .env && $EDITOR .env"
-  exit 1
+# CI mode: env vars sudah di-set oleh workflow (lewati .env).
+# Local mode: baca .env (jangan commit — berisi kredensial VPS).
+if [[ -n "${VPS_HOST:-}" ]]; then
+  echo "==> CI mode — env vars sudah diset (skip .env)."
+else
+  if [[ ! -f .env ]]; then
+    echo "ERROR: .env tidak ditemukan. Copy dari .env.sample dulu:"
+    echo "  cp .env.sample .env && \$EDITOR .env"
+    exit 1
+  fi
+  # shellcheck disable=SC1091
+  set -a; source ./.env; set +a
 fi
-# shellcheck disable=SC1091
-set -a; source ./.env; set +a
 
 VPS_HOST="${VPS_HOST:?VPS_HOST wajib di .env}"
 VPS_USER="${VPS_USER:-root}"
