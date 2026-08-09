@@ -6,6 +6,7 @@
 - **Review-cadence:** 180
 
 ## When an RFC is required
+
 - A change affecting ≥2 phases.
 - A change to a phase boundary (Phase 5/9/10/11 ownership).
 - A change to a `91-anti-scope-register.md` item (must supersede the rejecting ADR).
@@ -13,6 +14,7 @@
 - A new external dependency or a new storage system.
 
 ## When an ADR alone suffices
+
 - A single-phase decision with no boundary impact.
 - A decision that doesn't touch the anti-scope register.
 

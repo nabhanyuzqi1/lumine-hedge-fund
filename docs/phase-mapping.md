@@ -55,6 +55,7 @@ These cross-cut the phases and live outside the numbered phase sequence:
 ## Rule
 
 Folder names are fixed after Phase 14 approval. Any rename requires:
+
 1. An ADR recording the rename and rationale.
 2. A single commit renaming the folder and updating every reference.
 3. An update to this mapping table in the same commit.

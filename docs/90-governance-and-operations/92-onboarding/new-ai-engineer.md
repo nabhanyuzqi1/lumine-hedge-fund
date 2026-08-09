@@ -31,8 +31,8 @@
 - **Stateless V1.** No inter-cycle memory unless versioned and pinned (ADR-0027).
 - **Reproducibility.** Same pins → same prompt → comparable output. The full
   prompt actually sent is stored in `reasoning_traces` (ADR-0029).
-- **News is untrusted input.** Structured extraction + instruction hierarchy
-  + output validation (ADR-0018).
+- **News is untrusted input.** Structured extraction, instruction hierarchy,
+  and output validation (ADR-0018).
 
 ## Prompt change workflow
 1. Edit `backend/src/lumine/prompts/templates/{agent}@v{n}.prompt`.

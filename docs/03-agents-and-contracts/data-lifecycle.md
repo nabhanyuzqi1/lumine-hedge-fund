@@ -87,4 +87,4 @@ to.
 
 This document fixes the three lifecycle jobs and their invariants. It
 does not define aggregation logic (Phase 14+), job scheduling (Phase 12
-+ Phase 14+), remediation policy (Phase 7), or code (Phase 14+).
+and Phase 14+), remediation policy (Phase 7), or code (Phase 14+).

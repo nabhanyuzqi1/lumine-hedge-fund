@@ -14,9 +14,11 @@ changes update docs first. This tier makes that rule enforceable.
 - `rfcs/` — proposed and accepted RFCs.
 
 ## Architecture Review Board (ARB)
+
 - [`architecture-review-board.md`](architecture-review-board.md) — membership, cadence, decision authority.
 
 ## Relationship to ADRs
+
 - An RFC proposes; an ADR records the decision.
 - Small changes: ADR directly (no RFC).
 - Large changes: RFC → ARB review → ADR.

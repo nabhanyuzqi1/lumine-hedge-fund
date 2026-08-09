@@ -1,6 +1,6 @@
 # Lumine --- AI-Native Quantitative Hedge Fund Platform
 
-Lumine is an institutional-grade, AI-driven quantitative investment system. Autonomous AI agents collaborate inside a strict hierarchy to make investment decisions, manage risk, and execute trades --- starting with **XAUUSD**, scaling to Forex, Indices, Commodities, Crypto, Stocks, and Futures.
+Lumine is an institutional-grade, AI-driven quantitative investment system. Autonomous AI agents collaborate inside a strict hierarchy to make investment decisions, manage risk, and execute trades — starting with **XAUUSD**, scaling to Forex, Indices, Commodities, Crypto, Stocks, and Futures.
 
 This is **not** a retail trading bot, EA, or signal provider. Lumine is designed like a real hedge fund: an auditable, observable, replaceable, fault-tolerant platform where **LLMs only reason** and **deterministic Python owns the money and the safety**.
 
@@ -21,13 +21,13 @@ System uptime monitored internally via [Uptime Kuma](https://github.com/louislam
 
 ## The Core Idea
 
-```
+```text
 LLM agents reason about markets --- deterministic Python enforces risk, sizing, execution
 ```
 
 Every trade decision travels one critical path. Reasoning happens above the risk line; money moves only below it.
 
-```
+```text
 Scheduler --- trade-core
   |
   v
@@ -66,7 +66,7 @@ No LLM sits above `RiskValidator`. No async worker sits on the critical path. Th
 
 ## Agent Hierarchy
 
-```
+```text
 CEO
   +-- CIO
         +-- Investment Committee (IC)
@@ -158,7 +158,7 @@ Phases are executed strictly in order; each produces documents in `docs/NN-phase
 
 The VPS runs a single `control-plane` Docker Compose stack that fronts all services:
 
-```
+```text
 Internet :80/:443  (only public ports)
   |
   +-- Caddy (host network, TLS)
@@ -181,7 +181,7 @@ Internet :80/:443  (only public ports)
 
 ## Repository Layout
 
-```
+```text
 lumine-hedge-fund/
 +-- docs/                              # Knowledge base (Phases 0--15 + governance tier)
 |   +-- INDEX.md                       # Topic x phase knowledge map
@@ -192,9 +192,7 @@ lumine-hedge-fund/
 +-- backend/                           # Python workspace (FastAPI, AutoGen, MT5 bridge)
 |   +-- src/lumine/                    # api, autogen_pipeline, backtest, bridge, features,
 |                                      # llm_gateway, monitoring, security, trade_core, ...
-+-- frontend/                          # TypeScript/React workspace (Phase 10 stack, pending)
-+-- site/                              # Marketing / landing page (Vite + React + Tailwind)
-|                                      # builds to static dist/, deployed to VPS via CI
++-- frontend/                          # Landing page + future Phase 10 trading dashboard
 +-- scripts/                           # Deploy & ops scripts (deploy-site, deploy-stack, watchdog)
 +-- Makefile                           # Canonical entry commands (CI parity)
 +-- .github/workflows/                 # CI, supply-chain, docs, deploy
@@ -207,7 +205,7 @@ lumine-hedge-fund/
 ### Prerequisites
 
 - Python 3.12+ with [uv](https://docs.astral.sh/uv/)
-- Node.js 20+ (site and frontend)
+- Node.js 20+ (frontend)
 - Docker (services: PostgreSQL, Redis, Temporal)
 - MetaTrader 5 terminal (trading only; not required for development)
 
@@ -220,13 +218,13 @@ make run-backend            # uvicorn lumine.api:app --reload --port 8000
 make test                   # full test suite (unit, integration, contract, backtest, system)
 ```
 
-### Marketing Site (`site/`)
+### Frontend (`frontend/`)
 
 ```bash
-cd site
+cd frontend
 npm install
 npm run dev                 # local dev server
-npm run build               # static build to site/dist
+npm run build               # static build to frontend/dist
 npm run preview             # serve the production build locally
 ```
 
@@ -294,10 +292,11 @@ The site builds with a relative base (`base: './'`), compatible with VPS root de
 
 ### Landing Page (active)
 
-The marketing site (`site/`) deploys automatically to the production VPS via GitHub Actions on push to `main`, or manually via [`workflow_dispatch`](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/deploy.yml).
+The marketing site (`frontend/`) deploys automatically to the production VPS via GitHub Actions on push to `main`, or manually via [`workflow_dispatch`](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/deploy.yml).
 
 **Pipeline:**
-1. Build site: `npm ci && npm run build` --- `site/dist`
+
+1. Build site: `npm ci && npm run build` --- `frontend/dist`
 2. Send `dist/` to VPS via SCP (`/tmp/lumine-dist/`)
 3. Install into `/var/www/lumine` (in-place copy, preserves bind-mount inode)
 4. Health check: `curl http://127.0.0.1:8080/` via the `control-landing` nginx container
@@ -317,6 +316,7 @@ The marketing site (`site/`) deploys automatically to the production VPS via Git
 Secrets: **Settings --- Secrets and variables --- Actions --- New repository secret**.
 
 **SSH key setup (one-time):**
+
 ```bash
 ssh-keygen -t ed25519 -f lumine_deploy -C "lumine-ci-deploy"
 ssh-copy-id -i lumine_deploy.pub root@<vps-host>
@@ -324,6 +324,7 @@ ssh-copy-id -i lumine_deploy.pub root@<vps-host>
 ```
 
 **Local deploy:**
+
 ```bash
 cp scripts/deploy/.env.sample scripts/deploy/.env
 $EDITOR scripts/deploy/.env

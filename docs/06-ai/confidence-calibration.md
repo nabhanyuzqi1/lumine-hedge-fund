@@ -39,7 +39,7 @@ a held-out eval set (disjoint from the prompt-quality eval set in
 |--------|------------|--------|
 | Brier score | Mean squared error between predicted probability and binary outcome | ≤ 0.18 (governance threshold, initial) |
 | Reliability diagram | Bin raw confidence into deciles; plot empirical accuracy per bin | Visual + tabular |
-| Expected Calibration Error (ECE) | Weighted average of |accuracy(bin) - mean_confidence(bin)| across bins | ≤ 0.15 (governance threshold, initial) |
+| Expected Calibration Error (ECE) | Weighted average of \|accuracy(bin) - mean_confidence(bin)\| across bins | ≤ 0.15 (governance threshold, initial) |
 
 The eval set for calibration is **ground-truth-labeled**: each
 scenario has a known correct bias (analysts) or action (IC/CIO). The

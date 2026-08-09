@@ -1,0 +1,41 @@
+# Markdownlint configuration for Lumine
+# Relaxed rules suitable for a documentation-heavy architecture repo
+# with wide tables, long URLs, and inline code references.
+
+config:
+  # MD013/line-length — 80 is too strict for architecture docs with URLs
+  MD013:
+    line_length: 200
+    heading_line_length: 120
+    code_block_line_length: 120
+    tables: false
+    headings: false
+    code_blocks: false
+
+  # MD060/table-column-style — allow "consistent" spacing
+  MD060: false
+
+  # MD033/no-inline-html — allow limited HTML in docs
+  MD033: false
+
+  # MD041/first-line-heading — first line doesn't need to be H1
+  MD041: false
+
+  # MD024/no-duplicate-heading — allow duplicate headings in changelogs
+  MD024:
+    siblings_only: true
+
+  # MD046/code-block-style — fenced is fine
+  MD046:
+    style: "fenced"
+
+  # MD048/code-fence-style — backtick is fine
+  MD048:
+    style: "backtick"
+
+# Only lint docs/ and root .md files
+globs:
+  - "docs/**/*.md"
+  - "*.md"
+ignores:
+  - "CLAUDE.md"

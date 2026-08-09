@@ -141,7 +141,7 @@ artifact):
 | `unpaired_decisions` | Count without a match (marked `unpaired`) |
 | `pin_mismatches` | List of divergent decisions (hard fail if non-empty) |
 | `parity_score` | Fraction of paired decisions with matching action |
-| `parity_status` | `pass` (>= 0.95) | `parity_broken` (< 0.95) | `pin_mismatch` | `unpaired_only` |
+| `parity_status` | `pass` (>= 0.95) \| `parity_broken` (< 0.95) \| `pin_mismatch` \| `unpaired_only` |
 | `slippage_model` | Version + parameters used |
 | `artifact_hash` | SHA-256 of the report |
 

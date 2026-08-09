@@ -117,7 +117,7 @@ Each reconciliation run produces a report stored as an artifact
 | `breaks` | List of breaks with type, severity, symbol, order_id, delta, status |
 | `auto_resolved` | Count and list |
 | `material` | Count and list |
-| `status` | `pass` | `pass_with_auto` | `material_breaks` | `failed` |
+| `status` | `pass` \| `pass_with_auto` \| `material_breaks` \| `failed` |
 | `artifact_hash` | SHA-256 of the report |
 
 The report is hash-pinned and stored alongside lineage artifacts. It

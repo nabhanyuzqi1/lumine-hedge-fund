@@ -69,4 +69,4 @@ backend/.data/
 backend/.venv/
 *.db-journal
 # ── Local preview screenshots (never committed) ────────────────
-site/.shots/
+frontend/.shots/

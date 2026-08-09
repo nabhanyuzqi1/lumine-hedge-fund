@@ -149,8 +149,8 @@ tabrakan dengan Caddy (`network_mode: host` mengabaikan `ports:`)
    `127.0.0.1:<port>`.
 2. Tambah route di `Caddyfile` (blok `handle_path` + `forward_auth`),
    `caddy reload --config` (atau restart container — `admin off` aktif).
-3. Daftarkan di `homepage/services.yaml` (icon + href `https://IP/path/`
-   + widget `type: docker`).
+3. Daftarkan di `homepage/services.yaml` (icon, href `https://IP/path/`,
+   widget `type: docker`).
 4. Tambah monitor di Uptime Kuma (socket.io `add` event) untuk endpoint
    baru.
 5. Catat di tabel klasifikasi VNC di atas.

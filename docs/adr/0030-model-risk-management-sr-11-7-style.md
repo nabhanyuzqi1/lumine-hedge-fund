@@ -48,8 +48,8 @@ regression suite gating per-agent prompt/model changes.
   trail.
 - Positive: drift and regression trigger automatic rollback before
   capital is at risk.
-- Negative: model promotion is slower (shadow window + eval + calibration
-  + CIO sign-off).
+- Negative: model promotion is slower (shadow window, eval, calibration,
+  and CIO sign-off).
 - Reversibility: rollback restores the prior production model; the
   retired model stays queryable.
 

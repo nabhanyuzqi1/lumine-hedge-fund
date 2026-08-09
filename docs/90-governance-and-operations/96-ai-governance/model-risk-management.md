@@ -153,8 +153,8 @@ The CIO is the **model risk approver of record**. The system records
 approvals immutably (approval records are append-only, hash-pinned).
 The CIO's responsibilities under this policy:
 
-- Approve each model promotion to production (after eval + calibration
-  + shadow).
+- Approve each model promotion to production (after eval, calibration,
+  and shadow).
 - Review drift reports weekly.
 - Acknowledge rollback events post-hoc.
 - Approve recalibration cadence changes.

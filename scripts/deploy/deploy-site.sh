@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# deploy-site.sh — Build + deploy marketing site (site/) ke VPS.
+# deploy-site.sh — Build + deploy marketing site (frontend/) ke VPS.
 #
 # Landing page disajikan lewat Caddy `/` (dan alias legacy `/site*`) →
 # container `control-landing` (nginx:alpine, compose control-plane) yang
@@ -9,7 +9,7 @@
 #
 # Alur:
 #   1. Baca .env (kredensial target VPS; JANGAN commit).
-#   2. Build site lokal: npm ci && npm run build (base './' → site/dist).
+#   2. Build site lokal: npm ci && npm run build (base './' → frontend/dist).
 #   3. Kirim dist ke VPS via scp (staging /tmp).
 #   4. Deploy KEDALAM `/var/www/lumine` — jangan pernah `rm -rf` +
 #      `mkdir` ulang direktori ini: bind mount nginx terkunci ke inode,
@@ -44,7 +44,7 @@ VPS_USER="${VPS_USER:-root}"
 VPS_SSH_PORT="${VPS_SSH_PORT:-22}"
 SSH_DEST="${VPS_USER}@${VPS_HOST}"
 
-SITE_DIR="${SCRIPT_DIR}/../../site"
+SITE_DIR="${SCRIPT_DIR}/../../frontend"
 REMOTE_DIST=/var/www/lumine
 
 echo "==> Target: ${SSH_DEST} (port ${VPS_SSH_PORT})"
