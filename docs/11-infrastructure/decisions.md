@@ -113,14 +113,19 @@ audit) belong to Phase 12.
 **Choice:** On the production VPS, one `control-plane` Compose stack sits
 in front of the deployed services: Caddy (already D11-2) as the only
 public listener `:80/:443`, Authelia (basepath `/auth`) as the central
-login with TOTP via `forward_auth`, Homepage as the landing portal with
-live Docker status, and Uptime Kuma as the interactive health dashboard.
-Protected routes: `/hermes*` → Hermes dashboard, `/mt5/*` → noVNC,
-`/backend*` → Lumine API, `/status*` + 4 path `/api` frontend Kuma
-(`/api/badge*`, `/api/entry-page*`, `/api/push*`, `/api/status-page*`)
-→ Kuma, sisa `/api*` (hydration Homepage) → Homepage, `/` → Homepage.
-`/site*` → landing page nginx `127.0.0.1:8080` is the one content route
-exempt from auth (public marketing page), but its upstream stays
+login with TOTP via `forward_auth`, Homepage as the post-login hub at
+`/portal`, and Uptime Kuma as the interactive health dashboard. The
+marketing landing page lives at `/` (public, container `nginx:alpine`,
+bridge network, read-only mount of `/var/www/lumine`; host nginx
+disabled — 11/11 services containerized). Protected routes:
+`/portal*` → Homepage hub (auth → strip `/portal` via `route{}`),
+`/hermes*` → Hermes dashboard, `/mt5/*` → noVNC, `/backend*` →
+Lumine API, `/status*` + 4 path `/api` frontend Kuma (`/api/badge*`,
+`/api/entry-page*`, `/api/push*`, `/api/status-page*`) → Kuma,
+sisa `/api*` (hydration Homepage) + `/_next*` (Next.js assets) →
+Homepage, `/dashboard*` → Kuma (TANPA strip — Kuma redirect root →
+`/dashboard`). `/` and `/site*` (legacy alias) are the only content
+routes exempt from auth (public marketing page); their upstream stays
 loopback-bound. All other upstream services are loopback-bound. TLS is
 `tls internal` (self-signed) until a domain is configured.
 
@@ -145,6 +150,31 @@ mTLS/allowlist follow-up.
 topology), Authentik (own Postgres+Redis, too heavy), oauth2-proxy (no
 TOTP/user UI), nginx+auth_request (manual TLS), Grafana/Prometheus as
 health UI (deep observability stays D11-4).
+
+**Updated consequences (2026-08-09):**
+- Landing page containerized: `control-landing` (nginx:alpine, bridge,
+  `127.0.0.1:8080:80`, read-only bind of `/var/www/lumine`); host nginx
+  disabled — 11/11 services in the public path are now Docker containers.
+- Homepage moved to `/portal` as the post-login hub; a Logout button in
+  the header links to `/auth/logout?rd=…` (Authelia session destroy).
+- Authelia upgraded to 4.39, theme `dark`; custom CSS file deployed for
+  future Authelia ≥4.40 (custom themes not yet in stable release).
+- Kuma runs with `disableAuth=1` (single login — Authelia is the only
+  auth gate).
+- `route{}` raw-routing block used for ALL stripped routes
+  (`/portal`, `/hermes`, `/mt5`, `/backend`, `/status`) — the Caddyfile
+  adapter reorders `uri strip_prefix` before `forward_auth` on plain
+  `handle`/`handle_path`, breaking Authelia `rd=` post-login redirect.
+- Landing assets (`/assets/*`, `/favicon.svg`) split from Kuma assets
+  via named matcher `@landing` with `header_regexp Referer` — placed
+  BEFORE Kuma's `/assets*` handler (first-match).
+- `deploy-site.sh` rewritten: in-place copy (`find … -delete && cp -a`)
+  preserves the bind-mount inode; health check targets container
+  `127.0.0.1:8080`.
+- `nginx-lumine-site.conf` marked SUPERSEDED — retained as documentation
+  of the old host-level config, never to be deployed.
+- Kuma redirect root → `/dashboard` uses a single `Location` header
+  (never override — Safari/WebKit rejects multi-Location redirects).
 
 ## Principles honored
 
