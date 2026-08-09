@@ -88,5 +88,4 @@ fi
 
 echo "==> Deploy site selesai: https://${VPS_HOST}/ (lewat Caddy)"
 echo "    Alias legacy: https://${VPS_HOST}/site/"
-echo "    GitHub Pages (jalur kedua): https://nabhanyuzqi1.github.io/lumine-hedge-fund/"
 exit 0
