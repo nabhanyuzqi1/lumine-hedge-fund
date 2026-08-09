@@ -57,6 +57,7 @@ audit. Implementation of these contracts is tracked in
 - ADR-0033: agent failure-mode matrix.
 
 #### Correctness contracts
+
 - ADR-0034: deterministic regime classifier.
 - ADR-0035: clock synchronization contract.
 - ADR-0036: context-window budget with deterministic truncation.
@@ -66,12 +67,14 @@ audit. Implementation of these contracts is tracked in
 - ADR-0040: TCA and execution-quality reporting.
 
 #### Process contracts (CLAUDE.md rules → ADRs)
+
 - ADR-0041: inter-engine review preferred for verification.
 - ADR-0042: no coding before Phase 14 approval.
 - ADR-0043: phased development — no skipping, no mixing.
 - ADR-0044: prompts and schemas versioned, hashed, auditable.
 
 #### Phase-decision promotion (Pass 2 follow-up)
+
 - ADR-0045..0050: Phase 11 infrastructure decisions (hosting, container
   topology, secrets, backup-DR, observability, CI/CD gates) promoted from
   `docs/11-infrastructure/decisions.md` into the global registry.
@@ -87,9 +90,11 @@ audit. Implementation of these contracts is tracked in
   flags, dependency policy) promoted from `docs/14-implementation/decisions.md`.
 
 ### Changed
+
 - `.gitignore`: added `.remember/`, `.openclaude/`, `backend/.data/`.
 - `docs/phase-mapping.md`: rewritten as a 1:1 phase→folder table; historical
   narrative moved to ADR context.
 
 ### Removed
+
 - Scratch state from repo root (now gitignored).
