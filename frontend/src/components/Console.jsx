@@ -30,10 +30,12 @@ const STAGES = [
     label: 'execution.router',
     detail: 'BEGIN TX · insert lineage_records · COMMIT · publish mt5.commands',
   },
-  { id: 'bridge', label: 'mt5.bridge', detail: 'fill · listener · UPDATE positions / INSERT fills' },
+  {
+    id: 'bridge',
+    label: 'mt5.bridge',
+    detail: 'fill · listener · UPDATE positions / INSERT fills',
+  },
 ];
-
-const VETO_LINE = { label: 'risk.validator', detail: 'FINAL VETO — position rejected · evidence preserved' };
 
 export default function Console() {
   const [cycle, setCycle] = useState(1);
@@ -124,7 +126,10 @@ export default function Console() {
         })}
 
         {!vetoed && (
-          <p className="console-line mt-3 flex gap-2.5 text-ink-faint" style={{ animationDelay: `${shown.length * 90}ms` }}>
+          <p
+            className="console-line mt-3 flex gap-2.5 text-ink-faint"
+            style={{ animationDelay: `${shown.length * 90}ms` }}
+          >
             <span className="shrink-0">{stamp(cycle, shown.length)}</span>
             <span className="shrink-0 w-3 text-center">·</span>
             <span>waiting for next market event…</span>

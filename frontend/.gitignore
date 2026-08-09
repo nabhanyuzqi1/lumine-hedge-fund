@@ -1,0 +1,2 @@
+# TypeScript build artifacts (strictly local; never committed)
+*.tsbuildinfo

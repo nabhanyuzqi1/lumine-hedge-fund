@@ -49,11 +49,20 @@ const COMMITTEE = [
 ];
 
 const INVARIANTS = [
-  ['Reproducibility', 'Every decision pins model, prompt and policy versions. Decisions are replayable.'],
+  [
+    'Reproducibility',
+    'Every decision pins model, prompt and policy versions. Decisions are replayable.',
+  ],
   ['Auditability', 'Every trade decision carries a full evidence chain — lineage before capital.'],
-  ['Safe state', 'Failures stop the pipeline. The ACID lineage gate is blocking; no async worker dispatches a trade.'],
+  [
+    'Safe state',
+    'Failures stop the pipeline. The ACID lineage gate is blocking; no async worker dispatches a trade.',
+  ],
   ['LLMs only reason', 'Deterministic Python owns risk, sizing, and execution.'],
-  ['Evidence before capital', 'No proposal reaches the bridge without a signed, versioned evidence record.'],
+  [
+    'Evidence before capital',
+    'No proposal reaches the bridge without a signed, versioned evidence record.',
+  ],
 ];
 
 const PHASES = [
@@ -134,7 +143,11 @@ export default function App() {
           </a>
           <nav className="ml-auto hidden items-center gap-6 md:flex" aria-label="Primary">
             {NAV.map(([label, href]) => (
-              <a key={href} href={href} className="text-[13px] text-ink-dim transition-colors hover:text-ink">
+              <a
+                key={href}
+                href={href}
+                className="text-[13px] text-ink-dim transition-colors hover:text-ink"
+              >
                 {label}
               </a>
             ))}
@@ -184,8 +197,8 @@ export default function App() {
             </h1>
             <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-ink-dim">
               Lumine is an institutional-grade platform where autonomous AI agents form an
-              investment committee, and a deterministic Python layer — risk veto, sizing,
-              execution — enforces the outcome. Starting with XAUUSD.
+              investment committee, and a deterministic Python layer — risk veto, sizing, execution
+              — enforces the outcome. Starting with XAUUSD.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
@@ -307,7 +320,10 @@ export default function App() {
           />
           <ul className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {INVARIANTS.map(([name, text], i) => (
-              <li key={name} className="rounded-[var(--radius-panel)] border border-line bg-raised p-6">
+              <li
+                key={name}
+                className="rounded-[var(--radius-panel)] border border-line bg-raised p-6"
+              >
                 <p className="font-mono text-[11px] text-ink-faint">0{i + 1}</p>
                 <h3 className="mt-2 font-display text-[15px] font-600 text-ink">{name}</h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-ink-dim">{text}</p>
@@ -339,7 +355,9 @@ export default function App() {
                 key={num}
                 className={`bg-bg px-4 py-5 ${status === 'active' ? 'outline outline-1 -outline-offset-1 outline-accent-soft' : ''}`}
               >
-                <p className={`font-mono text-[11px] ${status === 'active' ? 'text-accent' : 'text-ink-faint'}`}>
+                <p
+                  className={`font-mono text-[11px] ${status === 'active' ? 'text-accent' : 'text-ink-faint'}`}
+                >
                   {status === 'active' ? '▸ ' : ''}
                   {num}
                 </p>
@@ -390,11 +408,16 @@ export default function App() {
                       {name}
                     </span>
                     <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-up">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-up" aria-hidden="true" />
+                      <span
+                        className="inline-block h-1.5 w-1.5 rounded-full bg-up"
+                        aria-hidden="true"
+                      />
                       live
                     </span>
                   </span>
-                  <span className="mt-2 block text-[12.5px] leading-relaxed text-ink-dim">{desc}</span>
+                  <span className="mt-2 block text-[12.5px] leading-relaxed text-ink-dim">
+                    {desc}
+                  </span>
                 </a>
               </li>
             ))}
@@ -411,19 +434,30 @@ export default function App() {
           <div>
             <Mark />
             <p className="mt-3 max-w-sm text-[12.5px] leading-relaxed text-ink-faint">
-              An AI-native quantitative hedge fund platform. LLM agents reason; deterministic
-              code enforces risk, sizing, and execution.
+              An AI-native quantitative hedge fund platform. LLM agents reason; deterministic code
+              enforces risk, sizing, and execution.
             </p>
           </div>
           <div className="flex flex-col gap-2 font-mono text-[11.5px]">
-            <a href="https://github.com/nabhanyuzqi1/lumine-hedge-fund" className="text-ink-dim transition-colors hover:text-ink">
+            <a
+              href="https://github.com/nabhanyuzqi1/lumine-hedge-fund"
+              className="text-ink-dim transition-colors hover:text-ink"
+            >
               github.com/nabhanyuzqi1/lumine-hedge-fund
             </a>
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-ink-dim">
-              <a href="/portal/" className="transition-colors hover:text-ink">portal</a>
-              <a href="/dashboard/" className="transition-colors hover:text-ink">dashboard</a>
-              <a href="/status/" className="transition-colors hover:text-ink">status</a>
-              <a href="/auth/" className="transition-colors hover:text-ink">auth</a>
+              <a href="/portal/" className="transition-colors hover:text-ink">
+                portal
+              </a>
+              <a href="/dashboard/" className="transition-colors hover:text-ink">
+                dashboard
+              </a>
+              <a href="/status/" className="transition-colors hover:text-ink">
+                status
+              </a>
+              <a href="/auth/" className="transition-colors hover:text-ink">
+                auth
+              </a>
             </div>
             <p className="text-ink-faint">XAUUSD first — evidence before capital.</p>
           </div>
