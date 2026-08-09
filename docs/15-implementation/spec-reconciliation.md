@@ -2,7 +2,7 @@
 
 - **Status:** active
 - **Owner:** architects
-- **Last-reviewed:** 2026-08-06
+- **Last-reviewed:** 2026-08-09
 - **Review-cadence:** 30
 
 This document is the integrity check between what `docs/14-implementation/`
@@ -24,11 +24,11 @@ whole KB.
 | SSE browser auth | `auth.md` | Session-based JWT cookie path added alongside HMAC for dashboard operator | Done | Browser EventSource can now authenticate via httpOnly cookie | — |
 | `risk-engine.md` / `risk-engine-determinism.md` conflict | `docs/08-trading/` | Deprecation notice added to risk-engine.md pointing to authoritative contract | Done | risk-engine-determinism.md (ADR-0016) is the authoritative sizing contract | ADR-0016 |
 | `frontend/` scaffold | `repository-structure.md` | `frontend/src/` empty | Critical | Scaffold per `frontend-sprint-plan.md` in Sprint 6 | — |
-| Test levels (7) | `docs/13-testing/test-levels.md` | Empty `__init__.py` per level | Critical | Add ≥1 real test per level + coverage gate in CI (F10) | — |
+| Test levels (7) | `docs/13-testing/test-levels.md` | Level 3 contract suite: `tests/contract/test_api_contract.py` 30 tests (auth codes, envelope, idempotency, rate limit, pagination, SSE frames); unit 448 tests | Partial | Coverage gate in CI (F10) still open; integration suite blocked by Docker (G9) | — |
 | OpenAPI generated | `docs/09-api/api-versioning.md` | Not yet | High | Generate `openapi.yaml` from FastAPI in Sprint 5 | ADR-0041* |
 | Prompt registry module | `prompt-storage.md` + ADR-0015 | `prompts/__init__.py` only | High | Implement `prompts/registry.py` + `registry.yaml` in Sprint 2 | ADR-0015, ADR-0028 |
 | Agent registry | `agent-failure-matrix` (90) | `autogen_pipeline/agents/__init__.py` only | High | Implement typed `AgentSpec` registry in Sprint 4 | ADR-0033 |
-| Monitoring module | `docs/11-infrastructure/observability.md` | `monitoring/__init__.py` only | High | Implement logging/metrics/tracing in Sprint 4 | — |
+| Monitoring module | `docs/11-infrastructure/observability.md` | `api/middleware/logging.py` — `RequestLoggingMiddleware` (structlog access logs, `trace_id` contextvars, `X-Request-ID` echo) wired outermost in `app.py` | Done | Logging + request tracing complete (G7, Sprint 4); metrics (Prometheus) and distributed tracing deferred to Sprint 5 | — |
 | LLM gateway | `docs/06-ai/llm-gateway.md` | `llm_gateway/__init__.py` only | High | Implement with admission control in Sprint 4 | ADR-0022 |
 
 > ADR-0041* is a placeholder id; assign on creation.

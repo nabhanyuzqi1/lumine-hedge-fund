@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
+from lumine.api.middleware.rate_limit import rate_limit_dependency
 from lumine.api.schemas.api import TriggerWorkflowRequest, WorkflowRun
 from lumine.api.schemas.common import PaginatedList, Pagination
 
@@ -60,7 +61,12 @@ async def get_workflow_run(
     )
 
 
-@router.post("", response_model=WorkflowRun, status_code=201)
+@router.post(
+    "",
+    response_model=WorkflowRun,
+    status_code=201,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def trigger_workflow(
     request: TriggerWorkflowRequest,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:workflows")],

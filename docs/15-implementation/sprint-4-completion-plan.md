@@ -1,6 +1,6 @@
 # Sprint 4 Completion Plan — Remaining Work
 
-- **Status:** approved-pending
+- **Status:** G1–G8 complete — full gate PASS (ruff/mypy/478 tests); awaiting approval gate for G11
 - **Owner:** backend + frontend
 - **Created:** 2026-08-08
 - **Depends on:** `sprint-3-decision-engine.md` evidence, verifier PASS for Sprint 4 API core (2026-08-08, agent `a3b09a15f725148ff`)
@@ -13,6 +13,20 @@
   EXPIRED_TIMESTAMP, REVOKED_KEY, REPLAY_DETECTED, NOT_FOUND, RATE_LIMITED, ...)
 - HMAC-SHA256 auth per `auth.md` (query string signed, 300s window, replay cache)
 - Contract suite: 17 passed; unit suite: 448 passed; ruff clean; mypy strict clean
+
+## Resolved since (G1–G5, G7, G6 — 2026-08-09)
+
+| Gap | Resolution | Evidence |
+|-----|------------|----------|
+| G1 | All 9 routers mounted under `/api/v1` prefix; contract tests use versioned paths; `/health` stays at root | `app.py:75-86`, 30 contract tests |
+| G2 | `streams.py` rewritten to the 6 spec channels with per-channel query params + spec event names; heartbeat + `Last-Event-ID` retained | `streams.py`, `test_sse_stream_open_and_heartbeat_frames` |
+| G3 | `IdempotencyMiddleware` (pure ASGI, POST-only, `X-Idempotency-Key`): 200 replay + `meta.idempotent_replay`, 409 `CONFLICT`, 1h TTL, fail-open | `middleware/idempotency.py`, 3 contract tests |
+| G4 | `rate_limit_dependency` wired into all 10 write routes (orders, rpc, admin, workflows); 429 `RATE_LIMITED` + `Retry-After` preserved through envelope handler; limit ≤0 disables | `middleware/rate_limit.py`, `test_rate_limit_429_with_retry_after`, `test_rate_limit_disabled_when_limit_is_zero` |
+| G5 | Level-3 coverage complete: EXPIRED_TIMESTAMP, REVOKED_KEY, INSUFFICIENT_SCOPE, VALIDATION_FAILED, pagination, SSE frames; total 30 contract tests | `tests/contract/test_api_contract.py` |
+| G6 | API layer committed (commit `b09807c` "feat: sprint 1 API service + control-plane routing overhaul") | git history |
+| G7 | `RequestLoggingMiddleware` — structlog access logs, `trace_id`/`api_key` contextvars, `X-Request-ID` echo; envelope success/error paths honor inbound trace id | `middleware/logging.py`, `test_trace_id_echoed_and_consistent`, `test_trace_id_echoed_on_error_path` |
+
+Current state: **contract 30 passed, unit 448 passed, ruff/mypy clean.**
 
 ## Open gaps (audit 2026-08-08, source of truth: Phase 9 docs)
 

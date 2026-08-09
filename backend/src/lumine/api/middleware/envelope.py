@@ -29,6 +29,8 @@ from lumine.shared.errors import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from fastapi import HTTPException, Request
     from fastapi.exceptions import RequestValidationError
 
@@ -90,7 +92,9 @@ class CommonEnvelopeMiddleware(BaseHTTPMiddleware):
         enveloped = Envelope(
             meta=Meta(
                 timestamp=datetime.now(UTC),
-                request_id=str(uuid.uuid4()),
+                # Honor the inbound trace id so envelope meta.request_id
+                # matches the echoed X-Request-ID (logging middleware).
+                request_id=request.headers.get("X-Request-ID") or str(uuid.uuid4()),
                 status="ok" if response.status_code < 400 else "error",
             ),
             data=parsed,
@@ -105,12 +109,13 @@ class CommonEnvelopeMiddleware(BaseHTTPMiddleware):
         )
 
 
-def _make_error_response(
+def _make_error_response(  # noqa: PLR0913, PLR0917 — internal error-builder helper
     request: Request,
     status_code: int,
     code: str,
     message: str,
     details: dict[str, Any] | None = None,
+    headers: Mapping[str, str] | None = None,
 ) -> JSONResponse:
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     envelope: Envelope[Any] = Envelope(
@@ -129,6 +134,7 @@ def _make_error_response(
     return JSONResponse(
         status_code=status_code,
         content=envelope.model_dump(mode="json", exclude_none=True),
+        headers=headers,
     )
 
 
@@ -173,4 +179,10 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
         code = "NOT_FOUND"
     if http_exc.status_code == 429:
         code = "RATE_LIMITED"
-    return _make_error_response(request, http_exc.status_code, code, http_exc.detail or "")
+    return _make_error_response(
+        request,
+        http_exc.status_code,
+        code,
+        http_exc.detail or "",
+        headers=http_exc.headers or None,
+    )

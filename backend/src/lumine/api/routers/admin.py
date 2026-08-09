@@ -10,6 +10,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
+from lumine.api.middleware.rate_limit import rate_limit_dependency
 from lumine.api.schemas.api import (
     AdminKey,
     CreatedAdminKey,
@@ -63,7 +64,12 @@ async def list_api_keys(
     return keys
 
 
-@router.post("/keys", response_model=CreatedAdminKey, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/keys",
+    response_model=CreatedAdminKey,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def create_api_key(
     request: CreateKeyRequest,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
@@ -97,7 +103,11 @@ async def create_api_key(
     )
 
 
-@router.delete("/keys/{key_id}", response_model=AdminKey)
+@router.delete(
+    "/keys/{key_id}",
+    response_model=AdminKey,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def revoke_api_key(
     key_id: Annotated[str, Path(...)],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
@@ -147,7 +157,11 @@ async def get_kill_switch(
     )
 
 
-@router.post("/kill-switch", response_model=KillSwitchStatus)
+@router.post(
+    "/kill-switch",
+    response_model=KillSwitchStatus,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def set_kill_switch(
     request: KillSwitchRequest,
     settings: Annotated[Settings, Depends(get_settings)],

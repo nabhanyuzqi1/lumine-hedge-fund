@@ -90,7 +90,7 @@ Each agent defines: purpose, responsibilities, inputs, outputs, KPIs, prompt phi
 | Phase | Name | Status |
 |-------|------|--------|
 | 0--14 | Vision through Implementation Planning | Done |
-| 15 | Implementation | **In progress** --- Sprint 1 partial, Sprint 2 pending |
+| 15 | Implementation | **In progress** --- Sprint 1–3 done, Sprint 4 API core done (G1–G5, G6, G7, G8 gate PASS), Sprint 5+ pending |
 
 Phases are executed strictly in order; each produces documents in `docs/NN-phase-name/` before any code is written. See [`docs/phase-mapping.md`](docs/phase-mapping.md) and [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -360,7 +360,7 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODEOWNERS`](CODEOWNERS). Phases 
 
 ## Roadmap
 
-1. **Phase 15 --- Implementation**: Sprint 1 partial (backend foundation: API middleware, routers, schema contracts), Sprint 2 pending.
+1. **Phase 15 --- Implementation**: Sprints 1–3 done (foundation, data pipeline, risk & execution); Sprint 4 API core done (HMAC auth, envelope, SSE 6 channels, idempotency, rate limiting, logging/tracing — G1–G5, G7 of `sprint-4-completion-plan.md`); Sprint 5 hardening and frontend F-Sprints pending.
 2. **XAUUSD live**: paper trading --- MT5 bridge --- production.
 3. **Multi-asset**: Forex, indices, commodities, crypto, equities.
 4. **Multi-account**: multiple portfolios, brokers, and trading accounts.

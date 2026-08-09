@@ -10,6 +10,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
+from lumine.api.middleware.rate_limit import rate_limit_dependency
 from lumine.api.schemas.api import RpcCommandRequest, RpcCommandResponse
 from lumine.data.redis_client import get_redis
 from lumine.shared.config import Settings, get_settings
@@ -39,7 +40,11 @@ async def _accept(command: str) -> RpcCommandResponse:
     )
 
 
-@router.post("/run-decision-cycle", response_model=RpcCommandResponse)
+@router.post(
+    "/run-decision-cycle",
+    response_model=RpcCommandResponse,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def run_decision_cycle(
     settings: Annotated[Settings, Depends(get_settings)],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:workflows")],
@@ -51,7 +56,11 @@ async def run_decision_cycle(
     return await _accept("run_decision_cycle")
 
 
-@router.post("/halt-trading", response_model=RpcCommandResponse)
+@router.post(
+    "/halt-trading",
+    response_model=RpcCommandResponse,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def halt_trading(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> RpcCommandResponse:
@@ -59,7 +68,11 @@ async def halt_trading(
     return await _accept("halt_trading")
 
 
-@router.post("/resume-trading", response_model=RpcCommandResponse)
+@router.post(
+    "/resume-trading",
+    response_model=RpcCommandResponse,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def resume_trading(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> RpcCommandResponse:
@@ -67,7 +80,11 @@ async def resume_trading(
     return await _accept("resume_trading")
 
 
-@router.post("/cancel-order", response_model=RpcCommandResponse)
+@router.post(
+    "/cancel-order",
+    response_model=RpcCommandResponse,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def cancel_order(
     _request: RpcCommandRequest,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:orders")],

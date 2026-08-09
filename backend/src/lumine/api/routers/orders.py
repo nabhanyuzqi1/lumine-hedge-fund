@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
+from lumine.api.middleware.rate_limit import rate_limit_dependency
 from lumine.api.schemas.api import CreateOrderRequest, Order
 from lumine.api.schemas.common import PaginatedList, Pagination
 
@@ -67,7 +68,12 @@ async def get_order(
     )
 
 
-@router.post("", response_model=Order, status_code=201)
+@router.post(
+    "",
+    response_model=Order,
+    status_code=201,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def create_order(
     request: CreateOrderRequest,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:orders")],
@@ -89,7 +95,11 @@ async def create_order(
     )
 
 
-@router.delete("/{order_id}", response_model=Order)
+@router.delete(
+    "/{order_id}",
+    response_model=Order,
+    dependencies=[Depends(rate_limit_dependency)],
+)
 async def cancel_order(
     order_id: UUID,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:orders")],
