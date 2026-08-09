@@ -14,6 +14,7 @@ audit. Implementation of these contracts is tracked in
 `docs/15-implementation/`.
 
 #### Governance & structure
+
 - Global ADR registry (`docs/adr/`) with `INDEX.md` and template; phase
   `decisions.md` files now point to ADRs.
 - Governance & operations tier `docs/90-governance-and-operations/`
@@ -29,6 +30,7 @@ audit. Implementation of these contracts is tracked in
   `autogen-orchestration.md` moved to `07-autogen/orchestration.md`.
 
 #### Capital-integrity contracts
+
 - ADR-0016: LLM risk role advisory-only; deterministic sizing lookup.
 - ADR-0017: hash-chained, WORM-anchored audit journal.
 - ADR-0018: prompt injection defense-in-depth.
@@ -37,6 +39,7 @@ audit. Implementation of these contracts is tracked in
 - ADR-0021: daily broker reconciliation as SETTLED gate.
 
 #### Scale contracts
+
 - ADR-0022: LLM gateway admission control with priority lanes.
 - ADR-0023: lineage partitioning + write-aside safety gate.
 - ADR-0024: multi-broker model (schema-ready, V1 one adapter).
@@ -44,6 +47,7 @@ audit. Implementation of these contracts is tracked in
 - ADR-0026: comparative replay resource isolation.
 
 #### Institutional contracts
+
 - ADR-0027: four-tier memory architecture with governed deferral triggers.
 - ADR-0028: machine-enforced eval gate on prompt promotion.
 - ADR-0029: reasoning traces stored alongside outputs.

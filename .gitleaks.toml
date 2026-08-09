@@ -1,0 +1,9 @@
+# Gitleaks configuration for Lumine
+# Docs that contain example/demo API keys are excluded from scanning.
+# These are intentionally fake keys used for documentation purposes only.
+
+[allowlist]
+  description = "Documentation with example API keys"
+  paths = [
+    '''docs/09-api/auth.md''',
+  ]

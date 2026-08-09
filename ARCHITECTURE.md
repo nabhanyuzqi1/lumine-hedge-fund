@@ -10,7 +10,7 @@ reason; deterministic code handles money and safety.
 
 ## Agent hierarchy
 
-```
+```text
 CEO
   └── CIO
         └── Investment Committee (IC)
@@ -30,7 +30,7 @@ See `docs/02-departments/` and `docs/90-governance-and-operations/94-runbooks/ag
 
 ## Critical path (every trade decision)
 
-```
+```text
 Scheduler ─► trade-core
   │
   ▼
@@ -78,9 +78,15 @@ The CIO kill switch is read every cycle and sits above the entire path.
 
 ## Architecture layers
 
-1. Data Collection · 2. Feature Engineering · 3. Market Analysis ·
-4. Investment Committee · 5. Risk Committee · 6. Execution ·
-7. Monitoring · 8. Journal · 9. Learning
+1. Data Collection
+2. Feature Engineering
+3. Market Analysis
+4. Investment Committee
+5. Risk Committee
+6. Execution
+7. Monitoring
+8. Journal
+9. Learning
 
 ## Where to read more
 

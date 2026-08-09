@@ -1,4 +1,4 @@
-name: supply-chain
+name: Supply Chain Audit
 
 on:
   push:
