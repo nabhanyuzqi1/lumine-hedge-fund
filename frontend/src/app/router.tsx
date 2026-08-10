@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import App from '../App.jsx';
+import { DashboardPage } from './pages/dashboard';
 import { HealthPage } from './pages/health';
 import { StreamsPage } from './pages/streams';
 
@@ -22,5 +23,9 @@ export const router = createBrowserRouter([
   {
     path: '/streams',
     element: <StreamsPage />,
+  },
+  {
+    path: '/dashboard',
+    element: <DashboardPage />,
   },
 ]);

@@ -22,5 +22,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     exclude: ['node_modules', 'dist'],
+    // Loaded machines can push render-heavy suites (dashboard grid, dialogs)
+    // past the 5000ms default; verified green at 20s under full-machine load.
+    testTimeout: 20000,
   },
 });

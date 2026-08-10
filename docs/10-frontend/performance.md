@@ -18,6 +18,22 @@ contract for the dashboard. Error semantics map directly to Phase 9
 | Memory | Ring buffer ≤ 1000 events per store (aligned with Phase 9 replay/buffer semantics); committee feed trimmed to last 500 entries |
 | Long sessions | No EventSource leaks — cleanup on unmount; exactly one connection per stream, shared across panes |
 
+## Chart runtime behavior
+
+How chart panes uphold the budgets above. Implemented in F-Sprint 4
+(`frontend/src/components/charts/`), driven by `docs/10-frontend/charts.md`.
+
+| Concern | Contract |
+|---------|----------|
+| Tick batching | SSE ticks batch at 100ms per pane; the batch mutates only the last bar via `series.update()` — never a full `setData` rebuild. |
+| Initial data | Full history via `setData` once per series at mount/timeframe switch. |
+| Timeframe switch | Pure transform (`lib/chart-transform.ts`) → `setData`; no animation, no layout shift (fixed-height container). Budget < 150ms interaction. |
+| Resize | One `ResizeObserver` per chart container; `chart.resize()` with explicit pixel dims; container fixed-height so no layout shift. |
+| ECharts loading | Tree-shaken `echarts/core` imports + `React.lazy` per pane with skeleton fallback; critical bundle stays < 300KB gzip. |
+| Theme | Semantic CSS variables mapped once in `lib/chart-theme.ts` (up/down/warn/danger/accent, tabular numerals). |
+| Cleanup | `chart.remove()` / `dispose()` on unmount; `setOption(option, true)` (notMerge) on data change; no leaked instances in long sessions. |
+| Demo mode | Deterministic fixtures (seeded PRNG) + 1s synthetic ticks when REST/SSE unavailable; identical code path to live data. |
+
 ## Error & degraded-state handling
 
 Mapping from Phase 9 error-contract.md and sse-api.md:
