@@ -161,6 +161,54 @@ Catatan: saat domain publik menggantikan IP, ubah `base` dan `startUrl`
 mengikutinya. Nilai `base` harus sama dengan URL yang diketik user di
 browser, termasuk scheme dan port.
 
+## Log Caddy di portal (widget logview)
+
+Portal dapat menampilkan access log Caddy secara live via widget
+`logview` Homepage (source `docker`). docker.sock sudah di-mount `ro` ke
+container Homepage, jadi tidak ada route/auth tambahan — widget membaca
+log via Docker API dari sisi server.
+
+Dua perubahan di VPS:
+
+1. **Caddy menulis access log ke stdout** — di dalam site block utama
+   `/srv/control-plane/caddy/Caddyfile`:
+
+   ```
+   https://166.88.227.177 {
+       log {
+           output stdout
+       }
+       ...
+   }
+   ```
+
+   Restart: `docker restart control-plane-caddy-1` (`admin off` aktif,
+   reload tidak tersedia). Verifikasi: `docker logs control-plane-caddy-1`.
+
+2. **Widget di Homepage** — `services.yaml` (versi di repo:
+   `infrastructure/control-plane/homepage/config/services.yaml`):
+
+   ```yaml
+   - Caddy Logs:
+       widget:
+         type: logview
+         source: docker
+         container: caddy
+         refresh: 1000
+   ```
+
+   Salin ke `/srv/control-plane/homepage/config/services.yaml`, restart
+   `control-plane-homepage-1`. Jika nama container Caddy berbeda di VPS,
+   cek `docker ps` dan sesuaikan `container:`.
+
+Catatan:
+
+- `docker.sock` di container Homepage setara root di host — portal wajib
+  tetap di balik Authelia.
+- Log bertahan selama Docker menyimpan output container (`docker logs`).
+  Batasi dengan `logging: { driver: json-file, options: { max-size: "10m",
+  max-file: "3" } }` pada service caddy di compose kalau disk jadi perhatian.
+
 ## Klasifikasi VNC per service
 
 | Service | VNC? | Alasan |

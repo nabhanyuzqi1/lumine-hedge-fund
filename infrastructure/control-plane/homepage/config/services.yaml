@@ -1,0 +1,11 @@
+# Homepage services — versioned copy of /srv/control-plane/homepage/config/services.yaml
+# Requires: docker.sock mounted ro into the homepage container (already the
+# case — see docs/11-infrastructure/control-plane.md) and Caddy access
+# logging to stdout (`log { output stdout }` inside the site block).
+
+- Caddy Logs:
+    widget:
+      type: logview
+      source: docker
+      container: caddy
+      refresh: 1000
