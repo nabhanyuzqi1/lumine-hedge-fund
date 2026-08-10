@@ -132,6 +132,35 @@ tabrakan dengan Caddy (`network_mode: host` mengabaikan `ports:`)
   catch-all `"^/.*"` `two_factor` (semua route butuh TOTP; `/auth/*`
   bebas auth karena itu endpoint login).
 
+## Homepage base URL (mencegah infinite loading setelah login)
+
+Homepage adalah aplikasi Next.js yang menghasilkan static HTML dengan
+`<base href="...">`. Saat di-serve di belakang reverse proxy dengan path
+prefix `/portal*`, Homepage harus diberitahu base URL publiknya. Tanpa
+ini, setelah redirect sukses dari Authelia browser menerima halaman dengan
+`<base href="/">`; link, asset, dan client-side fetch mengarah ke path
+tanpa `/portal`, yang berakhir di landing page atau redirect loop —
+terlihat sebagai "portal loading infinite, harus di-refresh baru normal".
+
+File `/srv/control-plane/homepage/config/settings.yaml` wajib mengandung:
+
+```yaml
+base: https://166.88.227.177/portal
+startUrl: https://166.88.227.177/portal
+```
+
+Setelah mengubah `settings.yaml`, Homepage harus di-restart supaya static
+HTML di-regenerate ulang (tombol refresh di pojok kanan bawah portal
+hanya me-refresh data, tidak me-rebuild base URL):
+
+```bash
+cd /srv/control-plane && docker restart control-plane-homepage-1
+```
+
+Catatan: saat domain publik menggantikan IP, ubah `base` dan `startUrl`
+mengikutinya. Nilai `base` harus sama dengan URL yang diketik user di
+browser, termasuk scheme dan port.
+
 ## Klasifikasi VNC per service
 
 | Service | VNC? | Alasan |
@@ -155,13 +184,42 @@ tabrakan dengan Caddy (`network_mode: host` mengabaikan `ports:`)
    baru.
 5. Catat di tabel klasifikasi VNC di atas.
 
-## Pengecualian: 9router `:20128` publik
+## Pengecualian: 9router `:20128` publik (HARD INVARIANT)
 
-`9router` sengaja tetap `0.0.0.0:20128`. Agent eksternal (termasuk agent
-AI) menghubungi gateway langsung via IP; menutup port ini membuat semua
-agent down (insiden 2026-08-07 — langsung dipulihkan). Kompensasi:
-monitor Kuma aktif untuk `:20128`. **Jangan ubah bind-nya.** Tindak
-lanjut: mTLS atau IP allowlist saat domain tersedia (ADR-0069).
+`9router` melayani OpenAI-compatible API langsung di `0.0.0.0:20128`
+(plain HTTP). Agent eksternal (termasuk agent AI) menghubungi gateway
+via IP `http://166.88.227.177:20128`. **Tidak ada service lain yang
+boleh bind host port `20128`.**
+
+### Dua endpoint gateway yang sah
+
+| Endpoint | Akses | Gunakan untuk |
+|---|---|---|
+| `http://166.88.227.177:20128/v1` | Publik langsung, plain HTTP | Agent eksternal / OpenAI-compatible clients |
+| `https://166.88.227.177:8443/v1` | Via Caddy, HTTPS + Authelia opsional | Dashboard/admin, atau clients yang butuh TLS |
+
+Caddy reverse-proxy ke internal Docker IP `9router`
+(`172.18.0.4:20128`) — bukan `127.0.0.1:20128` dan bukan port lain.
+
+### Insiden port ownership 2026-08-07 & 2026-08-10
+
+- Caddy pernah diberi blok `https://166.88.227.177:20128`, yang membuat
+  Caddy bind host port `20128`. Karena `9router` juga butuh bind
+  `0.0.0.0:20128`, container `9router` gagal start dengan "address already
+  in use" dan semua agent mati.
+- Endpoint `sslip.io` untuk HTTPS dipindah ke `:8443` agar tidak
+  berebut port lagi. Direkt IP `20128` tetap plain HTTP — 9router tidak
+  menyertakan TLS.
+- **Invariant:** selama 9router melayani agent eksternal, port `20128`
+  milik 9router satu-satunya. Caddy boleh expose `sslip.io:8443`, tidak
+  boleh `*:20128`. Perubahan bind 9router hanya boleh dilakukan dengan
+  perencanaan dan jadwal outage eksplisit.
+
+### Kompensasi keamanan
+
+- Monitor Uptime Kuma aktif untuk kedua endpoint gateway.
+- Tindak lanjut: mTLS atau IP allowlist saat domain tersedia
+  (lihat ADR-0069).
 
 ## TLS
 

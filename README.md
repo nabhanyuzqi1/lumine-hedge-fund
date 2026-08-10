@@ -1,4 +1,12 @@
-# Lumine --- AI-Native Quantitative Hedge Fund Platform
+# Lumine
+
+**AI-Native Quantitative Hedge Fund Platform**
+
+[![Backend CI](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/ci.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/ci.yml)
+[![Frontend CI](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/ci-frontend.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/ci-frontend.yml)
+[![Supply Chain](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/supply-chain.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/supply-chain.yml)
+[![Docs](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/docs.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/docs.yml)
+[![Deploy](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/deploy.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/deploy.yml)
 
 Lumine is an institutional-grade, AI-driven quantitative investment system. Autonomous AI agents collaborate inside a strict hierarchy to make investment decisions, manage risk, and execute trades — starting with **XAUUSD**, scaling to Forex, Indices, Commodities, Crypto, Stocks, and Futures.
 
@@ -6,16 +14,16 @@ This is **not** a retail trading bot, EA, or signal provider. Lumine is designed
 
 ---
 
-## Production Status
+## Status
 
-| Service | Status | Endpoint |
-|---------|--------|----------|
-| Landing page | [![Deploy](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/deploy.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/deploy.yml) | [lumine-terminal.com](https://lumine-terminal.com) |
-| Backend CI | [![CI](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/ci.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/ci.yml) | `https://<vps>/backend/` |
-| Supply chain | [![Supply Chain](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/supply-chain.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/supply-chain.yml) | --- |
-| Docs integrity | [![Docs](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/docs.yml/badge.svg)](https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions/workflows/docs.yml) | --- |
+| Service | Endpoint |
+|---------|----------|
+| Landing page | [lumine-terminal.com](https://lumine-terminal.com) |
+| Backend API | `https://<vps>/backend/` |
+| Control plane portal | `https://<vps>/portal/` |
+| Health dashboard | `https://<vps>/dashboard/` |
 
-System uptime monitored internally via [Uptime Kuma](https://github.com/louislam/uptime-kuma) on the control plane. Dashboard accessible at `/dashboard/` behind Authelia SSO.
+System uptime is monitored internally via [Uptime Kuma](https://github.com/louislam/uptime-kuma) on the control plane. Dashboard accessible at `/dashboard/` behind Authelia SSO.
 
 ---
 
@@ -193,9 +201,10 @@ lumine-hedge-fund/
 |   +-- src/lumine/                    # api, autogen_pipeline, backtest, bridge, features,
 |                                      # llm_gateway, monitoring, security, trade_core, ...
 +-- frontend/                          # Landing page + future Phase 10 trading dashboard
++-- infrastructure/                    # Control plane configs (Caddy, Authelia, Homepage, Uptime Kuma)
 +-- scripts/                           # Deploy & ops scripts (deploy-site, deploy-stack, watchdog)
 +-- Makefile                           # Canonical entry commands (CI parity)
-+-- .github/workflows/                 # CI, supply-chain, docs, deploy
++-- .github/workflows/                 # CI, frontend CI, supply-chain, docs, deploy
 ```
 
 ---

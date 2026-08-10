@@ -142,11 +142,18 @@ loopback-bound. All other upstream services are loopback-bound. TLS is
 - Kuma monitors all seven endpoints from inside the same host; failures
   are visible without opening the observability stack (D11-4).
 
-**Explicit exception:** `9router` on `:20128` stays public
-(`0.0.0.0`) — external AI agents connect by IP and closing the port
-takes them all offline (observed 2026-08-07). This is the only public
-port beyond `:80/:443`. See ADR-0069 for compensating controls and the
-mTLS/allowlist follow-up.
+**Explicit exception — 9router port ownership (HARD INVARIANT):**
+`9router` serves its OpenAI-compatible API directly on public
+`0.0.0.0:20128` (plain HTTP) because external AI agents connect by IP
+and closing/rebinding this port takes them all offline (observed
+2026-08-07 and again 2026-08-10). **No other service may ever bind
+host port `20128`.** Caddy previously bound `:20128` for the
+`sslip.io` HTTPS endpoint and caused a complete agent outage; that
+endpoint was moved to `:8443` and now reverse-proxies to 9router's
+internal Docker IP (`172.18.0.4:20128`). `:20128` is therefore the
+only public port beyond `:80/:443` and `:8443`. See ADR-0069 for
+compensating controls (monitoring, future mTLS/IP allowlist) and the
+post-mortem note.
 
 **Alternatives rejected:** Traefik (dynamic routing for a static
 topology), Authentik (own Postgres+Redis, too heavy), oauth2-proxy (no

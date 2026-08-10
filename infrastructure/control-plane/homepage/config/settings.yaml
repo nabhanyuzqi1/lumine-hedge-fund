@@ -1,0 +1,15 @@
+---
+# Homepage settings for Lumine control plane portal.
+# Served behind Caddy at https://166.88.227.177/portal/
+# The `base` key is required so generated links and assets resolve
+# correctly behind the /portal path prefix; without it the post-login
+# page loads indefinitely because client-side paths hit the wrong route.
+
+base: https://166.88.227.177/portal
+
+title: Lumine Portal
+description: Lumine AI-native hedge fund control plane hub
+
+# Use the portal path as the PWA start URL so bookmarks / "install"
+# land on the authenticated portal, not on the root landing page.
+startUrl: https://166.88.227.177/portal

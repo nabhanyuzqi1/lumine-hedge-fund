@@ -103,9 +103,15 @@ Internet :80/:443  ← satu-satunya entry publik (plus pengecualian :20128)
   (Homepage), `3001` (Uptime Kuma). UFW `3000/tcp` dan `3001/tcp`
   tetap DENY sebagai defense-in-depth. Hanya Caddy yang terjangkau
   eksternal.
-- **Pengecualian tersurat:** `9router` `0.0.0.0:20128` tetap publik —
-  agent eksternal connect langsung via IP; menutupnya membuat semua agent
-  down (insiden 2026-08-07). Satu-satunya port publik selain `:80/:443`.
+- **Pengecualian tersurat (HARD INVARIANT):** `9router` adalah satu-
+  satunya service selain Caddy yang bind host port publik: `0.0.0.0:20128`
+  (plain HTTP). Agent eksternal connect langsung via IP
+  `http://166.88.227.177:20128`. **Tidak boleh ada service lain yang bind
+  `*:20128`.** Caddy menyediakan endpoint HTTPS alternatif di
+  `https://166.88.227.177:8443/v1` (reverse-proxy ke internal
+  Docker IP `9router`), yang tidak boleh dipindah ke `:20128`. Lihat
+  `control-plane.md` untuk rincian insiden port ownership 2026-08-07 dan
+  2026-08-10.
 - Kompatibilitas ke depan: ketika V1 service Phase 15 masuk, Caddy cukup
   menambah route `/api/*`, `/streams/*` → `lumine-trade-core` dan
   `/grafana/*` (allowlist IP) — struktur control plane tidak berubah.
