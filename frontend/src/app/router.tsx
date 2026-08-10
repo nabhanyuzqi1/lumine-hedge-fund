@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import App from '../App.jsx';
 import { HealthPage } from './pages/health';
+import { StreamsPage } from './pages/streams';
 
 /**
  * Lumine portal route table (F-Sprint 1 scaffold).
@@ -17,5 +18,9 @@ export const router = createBrowserRouter([
   {
     path: '/health',
     element: <HealthPage />,
+  },
+  {
+    path: '/streams',
+    element: <StreamsPage />,
   },
 ]);
