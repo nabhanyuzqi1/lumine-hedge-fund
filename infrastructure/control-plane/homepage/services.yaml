@@ -1,19 +1,18 @@
-# Homepage services — versioned copy of /srv/control-plane/homepage/services.yaml
-#
-# CATATAN PENTING (insiden 2026-08-11): jangan tambahkan group berisi
-# `widget:` saja ("widget-only group") — parser Homepage 1.13.2 melakukan
-# `group[groupName].forEach` tanpa guard, sehingga object widget memicu
-# `TypeError: b[c].forEach is not a function` dan SELURUH services.yaml
-# gagal di-load (portal kosong + error berantai di console browser).
-# Widget `logview` juga tidak ada di Homepage 1.13.2 (docs-nya 404).
-
 - Lumine:
     - Hermes:
         icon: si-wechat
         href: https://166.88.227.177/hermes/
         description: LLM investment committee console
         server: lumine-docker
-        container: hermes-dashboard
+        container: hermes
+        showStats: true
+    - Hermes API:
+        icon: si-openai
+        href: https://166.88.227.177/hermes-api/v1/models
+        ping: http://127.0.0.1:8642/health
+        description: OpenAI-compatible Hermes model endpoint
+        server: lumine-docker
+        container: hermes
         showStats: true
     - MT5 Terminal:
         icon: si-tradingview
@@ -43,6 +42,13 @@
         description: Health checks, status pages & alerts
         server: lumine-docker
         container: control-uptime-kuma
+        showStats: true
+    - Caddy Logs:
+        icon: si-nginx
+        href: https://166.88.227.177/logs/
+        description: Reverse-proxy access logs via Dozzle
+        server: lumine-docker
+        container: control-dozzle
         showStats: true
     - Authelia SSO:
         icon: si-auth0

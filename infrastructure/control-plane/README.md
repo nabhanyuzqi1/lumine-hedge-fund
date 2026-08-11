@@ -74,10 +74,59 @@ Notes:
 
 ## File mapping
 
-| Local path | VPS path |
-|---|---|
-| `homepage/settings.yaml` | `/srv/control-plane/homepage/settings.yaml` |
-| `homepage/services.yaml` | `/srv/control-plane/homepage/services.yaml` |
+| Local path | VPS path | Container target |
+|---|---|---|
+| `docker-compose.yml` | `/srv/control-plane/docker-compose.yml` | — |
+| `caddy/Caddyfile` | `/srv/control-plane/caddy/Caddyfile` | `/etc/caddy/Caddyfile` (ro) |
+| `authelia/configuration.yml` | `/srv/control-plane/authelia/configuration.yml` | `/config/configuration.yml` |
+| `authelia/users_database.yml` | `/srv/control-plane/authelia/users_database.yml` | `/config/users_database.yml` |
+| `authelia/custom-css/theme.css` | `/srv/control-plane/authelia/custom-css/theme.css` | `/config/custom-css/theme.css` |
+| `homepage/*.yaml` | `/srv/control-plane/homepage/*.yaml` | `/app/config/*.yaml` |
+| `homepage/custom.{js,css}` | `/srv/control-plane/homepage/custom.{js,css}` | `/app/config/custom.{js,css}` |
+| `landing/nginx.conf` | `/srv/control-plane/landing/nginx.conf` | `/etc/nginx/conf.d/default.conf` (ro) |
+
+Note: the homepage container mounts the host `homepage/` dir to `/app/config`
+inside the container. So `homepage/services.yaml` on host becomes
+`/app/config/services.yaml` in the container. There is no `homepage/config/`
+subdirectory on the host.
+
+## First-time deployment
+
+Secrets are NOT committed. Before `docker compose up`:
+
+1. Copy the template:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Generate three 64-char hex secrets and paste into `.env`:
+
+   ```bash
+   openssl rand -hex 32  # → AUTHELIA_JWT_SECRET
+   openssl rand -hex 32  # → AUTHELIA_SESSION_SECRET
+   openssl rand -hex 32  # → AUTHELIA_STORAGE_ENCRYPTION_KEY
+   ```
+
+3. Set the admin password in `authelia/users_database.yml`. Generate an
+   argon2id hash and replace the placeholder:
+
+   ```bash
+   docker run --rm -it authelia/authelia:4.39 authelia hash-password 'yourpassword'
+   # paste the output (including $argon2id$...) into users_database.yml
+   ```
+
+4. Sync to the VPS and start:
+
+   ```bash
+   rsync -avz --exclude='.env' --exclude='authelia/db.sqlite3*' \
+     ./ root@166.88.227.177:/srv/control-plane/
+   ssh root@166.88.227.177 'cd /srv/control-plane && docker compose up -d'
+   ```
+
+> **Warning:** `AUTHELIA_STORAGE_ENCRYPTION_KEY` must be stable across
+> restarts. Changing it invalidates all stored TOTP/2FA enrollments —
+> users would need to re-enroll.
 
 ## What NOT to change here
 

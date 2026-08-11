@@ -1,0 +1,64 @@
+# Authelia 4.38 — Lumine Control Plane
+# Hanya bind loopback; portal diakses via Caddy /auth/*
+server:
+  address: tcp://127.0.0.1:9091/auth
+
+theme: dark
+
+log:
+  level: info
+
+# Wajib 4.38+ — secret untuk token reset password
+identity_validation:
+  reset_password:
+    jwt_secret: ${AUTHELIA_JWT_SECRET}
+
+totp:
+  issuer: Lumine Control Plane
+  period: 30
+  skew: 1
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2id
+      iterations: 3
+      salt_length: 16
+      parallelism: 4
+      memory: 64
+
+access_control:
+  default_policy: deny
+  rules:
+    # Semua route terproteksi — satu login untuk semua service.
+    # Catch-all: handle_path Caddy men-strip prefix sebelum forward_auth,
+    # jadi Authelia melihat path upstream (mis. /vnc.html, /health).
+    - domain: 166.88.227.177
+      policy: two_factor
+      resources:
+        - "^/.*"
+
+session:
+  name: authelia_session
+  secret: ${AUTHELIA_SESSION_SECRET}
+  cookies:
+    - domain: 166.88.227.177
+      authelia_url: https://166.88.227.177/auth
+      default_redirection_url: https://166.88.227.177/
+      expiration: 12h
+      inactivity: 1h
+
+regulation:
+  max_retries: 5
+  find_time: 2m
+  ban_time: 5m
+
+storage:
+  local:
+    path: /config/db.sqlite3
+  encryption_key: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+
+notifier:
+  filesystem:
+    filename: /config/notifications.txt

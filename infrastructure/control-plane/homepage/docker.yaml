@@ -1,0 +1,5 @@
+---
+# Sumber koneksi Docker untuk widget kontrol service
+# Semua widget bertipe docker di services.yaml memakai sumber ini.
+lumine-docker:
+  socket: /var/run/docker.sock

@@ -1,0 +1,111 @@
+/* ============================================================
+   Lumine Control Plane — Authelia 4.38+ custom theme
+   Loaded automatically when theme: custom is set.
+   Design tokens match the Lumine institutional dark system:
+   deep navy foundations, electric blue accent, calm surfaces.
+   ============================================================ */
+
+:root {
+  --primary-color: #4d8dff;
+  --success-color: #10b981;
+  --warning-color: #fbbf24;
+  --danger-color: #f87171;
+  --dark-color: #0b1120;
+}
+
+/* --- page background: navy radial wash --- */
+body {
+  background:
+    radial-gradient(1100px 700px at 75% -10%, rgba(77, 141, 255, 0.14) 0%, rgba(77, 141, 255, 0) 55%),
+    radial-gradient(900px 600px at -10% 110%, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0) 50%),
+    #070b14 !important;
+}
+
+/* --- login panel: dark glass card --- */
+.main-panel {
+  background: rgba(11, 17, 32, 0.82) !important;
+  border: 1px solid rgba(77, 141, 255, 0.16) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55) !important;
+}
+
+.glass {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* --- brand wordmark replaces the default logo --- */
+.main-panel img {
+  display: none !important;
+}
+
+.glass::before {
+  content: "LUMINE";
+  display: block;
+  padding: 10px 0 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-align: center;
+  color: #e6ecf7;
+}
+
+/* --- typography --- */
+h1, h2, h3, p, label, .title {
+  color: #e6ecf7 !important;
+}
+
+/* --- form controls --- */
+input[type="text"], input[type="password"], input[type="email"], input[type="number"], input[type="tel"] {
+  background: #0e1526 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  color: #e6ecf7 !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="tel"]:focus {
+  border-color: #4d8dff !important;
+  box-shadow: 0 0 0 3px rgba(77, 141, 255, 0.25) !important;
+  outline: none !important;
+}
+
+input::placeholder {
+  color: rgba(230, 236, 247, 0.4) !important;
+}
+
+/* --- primary actions (sign in, 2FA confirm, ...) --- */
+button.primary-color, .primary-color {
+  background: #4d8dff !important;
+  border-color: #4d8dff !important;
+  border-radius: 8px !important;
+  color: #070b14 !important;
+  font-weight: 600 !important;
+  transition: background 0.15s ease;
+}
+
+button.primary-color:hover, .primary-color:hover {
+  background: #6ba0ff !important;
+  border-color: #6ba0ff !important;
+}
+
+/* --- secondary links --- */
+a {
+  color: #7aa7ff !important;
+}
+
+a:hover {
+  color: #9dbbff !important;
+}
+
+/* --- footer divider --- */
+.footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* --- inline alerts keep semantic colors readable on dark --- */
+.alert.alert-success { background: rgba(16, 185, 129, 0.15) !important; color: #6ee7b7 !important; }
+.alert.alert-error { background: rgba(248, 113, 113, 0.15) !important; color: #fca5a5 !important; }
+.alert.alert-warning { background: rgba(251, 191, 36, 0.15) !important; color: #fde68a !important; }

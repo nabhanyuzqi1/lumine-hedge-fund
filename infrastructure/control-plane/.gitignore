@@ -1,0 +1,13 @@
+# Secrets — never commit
+.env
+
+# Authelia runtime state
+authelia/db.sqlite3*
+authelia/notifications.txt
+
+# Caddy runtime backups
+caddy/*.bak
+caddy/*.broken-*
+
+# Uptime-kuma runtime DB
+uptime-kuma/kuma.db*

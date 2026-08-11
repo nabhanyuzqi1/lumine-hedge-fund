@@ -1,0 +1,82 @@
+services:
+  caddy:
+    image: caddy:2
+    container_name: control-caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  authelia:
+    image: authelia/authelia:4.39
+    container_name: control-authelia
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./authelia:/config
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Jakarta
+    depends_on:
+      - caddy
+
+  homepage:
+    image: gethomepage/homepage:latest
+    container_name: control-homepage
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=166.88.227.177,localhost
+      - HOMEPAGE_VAR_VPS_IP=166.88.227.177
+      # Bind loopback — akses publik hanya lewat Caddy
+      - HOSTNAME=127.0.0.1
+      - PORT=3000
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: control-uptime-kuma
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./uptime-kuma:/app/data
+    environment:
+      # Bind loopback — akses publik hanya lewat Caddy /status*
+      - UPTIME_KUMA_HOST=127.0.0.1
+      - UPTIME_KUMA_PORT=3001
+
+  # Landing page (marketing) — containerized 2026-08-08, menggantikan nginx
+  # host (systemd). Bridge network + loopback-only: nginx:alpine default
+  # listen :80 — dengan host network akan tabrakan dengan Caddy :80.
+  landing:
+    image: nginx:alpine
+    container_name: control-landing
+    restart: unless-stopped
+    volumes:
+      - /var/www/lumine:/usr/share/nginx/html:ro
+      - ./landing/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:8080:80"
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: control-dozzle
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # Base path harus cocok dengan Caddy handle /logs*
+      - DOZZLE_BASE=/logs
+      # Hanya tampilkan log container Caddy reverse proxy
+      - DOZZLE_FILTER=status=running
+      - DOZZLE_ADDR=:8083
+
+volumes:
+  caddy_data:
+  caddy_config:
