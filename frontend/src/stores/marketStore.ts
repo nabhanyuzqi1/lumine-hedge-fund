@@ -20,6 +20,7 @@ interface MarketActions {
 }
 
 const MAX_HISTORY_PER_SYMBOL = 1_000;
+const EMPTY_HISTORY: MarketTick[] = [];
 
 export const useMarketStore = create<MarketState & MarketActions>((set, get) => ({
   ticks: {},
@@ -39,5 +40,5 @@ export const useMarketStore = create<MarketState & MarketActions>((set, get) => 
 
   getTick: (symbol) => get().ticks[symbol],
 
-  getHistory: (symbol) => get().history[symbol] ?? [],
+  getHistory: (symbol) => get().history[symbol] ?? EMPTY_HISTORY,
 }));

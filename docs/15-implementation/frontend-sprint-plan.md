@@ -42,15 +42,15 @@ conventions, not chaos.
 - lightweight-charts: candlestick, equity, drawdown.
 - ECharts: exposure, allocation, correlation, agent votes, P&L.
 - 60 FPS target; chart optimization per Phase 10.
-- **Status: implemented 2026-08-11** — local gate PASS + independent
+- **Status: approved 2026-08-11** — local gate PASS + independent
   verification PASS, evidence in `sprint-evidence/f-sprint-4-charts.md`.
-  Approval gate pending before F-Sprint 5.
 
 ### F-Sprint 5 — Surfaces
-- Portfolio, risk, positions, execution, AI committee, market intelligence,
-  strategy performance, research/backtesting, paper/production operations,
-  model & LLM cost, infrastructure & memory health, journal, prompt history,
-  audit logs (per Phase 10 wireframes).
+- **Status: approved 2026-08-11** — local gate PASS + independent
+  verification PASS, evidence in `sprint-evidence/f-sprint-5-surfaces.md`.
+- 6 route surfaces: Terminal, Order Detail, Workflow Run Detail, Lineage Detail,
+  Journal, Admin Keys; workspace Rail rearranges Terminal panes without route
+  change so streams persist.
 
 ### F-Sprint 6 — Keyboard, responsive, a11y, performance
 - Command palette, keyboard model, focus visibility.

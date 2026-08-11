@@ -34,6 +34,23 @@ How chart panes uphold the budgets above. Implemented in F-Sprint 4
 | Cleanup | `chart.remove()` / `dispose()` on unmount; `setOption(option, true)` (notMerge) on data change; no leaked instances in long sessions. |
 | Demo mode | Deterministic fixtures (seeded PRNG) + 1s synthetic ticks when REST/SSE unavailable; identical code path to live data. |
 
+## Surface runtime behavior
+
+How F-Sprint 5 surfaces uphold the budgets above. Implemented in
+`frontend/src/app/pages/`, `frontend/src/app/components/`, and
+`frontend/src/components/terminal/`.
+
+| Concern | Contract |
+|---------|----------|
+| Workspace rail | Pure `uiStore` state switch — no route change, no stream remount; stores persist across Trading/Research/Risk/Ops workspaces. |
+| Terminal layout | Static grid of existing chart + table components; detail pages lazy-loaded so critical bundle stays < 300KB gzip. |
+| Kill switch | One global flag in `uiStore`; write actions (Cancel Order, Revoke key, Create key) disabled via prop/tooltip while banner is active. |
+| Committee feed | `committeeStore` trims to last 500 activities; detail pages filter by `workflow_run_id` without copying the buffer. |
+| Activity log | Ring buffer ≤ 1000 entries per `activityStore`; detail filters by symbol/run id in render, not by mutating the buffer. |
+| Tables | Positions/orders use existing virtualized `DataTable`; journal uses plain HTML table with 50-row cursor pagination (no virtualization needed for audit log). |
+| Detail pages | `React.lazy` + Suspense skeleton; loaded only on navigation, keeping initial chunk under budget. |
+| Demo mode | All detail hooks follow F-Sprint 3/4 fixture-fallback pattern (`try { get(...) } catch { return generateX() }`); deterministic seeds keep tests/screenshots reproducible. |
+
 ## Error & degraded-state handling
 
 Mapping from Phase 9 error-contract.md and sse-api.md:

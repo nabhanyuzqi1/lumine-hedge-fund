@@ -1,0 +1,65 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { WorkflowRunDetailPage } from '@/app/pages/workflow-run-detail';
+import { useCommitteeStore } from '@/stores/committeeStore';
+
+vi.mock('echarts/core');
+vi.mock('echarts/charts');
+vi.mock('echarts/components');
+vi.mock('echarts/renderers');
+
+function renderPage(workflowId = 'wf-xauusd-daily', runId = 'run-001') {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <MemoryRouter initialEntries={[`/workflows/${workflowId}/runs/${runId}`]}>
+      <QueryClientProvider client={client}>
+        <Routes>
+          <Route path="/workflows/:workflowId/runs/:runId" element={<WorkflowRunDetailPage />} />
+        </Routes>
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
+}
+
+describe('WorkflowRunDetailPage', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('backend offline')));
+    useCommitteeStore.setState({
+      activities: [
+        {
+          id: 'act-1',
+          workflow_run_id: 'run-001',
+          type: 'analyst_output',
+          agent: 'technical',
+          decision: 'Trend continuation confirmed',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('renders run summary and stepper', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText(/Run run-001/i)).toBeDefined());
+    expect(screen.getByTestId('run-stepper')).toBeDefined();
+    expect(
+      screen.getByText(/XAUUSD Daily Direction|News Event Sweep|Portfolio Rebalance/i),
+    ).toBeDefined();
+  });
+
+  it('filters committee feed by run id', async () => {
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('committee-feed')).toBeDefined());
+    expect(screen.getByText('technical')).toBeDefined();
+    expect(screen.getByText('Trend continuation confirmed')).toBeDefined();
+  });
+});

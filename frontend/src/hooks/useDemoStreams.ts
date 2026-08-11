@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { useActivityStore } from '@/stores/activityStore';
 import { useMarketStore, type MarketTick } from '@/stores';
 import { generatePnl, mulberry32, type EquityPoint } from '@/data/fixtures';
 
@@ -24,12 +25,16 @@ export function useDemoStreams(
   const upsertTick = useMarketStore((state) => state.upsertTick);
   const lastTick = useMarketStore((state) => state.ticks[symbol] ?? null);
   const [pnlSeries, setPnlSeries] = useState<EquityPoint[]>(() => generatePnl({ count: 60 }));
+  const appendLog = useActivityStore.getState().appendLog;
 
   useEffect(() => {
     if (!enabled) return;
 
+    appendLog({ stream: 'market', message: `Demo stream started for ${symbol}`, level: 'info' });
+
     const rand = mulberry32(DEMO_SEED);
     let price = 2_400;
+    let tickCount = 0;
     const timer = setInterval(() => {
       price *= 1 + (rand() - 0.5) * 0.0006;
       const tick: MarketTick = {
@@ -40,6 +45,14 @@ export function useDemoStreams(
         timestamp: new Date().toISOString(),
       };
       upsertTick(tick);
+      tickCount += 1;
+      if (tickCount % 5 === 0) {
+        appendLog({
+          stream: 'market',
+          message: `${symbol} tick ${tick.last.toFixed(2)}`,
+          level: 'info',
+        });
+      }
       setPnlSeries((prev) => {
         const last = prev[prev.length - 1]?.value ?? 0;
         const next = [
@@ -51,7 +64,7 @@ export function useDemoStreams(
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [enabled, symbol, intervalMs, upsertTick]);
+  }, [enabled, symbol, intervalMs, upsertTick, appendLog]);
 
   return { lastTick, pnlSeries };
 }
