@@ -157,6 +157,10 @@ omit = [
 ]
 
 [tool.coverage.report]
+# CI gate (F10): `pytest --cov --cov-fail-under=80` in ci.yml unit-tests job.
+# The 80% floor is the audited baseline; raise it in the same PR as the
+# improvement, never lower silently (sprint-5-hardening-plan.md H3).
+fail_under = 80
 exclude_also = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",

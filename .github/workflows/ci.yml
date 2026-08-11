@@ -124,7 +124,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "backend/uv.lock"
       - run: uv sync --frozen --group dev
-      - run: uv run pytest tests/unit/ -v --tb=short
+      # Coverage gate (F10 / sprint-5-hardening-plan.md H3): 80% floor,
+      # enforced both here and by [tool.coverage.report] fail_under.
+      - run: uv run pytest tests/unit/ -v --tb=short --cov --cov-fail-under=80
         env:
           DATABASE_URL: postgresql+asyncpg://lumine:lumine@localhost:5432/lumine_test
           REDIS_URL: redis://localhost:6379/0
@@ -196,6 +198,31 @@ jobs:
             echo "tests/contract/ kosong — skip (Sprint 4 belum dimulai)"
           fi
 
+  # ── Stage 2.5: OpenAPI contract freshness ────────────────────────────────────
+
+  openapi-diff:
+    name: "OpenAPI diff"
+    needs: [lint, type-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+      - run: uv sync --frozen --group dev
+      # sprint-5-hardening-plan.md H1: regenerate the public contract and
+      # fail on any drift — the artifact must be updated in the same PR as
+      # the API change.
+      - run: |
+          uv run python -m scripts.generate_openapi
+          git diff --exit-code -- docs/09-api/openapi.yaml
+
   # ── Stage 3: System tests ────────────────────────────────────────────────────
 
   system-tests:
@@ -259,12 +286,11 @@ jobs:
           output: trivy.sarif
           severity: CRITICAL,HIGH
           exit-code: 1
-        # Sprint 1 (pre-production, no live capital): scan runs for audit
-        # visibility but does not block CI. Remaining CVEs are Debian 12 base
-        # image issues with fix_deferred / will_not_fix upstream status — no
-        # patch available until upstream releases. SARIF uploaded as artifact
-        # for tracking. Re-enable hard fail before live capital (Sprint 5).
-        continue-on-error: true
+        # Sprint 5 (sprint-5-hardening-plan.md H6): hard fail re-enabled —
+        # CRITICAL/HIGH findings now block CI. Debian 12 base image CVEs with
+        # fix_deferred / will_not_fix status must be mitigated (base image
+        # bump, .trivyignore) before they reach this gate. SARIF still
+        # uploaded for tracking.
       - name: Upload Trivy SARIF
         if: always()
         uses: actions/upload-artifact@v4

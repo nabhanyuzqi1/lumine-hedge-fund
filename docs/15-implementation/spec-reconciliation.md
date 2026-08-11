@@ -25,13 +25,13 @@ whole KB.
 | `risk-engine.md` / `risk-engine-determinism.md` conflict | `docs/08-trading/` | Deprecation notice added to risk-engine.md pointing to authoritative contract | Done | risk-engine-determinism.md (ADR-0016) is the authoritative sizing contract | ADR-0016 |
 | `frontend/` scaffold | `repository-structure.md` | `frontend/src/` scaffolded; F-Sprint 1–6 Done (scaffold, design system, realtime layer, charts, surfaces, accessibility & performance); evidence `sprint-evidence/f-sprint-6-a11y-perf.md` | Done | Align with commit `83749bd` | — |
 | Test levels (7) | `docs/13-testing/test-levels.md` | Level 3 contract suite: `tests/contract/test_api_contract.py` 30 tests (auth codes, envelope, idempotency, rate limit, pagination, SSE frames); unit 448 tests | Partial | Coverage gate in CI (F10) still open; integration suite blocked by Docker (G9) | — |
-| OpenAPI generated | `docs/09-api/api-versioning.md` | Not yet | High | Generate `openapi.yaml` from FastAPI in Sprint 5 | ADR-0041* |
+| OpenAPI generated | `docs/09-api/api-versioning.md` | `docs/09-api/openapi.yaml` generated from `app.openapi()` (`scripts/generate_openapi.py`); CI `openapi-diff` job fails on drift; contract test pins shape | Done | Sprint 5 (H1, H2) — commit `ea4c003` | ADR-0070 |
 | Prompt registry module | `prompt-storage.md` + ADR-0015 | `prompts/__init__.py` only | High | Implement `prompts/registry.py` + `registry.yaml` in Sprint 2 | ADR-0015, ADR-0028 |
 | Agent registry | `agent-failure-matrix` (90) | `autogen_pipeline/agents/__init__.py` only | High | Implement typed `AgentSpec` registry in Sprint 4 | ADR-0033 |
 | Monitoring module | `docs/11-infrastructure/observability.md` | `api/middleware/logging.py` — `RequestLoggingMiddleware` (structlog access logs, `trace_id` contextvars, `X-Request-ID` echo) wired outermost in `app.py` | Done | Logging + request tracing complete (G7, Sprint 4); metrics (Prometheus) and distributed tracing deferred to Sprint 5 | — |
 | LLM gateway | `docs/06-ai/llm-gateway.md` | `llm_gateway/__init__.py` only | High | Implement with admission control in Sprint 4 | ADR-0022 |
 
-> ADR-0041* is a placeholder id; assign on creation.
+> ADR-0041* resolved as ADR-0070 (OpenAPI contract generation).
 
 ## Reconciliation cadence
 

@@ -70,7 +70,7 @@ typecheck-frontend:
 
 ##@ Test
 
-.PHONY: test test-unit test-integration test-contract test-backtest test-system test-coverage
+.PHONY: test test-unit test-integration test-contract test-backtest test-system test-coverage coverage
 test: ## Run full backend test suite
 	cd $(BACKEND_DIR) && uv run pytest
 
@@ -92,6 +92,15 @@ test-system:
 test-coverage:
 	cd $(BACKEND_DIR) && uv run pytest --cov=src/lumine --cov-report=term --cov-report=html
 
+coverage: ## Run unit+contract suites with the 80% coverage gate (F10)
+	cd $(BACKEND_DIR) && uv run pytest tests/unit/ tests/contract/ --cov --cov-fail-under=80
+
+##@ API contract
+
+.PHONY: openapi
+openapi: ## Regenerate docs/09-api/openapi.yaml from the FastAPI app
+	cd $(BACKEND_DIR) && uv run python -m scripts.generate_openapi
+
 ##@ Eval & backtest
 
 .PHONY: eval backtest
@@ -103,7 +112,12 @@ backtest: ## Run backtest harness
 
 ##@ Security & supply chain
 
-.PHONY: security-scan supply-chain sbom secret-scan
+.PHONY: security security-scan supply-chain sbom secret-scan
+security: ## Local security scans (bandit -ll, gitleaks, pip-audit); semgrep stays CI-only
+	cd $(BACKEND_DIR) && uv run bandit -ll -r src/ -x src/tests
+	@command -v gitleaks >/dev/null 2>&1 && gitleaks detect --no-banner || echo "gitleaks not installed; skipping"
+	cd $(BACKEND_DIR) && uv run pip-audit
+
 security-scan: supply-chain secret-scan ## Run all security scans
 
 supply-chain: ## Scan dependencies for known CVEs

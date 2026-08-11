@@ -1,0 +1,2603 @@
+openapi: 3.1.0
+info:
+  title: Lumine API
+  description: Institutional AI-native quantitative hedge fund API
+  version: 0.1.0
+paths:
+  /api/v1/portfolio/summary:
+    get:
+      tags:
+      - portfolio
+      summary: Get Portfolio Summary
+      description: Return the current portfolio summary.
+      operationId: get_portfolio_summary_api_v1_portfolio_summary_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/positions:
+    get:
+      tags:
+      - portfolio
+      summary: List Positions
+      description: List open positions.
+      operationId: list_positions_api_v1_portfolio_positions_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_Position_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/positions/{position_id}:
+    get:
+      tags:
+      - portfolio
+      summary: Get Position
+      description: Return a single open position.
+      operationId: get_position_api_v1_portfolio_positions__position_id__get
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Position Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/exposure:
+    get:
+      tags:
+      - portfolio
+      summary: Get Exposure
+      description: Return exposure breakdown.
+      operationId: get_exposure_api_v1_portfolio_exposure_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_ExposureSummary_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orders:
+    get:
+      tags:
+      - orders
+      summary: List Orders
+      description: List orders.
+      operationId: list_orders_api_v1_orders_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_Order_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - orders
+      summary: Create Order
+      description: Submit a new order.
+      operationId: create_order_api_v1_orders_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orders/{order_id}:
+    get:
+      tags:
+      - orders
+      summary: Get Order
+      description: Return a single order.
+      operationId: get_order_api_v1_orders__order_id__get
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - orders
+      summary: Cancel Order
+      description: Cancel an open order.
+      operationId: cancel_order_api_v1_orders__order_id__delete
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/workflows:
+    get:
+      tags:
+      - workflows
+      summary: List Workflow Runs
+      description: List workflow runs.
+      operationId: list_workflow_runs_api_v1_workflows_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_WorkflowRun_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - workflows
+      summary: Trigger Workflow
+      description: Trigger an ad-hoc workflow run.
+      operationId: trigger_workflow_api_v1_workflows_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerWorkflowRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/workflows/{run_id}:
+    get:
+      tags:
+      - workflows
+      summary: Get Workflow Run
+      description: Return a single workflow run.
+      operationId: get_workflow_run_api_v1_workflows__run_id__get
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Run Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/lineage:
+    get:
+      tags:
+      - lineage
+      summary: List Lineage
+      description: List decision lineage records.
+      operationId: list_lineage_api_v1_lineage_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_LineageRecord_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/lineage/{lineage_id}:
+    get:
+      tags:
+      - lineage
+      summary: Get Lineage Record
+      description: Return a single lineage record.
+      operationId: get_lineage_record_api_v1_lineage__lineage_id__get
+      parameters:
+      - name: lineage_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Lineage Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LineageRecord'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/bars:
+    get:
+      tags:
+      - market
+      summary: List Bars
+      description: Return recent market bars.
+      operationId: list_bars_api_v1_market_bars_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_MarketBar_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/signals:
+    get:
+      tags:
+      - market
+      summary: List Signals
+      description: Return recent analyst signals.
+      operationId: list_signals_api_v1_market_signals_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_Signal_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/journal:
+    get:
+      tags:
+      - journal
+      summary: List Journal Entries
+      description: List trade journal entries.
+      operationId: list_journal_entries_api_v1_journal_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_JournalEntry_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/journal/{entry_id}:
+    get:
+      tags:
+      - journal
+      summary: Get Journal Entry
+      description: Return a single journal entry.
+      operationId: get_journal_entry_api_v1_journal__entry_id__get
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entry Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntry'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/streams/market-data:
+    get:
+      tags:
+      - streams
+      summary: Stream Market Data
+      description: SSE stream of market bar/tick updates for one symbol (~1/sec, 5s
+        heartbeat).
+      operationId: stream_market_data_api_v1_streams_market_data_get
+      parameters:
+      - name: _symbol
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          description: Symbol to subscribe (required)
+          title: ' Symbol'
+        description: Symbol to subscribe (required)
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/streams/analyst-outputs:
+    get:
+      tags:
+      - streams
+      summary: Stream Analyst Outputs
+      description: SSE stream of analyst output events (15s heartbeat).
+      operationId: stream_analyst_outputs_api_v1_streams_analyst_outputs_get
+      parameters:
+      - name: _workflow_run_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by workflow run
+          title: ' Workflow Run Id'
+        description: Filter by workflow run
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/streams/ic-decisions:
+    get:
+      tags:
+      - streams
+      summary: Stream Ic Decisions
+      description: SSE stream of investment committee decisions (15s heartbeat).
+      operationId: stream_ic_decisions_api_v1_streams_ic_decisions_get
+      parameters:
+      - name: _workflow_run_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by workflow run
+          title: ' Workflow Run Id'
+        description: Filter by workflow run
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/streams/cio-proposals:
+    get:
+      tags:
+      - streams
+      summary: Stream Cio Proposals
+      description: SSE stream of CIO capital proposals (15s heartbeat).
+      operationId: stream_cio_proposals_api_v1_streams_cio_proposals_get
+      parameters:
+      - name: _workflow_run_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by workflow run
+          title: ' Workflow Run Id'
+        description: Filter by workflow run
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/streams/risk-assessments:
+    get:
+      tags:
+      - streams
+      summary: Stream Risk Assessments
+      description: SSE stream of risk assessment events (15s heartbeat).
+      operationId: stream_risk_assessments_api_v1_streams_risk_assessments_get
+      parameters:
+      - name: _portfolio_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by portfolio
+          title: ' Portfolio Id'
+        description: Filter by portfolio
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/streams/execution-orders:
+    get:
+      tags:
+      - streams
+      summary: Stream Execution Orders
+      description: 'SSE stream of execution order lifecycle events (15s heartbeat).
+
+
+        `status` accepts comma-separated values interpreted as OR
+
+        (`status=PENDING,ACTIVE`).'
+      operationId: stream_execution_orders_api_v1_streams_execution_orders_get
+      parameters:
+      - name: _symbol
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by symbol
+          title: ' Symbol'
+        description: Filter by symbol
+      - name: _status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Comma-separated statuses (OR)
+          title: ' Status'
+        description: Comma-separated statuses (OR)
+      - name: _portfolio_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by portfolio
+          title: ' Portfolio Id'
+        description: Filter by portfolio
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/keys:
+    get:
+      tags:
+      - admin
+      summary: List Api Keys
+      description: List all dynamic API keys (excluding the bootstrap key).
+      operationId: list_api_keys_api_v1_admin_keys_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminKey'
+                title: Response List Api Keys Api V1 Admin Keys Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - admin
+      summary: Create Api Key
+      description: Create a new dynamic API key and return the secret exactly once.
+      operationId: create_api_key_api_v1_admin_keys_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKeyRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedAdminKey'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/keys/{key_id}:
+    delete:
+      tags:
+      - admin
+      summary: Revoke Api Key
+      description: Revoke a dynamic API key. The bootstrap key cannot be revoked here.
+      operationId: revoke_api_key_api_v1_admin_keys__key_id__delete
+      parameters:
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Key Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminKey'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/kill-switch:
+    get:
+      tags:
+      - admin
+      summary: Get Kill Switch
+      description: Return the current kill-switch state.
+      operationId: get_kill_switch_api_v1_admin_kill_switch_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KillSwitchStatus'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - admin
+      summary: Set Kill Switch
+      description: Arm or disarm the kill switch.
+      operationId: set_kill_switch_api_v1_admin_kill_switch_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KillSwitchRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KillSwitchStatus'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/rpc/run-decision-cycle:
+    post:
+      tags:
+      - rpc
+      summary: Run Decision Cycle
+      description: Enqueue a full decision-cycle workflow run.
+      operationId: run_decision_cycle_api_v1_rpc_run_decision_cycle_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RpcCommandResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/rpc/halt-trading:
+    post:
+      tags:
+      - rpc
+      summary: Halt Trading
+      description: Halt all trading activity at the operational level.
+      operationId: halt_trading_api_v1_rpc_halt_trading_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RpcCommandResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/rpc/resume-trading:
+    post:
+      tags:
+      - rpc
+      summary: Resume Trading
+      description: Resume trading activity after an operational halt.
+      operationId: resume_trading_api_v1_rpc_resume_trading_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RpcCommandResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/rpc/cancel-order:
+    post:
+      tags:
+      - rpc
+      summary: Cancel Order
+      description: Request cancellation of an open order.
+      operationId: cancel_order_api_v1_rpc_cancel_order_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RpcCommandRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RpcCommandResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AdminKey:
+      properties:
+        key_id:
+          type: string
+          title: Key Id
+        name:
+          type: string
+          title: Name
+          default: ''
+        scopes:
+          items:
+            type: string
+          type: array
+          title: Scopes
+        revoked:
+          type: boolean
+          title: Revoked
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - key_id
+      - scopes
+      - revoked
+      - created_at
+      title: AdminKey
+      description: API key management view.
+    CreateKeyRequest:
+      properties:
+        key_id:
+          type: string
+          pattern: ^[a-z0-9_-]{4,32}$
+          title: Key Id
+        name:
+          type: string
+          title: Name
+          default: ''
+        scopes:
+          items:
+            type: string
+          type: array
+          title: Scopes
+        revoked:
+          type: boolean
+          title: Revoked
+          default: false
+      type: object
+      required:
+      - key_id
+      - scopes
+      title: CreateKeyRequest
+      description: Payload to create a new API key.
+    CreateOrderRequest:
+      properties:
+        portfolio_id:
+          type: string
+          title: Portfolio Id
+        symbol:
+          type: string
+          title: Symbol
+          default: XAUUSD
+        side:
+          type: string
+          enum:
+          - buy
+          - sell
+          title: Side
+        order_type:
+          type: string
+          enum:
+          - market
+          - limit
+          - stop
+          title: Order Type
+          default: market
+        volume:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Volume
+        price:
+          anyOf:
+          - type: number
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price
+        stop_loss:
+          anyOf:
+          - type: number
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Stop Loss
+        take_profit:
+          anyOf:
+          - type: number
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Take Profit
+        idempotency_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency Key
+      type: object
+      required:
+      - portfolio_id
+      - side
+      - volume
+      title: CreateOrderRequest
+      description: Payload to submit a new order.
+    CreatedAdminKey:
+      properties:
+        key_id:
+          type: string
+          title: Key Id
+        secret:
+          type: string
+          title: Secret
+        scopes:
+          items:
+            type: string
+          type: array
+          title: Scopes
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - key_id
+      - secret
+      - scopes
+      - created_at
+      title: CreatedAdminKey
+      description: API key creation response containing the secret exactly once.
+    ExposureSummary:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        notional:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Notional
+        pct_of_nav:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Pct Of Nav
+        correlated_bucket:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Correlated Bucket
+      type: object
+      required:
+      - symbol
+      - notional
+      - pct_of_nav
+      title: ExposureSummary
+      description: Exposure breakdown per symbol/bucket.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    JournalEntry:
+      properties:
+        entry_id:
+          type: string
+          format: uuid
+          title: Entry Id
+        trade_id:
+          type: string
+          format: uuid
+          title: Trade Id
+        agent_name:
+          type: string
+          title: Agent Name
+        reflection:
+          type: string
+          title: Reflection
+        lesson:
+          type: string
+          title: Lesson
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - entry_id
+      - trade_id
+      - agent_name
+      - reflection
+      - lesson
+      - created_at
+      title: JournalEntry
+      description: Trade journal entry.
+    KillSwitchRequest:
+      properties:
+        reason:
+          type: string
+          title: Reason
+        armed:
+          type: boolean
+          title: Armed
+          default: true
+      type: object
+      required:
+      - reason
+      title: KillSwitchRequest
+      description: Payload to arm/disarm the kill switch.
+    KillSwitchStatus:
+      properties:
+        armed:
+          type: boolean
+          title: Armed
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - armed
+      title: KillSwitchStatus
+      description: Current kill-switch state.
+    LineageRecord:
+      properties:
+        lineage_id:
+          type: string
+          format: uuid
+          title: Lineage Id
+        decision_id:
+          type: string
+          title: Decision Id
+        decision_type:
+          type: string
+          title: Decision Type
+        agent_name:
+          type: string
+          title: Agent Name
+        inputs_hash:
+          type: string
+          title: Inputs Hash
+        outputs_hash:
+          type: string
+          title: Outputs Hash
+        policy_version:
+          type: string
+          title: Policy Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - lineage_id
+      - decision_id
+      - decision_type
+      - agent_name
+      - inputs_hash
+      - outputs_hash
+      - policy_version
+      - created_at
+      title: LineageRecord
+      description: Decision lineage audit record.
+    MarketBar:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        timeframe:
+          type: string
+          title: Timeframe
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        open:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Open
+        high:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: High
+        low:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Low
+        close:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Close
+        volume:
+          type: integer
+          title: Volume
+      type: object
+      required:
+      - symbol
+      - timeframe
+      - timestamp
+      - open
+      - high
+      - low
+      - close
+      - volume
+      title: MarketBar
+      description: OHLCV bar for market data endpoints.
+    Order:
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          title: Order Id
+        portfolio_id:
+          type: string
+          title: Portfolio Id
+        symbol:
+          type: string
+          title: Symbol
+        side:
+          type: string
+          enum:
+          - buy
+          - sell
+          title: Side
+        order_type:
+          type: string
+          enum:
+          - market
+          - limit
+          - stop
+          title: Order Type
+        volume:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Volume
+        price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price
+        status:
+          type: string
+          enum:
+          - pending
+          - filled
+          - partially_filled
+          - rejected
+          - cancelled
+          title: Status
+        filled_volume:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Filled Volume
+        rejected_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rejected Reason
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - order_id
+      - portfolio_id
+      - symbol
+      - side
+      - order_type
+      - volume
+      - status
+      - filled_volume
+      - created_at
+      - updated_at
+      title: Order
+      description: Order lifecycle record.
+    PaginatedList_ExposureSummary_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ExposureSummary'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[ExposureSummary]
+    PaginatedList_JournalEntry_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/JournalEntry'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[JournalEntry]
+    PaginatedList_LineageRecord_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/LineageRecord'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[LineageRecord]
+    PaginatedList_MarketBar_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/MarketBar'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[MarketBar]
+    PaginatedList_Order_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/Order'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[Order]
+    PaginatedList_Position_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/Position'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[Position]
+    PaginatedList_Signal_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/Signal'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[Signal]
+    PaginatedList_WorkflowRun_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/WorkflowRun'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[WorkflowRun]
+    PortfolioSummary:
+      properties:
+        portfolio_id:
+          type: string
+          title: Portfolio Id
+        nav:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Nav
+        cash:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Cash
+        margin_used:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Margin Used
+        open_pnl:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Open Pnl
+        closed_pnl:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Closed Pnl
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+      type: object
+      required:
+      - portfolio_id
+      - nav
+      - cash
+      - margin_used
+      - open_pnl
+      - closed_pnl
+      - timestamp
+      title: PortfolioSummary
+      description: High-level portfolio snapshot.
+    Position:
+      properties:
+        position_id:
+          type: string
+          format: uuid
+          title: Position Id
+        portfolio_id:
+          type: string
+          title: Portfolio Id
+        symbol:
+          type: string
+          title: Symbol
+        direction:
+          type: string
+          enum:
+          - long
+          - short
+          title: Direction
+        volume:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Volume
+        entry_price:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Entry Price
+        current_price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Current Price
+        stop_loss:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Stop Loss
+        take_profit:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Take Profit
+        unrealized_pnl:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Unrealized Pnl
+        opened_at:
+          type: string
+          format: date-time
+          title: Opened At
+      type: object
+      required:
+      - position_id
+      - portfolio_id
+      - symbol
+      - direction
+      - volume
+      - entry_price
+      - unrealized_pnl
+      - opened_at
+      title: Position
+      description: Open position view.
+    RpcCommandRequest:
+      properties:
+        command:
+          type: string
+          title: Command
+        parameters:
+          additionalProperties: true
+          type: object
+          title: Parameters
+      type: object
+      required:
+      - command
+      title: RpcCommandRequest
+      description: Generic RPC command payload.
+    RpcCommandResponse:
+      properties:
+        command_id:
+          type: string
+          format: uuid
+          title: Command Id
+        command:
+          type: string
+          title: Command
+        status:
+          type: string
+          enum:
+          - accepted
+          - rejected
+          title: Status
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        enqueued_at:
+          type: string
+          format: date-time
+          title: Enqueued At
+      type: object
+      required:
+      - command_id
+      - command
+      - status
+      - enqueued_at
+      title: RpcCommandResponse
+      description: RPC command acceptance receipt.
+    Signal:
+      properties:
+        signal_id:
+          type: string
+          format: uuid
+          title: Signal Id
+        symbol:
+          type: string
+          title: Symbol
+        analyst:
+          type: string
+          title: Analyst
+        direction:
+          type: string
+          enum:
+          - bullish
+          - bearish
+          - neutral
+          title: Direction
+        confidence:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Confidence
+        rationale:
+          type: string
+          title: Rationale
+        generated_at:
+          type: string
+          format: date-time
+          title: Generated At
+      type: object
+      required:
+      - signal_id
+      - symbol
+      - analyst
+      - direction
+      - confidence
+      - rationale
+      - generated_at
+      title: Signal
+      description: Analyst signal view.
+    TriggerWorkflowRequest:
+      properties:
+        workflow_name:
+          type: string
+          title: Workflow Name
+        input_payload:
+          additionalProperties: true
+          type: object
+          title: Input Payload
+      type: object
+      required:
+      - workflow_name
+      title: TriggerWorkflowRequest
+      description: Payload to trigger an ad-hoc workflow.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    WorkflowRun:
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          title: Run Id
+        workflow_name:
+          type: string
+          title: Workflow Name
+        status:
+          type: string
+          enum:
+          - pending
+          - running
+          - completed
+          - failed
+          title: Status
+        input_payload:
+          additionalProperties: true
+          type: object
+          title: Input Payload
+        output_payload:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Output Payload
+        started_at:
+          type: string
+          format: date-time
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+      type: object
+      required:
+      - run_id
+      - workflow_name
+      - status
+      - input_payload
+      - started_at
+      title: WorkflowRun
+      description: Workflow run summary.
