@@ -142,7 +142,7 @@ ini, setelah redirect sukses dari Authelia browser menerima halaman dengan
 tanpa `/portal`, yang berakhir di landing page atau redirect loop —
 terlihat sebagai "portal loading infinite, harus di-refresh baru normal".
 
-File `/srv/control-plane/homepage/config/settings.yaml` wajib mengandung:
+File `/srv/control-plane/homepage/settings.yaml` wajib mengandung:
 
 ```yaml
 base: https://166.88.227.177/portal
@@ -154,58 +154,52 @@ HTML di-regenerate ulang (tombol refresh di pojok kanan bawah portal
 hanya me-refresh data, tidak me-rebuild base URL):
 
 ```bash
-cd /srv/control-plane && docker restart control-plane-homepage-1
+cd /srv/control-plane && docker restart control-homepage
 ```
 
 Catatan: saat domain publik menggantikan IP, ubah `base` dan `startUrl`
 mengikutinya. Nilai `base` harus sama dengan URL yang diketik user di
 browser, termasuk scheme dan port.
 
-## Log Caddy di portal (widget logview)
+## Log Caddy — baca via `docker logs`, bukan widget
 
-Portal dapat menampilkan access log Caddy secara live via widget
-`logview` Homepage (source `docker`). docker.sock sudah di-mount `ro` ke
-container Homepage, jadi tidak ada route/auth tambahan — widget membaca
-log via Docker API dari sisi server.
+**Insiden 2026-08-11:** rencana menampilkan access log Caddy di portal
+via widget `logview` Homepage **tidak bisa** — widget `logview` tidak ada
+di Homepage (docs-nya 404), dan syntax "widget-only group"
+(`- Nama: widget: type: ...`) memicu crash parser Homepage 1.13.2
+(`TypeError: b[c].forEach is not a function`) sehingga seluruh
+`services.yaml` gagal di-load dan portal tampil kosong. Detail di
+`infrastructure/control-plane/homepage/config/services.yaml`.
 
-Dua perubahan di VPS:
+Kondisi yang berlaku:
 
-1. **Caddy menulis access log ke stdout** — di dalam site block utama
-   `/srv/control-plane/caddy/Caddyfile`:
+- **Caddy menulis access log ke stdout** — di dalam site block utama
+  `/srv/control-plane/caddy/Caddyfile`:
 
-   ```
-   https://166.88.227.177 {
-       log {
-           output stdout
-       }
-       ...
-   }
-   ```
+  ```
+  https://166.88.227.177 {
+      log {
+          output stdout
+      }
+      ...
+  }
+  ```
 
-   Restart: `docker restart control-plane-caddy-1` (`admin off` aktif,
-   reload tidak tersedia). Verifikasi: `docker logs control-plane-caddy-1`.
+  Restart: `docker restart control-caddy` (`admin off` aktif,
+  reload tidak tersedia). Baca log: `docker logs control-caddy`.
 
-2. **Widget di Homepage** — `services.yaml` (versi di repo:
-   `infrastructure/control-plane/homepage/config/services.yaml`):
-
-   ```yaml
-   - Caddy Logs:
-       widget:
-         type: logview
-         source: docker
-         container: caddy
-         refresh: 1000
-   ```
-
-   Salin ke `/srv/control-plane/homepage/config/services.yaml`, restart
-   `control-plane-homepage-1`. Jika nama container Caddy berbeda di VPS,
-   cek `docker ps` dan sesuaikan `container:`.
+- Untuk UI log viewer interaktif nanti (opsional): tambahkan container
+  terpisah seperti **Dozzle** di compose, route Caddy baru di belakang
+  Authelia, tanpa menyentuh `services.yaml`. Belum diimplementasikan.
 
 Catatan:
 
 - `docker.sock` di container Homepage setara root di host — portal wajib
   tetap di balik Authelia.
 - Log bertahan selama Docker menyimpan output container (`docker logs`).
+- `settings.yaml` berisi `base` dan `startUrl`; saat domain publik
+  menggantikan IP, ubah keduanya mengikuti URL yang diketik user di
+  browser, termasuk scheme dan port.
   Batasi dengan `logging: { driver: json-file, options: { max-size: "10m",
   max-file: "3" } }` pada service caddy di compose kalau disk jadi perhatian.
 

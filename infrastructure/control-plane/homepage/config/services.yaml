@@ -1,11 +1,53 @@
-# Homepage services — versioned copy of /srv/control-plane/homepage/config/services.yaml
-# Requires: docker.sock mounted ro into the homepage container (already the
-# case — see docs/11-infrastructure/control-plane.md) and Caddy access
-# logging to stdout (`log { output stdout }` inside the site block).
+# Homepage services — versioned copy of /srv/control-plane/homepage/services.yaml
+#
+# CATATAN PENTING (insiden 2026-08-11): jangan tambahkan group berisi
+# `widget:` saja ("widget-only group") — parser Homepage 1.13.2 melakukan
+# `group[groupName].forEach` tanpa guard, sehingga object widget memicu
+# `TypeError: b[c].forEach is not a function` dan SELURUH services.yaml
+# gagal di-load (portal kosong + error berantai di console browser).
+# Widget `logview` juga tidak ada di Homepage 1.13.2 (docs-nya 404).
 
-- Caddy Logs:
-    widget:
-      type: logview
-      source: docker
-      container: caddy
-      refresh: 1000
+- Lumine:
+    - Hermes:
+        icon: si-wechat
+        href: https://166.88.227.177/hermes/
+        description: LLM investment committee console
+        server: lumine-docker
+        container: hermes-dashboard
+        showStats: true
+    - MT5 Terminal:
+        icon: si-tradingview
+        href: https://166.88.227.177/mt5/vnc.html
+        description: MetaTrader 5 via noVNC
+        server: lumine-docker
+        container: lumine-mt5
+        showStats: true
+    - Backend API:
+        icon: si-fastapi
+        href: https://166.88.227.177/backend/
+        description: FastAPI endpoints, docs & health
+        server: lumine-docker
+        container: backend-api-1
+        showStats: true
+    - 9router:
+        icon: si-gitlab
+        href: https://166.88.227.177:20128/
+        description: LLM gateway — GPT · DeepSeek · Kimi · Qwen
+        server: lumine-docker
+        container: 9router
+        showStats: true
+- Control Plane:
+    - Uptime Kuma:
+        icon: si-uptimekuma
+        href: https://166.88.227.177/health/
+        description: Health checks, status pages & alerts
+        server: lumine-docker
+        container: control-uptime-kuma
+        showStats: true
+    - Authelia SSO:
+        icon: si-auth0
+        href: https://166.88.227.177/auth/
+        description: Single sign-on — one login for everything
+        server: lumine-docker
+        container: control-authelia
+        showStats: true

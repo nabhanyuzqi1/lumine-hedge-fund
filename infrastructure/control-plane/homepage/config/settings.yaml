@@ -1,5 +1,5 @@
 ---
-# Homepage settings for Lumine control plane portal.
+# Homepage settings — versioned copy of /srv/control-plane/homepage/settings.yaml
 # Served behind Caddy at https://166.88.227.177/portal/
 # The `base` key is required so generated links and assets resolve
 # correctly behind the /portal path prefix; without it the post-login
@@ -7,8 +7,24 @@
 
 base: https://166.88.227.177/portal
 
-title: Lumine Portal
+title: Lumine Control Plane
 description: Lumine AI-native hedge fund control plane hub
+showStats: true
+headerStyle: boxed
+layout:
+  Header: true
+header:
+  links:
+    - label: Home
+      icon: mdi-home
+      href: https://166.88.227.177/
+    - label: Monitor
+      icon: mdi-monitor-dashboard
+      href: https://166.88.227.177/health/
+    - label: Logout
+      icon: mdi-logout
+      href: https://166.88.227.177/auth/logout?rd=https://166.88.227.177/
+providers: {}
 
 # Use the portal path as the PWA start URL so bookmarks / "install"
 # land on the authenticated portal, not on the root landing page.

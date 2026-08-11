@@ -19,60 +19,52 @@ settings.
 1. Copy the fixed config to the VPS:
 
    ```bash
-   scp -P <ssh-port> homepage/config/settings.yaml root@166.88.227.177:/srv/control-plane/homepage/config/settings.yaml
+   scp -P <ssh-port> homepage/settings.yaml root@166.88.227.177:/srv/control-plane/homepage/settings.yaml
    ```
 
 2. Restart the Homepage container so it regenerates its static HTML:
 
    ```bash
-   ssh -p <ssh-port> root@166.88.227.177 'docker restart control-plane-homepage-1'
+   ssh -p <ssh-port> root@166.88.227.177 'docker restart control-homepage'
    ```
 
 3. Hard-refresh the browser (`Ctrl+Shift+R` / `Cmd+Shift+R`) and test a
    fresh Authelia login flow.
 
-## Viewing Caddy logs in the portal
+## Viewing Caddy logs
 
-The portal shows live Caddy access logs via the Homepage `logview` widget
-(docker source). Two configs are needed:
+> **2026-08-11 incident:** the Homepage `logview` widget does not exist
+> (docs 404), and widget-only groups (`- Name: widget: ...`) crash the
+> Homepage 1.13.2 services parser (`TypeError: b[c].forEach is not a
+> function`), failing the whole `services.yaml`. See the comment header in
+> `homepage/config/services.yaml`.
 
-1. **Caddy writes access logs to stdout** — add inside the main site block
-   of `/srv/control-plane/caddy/Caddyfile`:
+Caddy writes access logs to stdout inside the main site block of
+`/srv/control-plane/caddy/Caddyfile`:
 
-   ```
-   https://166.88.227.177 {
-       log {
-           output stdout
-       }
-       ...
-   }
-   ```
+```
+https://166.88.227.177 {
+    log {
+        output stdout
+    }
+    ...
+}
+```
 
-   Then restart Caddy (the container has `admin off`, so `reload` is not
-   available):
+Restart Caddy (the container has `admin off`, so `reload` is not
+available) and read the logs:
 
-   ```bash
-   ssh -p <ssh-port> root@166.88.227.177 'docker restart control-plane-caddy-1'
-   ```
+```bash
+ssh -p <ssh-port> root@166.88.227.177 'docker restart control-caddy'
+ssh -p <ssh-port> root@166.88.227.177 'docker logs control-caddy'
+```
 
-   Verify: `docker logs control-plane-caddy-1` shows access lines.
-
-2. **Homepage widget** — copy the config to the VPS and restart Homepage:
-
-   ```bash
-   scp -P <ssh-port> homepage/config/services.yaml root@166.88.227.177:/srv/control-plane/homepage/config/services.yaml
-   ssh -p <ssh-port> root@166.88.227.177 'docker restart control-plane-homepage-1'
-   ```
-
-   The widget reads container logs through the docker socket that is
-   already mounted `ro` into the homepage container. If the Caddy container
-   name differs on the VPS, check it with `docker ps` and update
-   `container:` in `services.yaml`.
+If an interactive log viewer UI is wanted later, run a separate container
+(e.g. Dozzle) behind a new Authelia-protected Caddy route — do not touch
+`services.yaml`.
 
 Notes:
 
-- No route or auth change is needed — the widget reads logs server-side via
-  the docker API; nothing new is exposed publicly.
 - `docker.sock` in the homepage container is root-equivalent on the host.
   Keep the portal behind Authelia; do not expose it elsewhere.
 - Logs are kept only as long as Docker retains the container output
@@ -84,8 +76,8 @@ Notes:
 
 | Local path | VPS path |
 |---|---|
-| `homepage/config/settings.yaml` | `/srv/control-plane/homepage/config/settings.yaml` |
-| `homepage/config/services.yaml` | `/srv/control-plane/homepage/config/services.yaml` |
+| `homepage/settings.yaml` | `/srv/control-plane/homepage/settings.yaml` |
+| `homepage/services.yaml` | `/srv/control-plane/homepage/services.yaml` |
 
 ## What NOT to change here
 
