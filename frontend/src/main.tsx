@@ -1,17 +1,26 @@
-import { StrictMode } from 'react';
+import { lazy, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { router } from './app/router';
 import { queryClient } from './api/query-client';
 import './index.css';
+
+// Devtools only in dev: the conditional import is tree-shaken out of the
+// production bundle (keeps ~370 kB of dev-only code off the critical path).
+const ReactQueryDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/react-query-devtools').then((m) => ({
+        default: m.ReactQueryDevtools,
+      })),
+    )
+  : null;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-      <ReactQueryDevtools initialIsOpen={false} />
+      {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
     </QueryClientProvider>
   </StrictMode>,
 );

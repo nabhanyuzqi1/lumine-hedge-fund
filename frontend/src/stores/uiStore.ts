@@ -16,6 +16,9 @@ interface UiState {
   setKillSwitch: (active: boolean) => void;
   selectedSymbol: string;
   setSelectedSymbol: (symbol: string) => void;
+  commandPaletteOpen: boolean;
+  setCommandPaletteOpen: (open: boolean) => void;
+  toggleCommandPalette: () => void;
 }
 
 /**
@@ -24,11 +27,14 @@ interface UiState {
  * data survives rail changes. Kill switch mirrors the SSE `control` stream
  * event once the backend is live; demo mode toggles it locally.
  */
-export const useUiStore = create<UiState>((set) => ({
+export const useUiStore = create<UiState>((set, get) => ({
   workspace: 'trading',
   setWorkspace: (workspace) => set({ workspace }),
   killSwitchActive: false,
   setKillSwitch: (killSwitchActive) => set({ killSwitchActive }),
   selectedSymbol: 'XAUUSD',
   setSelectedSymbol: (selectedSymbol) => set({ selectedSymbol }),
+  commandPaletteOpen: false,
+  setCommandPaletteOpen: (commandPaletteOpen) => set({ commandPaletteOpen }),
+  toggleCommandPalette: () => set({ commandPaletteOpen: !get().commandPaletteOpen }),
 }));

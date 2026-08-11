@@ -35,35 +35,54 @@ export function useDemoStreams(
     const rand = mulberry32(DEMO_SEED);
     let price = 2_400;
     let tickCount = 0;
-    const timer = setInterval(() => {
-      price *= 1 + (rand() - 0.5) * 0.0006;
-      const tick: MarketTick = {
-        symbol,
-        bid: price - 0.2,
-        ask: price + 0.2,
-        last: price,
-        timestamp: new Date().toISOString(),
-      };
-      upsertTick(tick);
-      tickCount += 1;
-      if (tickCount % 5 === 0) {
-        appendLog({
-          stream: 'market',
-          message: `${symbol} tick ${tick.last.toFixed(2)}`,
-          level: 'info',
-        });
-      }
-      setPnlSeries((prev) => {
-        const last = prev[prev.length - 1]?.value ?? 0;
-        const next = [
-          ...prev.slice(-59),
-          { time: Math.floor(Date.now() / 1000), value: last + (rand() - 0.48) * 40 },
-        ];
-        return next;
-      });
-    }, intervalMs);
+    let timer: ReturnType<typeof setInterval> | undefined;
 
-    return () => clearInterval(timer);
+    // Defer the first tick until the main thread is idle so demo ticks do not
+    // compete with initial render / LCP (keeps Lighthouse TBT low; fixtures
+    // already render instantly, so users see no gap).
+    const schedule = () => {
+      timer = setInterval(() => {
+        price *= 1 + (rand() - 0.5) * 0.0006;
+        const tick: MarketTick = {
+          symbol,
+          bid: price - 0.2,
+          ask: price + 0.2,
+          last: price,
+          timestamp: new Date().toISOString(),
+        };
+        upsertTick(tick);
+        tickCount += 1;
+        if (tickCount % 5 === 0) {
+          appendLog({
+            stream: 'market',
+            message: `${symbol} tick ${tick.last.toFixed(2)}`,
+            level: 'info',
+          });
+        }
+        setPnlSeries((prev) => {
+          const last = prev[prev.length - 1]?.value ?? 0;
+          const next = [
+            ...prev.slice(-59),
+            { time: Math.floor(Date.now() / 1000), value: last + (rand() - 0.48) * 40 },
+          ];
+          return next;
+        });
+      }, intervalMs);
+    };
+
+    const requestIdle =
+      typeof window.requestIdleCallback === 'function'
+        ? window.requestIdleCallback(schedule, { timeout: 2_000 })
+        : (setTimeout(schedule, 1_000) as unknown as number);
+
+    return () => {
+      if (timer) clearInterval(timer);
+      if (typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(requestIdle);
+      } else {
+        clearTimeout(requestIdle);
+      }
+    };
   }, [enabled, symbol, intervalMs, upsertTick, appendLog]);
 
   return { lastTick, pnlSeries };

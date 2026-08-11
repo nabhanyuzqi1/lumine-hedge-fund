@@ -107,3 +107,33 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+  lighthouse:
+    name: "Lighthouse CI"
+    needs: [build]
+    if: needs.guard.outputs.exists == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - uses: browser-actions/setup-chrome@v1
+        id: setup-chrome
+      - run: npm ci
+        working-directory: frontend
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+      - run: npm run lighthouse:ci
+        working-directory: frontend
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}

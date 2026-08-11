@@ -53,6 +53,8 @@ conventions, not chaos.
   change so streams persist.
 
 ### F-Sprint 6 — Keyboard, responsive, a11y, performance
+- **Status: approved 2026-08-11** — local gate PASS + independent
+  verification PASS, evidence in `sprint-evidence/f-sprint-6-a11y-perf.md`.
 - Command palette, keyboard model, focus visibility.
 - Lighthouse / Web Vitals budgets enforced in CI.
 

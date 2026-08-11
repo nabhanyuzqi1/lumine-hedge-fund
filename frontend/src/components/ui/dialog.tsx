@@ -35,7 +35,7 @@ const DialogContent = React.forwardRef<
         'fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2',
         'rounded-panel border border-border-subtle bg-bg-raised p-4 shadow-panel',
         'animate-dialog-content-in data-[state=closed]:animate-none',
-        'focus-visible:outline-none',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
         className,
       )}
       aria-modal="true"

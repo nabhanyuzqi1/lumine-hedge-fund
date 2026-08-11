@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useMarketBars, useOrders, usePositions } from '@/api/hooks';
-import { CandlestickChart, type Timeframe } from '@/components/charts/candlestick-chart';
+import type { Timeframe } from '@/components/charts/candlestick-chart';
 import { ChartCard } from '@/components/charts/chart-card';
+
+// lightweight-charts (~500 kB) stays out of the entry eval window: the chart
+// only mounts after market bars resolve, so its chunk loads during idle.
+const LazyCandlestickChart = lazy(() =>
+  import('@/components/charts/candlestick-chart').then((m) => ({
+    default: m.CandlestickChart,
+  })),
+);
 import { ActivityLog } from '@/components/terminal/activity-log';
 import { CommitteeFeed } from '@/components/terminal/committee-feed';
 import { QuotePanel } from '@/components/terminal/quote-panel';
@@ -183,14 +191,20 @@ function TradingWorkspace() {
   const demo = useDemoStreams(true, selectedSymbol);
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-      <div className="min-w-0 space-y-4 xl:col-span-2">
-        <CandlestickChart
-          bars={bars.data ?? []}
-          lastTick={demo.lastTick}
-          timeframe={timeframe}
-          onTimeframeChange={setTimeframe}
-        />
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="min-w-0 space-y-4 lg:col-span-1 xl:col-span-2">
+        <Suspense
+          fallback={
+            <div className="h-72 animate-pulse rounded-panel border border-border-subtle" />
+          }
+        >
+          <LazyCandlestickChart
+            bars={bars.data ?? []}
+            lastTick={demo.lastTick}
+            timeframe={timeframe}
+            onTimeframeChange={setTimeframe}
+          />
+        </Suspense>
         <Card>
           <CardHeader>
             <CardTitle>Positions</CardTitle>

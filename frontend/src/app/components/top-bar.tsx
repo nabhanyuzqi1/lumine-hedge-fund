@@ -12,9 +12,16 @@ function formatUTC(date: Date): string {
   return date.toISOString().replace('T', ' ').slice(0, 19);
 }
 
+function ShortcutLabel() {
+  const isMac =
+    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
+  return <span aria-hidden="true">{isMac ? '⌘K' : 'Ctrl+K'}</span>;
+}
+
 export function TopBar() {
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);
+  const toggleCommandPalette = useUiStore((s) => s.toggleCommandPalette);
   const quote = useQuote(selectedSymbol);
   const streams = useStreamStore((s) => s.getAllStreams());
   const [utc, setUtc] = React.useState(() => formatUTC(new Date()));
@@ -40,10 +47,10 @@ export function TopBar() {
           <div className="flex items-center gap-2 font-mono text-text-primary">
             <span className="text-text-secondary">{selectedSymbol}</span>
             <NumericText value={quote.data.last} decimals={2} />
-            <span className="text-text-secondary">
+            <span className="hidden text-text-secondary sm:inline">
               B <NumericText value={quote.data.bid} decimals={2} />
             </span>
-            <span className="text-text-secondary">
+            <span className="hidden text-text-secondary sm:inline">
               A <NumericText value={quote.data.ask} decimals={2} />
             </span>
           </div>
@@ -59,6 +66,14 @@ export function TopBar() {
         <span className="font-mono text-text-secondary" data-testid="utc-clock">
           {utc} UTC
         </span>
+        <button
+          type="button"
+          onClick={toggleCommandPalette}
+          className="flex items-center gap-1 rounded-chip border border-border-subtle bg-bg-base px-2 py-0.5 text-text-secondary hover:bg-bg-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          aria-label="Open command palette"
+        >
+          <ShortcutLabel />
+        </button>
         <span
           className="font-mono text-text-secondary"
           data-testid="stream-health"

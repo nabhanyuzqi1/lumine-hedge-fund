@@ -6,7 +6,7 @@ export function Rail() {
 
   return (
     <nav
-      className="flex w-14 flex-col gap-1 border-r border-border-subtle bg-bg-raised p-2"
+      className="flex h-14 w-full flex-row items-center justify-around border-t border-border-subtle bg-bg-raised px-2 md:h-auto md:w-14 md:flex-col md:justify-start md:gap-1 md:border-r md:border-t-0 md:p-2"
       aria-label="Workspace"
       data-testid="rail"
     >
@@ -20,14 +20,15 @@ export function Rail() {
             aria-current={active ? 'page' : undefined}
             data-testid={`rail-${ws.id}`}
             className={[
-              'flex flex-col items-center justify-center rounded-chip py-2 text-[10px] font-medium transition-colors',
+              'flex flex-col items-center justify-center rounded-chip text-[10px] font-medium transition-colors md:w-full md:py-2',
               active
                 ? 'bg-bg-base text-text-primary'
                 : 'text-text-secondary hover:bg-bg-base/50 hover:text-text-primary',
             ].join(' ')}
           >
-            <span>{ws.label.slice(0, 2)}</span>
-            <span>{ws.label.slice(2)}</span>
+            <span className="text-xs font-semibold md:hidden">{ws.label.slice(0, 2)}</span>
+            <span className="hidden md:block">{ws.label.slice(0, 2)}</span>
+            <span className="hidden md:block">{ws.label.slice(2)}</span>
           </button>
         );
       })}
