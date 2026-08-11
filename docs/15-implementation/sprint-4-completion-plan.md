@@ -1,6 +1,6 @@
 # Sprint 4 Completion Plan — Remaining Work
 
-- **Status:** G1–G8 complete — full gate PASS (ruff/mypy/478 tests); awaiting approval gate for G11
+- **Status:** G1–G8, G11 complete — full gate PASS (ruff/mypy/478 tests); G12 (Sprint 5 hardening) remains
 - **Owner:** backend + frontend
 - **Created:** 2026-08-08
 - **Depends on:** `sprint-3-decision-engine.md` evidence, verifier PASS for Sprint 4 API core (2026-08-08, agent `a3b09a15f725148ff`)
@@ -42,7 +42,7 @@ Current state: **contract 30 passed, unit 448 passed, ruff/mypy clean.**
 | G8 | Sprint 4 evidence file missing | `phase-implementation-workflow` memory — plan artifact + approval gate | No `sprint-evidence/sprint-4-*.md` |
 | G9 | Integration suite blocked | `docs/13-testing/` | Docker daemon down locally — testcontainers can't start PG/Redis; 38 errors environmental |
 | G10 | `test_settings_point_at_containers` env-sensitive | — | Fails when `LUMINE_ENV`/`.env` absent in shell (expects `test`) |
-| G11 | Frontend F-Sprints 1–6 not started | `frontend-sprint-plan.md` | Pre-condition (API contracts implemented/mocked) becomes true once G1–G4 done |
+| G11 | Frontend F-Sprints 1–6 not started | `frontend-sprint-plan.md` | Done — F-Sprint 1–6 approved 2026-08-11, local gate PASS + independent verification PASS; evidence `sprint-evidence/f-sprint-6-a11y-perf.md` (commit `83749bd`) |
 | G12 | Sprint 5 hardening not started | `sprint-plan.md` | OpenAPI generation, coverage gate, security scans, level-1 test inventory |
 
 ## Execution order
