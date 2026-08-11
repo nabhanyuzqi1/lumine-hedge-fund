@@ -31,7 +31,7 @@
         showStats: true
     - 9router:
         icon: si-gitlab
-        href: https://166.88.227.177:20128/
+        href: http://166.88.227.177:20128/
         description: LLM gateway — GPT · DeepSeek · Kimi · Qwen
         server: lumine-docker
         container: 9router
