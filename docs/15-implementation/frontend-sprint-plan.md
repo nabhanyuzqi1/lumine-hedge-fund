@@ -42,8 +42,9 @@ conventions, not chaos.
 - lightweight-charts: candlestick, equity, drawdown.
 - ECharts: exposure, allocation, correlation, agent votes, P&L.
 - 60 FPS target; chart optimization per Phase 10.
-- **Status: implemented 2026-08-11** — local gate PASS, evidence in
-  `sprint-evidence/f-sprint-4-charts.md`. Approval gate pending before F-Sprint 5.
+- **Status: implemented 2026-08-11** — local gate PASS + independent
+  verification PASS, evidence in `sprint-evidence/f-sprint-4-charts.md`.
+  Approval gate pending before F-Sprint 5.
 
 ### F-Sprint 5 — Surfaces
 - Portfolio, risk, positions, execution, AI committee, market intelligence,
