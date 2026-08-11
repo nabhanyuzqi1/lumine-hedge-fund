@@ -2,7 +2,7 @@
 
 - **Status:** active
 - **Owner:** architects
-- **Last-reviewed:** 2026-08-09
+- **Last-reviewed:** 2026-08-11
 - **Review-cadence:** 30
 
 This document is the integrity check between what `docs/14-implementation/`
@@ -23,7 +23,7 @@ whole KB.
 | Debate trigger functions | `orchestration.md` | `ic_confidence_predicted` and `disagreement_score` now defined with explicit formulas | Done | Definitions added to orchestration.md — deterministic, pure, reproducible | — |
 | SSE browser auth | `auth.md` | Session-based JWT cookie path added alongside HMAC for dashboard operator | Done | Browser EventSource can now authenticate via httpOnly cookie | — |
 | `risk-engine.md` / `risk-engine-determinism.md` conflict | `docs/08-trading/` | Deprecation notice added to risk-engine.md pointing to authoritative contract | Done | risk-engine-determinism.md (ADR-0016) is the authoritative sizing contract | ADR-0016 |
-| `frontend/` scaffold | `repository-structure.md` | `frontend/src/` empty | Critical | Scaffold per `frontend-sprint-plan.md` in Sprint 6 | — |
+| `frontend/` scaffold | `repository-structure.md` | `frontend/src/` scaffolded; F-Sprint 1–5 Done (pages, components, stores, hooks, router, fixtures, tests); F-Sprint 6 pending | Partial | Continue per `frontend-sprint-plan.md` | — |
 | Test levels (7) | `docs/13-testing/test-levels.md` | Level 3 contract suite: `tests/contract/test_api_contract.py` 30 tests (auth codes, envelope, idempotency, rate limit, pagination, SSE frames); unit 448 tests | Partial | Coverage gate in CI (F10) still open; integration suite blocked by Docker (G9) | — |
 | OpenAPI generated | `docs/09-api/api-versioning.md` | Not yet | High | Generate `openapi.yaml` from FastAPI in Sprint 5 | ADR-0041* |
 | Prompt registry module | `prompt-storage.md` + ADR-0015 | `prompts/__init__.py` only | High | Implement `prompts/registry.py` + `registry.yaml` in Sprint 2 | ADR-0015, ADR-0028 |
