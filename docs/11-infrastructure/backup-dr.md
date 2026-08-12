@@ -61,7 +61,7 @@ drill and below for real DR):**
 1. Provision new Linux VPS (same baseline sizing, topology.md).
 2. Install Docker + Compose; clone the infrastructure repository.
 3. Retrieve the age key from the operator password manager; decrypt
-   `.env.enc` → `.env`.
+   `secrets.env` → `.env`.
 4. `rclone copy` the latest backup set from B2/S3.
 5. Restore PostgreSQL (dump + WAL replay to latest point) and Redis AOF.
 6. `docker compose up -d`; verify healthchecks; re-point DNS to the new
@@ -76,7 +76,7 @@ proceeds.
 
 ## Secrets injection (D11-6)
 
-- **At rest:** one encrypted `.env.enc` (SOPS + age) in the private repo —
+- **At rest:** one encrypted `secrets.env` (SOPS + age) in the private repo —
   the only secret material that ever enters Git.
 - **Key custody:** age private key in (a) GitHub Actions secret for deploy,
   (b) operator password manager for local/DR use. Nowhere else.

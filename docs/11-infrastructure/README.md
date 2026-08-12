@@ -39,7 +39,7 @@ Runtime deployment specs (ground truth of what runs on the VPS today):
 | D11-3 | CI/CD | GitHub Actions → GHCR → SSH deploy (backend); Vercel Git integration (frontend) |
 | D11-4 | Observability | Prometheus + Grafana + Loki + Tempo/OTel collector, all self-hosted |
 | D11-5 | Backup/DR | `pg_dump` daily + WAL archiving + Redis AOF → rclone (encrypted) to B2/S3 |
-| D11-6 | Secrets injection | SOPS + age (`.env.enc` in repo), env-var injection at deploy time |
+| D11-6 | Secrets injection | SOPS + age (`secrets.env` in repo), env-var injection at deploy time |
 
 ## What this phase does NOT define
 

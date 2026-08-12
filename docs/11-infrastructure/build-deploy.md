@@ -31,7 +31,7 @@ push/merge → main
   │
   ├─ job: deploy
   │     SSH to VPS (dedicated non-root deploy key):
-  │       1. sops -d .env.enc → /srv/lumine/.env   (decrypted on-target,
+  │       1. sops -d secrets.env → /srv/lumine/.env   (decrypted on-target,
   │          never stored on the runner)
   │       2. docker compose pull
   │       3. docker compose run --rm migrate       (DB migration =

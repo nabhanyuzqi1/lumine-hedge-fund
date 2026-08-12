@@ -42,7 +42,7 @@ Gate: **error severity → block merge.** Warning → annotation.
 - Scans all commits, working tree, and staged files.
 - Entropy-based detection + regex patterns (AWS keys, GitHub tokens,
   private keys, API keys, database URLs with credentials).
-- Exception: `.env.enc` (SOPS encrypted — intentional, not a leak).
+- Exception: `secrets.env` (SOPS encrypted — intentional, not a leak).
 
 Gate: **any finding → block merge + alert operator.**
 

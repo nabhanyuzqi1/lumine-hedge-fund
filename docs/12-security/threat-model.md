@@ -64,7 +64,7 @@ establishes the security boundaries that subsequent documents enforce.
 
 | Attack | Vector | Mitigation |
 |--------|--------|------------|
-| `.env.enc` in repo exposed | GitHub repository compromise | SOPS + age encrypted; private key not in repo |
+| `secrets.env` in repo exposed | GitHub repository compromise | SOPS + age encrypted; private key not in repo |
 | `.env` plaintext on VPS | VPS filesystem access | Requires SSH (key auth) or container escape (non-root user) |
 | `/proc/<pid>/environ` read | Container escape or same-user process | Containers run as dedicated non-root users; no shared accounts |
 | Age private key leak | GH Actions secret or password manager compromise | Rotate key; audit log captures deploy events |

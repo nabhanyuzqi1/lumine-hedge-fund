@@ -22,7 +22,7 @@ the rotation procedure.
 
 **Applied during VPS provisioning**, before Docker or any application is
 installed. The LUKS passphrase is independent of all application secrets —
-no circular dependency during recovery. If `.env.enc` is lost, the disk
+no circular dependency during recovery. If `secrets.env` is lost, the disk
 can still be unlocked for data recovery.
 
 ### Layer 2 — Column (pgcrypto)
@@ -64,7 +64,7 @@ secret from the disk passphrase and the application encryption key.
 ```
 Operator password manager
   ├── LUKS passphrase ──► disk unlock
-  └── Age private key ──► decrypt .env.enc
+  └── Age private key ──► decrypt secrets.env
                             │
                             └──► /srv/lumine/.env
                                    ├── APP_ENCRYPTION_KEY ──► pgcrypto
@@ -73,7 +73,7 @@ Operator password manager
                                    └── ...all other runtime secrets
 
 GitHub Actions secret
-  └── Age private key ──► decrypt .env.enc (CI deploy only)
+  └── Age private key ──► decrypt secrets.env (CI deploy only)
 ```
 
 No single key unlocks everything. No circular dependency:
@@ -85,14 +85,14 @@ No single key unlocks everything. No circular dependency:
 
 ```
 ┌─ Repo ──────────────────────────────────────────────────┐
-│  .env.enc (SOPS + age, encrypted)                        │
+│  secrets.env (SOPS + age, encrypted)                        │
 │  .sops.yaml (age public key fingerprint)                 │
 └──────────────────────────────────────────────────────────┘
                     │
                     │ CI deploy: SSH to VPS
                     ▼
 ┌─ VPS ───────────────────────────────────────────────────┐
-│  sops -d .env.enc → /srv/lumine/.env                     │
+│  sops -d secrets.env → /srv/lumine/.env                     │
 │  docker compose up -d                                    │
 │    ├── lumine-trade-core ← env: DB_PASSWORD, APP_KEY...  │
 │    ├── lumine-llm-gateway ← env: 9ROUTER_API_KEY...      │
@@ -122,7 +122,7 @@ No single key unlocks everything. No circular dependency:
 
 1. Generate new key: `openssl rand -hex 32`
 2. Update `APP_ENCRYPTION_KEY` in `.env`
-3. Re-encrypt `.env.enc`: `sops updatekeys` then edit
+3. Re-encrypt `secrets.env`: `sops updatekeys` then edit
 4. Run migration script to re-encrypt affected columns with new key, old key
    still valid during transition
 5. Deploy
@@ -132,7 +132,7 @@ No single key unlocks everything. No circular dependency:
 
 1. Generate new password
 2. Update `RCLONE_CRYPT_PASSWORD` in `.env`
-3. Re-encrypt `.env.enc`
+3. Re-encrypt `secrets.env`
 4. Create new rclone crypt remote with new password
 5. Full backup to new remote
 6. Deploy with new remote config

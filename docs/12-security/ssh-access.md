@@ -55,7 +55,7 @@ support within `/srv/lumine/`:
 - `docker compose pull`
 - `docker compose up -d --remove-orphans`
 - `docker compose run --rm migrate`
-- `sops -d .env.enc > /srv/lumine/.env`
+- `sops -d secrets.env > /srv/lumine/.env`
 - `docker compose restart <service>`
 
 It cannot: install packages, modify users, read other home directories,

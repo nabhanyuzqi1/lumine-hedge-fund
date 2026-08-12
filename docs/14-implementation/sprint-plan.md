@@ -159,7 +159,7 @@ System ready for live capital deployment.
 
 | Day | Deliverable | Detail |
 |-----|-------------|--------|
-| 1-2 | Security hardening | UFW rules (80, 443, 22 only, D12-4), SSH config (ed25519 only, no password, D12-2), Caddy TLS + CORS, container non-root user, SOPS + age for `.env.enc` (D11-6), Grafana IP allowlist |
+| 1-2 | Security hardening | UFW rules (80, 443, 22 only, D12-4), SSH config (ed25519 only, no password, D12-2), Caddy TLS + CORS, container non-root user, SOPS + age for `secrets.env` (D11-6), Grafana IP allowlist |
 | 3-4 | Monitoring | Prometheus metrics (`health.py`, `metrics.py`), Loki + Promtail for structured logs, Grafana dashboards (system health, trade activity, LLM cost, error budget), Alertmanager rules (SLO burn rate, D13-6), dead man's switch |
 | 5-6 | Backup | Daily `pg_dump` (custom format) + continuous WAL archiving, `rclone` with `crypt` remote to S3-compatible storage (D11-5), Redis AOF backup, monthly automated restore test |
 | 7 | Acceptance checklist | All 8 pre-launch gates verified (D13-6): CI blocking gates, backtest (Sharpe > 0, max DD < 20%, profit factor > 1.0), paper trading (2 weeks, zero errors, zero lineage gaps), kill-switch test, backup restore test, MT5 bridge failover, security pentest (no critical/high open), deploy verify |

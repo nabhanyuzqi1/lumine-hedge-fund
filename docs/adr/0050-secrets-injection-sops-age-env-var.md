@@ -16,7 +16,7 @@ alternative injection mechanisms.
 
 ## Decision
 
-One encrypted `.env.enc` (SOPS + age) in the private repo. CI decrypts at
+One encrypted `secrets.env` (SOPS + age) in the private repo. CI decrypts at
 deploy time and writes `/srv/lumine/.env` over SSH; containers receive values
 as environment variables at `compose up`. The age private key lives in a
 GitHub Actions secret (deploy) and the operator's password manager (local).

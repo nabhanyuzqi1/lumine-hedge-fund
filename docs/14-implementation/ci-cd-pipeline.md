@@ -487,7 +487,7 @@ before the job runs.
 | `SSH_DEPLOY_KEY` | Repository | ed25519 private key, scoped to `/srv/lumine/` via `command=` restriction (D12-2) |
 | `GITHUB_TOKEN` | Automatic | Docker push to GHCR (auto-provided by GitHub) |
 | `STAGING_API_KEY` | Environment (staging) | HMAC key for SSE smoke test |
-| `AGE_PRIVATE_KEY` | Environment (staging, production) | SOPS decrypt for `.env.enc` (D11-6) |
+| `AGE_PRIVATE_KEY` | Environment (staging, production) | SOPS decrypt for `secrets.env` (D11-6) |
 
 ### GitHub Actions variables
 

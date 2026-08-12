@@ -3,8 +3,8 @@
 # key must NOT live on the VPS).
 #
 # Usage:
-#   sops -e scripts/deploy/.env > scripts/deploy/.env.enc   # encrypt
-#   sops -d scripts/deploy/.env.enc                          # decrypt to stdout
+#   sops -e scripts/deploy/.env > scripts/deploy/secrets.env   # encrypt
+#   sops -d scripts/deploy/secrets.env                          # decrypt to stdout
 #
 # The plaintext .env NEVER lands in git (gitignore: .env, *.enc exception
 # below in .gitignore for the single committed ciphertext file).
