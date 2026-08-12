@@ -3,15 +3,17 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import { PageShell } from './components/page-shell';
 import { SuspenseOutlet } from './components/suspense-outlet';
+import { LandingPage } from './pages/landing';
 import { OrderDetailPage } from './pages/order-detail';
 import { TerminalPage } from './pages/terminal';
 
 /**
  * Lumine portal route table (F-Sprint 5/6 surfaces).
  *
- * `/` is now the Terminal workspace. Heavy surfaces (dashboard chart grid,
- * streams, health) are lazy-loaded to keep the critical bundle under budget;
- * the layout route persists the TopBar/Rail and data stores across navigation.
+ * `/` is the landing portal (card hub). The live Terminal workspace lives at
+ * `/terminal`. Heavy surfaces (dashboard chart grid, streams, health) are
+ * lazy-loaded to keep the critical bundle under budget; the layout route
+ * persists the TopBar/Rail and data stores across navigation.
  */
 
 const LazyDashboard = React.lazy(() =>
@@ -40,7 +42,8 @@ export const router = createBrowserRouter([
   {
     element: <PageShell />,
     children: [
-      { path: '/', element: <TerminalPage /> },
+      { path: '/', element: <LandingPage /> },
+      { path: '/terminal', element: <TerminalPage /> },
       { path: '/health', element: <LazyHealth /> },
       { path: '/streams', element: <LazyStreams /> },
       { path: '/dashboard', element: <LazyDashboard /> },
