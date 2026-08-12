@@ -55,24 +55,17 @@ describe('TerminalPage', () => {
     await waitFor(() => expect(screen.getAllByText(/ord-/i).length).toBeGreaterThan(0));
   });
 
-  it('switches to workspace placeholder tiles without unmounting data stores', async () => {
+  it('always renders the trading grid regardless of workspace state', async () => {
     renderPage();
 
     await act(async () => {
       useUiStore.setState({ workspace: 'research' });
     });
 
-    expect(screen.getByTestId('workspace-placeholders')).toBeDefined();
-    expect(screen.getByText('Strategy performance')).toBeDefined();
-    expect(screen.getByText('Research & backtesting')).toBeDefined();
-
-    // Switching back to trading restores the full grid — stores were never reset.
-    await act(async () => {
-      useUiStore.setState({ workspace: 'trading' });
-    });
-
+    // Trading grid remains visible because Terminal page now displays TradingWorkspace directly.
     expect(screen.getByTestId('quote-panel')).toBeDefined();
     expect(screen.getByTestId('risk-gauges')).toBeDefined();
+    expect(screen.queryByTestId('workspace-placeholders')).toBeNull();
   });
 
   it('navigates to order detail when an order id is clicked', async () => {

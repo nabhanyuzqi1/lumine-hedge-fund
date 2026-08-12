@@ -39,6 +39,7 @@ from lumine.autogen_pipeline.risk_assessor import apply_assessment, run_risk_ass
 from lumine.bridge.types import BridgeCommand
 from lumine.data.lineage import LineageInputs, LineageWriteError, write_lineage
 from lumine.shared.errors import DeadlineExceededError
+from lumine.trade_core.execution_router import TcaDispatchContext
 from lumine.trade_core.risk_validator import RiskInputs, RiskLimits, assess_proposal
 from lumine.trade_core.sizing_calculator import calculate_size
 
@@ -120,6 +121,11 @@ class CycleContext:
     analyst_variables: dict[str, dict[str, object]]
     policy: dict[str, Any]
     risk_limits: RiskLimits
+    broker_id: str | None = None
+    account_id: str | None = None
+    pip_value: Decimal | None = None
+    pip_size: Decimal | None = None
+    regime_id: str = "normal"
     feature_version_id: uuid.UUID | None = None
     regime_version_id: uuid.UUID | None = None
     calendar_version_id: uuid.UUID | None = None
@@ -221,7 +227,10 @@ class DecisionOrchestrator:
         tasks = [self._run_analyst(ctx, lineage_id, role) for role in ANALYST_ROLES]
         results = await asyncio.gather(*tasks)
         analyst_outputs = [r.parsed for r in results]
+        for role, result in zip(ANALYST_ROLES, results, strict=True):
+            self._require_trace_evidence(result.trace_ids, role)
         trace_ids = [tid for r in results for tid in r.trace_ids]
+        self._require_trace_evidence(trace_ids, "analysts")
         await self._journal(
             ctx,
             None,
@@ -257,6 +266,7 @@ class DecisionOrchestrator:
             )
             debate_summary = str(dbg.parsed.get("summary", ""))
             trace_ids.extend(dbg.trace_ids)
+            self._require_trace_evidence(trace_ids, "debate_moderator")
             await self._journal(ctx, None, "DEBATE_VALIDATED", "ok")
         else:
             await self._journal(ctx, None, "DEBATE_SKIPPED", "ok")
@@ -281,6 +291,7 @@ class DecisionOrchestrator:
         )
         ic_output = ic_result.parsed
         trace_ids.extend(ic_result.trace_ids)
+        self._require_trace_evidence(trace_ids, "ic_forum")
         await self._journal(ctx, None, "IC_VALIDATED", "ok", output_snapshot=ic_output)
 
         # 4. CIO Proposer; re-stamp authoritative pins afterwards.
@@ -375,6 +386,7 @@ class DecisionOrchestrator:
             prompt_version_id=self._prompt_version_id(ctx, "risk_officer"),
         )
         trace_ids.extend(assessor_result.trace_ids)
+        self._require_trace_evidence(trace_ids, "risk_assessor")
         assessed = apply_assessment(
             assessment=assessor_result.parsed,
             base_volume=size.base_volume,
@@ -473,11 +485,24 @@ class DecisionOrchestrator:
             order_type="market",
             stop_loss=float(size.stop_price),
         )
+        tca_context = None
+        if ctx.broker_id is not None and ctx.account_id is not None and ctx.pip_value is not None:
+            tca_context = TcaDispatchContext(
+                strategy_id=ctx.strategy_id,
+                book=ctx.book,
+                regime_id=ctx.regime_id,
+                broker_id=ctx.broker_id,
+                account_id=ctx.account_id,
+                pip_value=ctx.pip_value,
+                pip_size=ctx.pip_size,
+                decision_ts=datetime.fromisoformat(ctx.decision_ts),
+            )
         dispatched = await self._execution_router.dispatch(
             self._session,
             lineage_id=lineage_id,
             command=command,
             attempt=1,
+            tca_context=tca_context,
         )
         dispatch_info = {
             "status": dispatched.status,
@@ -541,6 +566,13 @@ class DecisionOrchestrator:
             "kill_switch": portfolio.kill_switch,
         }
 
+    @staticmethod
+    def _require_trace_evidence(trace_ids: list[uuid.UUID], stage: str) -> None:
+        if trace_ids:
+            return
+        message = f"missing reasoning trace evidence for {stage}"
+        raise LineageWriteError(message)
+
     async def _write_lineage(  # noqa: PLR0913 — lineage contract is fixed
         self,
         ctx: CycleContext,
@@ -562,6 +594,7 @@ class DecisionOrchestrator:
         orphan lineage record can reach dispatch, and no trace is left
         with a dangling ``lineage_id`` (D3-11).
         """
+        self._require_trace_evidence(trace_ids or [], "lineage")
         risk_payload = dict(risk_context or {})
         risk_payload.setdefault("violations", list(reasons))
         # commit=False: the lineage row is flushed but not committed.

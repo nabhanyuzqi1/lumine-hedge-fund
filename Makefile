@@ -112,7 +112,7 @@ backtest: ## Run backtest harness
 
 ##@ Security & supply chain
 
-.PHONY: security security-scan supply-chain sbom secret-scan
+.PHONY: security security-scan supply-chain sbom secret-scan verify-chain
 security: ## Local security scans (bandit -ll, gitleaks, pip-audit); semgrep stays CI-only
 	cd $(BACKEND_DIR) && uv run bandit -ll -r src/ -x src/tests
 	@command -v gitleaks >/dev/null 2>&1 && gitleaks detect --no-banner || echo "gitleaks not installed; skipping"
@@ -129,6 +129,9 @@ sbom: ## Generate SBOM (CycloneDX)
 
 secret-scan: ## Scan for committed secrets
 	@command -v gitleaks >/dev/null 2>&1 && gitleaks detect --no-banner || echo "gitleaks not installed; skipping"
+
+verify-chain: ## Verify append-only audit hash chains
+	cd $(BACKEND_DIR) && uv run python scripts/verify_chain.py
 
 ##@ Docs
 

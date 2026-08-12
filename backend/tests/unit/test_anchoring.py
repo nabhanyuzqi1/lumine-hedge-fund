@@ -40,7 +40,7 @@ class _ScriptedSession:
         self.added: list[Any] = []
         self.executed: list[Any] = []
 
-    async def execute(self, stmt: Any, params: Any | None = None) -> _Result:  # noqa: ANN401
+    async def execute(self, stmt: Any, _params: Any | None = None) -> _Result:  # noqa: ANN401
         self.executed.append(stmt)
         if self.results:
             return _Result(self.results.pop(0))
@@ -55,13 +55,13 @@ class _FailingWorm(WormSink):
 
     backend = "test_failing"
 
-    async def store(self, payload: AnchorPayload) -> None:  # noqa: D102
+    async def store(self, payload: AnchorPayload) -> None:  # noqa: ARG002
         raise RuntimeError("sink unavailable")
 
-    async def read(self, object_key: str) -> bytes:  # noqa: D102, ARG002
+    async def read(self, object_key: str) -> bytes:
         raise NotImplementedError
 
-    async def exists(self, object_key: str) -> bool:  # noqa: D102, ARG002
+    async def exists(self, object_key: str) -> bool:
         raise NotImplementedError
 
 
@@ -153,10 +153,10 @@ class TestFailureSemantics:
         # When the state write itself fails the caller must see an
         # AnchorError (safe state: never silently swallow a DB failure).
         class _FailingStateSession(_ScriptedSession):
-            async def execute(self, stmt: Any, params: Any | None = None) -> _Result:  # noqa: ANN401
+            async def execute(self, stmt: Any, _params: Any | None = None) -> _Result:  # noqa: ANN401
                 if "ON CONFLICT" in stmt.text:
                     raise RuntimeError("simulated state write failure")
-                return await super().execute(stmt, params)
+                return await super().execute(stmt, _params)
 
         session = _FailingStateSession([None, _head_row(), None])
         with pytest.raises(AnchorError):

@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DataTable } from '@/components/ui/data-table';
 import { NumericText } from '@/components/ui/numeric-text';
 import { useDemoStreams } from '@/hooks/useDemoStreams';
-import { useUiStore, type Workspace } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { OrderStatus, PositionFixture, OrderFixture } from '@/data/fixtures';
 
 const ORDER_STATUS_TONE: Record<OrderStatus, 'ok' | 'warn' | 'danger' | 'info'> = {
@@ -34,45 +34,6 @@ const ORDER_STATUS_TONE: Record<OrderStatus, 'ok' | 'warn' | 'danger' | 'info'> 
   REJECTED: 'danger',
 };
 
-const PLACEHOLDER_TILES: Record<
-  Exclude<Workspace, 'trading'>,
-  Array<{ title: string; note: string }>
-> = {
-  research: [
-    { title: 'Strategy performance', note: 'Wireframe pending — full page in a later sprint.' },
-    { title: 'Research & backtesting', note: 'Wireframe pending — full page in a later sprint.' },
-    { title: 'Model & LLM cost', note: 'Wireframe pending — full page in a later sprint.' },
-  ],
-  risk: [
-    { title: 'Risk limits', note: 'Wireframe pending — full page in a later sprint.' },
-    { title: 'Portfolio exposure', note: 'Wireframe pending — full page in a later sprint.' },
-  ],
-  ops: [
-    { title: 'Paper / prod operations', note: 'Wireframe pending — full page in a later sprint.' },
-    { title: 'Infrastructure health', note: 'Wireframe pending — full page in a later sprint.' },
-    { title: 'Prompt history', note: 'Wireframe pending — full page in a later sprint.' },
-    { title: 'Audit logs', note: 'Wireframe pending — full page in a later sprint.' },
-  ],
-};
-
-function WorkspacePlaceholders({ workspace }: { workspace: Exclude<Workspace, 'trading'> }) {
-  const tiles = PLACEHOLDER_TILES[workspace];
-  return (
-    <div
-      className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
-      data-testid="workspace-placeholders"
-    >
-      {tiles.map(({ title, note }) => (
-        <Card key={title}>
-          <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{note}</CardDescription>
-          </CardHeader>
-        </Card>
-      ))}
-    </div>
-  );
-}
 
 function PositionsTable({ positions }: { positions: PositionFixture[] }) {
   return (
@@ -263,8 +224,6 @@ function TradingWorkspace() {
  * and streams are never unmounted, so live state persists across switches.
  */
 export function TerminalPage() {
-  const workspace = useUiStore((s) => s.workspace);
-
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4">
       <header className="flex items-baseline justify-between">
@@ -276,11 +235,7 @@ export function TerminalPage() {
         </div>
       </header>
 
-      {workspace === 'trading' ? (
-        <TradingWorkspace />
-      ) : (
-        <WorkspacePlaceholders workspace={workspace} />
-      )}
+      <TradingWorkspace />
     </div>
   );
 }

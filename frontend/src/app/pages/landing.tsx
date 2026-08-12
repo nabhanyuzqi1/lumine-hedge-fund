@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 /**
@@ -65,20 +66,29 @@ const GROUP_TONE: Record<PortalEntry['group'], 'ok' | 'info' | 'warn'> = {
 export function LandingPage() {
   return (
     <div className="mx-auto w-full max-w-[1200px] space-y-8 p-6">
-      <header className="space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" aria-hidden="true" />
-          <span className="font-mono text-xs uppercase tracking-widest text-text-secondary">
-            Lumine · AI-Native Quantitative Fund
-          </span>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            <span className="font-mono text-xs uppercase tracking-widest text-text-secondary">
+              Lumine · AI-Native Quantitative Fund
+            </span>
+          </div>
+          <h1 className="font-display text-3xl font-semibold text-text-primary">
+            Institutional operating system for autonomous trading
+          </h1>
+          <p className="max-w-2xl text-sm text-text-secondary">
+            A hierarchical AI committee — CIO, Investment Committee, Risk, Portfolio Manager — makes
+            auditable, replayable decisions on XAUUSD. Select a portal below to enter a surface.
+          </p>
         </div>
-        <h1 className="font-display text-3xl font-semibold text-text-primary">
-          Institutional operating system for autonomous trading
-        </h1>
-        <p className="max-w-2xl text-sm text-text-secondary">
-          A hierarchical AI committee — CIO, Investment Committee, Risk, Portfolio Manager — makes
-          auditable, replayable decisions on XAUUSD. Select a portal below to enter a surface.
-        </p>
+        <div className="flex-shrink-0">
+          <Link to="/auth" data-testid="portal-signin">
+            <Button variant="secondary" className="w-full sm:w-auto">
+              Sign In
+            </Button>
+          </Link>
+        </div>
       </header>
 
       <section aria-labelledby="portal-heading" className="space-y-4">

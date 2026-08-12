@@ -25,4 +25,15 @@ describe('LandingPage', () => {
     const terminal = screen.getByTestId('portal-terminal');
     expect(terminal.getAttribute('href')).toBe('/terminal');
   });
+
+  it('renders sign-in button pointing to /auth', () => {
+    render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>,
+    );
+    const signin = screen.getByTestId('portal-signin');
+    expect(signin.getAttribute('href')).toBe('/auth');
+    expect(screen.getByText('Sign In')).toBeDefined();
+  });
 });

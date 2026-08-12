@@ -175,16 +175,14 @@ class FakeSession:
     async def refresh(self, _obj: Any) -> None:  # noqa: ANN401
         return None
 
-    async def execute(self, stmt: Any) -> Any:  # noqa: ANN401
-        """Record executed statements (e.g. the trace-FK backfill UPDATE).
+    async def execute(self, stmt: Any, _params: Any = None) -> Any:  # noqa: ANN401
+        """Record SQLAlchemy statements and return an empty result.
 
-        Chain-head queries (``read_last_hash`` in hashchain.py) expect a
-        result object with ``.first()``; an empty chain returns ``None``
-        so the writer falls back to the genesis hash. Mirror that here —
-        real chain states are covered by integration tests, unit tests
-        only exercise the genesis (empty) chain.
+        The production anchoring and backfill paths pass bound parameters as a
+        second positional argument; accepting them keeps this fake aligned with
+        ``AsyncSession.execute`` while unit tests remain database-free.
         """
-        self.executed.append(stmt)
+        self.executed.append((stmt, _params))
         return _EmptyChainResult()
 
 

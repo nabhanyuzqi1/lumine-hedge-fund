@@ -140,7 +140,12 @@ async def write_lineage(
         # ADR-0017: anchor cadence inside the same chain-lock transaction
         # so the head read + state upsert cannot race concurrent writers.
         # Default sink is the Phase-11 stub (DB copy only).
-        await maybe_anchor(session, table_name="lineage_records", row_count=1, worm=worm or NullWorm())
+        await maybe_anchor(
+            session,
+            table_name="lineage_records",
+            row_count=1,
+            worm=worm or NullWorm(),
+        )
 
     await with_chain_lock(session, "lineage_records", _append)
     try:

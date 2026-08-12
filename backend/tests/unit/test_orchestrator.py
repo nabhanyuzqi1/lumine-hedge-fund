@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+import lumine.autogen_pipeline.orchestrator as orchestrator_module
+from lumine.autogen_pipeline._base import StageResult
 from lumine.autogen_pipeline.orchestrator import (
     CycleContext,
     DecisionOrchestrator,
@@ -140,6 +142,9 @@ def _ctx(**overrides: Any) -> CycleContext:  # noqa: ANN401
             "risk_adjustments": {"trending": {"low": "1.0"}},
         },
         "risk_limits": RiskLimits(),
+        "broker_id": "broker-test",
+        "account_id": "account-test",
+        "pip_value": Decimal("1.5"),
     }
     base.update(overrides)
     return CycleContext(**base)  # type: ignore[arg-type]
@@ -164,7 +169,7 @@ class StubExecutionRouter:
 
     def __init__(self) -> None:
         """Initialize the recording stub."""
-        self.calls: list[tuple[Any, Any, int]] = []
+        self.calls: list[tuple[Any, Any, int, Any]] = []
 
     async def dispatch(
         self,
@@ -173,9 +178,10 @@ class StubExecutionRouter:
         lineage_id: Any,  # noqa: ANN401
         command: Any,  # noqa: ANN401
         attempt: int = 1,
+        tca_context: Any = None,  # noqa: ANN401
     ) -> DispatchResult:
         """Record the dispatch and return a scripted fill."""
-        self.calls.append((lineage_id, command, attempt))
+        self.calls.append((lineage_id, command, attempt, tca_context))
         return DispatchResult(status="filled", ticket=1001, fill_price=Decimal("2734.50"))
 
 
@@ -203,7 +209,8 @@ class TestDecisionCycle:
         gateway = FakeGateway(handler=_handler())
         session = FakeSession()
         router = StubExecutionRouter()
-        result = await _orchestrator(gateway, session, router).execute(_ctx(), _portfolio())
+        context = _ctx()
+        result = await _orchestrator(gateway, session, router).execute(context, _portfolio())
 
         assert result.verdict == "approved"
         assert result.action == "BUY"
@@ -212,6 +219,9 @@ class TestDecisionCycle:
         command = router.calls[0][1]
         assert command.symbol == "XAUUSD"
         assert command.stop_loss is not None
+        tca_context = router.calls[0][3]
+        assert tca_context.strategy_id == context.strategy_id
+        assert tca_context.broker_id == "broker-test"
         # Lineage written before dispatch: record exists with the proposal.
         lineage = [o for o in session.added if isinstance(o, LineageRecord)]
         assert len(lineage) == 1
@@ -229,6 +239,42 @@ class TestDecisionCycle:
         assert router.calls == []
         lineage = [o for o in session.added if isinstance(o, LineageRecord)]
         assert lineage[0].verdict == "noop"
+
+    async def test_missing_analyst_trace_stops_before_dispatch(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        gateway = FakeGateway(handler=_handler())
+        session = FakeSession()
+        router = StubExecutionRouter()
+
+        async def missing_trace_runner(**_kwargs: object) -> StageResult:
+            return StageResult(
+                parsed={
+                    "sub_role": "technical_analyst",
+                    "argument": "higher highs with EMA support",
+                    "confidence": 0.72,
+                    "bias": "bullish",
+                },
+                trace_ids=[],
+                raw_response="{}",
+                model_used="test-model",
+                degraded=False,
+                fallback_hops=0,
+            )
+
+        monkeypatch.setattr(
+            orchestrator_module,
+            "run_technical_analyst",
+            missing_trace_runner,
+        )
+
+        with pytest.raises(
+            LineageWriteError,
+            match="missing reasoning trace evidence for technical_analyst",
+        ):
+            await _orchestrator(gateway, session, router).execute(_ctx(), _portfolio())
+        assert router.calls == []
+        assert not any(isinstance(o, LineageRecord) for o in session.added)
 
     async def test_risk_rejection_stops_before_dispatch(self) -> None:
         gateway = FakeGateway(handler=_handler())
