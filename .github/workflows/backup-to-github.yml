@@ -1,0 +1,92 @@
+name: Backup to GitHub
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 02:00 WIB (UTC+7)
+  workflow_dispatch:
+    inputs:
+      full_backup:
+        description: 'Full backup including state (default: incremental)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "docs/15-implementation/sprint-**"
+      - "scripts/deploy/backup*"
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup SSH for VPS access
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Create backup archive locally
+        run: |
+          BACKUP_DIR="/tmp/lumine-backup-$(date +%Y%m%d-%H%M%S)"
+          mkdir -p "$BACKUP_DIR"
+          
+          # Copy essential files from repo
+          cp -r backend "$BACKUP_DIR/"
+          cp -r docs/15-implementation/sprint-* "$BACKUP_DIR/docs/" 2>/dev/null || true
+          cp scripts/deploy/*.sh "$BACKUP_DIR/scripts/deploy/"
+          cp scripts/deploy/.env.sample "$BACKUP_DIR/scripts/deploy/"
+          cp .gitignore README.md Makefile "$BACKUP_DIR/"
+          
+          # Compress
+          tar -czf "$BACKUP_DIR.tar.gz" "$BACKUP_DIR"
+          echo "Backup created: $BACKUP_DIR.tar.gz ($(du -h $BACKUP_DIR.tar.gz | cut -f1))"
+
+      - name: Deploy backup to VPS (via rsync)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: root
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+          BACKUP_FILE: ${{ github.workspace }}/tmp/lumine-backup-*.tar.gz
+        run: |
+          # Sync backup file to VPS /root/lumine-backups/
+          rsync -avz -e "ssh -p ${VPS_PORT} -o StrictHostKeyChecking=no" \
+            $BACKUP_FILE \
+            ${VPS_USER}@${VPS_HOST}:/root/lumine-backups/backup_repo_$(date +%Y%m%d).tar.gz
+            
+          echo "Backup synced to VPS successfully"
+
+      - name: Push backup to GitHub repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BACKUP_FILE=$(ls /tmp/lumine-backup-*.tar.gz | head -1)
+          
+          # Create backup directory in this repo
+          mkdir -p backup-repo
+          cp "$BACKUP_FILE" backup-repo/backup-$(date +%Y%m%d-%H%M%S).tar.gz
+          
+          # Commit and push to main branch (backup artifacts)
+          cd backup-repo
+          git init
+          git config user.name "Lumine Bot"
+          git config user.email "bot@lumine.com"
+          git add .
+          git commit -m "chore(backups): auto backup $(date +%Y-%m-%d)" || true
+          git remote add origin https://github.com/${{ github.repository }}.git
+          git pull origin main --allow-unrelated-histories || true
+          git push origin main --force

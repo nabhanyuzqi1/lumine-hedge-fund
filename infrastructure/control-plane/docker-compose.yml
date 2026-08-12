@@ -16,8 +16,6 @@ services:
     network_mode: host
     volumes:
       - ./authelia:/config
-    env_file:
-      - .env
     environment:
       - TZ=Asia/Jakarta
     depends_on:
