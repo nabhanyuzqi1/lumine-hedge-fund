@@ -19,9 +19,13 @@ This is **not** a retail trading bot, EA, or signal provider. Lumine is designed
 | Service | Endpoint |
 |---------|----------|
 | Landing page | [lumine-terminal.com](https://lumine-terminal.com) |
-| Backend API | `https://<vps>/backend/` |
-| Control plane portal | `https://<vps>/portal/` |
-| Health dashboard | `https://<vps>/dashboard/` |
+| Backend API | `https://166.88.227.177/backend/` |
+| Control plane portal | `https://166.88.227.177/portal/` |
+| Health dashboard | `https://166.88.227.177/dashboard/` |
+| Hermes dashboard | `https://166.88.227.177/hermes/` |
+| MT5 remote desktop | `https://166.88.227.177/mt5/` |
+| Container logs | `https://166.88.227.177/logs/` |
+| 9router (direct, plain HTTP) | `http://166.88.227.177:20128` |
 
 System uptime is monitored internally via [Uptime Kuma](https://github.com/louislam/uptime-kuma) on the control plane. Dashboard accessible at `/dashboard/` behind Authelia SSO.
 
@@ -145,10 +149,9 @@ Phases are executed strictly in order; each produces documents in `docs/NN-phase
 | Homepage | Service dashboard hub | [github.com/gethomepage/homepage](https://github.com/gethomepage/homepage) |
 | Uptime Kuma | Health monitoring | [github.com/louislam/uptime-kuma](https://github.com/louislam/uptime-kuma) |
 | noVNC | Remote MT5 desktop | [github.com/novnc/noVNC](https://github.com/novnc/noVNC) |
-| Prometheus | Metrics collection | [github.com/prometheus/prometheus](https://github.com/prometheus/prometheus) |
-| Grafana | Observability dashboards | [github.com/grafana/grafana](https://github.com/grafana/grafana) |
-| Loki + Promtail | Log aggregation | [github.com/grafana/loki](https://github.com/grafana/loki) |
-| Tempo | Distributed tracing | [github.com/grafana/tempo](https://github.com/grafana/tempo) |
+| Dozzle | Container log viewer | [github.com/amir20/dozzle](https://github.com/amir20/dozzle) |
+| Hermes | Messaging gateway (NousResearch) | [github.com/NousResearch/hermes](https://github.com/NousResearch/hermes) |
+| Lumine Backend | FastAPI + MT5 bridge + headroom + 9router | in-repo `backend/docker-compose.prod.yml` |
 
 ### Dev Tooling
 
@@ -184,6 +187,18 @@ Internet :80/:443  (only public ports)
 **All upstream services bind `127.0.0.1`** --- Caddy is the single entrypoint. The only exception is `9router` on `:20128` (external AI agent access, compensating controls pending). See [D11-7](docs/11-infrastructure/decisions.md#d11-7--control-plane-caddy--authelia--homepage--uptime-kuma) for the full decision record.
 
 **Access:** `https://166.88.227.177/` with self-signed TLS (domain pending). Login once at `/auth/` with TOTP; all protected routes share the session. Logout at `/logout/` or via the Homepage header button.
+
+### Deployed Services (ground truth 2026-08-12)
+
+All 13 containers across 3 root directories (compose label `com.docker.compose.project.config_files` is the source of truth):
+
+| Root | Compose | Services |
+|------|---------|----------|
+| `/srv/control-plane/` | `control-plane` | caddy, authelia, homepage, uptime-kuma, landing, dozzle (6) |
+| `/opt/lumine/backend/` | `backend` | postgres, redis, api, mt5, headroom, 9router (6) |
+| `/opt/hermes/hermes-agent/` | `hermes-agent` | hermes (1) |
+
+**Backup:** `scripts/deploy/backup.sh` → `/root/lumine-backups/` daily via cron 02:00 WIB. Covers Postgres dump, Redis RDB, 9router volume, hermes `/root/.hermes` (excl. cache), authelia TOTP db + users, uptime-kuma db, caddy certs. MT5 intentionally excluded (recreate-only, no data). 7-day retention.
 
 ---
 

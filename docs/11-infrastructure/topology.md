@@ -47,6 +47,23 @@ Frontend (outside VPS)
    CORS allowlist: Vercel production origin (D11-1)
 ```
 
+## Deployed services (ground truth 2026-08-12)
+
+13 containers across 3 compose roots (label `com.docker.compose.project.config_files`
+is the source of truth):
+
+| Compose root | Services |
+|---|---|
+| `/srv/control-plane/` | caddy, authelia, homepage, uptime-kuma, landing, dozzle (6) |
+| `/opt/lumine/backend/` | postgres, redis, api, mt5, headroom, 9router (6) |
+| `/opt/hermes/hermes-agent/` | hermes (1) |
+
+Backup (see `../infrastructure/` + `scripts/deploy/backup.sh`): daily at
+02:00 WIB via cron `/usr/local/bin/lumine-backup.sh`, retention 7 days.
+Covers Postgres dump, Redis RDB, 9router volume, hermes `/root/.hermes`
+(cache excluded), authelia TOTP db + users_database.yml, uptime-kuma
+kuma.db, caddy certs. MT5 is recreate-only (no data backup, 2026-08-12).
+
 ## Deployed control plane (2026-08-07 → diperbarui 2026-08-09, ADR-0069 / D11-7)
 
 Interim state before the V1 services above land: the VPS runs the

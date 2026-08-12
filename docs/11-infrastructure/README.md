@@ -22,6 +22,14 @@ contract (Phases 1–9).
 | `observability.md` | Metrics, logs, traces, dashboards, alert rules |
 | `backup-dr.md` | Backup schedule, restore verification, DR runbook, secrets injection |
 
+Runtime deployment specs (ground truth of what runs on the VPS today):
+
+| Spec | Purpose |
+|------|---------|
+| `../01-architecture/` + `backend/docker-compose.prod.yml` | Lumine stack: postgres, redis, api, mt5, headroom, 9router (root `/opt/lumine/backend/`) |
+| `../11-infrastructure/` + `infrastructure/control-plane/` | Control plane: caddy, authelia, homepage, uptime-kuma, landing, dozzle (root `/srv/control-plane/`) |
+| `../11-infrastructure/` + `infrastructure/hermes/` | Hermes agent (upstream NousResearch clone, root `/opt/hermes/hermes-agent/`) |
+
 ## Decisions at a glance
 
 | # | Decision | Choice |

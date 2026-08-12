@@ -1,0 +1,30 @@
+# Canonical Hermes gateway compose (ground truth 2026-08-12).
+
+# Mirrors /opt/hermes/hermes-agent/docker-compose.yml on the VPS, with
+# secrets removed (API_SERVER_KEY, NINEROUTER_API_KEY come from .env at
+# deploy time). Image is built in-place from the upstream clone — there is
+# no published registry tag. See README.md for restore procedure.
+#
+# Usage:
+#   HERMES_UID=$(id -u) HERMES_GID=$(id -g) docker compose up -d
+
+services:
+  gateway:
+    build: .
+    image: hermes-agent
+    container_name: hermes
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ~/.hermes:/opt/data
+      - ./gateway/platforms/api_server.py:/opt/hermes/gateway/platforms/api_server.py:ro
+    environment:
+      - HERMES_UID=${HERMES_UID:-10000}
+      - HERMES_GID=${HERMES_GID:-10000}
+      - HERMES_DASHBOARD=1
+      - HERMES_DASHBOARD_HOST=127.0.0.1
+      - HERMES_DASHBOARD_PORT=9119
+      - API_SERVER_HOST=0.0.0.0
+      - API_SERVER_KEY=${API_SERVER_KEY}
+      - NINEROUTER_API_KEY=${NINEROUTER_API_KEY}
+    command: ["gateway", "run"]

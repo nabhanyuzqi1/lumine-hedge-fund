@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# backup.sh — Backup data (Postgres/Redis) + state agent (9router/hermes/openclaude).
+# backup.sh — Backup data (Postgres/Redis) + state service (9router, hermes,
+# authelia, uptime-kuma, caddy). MT5 sengaja TIDAK di-backup: instalasi docker
+# murni (recreate-only), tidak menyimpan data operasional (keputusan 2026-08-12).
 #
 # Lokasi hasil: BACKUP_DIR (default /root/lumine-backups), 1 file per tanggal.
 # Rotasi otomatis: hapus backup lebih tua dari BACKUP_RETENTION_DAYS (default 7).
@@ -72,16 +74,63 @@ else
   echo "    (skip) container redis tidak berjalan"
 fi
 
-# ── 3. State agent (9router/hermes/openclaude) ───────────────────────────────
-for d in 9router hermes openclaude; do
-  if [[ -d "/opt/lumine/state/${d}" ]]; then
-    echo "==> Tar state ${d} ..."
-    tar -czf "${BACKUP_DIR}/${DATE_STAMP}/state-${d}.tar.gz" \
-      -C /opt/lumine/state "${d}"
-  else
-    echo "    (skip) /opt/lumine/state/${d} tidak ada"
-  fi
-done
+# ── 3. State service (9router / hermes / openclaude / authelia / kuma / caddy)
+# Path asli (ground truth 2026-08-12):
+#   9router   → volume  backend_9router_data  (auth/, db/, jwt-secret, machine-id)
+#   hermes    → /root/.hermes                  (state.db, kanban.db, auth.json, pairing/, memories/)
+#               exlude cache: home/ (420M), bin/ (22M) — tidak dibutuhkan untuk restore
+#   authelia  → /srv/control-plane/authelia/   (db.sqlite3 TOTP + users_database.yml)
+#   uptime    → /srv/control-plane/uptime-kuma/ (kuma.db — monitor config)
+#   caddy     → volume control-plane_caddy_data (sertifikat; 140K)
+# MT5: recreate-only (keputusan 2026-08-12) — tidak di-backup.
+echo "==> State 9router (volume backend_9router_data) ..."
+if docker volume inspect backend_9router_data >/dev/null 2>&1; then
+  docker run --rm -v backend_9router_data:/data:ro \
+    -v "${BACKUP_DIR}/${DATE_STAMP}":/backup alpine \
+    sh -c 'tar -czf /backup/state-9router.tar.gz -C /data .'
+else
+  echo "    (skip) volume backend_9router_data tidak ada"
+fi
+
+echo "==> State hermes (/root/.hermes, exlude cache) ..."
+if [[ -d /root/.hermes ]]; then
+  tar -czf "${BACKUP_DIR}/${DATE_STAMP}/state-hermes.tar.gz" \
+    --exclude='/root/.hermes/home' --exclude='/root/.hermes/bin' \
+    -C /root .hermes
+else
+  echo "    (skip) /root/.hermes tidak ada"
+fi
+
+echo "==> State authelia (TOTP db.sqlite3 + users_database.yml) ..."
+if [[ -d /srv/control-plane/authelia ]]; then
+  mkdir -p "${BACKUP_DIR}/${DATE_STAMP}/authelia"
+  cp -a /srv/control-plane/authelia/db.sqlite3 \
+    "${BACKUP_DIR}/${DATE_STAMP}/authelia/" 2>/dev/null || echo "    (skip db.sqlite3)"
+  cp -a /srv/control-plane/authelia/users_database.yml \
+    "${BACKUP_DIR}/${DATE_STAMP}/authelia/" 2>/dev/null || echo "    (skip users_database.yml)"
+else
+  echo "    (skip) /srv/control-plane/authelia tidak ada"
+fi
+
+echo "==> State uptime-kuma (kuma.db) ..."
+if [[ -d /srv/control-plane/uptime-kuma ]]; then
+  mkdir -p "${BACKUP_DIR}/${DATE_STAMP}/uptime-kuma"
+  cp -a /srv/control-plane/uptime-kuma/kuma.db* \
+    "${BACKUP_DIR}/${DATE_STAMP}/uptime-kuma/" 2>/dev/null || echo "    (skip kuma.db)"
+else
+  echo "    (skip) /srv/control-plane/uptime-kuma tidak ada"
+fi
+
+echo "==> State caddy (sertifikat) ..."
+if docker volume inspect control-plane_caddy_data >/dev/null 2>&1; then
+  docker run --rm -v control-plane_caddy_data:/data:ro \
+    -v "${BACKUP_DIR}/${DATE_STAMP}":/backup alpine \
+    sh -c 'tar -czf /backup/state-caddy.tar.gz -C /data .'
+else
+  echo "    (skip) volume control-plane_caddy_data tidak ada"
+fi
+
+echo "==> State openclaude — SKIP (tidak terpasang di server, 2026-08-12)"
 
 # ── 4. Kemas hari ini + bersihkan lama ───────────────────────────────────────
 echo "==> Kemas → ${BACKUP_DIR}/${DATE_STAMP}.tar.gz"
