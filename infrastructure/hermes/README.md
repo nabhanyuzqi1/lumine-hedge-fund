@@ -35,8 +35,8 @@ unmodified upstream `docker-compose.yml`.
 | `NINEROUTER_API_KEY` | from `/opt/hermes/hermes-agent/.env` (`sk-...`) — **not in repo** |
 
 Secrets live in `/opt/hermes/hermes-agent/.env` on the VPS. The off-server
-source of truth is `scripts/deploy/secrets.env.enc` (SOPS + age, D11-6).
-Restore: decrypt with `sops -d scripts/deploy/secrets.env.enc > /opt/hermes/hermes-agent/.env`.
+source of truth is `scripts/deploy/secrets.env` (SOPS + age, D11-6).
+Restore: decrypt with `sops -d scripts/deploy/secrets.env > /opt/hermes/hermes-agent/.env`.
 
 ## Mounts
 
@@ -53,7 +53,7 @@ Restore: decrypt with `sops -d scripts/deploy/secrets.env.enc > /opt/hermes/herm
    (or restore the repo copy if it ever diverges from upstream).
 2. Re-apply the `api_server.py` patch (file is in the repo `gateway/` dir).
 3. Restore `/root/.hermes` from backup (backup tar contains it, cache excluded).
-4. Decrypt `scripts/deploy/secrets.env.enc` (SOPS + age) to
+4. Decrypt `scripts/deploy/secrets.env` (SOPS + age) to
    `/opt/hermes/hermes-agent/.env` (API_SERVER_KEY, NINEROUTER_API_KEY).
 5. `HERMES_UID=$(id -u) HERMES_GID=$(id -g) docker compose up -d`
 6. Verify: dashboard on `127.0.0.1:9119`; Caddy `/hermes*` route; pairing

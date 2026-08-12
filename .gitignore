@@ -8,7 +8,7 @@ credentials.key
 *.key
 *.enc
 !*.yml.enc
-!scripts/deploy/secrets.env.enc
+!scripts/deploy/secrets.env
 
 # ── Python ─────────────────────────────────────────────────────────────────
 __pycache__/

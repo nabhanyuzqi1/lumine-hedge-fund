@@ -9,5 +9,5 @@
 # The plaintext .env NEVER lands in git (gitignore: .env, *.enc exception
 # below in .gitignore for the single committed ciphertext file).
 creation_rules:
-  - path_regex: \.env\.(prod|enc)$
+  - path_regex: secrets\.env$
     age: age1j3qvcqs8auqw3fqk3gye74upatvnj54q97yzvupmmr0mgcq6xdssv3324s

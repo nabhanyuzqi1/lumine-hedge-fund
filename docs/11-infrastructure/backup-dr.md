@@ -13,10 +13,10 @@ obligation (observability.md), not an optional check.
 | PostgreSQL | `pg_dump` custom format + continuous WAL archiving | dump daily 02:00 UTC; WAL streaming | 30 daily + 12 monthly |
 | Redis | AOF (everysec) + file copy | AOF continuous; copy daily | 7 days |
 | Lineage archive & news cache volumes | `rclone sync` | daily | 30 days |
-| Compose config + `secrets.env.enc` | Git repository (already versioned) | per commit | permanent |
+| Compose config + `secrets.env` | Git repository (already versioned) | per commit | permanent |
 
-Secrets source of truth: `scripts/deploy/secrets.env.enc` (SOPS + age, D11-6).
-Decrypt on a fresh VPS: `sops -d scripts/deploy/secrets.env.enc > /tmp/lumine.env`,
+Secrets source of truth: `scripts/deploy/secrets.env` (SOPS + age, D11-6).
+Decrypt on a fresh VPS: `sops -d scripts/deploy/secrets.env > /tmp/lumine.env`,
 then split into the two runtime `.env` files as documented in
 `infrastructure/hermes/README.md` and `infrastructure/control-plane/README.md`.
 
