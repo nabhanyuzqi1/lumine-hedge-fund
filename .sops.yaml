@@ -1,0 +1,13 @@
+# SOPS configuration (D11-6): secrets encrypted with age, decryptable with
+# the private key in ~/.config/sops/age/keys.txt (off-server copy required —
+# key must NOT live on the VPS).
+#
+# Usage:
+#   sops -e scripts/deploy/.env > scripts/deploy/.env.enc   # encrypt
+#   sops -d scripts/deploy/.env.enc                          # decrypt to stdout
+#
+# The plaintext .env NEVER lands in git (gitignore: .env, *.enc exception
+# below in .gitignore for the single committed ciphertext file).
+creation_rules:
+  - path_regex: \.env\.(prod|enc)$
+    age: age1j3qvcqs8auqw3fqk3gye74upatvnj54q97yzvupmmr0mgcq6xdssv3324s
