@@ -21,6 +21,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Numeric,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -333,6 +334,18 @@ class LineageRecord(Base):
     proposal: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     risk_context: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
+    # ── Tamper evidence (ADR-0017): hash-chained append-only row ─────────
+    prev_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    self_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    # Pins the canonical-JSON rules used to hash this row (ADR-0017);
+    # must be set explicitly at write time so the pre-insert hash payload
+    # byte-matches the verifier's re-read payload.
+    canonicalization_version: Mapped[int] = mapped_column(
+        SmallInteger,
+        nullable=False,
+        server_default=text("1"),
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -641,6 +654,18 @@ class ReasoningTrace(Base):
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
     lineage_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("lineage_records.lineage_id"))
 
+    # Tamper evidence (ADR-0017): traces are a chained table.
+    prev_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    self_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    # Pins the canonical-JSON rules used to hash this row (ADR-0017);
+    # must be set explicitly at write time so the pre-insert hash payload
+    # byte-matches the verifier's re-read payload.
+    canonicalization_version: Mapped[int] = mapped_column(
+        SmallInteger,
+        nullable=False,
+        server_default=text("1"),
+    )
+
     __table_args__ = (
         Index("ix_reasoning_traces_workflow", "workflow_run_id", "ts"),
         Index("ix_reasoning_traces_lineage", "lineage_id"),
@@ -704,6 +729,18 @@ class WorkflowJournal(Base):
     error_message: Mapped[str | None] = mapped_column(Text)
     lineage_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("lineage_records.lineage_id"))
 
+    # Tamper evidence (ADR-0017): journal is a chained table.
+    prev_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    self_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    # Pins the canonical-JSON rules used to hash this row (ADR-0017);
+    # must be set explicitly at write time so the pre-insert hash payload
+    # byte-matches the verifier's re-read payload.
+    canonicalization_version: Mapped[int] = mapped_column(
+        SmallInteger,
+        nullable=False,
+        server_default=text("1"),
+    )
+
     __table_args__ = (
         Index("ix_wf_journal_ts", "ts"),
         Index("ix_wf_journal_workflow", "workflow_id", "ts"),
@@ -733,4 +770,97 @@ class SecurityEvent(Base):
         Index("ix_security_events_ts", "ts"),
         Index("ix_security_events_type", "event_type", "ts"),
         Index("ix_security_events_severity", "severity", "ts"),
+    )
+
+
+class AuditAnchor(Base):
+    """Chain-head anchor (ADR-0017).
+
+    Append-only record that pins the chain head (latest ``self_hash``)
+    of a chained table, mirrored to the WORM sink (locally: append-only
+    file directory; production: S3/B2 Object Lock Compliance — Phase 11).
+    A mismatch between the DB copy and the WORM copy is a tamper signal.
+    """
+
+    __tablename__ = "audit_anchors"
+
+    anchor_id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    table_name: Mapped[str] = mapped_column(Text, nullable=False)
+    anchor_seq: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    anchored_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    anchored_row_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    row_count: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    anchored_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+    worm_object_key: Mapped[str] = mapped_column(Text, nullable=False)
+    worm_backend: Mapped[str] = mapped_column(Text, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("table_name", "anchor_seq", name="uq_audit_anchors_table_seq"),
+        Index("ix_audit_anchors_table_ts", "table_name", "anchored_at"),
+    )
+
+
+class AnchorState(Base):
+    """Anchor-cadence bookkeeping (ADR-0017).
+
+    One row per chained table tracks the anchor checkpoint: the last
+    anchored row count and timestamp. Writers consult this after every
+    chain append (inside the per-table chain lock) to decide whether
+    the N-rows / M-minutes threshold has fired, so concurrent writers
+    cannot double-anchor.
+    """
+
+    __tablename__ = "anchor_state"
+
+    table_name: Mapped[str] = mapped_column(Text, primary_key=True)
+    last_anchor_seq: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    last_row_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    last_anchor_ts: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TcaRecord(Base):
+    """Per-fill TCA (ADR-0040) — 1:1 with ``fills``.
+
+    Benchmark is the arrival mid at ``decision_ts`` (DB-authoritative),
+    clamped to the next session open when the market is closed. The
+    record is the best-execution evidence (MiFID II spirit) and is
+    retained permanently.
+    """
+
+    __tablename__ = "tca_records"
+
+    tca_id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    fill_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("fills.fill_id"),
+        nullable=False,
+    )
+    benchmark_price: Mapped[Decimal] = mapped_column(Numeric(20, 5), nullable=False)
+    slippage_bps: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
+    slippage_cost_ccy: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False)
+    decision_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    regime_id: Mapped[str] = mapped_column(Text, nullable=False)
+    broker_id: Mapped[str] = mapped_column(Text, nullable=False)
+    account_id: Mapped[str] = mapped_column(Text, nullable=False)
+    # "arrival_mid" | "session_open" (ADR-0040 benchmark-integrity rule)
+    benchmark_source: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("fill_id", name="uq_tca_fill"),
+        Index("ix_tca_decision_ts", "decision_ts"),
+        Index("ix_tca_broker_ts", "broker_id", "decision_ts"),
     )

@@ -20,8 +20,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 from lumine.data.models import LineageRecord
+from lumine.security.anchoring import maybe_anchor
+from lumine.security.hashchain import (
+    CANONICALIZATION_VERSION,
+    append_chained,
+    orm_payload,
+    with_chain_lock,
+)
+from lumine.security.worm_stub import NullWorm, WormSink
 
 if TYPE_CHECKING:
     import uuid
@@ -69,6 +78,7 @@ async def write_lineage(
     inputs: LineageInputs,
     *,
     commit: bool = True,
+    worm: WormSink | None = None,
 ) -> LineageRecord:
     """Append one ``lineage_records`` row.
 
@@ -109,13 +119,30 @@ async def write_lineage(
         "features": dict(inputs.features) if inputs.features is not None else None,
         "proposal": dict(inputs.proposal or {}),
         "risk_context": dict(inputs.risk_context or {}),
+        # ADR-0017: explicit hash-chain inputs. The PK must be known
+        # pre-insert so the hash payload byte-matches the verifier's
+        # re-read; the server default cannot apply. ``created_at`` is
+        # set explicitly for the same reason (Python default fires at
+        # flush time — too late for the pre-insert hash).
+        "lineage_id": inputs.lineage_id or uuid4(),
+        "created_at": datetime.now(UTC),
+        "canonicalization_version": CANONICALIZATION_VERSION,
     }
-    if inputs.lineage_id is not None:
-        # Explicit PK (orchestrator pre-generated id); otherwise the
-        # server default (gen_random_uuid) applies.
-        record_kwargs["lineage_id"] = inputs.lineage_id
     record = LineageRecord(**record_kwargs)
-    session.add(record)
+
+    # Chain append is serialized per table: read head + hash + insert
+    # must be atomic, or concurrent writers fork the chain (ADR-0017).
+    async def _append() -> None:
+        prev_hash, self_hash = await append_chained(session, "lineage_records", orm_payload(record))
+        record.prev_hash = prev_hash
+        record.self_hash = self_hash
+        session.add(record)
+        # ADR-0017: anchor cadence inside the same chain-lock transaction
+        # so the head read + state upsert cannot race concurrent writers.
+        # Default sink is the Phase-11 stub (DB copy only).
+        await maybe_anchor(session, table_name="lineage_records", row_count=1, worm=worm or NullWorm())
+
+    await with_chain_lock(session, "lineage_records", _append)
     try:
         if commit:
             await session.commit()

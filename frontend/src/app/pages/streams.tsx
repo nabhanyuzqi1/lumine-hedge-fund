@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useSSE } from '@/hooks/useSSE';
 import { useMarketStore, usePortfolioStore, useStreamStore } from '@/stores';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +17,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000
 /** Demo page proving SSE → Zustand → virtualized table end-to-end. */
 export function StreamsPage() {
   const upsertTick = useMarketStore((state) => state.upsertTick);
-  const tick = useMarketStore((state) => state.getTick('XAUUSD'));
+  const tick = useMarketStore(useShallow((state) => state.getTick('XAUUSD')));
   const positionsById = usePortfolioStore((state) => state.positions);
   const positions = useMemo(() => Object.values(positionsById), [positionsById]);
   const setStreamState = useStreamStore((state) => state.setStreamState);

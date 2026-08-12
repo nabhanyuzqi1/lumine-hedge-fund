@@ -350,6 +350,10 @@ class TestReasoningTraceSchemaD711:
             "response_hash",
             "ts",
             "lineage_id",
+            # ADR-0017 (sprint 7): chained table columns.
+            "prev_hash",
+            "self_hash",
+            "canonicalization_version",
         }
     )
 

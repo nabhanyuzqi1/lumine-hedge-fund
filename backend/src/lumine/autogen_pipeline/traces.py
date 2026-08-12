@@ -15,9 +15,17 @@ from ``lineage_records.proposal.reasoning_trace_ids``.
 from __future__ import annotations
 
 import hashlib
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 from lumine.data.models import ReasoningTrace
+from lumine.security.hashchain import (
+    CANONICALIZATION_VERSION,
+    append_chained,
+    orm_payload,
+    with_chain_lock,
+)
 
 if TYPE_CHECKING:
     import uuid
@@ -57,7 +65,13 @@ async def write_trace(  # noqa: PLR0913 — trace contract is fixed
     Returns the new ``trace_id``.
     """
     response_hash = _sha256_hex(response_raw)
+    # ADR-0017: every persisted column must be known pre-insert so the
+    # hash payload byte-matches the verifier's re-read — PK, ``ts`` and
+    # ``canonicalization_version`` are set explicitly (no Python/DB
+    # defaults).
     trace = ReasoningTrace(
+        trace_id=uuid4(),
+        ts=datetime.now(UTC),
         workflow_run_id=workflow_run_id,
         stage_run_id=stage_run_id,
         role=role,
@@ -69,8 +83,18 @@ async def write_trace(  # noqa: PLR0913 — trace contract is fixed
         prompt_hash=prompt_hash,
         response_hash=response_hash,
         lineage_id=lineage_id,
+        canonicalization_version=CANONICALIZATION_VERSION,
     )
-    session.add(trace)
+
+    # Chain append is serialized per table: read head + hash + insert
+    # must be atomic, or concurrent writers fork the chain (ADR-0017).
+    async def _append() -> None:
+        prev_hash, self_hash = await append_chained(session, "reasoning_traces", orm_payload(trace))
+        trace.prev_hash = prev_hash
+        trace.self_hash = self_hash
+        session.add(trace)
+
+    await with_chain_lock(session, "reasoning_traces", _append)
     try:
         await session.commit()
     except Exception as exc:

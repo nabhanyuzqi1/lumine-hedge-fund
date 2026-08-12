@@ -74,6 +74,18 @@ def make_registry() -> Registry:
     return _build_registry()
 
 
+class _EmptyChainResult:
+    """Chain-head query result for an empty (genesis) chain.
+
+    Mirrors ``Result.first()`` returning ``None`` when the chained
+    table has no rows yet, which ``hashchain.read_last_hash`` maps to
+    the genesis hash.
+    """
+
+    def first(self) -> None:
+        return None
+
+
 class FakeSession:
     """In-memory AsyncSession stand-in for decision-cycle unit tests.
 
@@ -163,9 +175,17 @@ class FakeSession:
     async def refresh(self, _obj: Any) -> None:  # noqa: ANN401
         return None
 
-    async def execute(self, stmt: Any) -> None:  # noqa: ANN401
-        """Record executed statements (e.g. the trace-FK backfill UPDATE)."""
+    async def execute(self, stmt: Any) -> Any:  # noqa: ANN401
+        """Record executed statements (e.g. the trace-FK backfill UPDATE).
+
+        Chain-head queries (``read_last_hash`` in hashchain.py) expect a
+        result object with ``.first()``; an empty chain returns ``None``
+        so the writer falls back to the genesis hash. Mirror that here —
+        real chain states are covered by integration tests, unit tests
+        only exercise the genesis (empty) chain.
+        """
         self.executed.append(stmt)
+        return _EmptyChainResult()
 
 
 def analyst_json(**overrides: object) -> str:
