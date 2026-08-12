@@ -95,7 +95,7 @@ fi
 echo "==> State hermes (/root/.hermes, exlude cache) ..."
 if [[ -d /root/.hermes ]]; then
   tar -czf "${BACKUP_DIR}/${DATE_STAMP}/state-hermes.tar.gz" \
-    --exclude='/root/.hermes/home' --exclude='/root/.hermes/bin' \
+    --exclude='.hermes/home' --exclude='.hermes/bin' \
     -C /root .hermes
 else
   echo "    (skip) /root/.hermes tidak ada"

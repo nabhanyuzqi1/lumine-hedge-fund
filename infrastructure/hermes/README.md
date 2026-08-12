@@ -31,12 +31,12 @@ unmodified upstream `docker-compose.yml`.
 | `HERMES_DASHBOARD` | `1` (dashboard inside gateway container) |
 | `HERMES_DASHBOARD_HOST` / `_PORT` | `127.0.0.1` / `9119` (loopback-only; auth gate off) |
 | `API_SERVER_HOST` | `0.0.0.0` (OpenAI-compatible API server enabled) |
-| `API_SERVER_KEY` | from `/root/.env` (`hms_...`) — **not in repo** |
-| `NINEROUTER_API_KEY` | from `/root/.env` (`sk-...`) — **not in repo** |
+| `API_SERVER_KEY` | from `/opt/hermes/hermes-agent/.env` (`hms_...`) — **not in repo** |
+| `NINEROUTER_API_KEY` | from `/opt/hermes/hermes-agent/.env` (`sk-...`) — **not in repo** |
 
-Secrets live in `/root/.env` on the VPS and are deliberately excluded
-from git (see `scripts/deploy/.gitignore` policy). Off-server copy:
-password manager / SOPS `.env.enc` (D11-6) — pending.
+Secrets live in `/opt/hermes/hermes-agent/.env` on the VPS. The off-server
+source of truth is `scripts/deploy/secrets.env.enc` (SOPS + age, D11-6).
+Restore: decrypt with `sops -d scripts/deploy/secrets.env.enc > /opt/hermes/hermes-agent/.env`.
 
 ## Mounts
 
@@ -53,8 +53,8 @@ password manager / SOPS `.env.enc` (D11-6) — pending.
    (or restore the repo copy if it ever diverges from upstream).
 2. Re-apply the `api_server.py` patch (file is in the repo `gateway/` dir).
 3. Restore `/root/.hermes` from backup (backup tar contains it, cache excluded).
-4. Recreate `/root/.env` from the secrets copy (API_SERVER_KEY,
-   NINEROUTER_API_KEY).
+4. Decrypt `scripts/deploy/secrets.env.enc` (SOPS + age) to
+   `/opt/hermes/hermes-agent/.env` (API_SERVER_KEY, NINEROUTER_API_KEY).
 5. `HERMES_UID=$(id -u) HERMES_GID=$(id -g) docker compose up -d`
 6. Verify: dashboard on `127.0.0.1:9119`; Caddy `/hermes*` route; pairing
    still valid (auth.json + pairing/ restored).
