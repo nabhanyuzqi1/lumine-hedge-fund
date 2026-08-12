@@ -29,7 +29,7 @@ contracts (S1–S25). It tracks **spec versus reality** and reconciles drift.
 | Sprint 4 — API core (audit contract) | REST `/api/v1` (9 routers), HMAC auth, envelope, SSE 6 channels, idempotency, rate limit, logging/tracing (G1–G5, G7 of `sprint-4-completion-plan.md`) | Done — full gate PASS (ruff, mypy strict, 478 tests); evidence: `sprint-evidence/sprint-4-api.md` (G8); frontend G11 now Partial |
 | Sprint 5 — Hardening | OpenAPI generation, coverage gate, security scans, level-1 test inventory (G12) | Done — full gate PASS 2026-08-11/12; evidence: `sprint-evidence/sprint-5-hardening.md` |
 | Sprint 6 — Frontend | F-Sprint 1–6 Done (scaffold, design system, realtime, charts, surfaces, accessibility & performance); evidence `sprint-evidence/f-sprint-6-a11y-perf.md` | Done |
-| Sprint 7 — Audit hardening | Hash chain, WORM anchor, reasoning traces, TCA | Pending |
+| Sprint 7 — Audit hardening | Hash chain ✅, WORM anchor ✅, reasoning traces ✅, TCA integration ⚠️ | IN PROGRESS (60%) |
 
 ## Documents in this phase
 
