@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import { useQuote } from '@/api/hooks';
 import { Badge } from '@/components/ui/badge';
 import { NumericText } from '@/components/ui/numeric-text';
@@ -23,7 +25,7 @@ export function TopBar() {
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);
   const toggleCommandPalette = useUiStore((s) => s.toggleCommandPalette);
   const quote = useQuote(selectedSymbol);
-  const streams = useStreamStore((s) => s.getAllStreams());
+  const streams = useStreamStore(useShallow((s) => s.getAllStreams()));
   const [utc, setUtc] = React.useState(() => formatUTC(new Date()));
 
   React.useEffect(() => {

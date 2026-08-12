@@ -1,3 +1,5 @@
+import { useShallow } from 'zustand/react/shallow';
+
 import { Badge } from '@/components/ui/badge';
 import { useCommitteeStore, type CommitteeActivity } from '@/stores/committeeStore';
 
@@ -27,7 +29,7 @@ export function CommitteeFeed({
   workflowRunId?: string;
   limit?: number;
 }) {
-  const activities = useCommitteeStore((s) => s.getActivities());
+  const activities = useCommitteeStore(useShallow((s) => s.getActivities()));
   const filtered = workflowRunId
     ? activities.filter((a) => a.workflow_run_id === workflowRunId)
     : activities;

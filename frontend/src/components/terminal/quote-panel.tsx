@@ -1,3 +1,5 @@
+import { useShallow } from 'zustand/react/shallow';
+
 import { NumericText } from '@/components/ui/numeric-text';
 import { useQuote } from '@/api/hooks';
 import { useMarketStore } from '@/stores/marketStore';
@@ -8,8 +10,8 @@ import { useMarketStore } from '@/stores/marketStore';
  */
 export function QuotePanel({ symbol }: { symbol: string }) {
   const quote = useQuote(symbol);
-  const liveTick = useMarketStore((s) => s.getTick(symbol));
-  const history = useMarketStore((s) => s.getHistory(symbol));
+  const liveTick = useMarketStore(useShallow((s) => s.getTick(symbol)));
+  const history = useMarketStore(useShallow((s) => s.getHistory(symbol)));
 
   const bid = liveTick?.bid ?? quote.data?.bid;
   const ask = liveTick?.ask ?? quote.data?.ask;

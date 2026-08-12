@@ -1,3 +1,5 @@
+import { useShallow } from 'zustand/react/shallow';
+
 import { Badge } from '@/components/ui/badge';
 import { useActivityStore, type LogLevel } from '@/stores/activityStore';
 
@@ -13,7 +15,7 @@ const LEVEL_TONE: Record<LogLevel, 'info' | 'ok' | 'warn' | 'danger'> = {
  * streams both `appendLog` — identical code path.
  */
 export function ActivityLog({ limit = 24 }: { limit?: number }) {
-  const entries = useActivityStore((s) => s.getEntries());
+  const entries = useActivityStore(useShallow((s) => s.getEntries()));
   const shown = [...entries].reverse().slice(0, limit);
 
   if (shown.length === 0) {
