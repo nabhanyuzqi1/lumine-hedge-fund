@@ -85,7 +85,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     pool = getattr(settings, "database_url", None)
     if pool:
         from lumine.trading.position_sync import PositionSyncWorker
-        worker = PositionSyncWorker.from_pool(pool, market_service, interval_seconds=5.0)
+        worker = await PositionSyncWorker.from_pool(pool, market_service, interval_seconds=5.0)
         _app_state["position_sync_worker"] = worker
         await worker.start()
 

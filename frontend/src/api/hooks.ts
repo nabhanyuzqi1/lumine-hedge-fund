@@ -330,10 +330,30 @@ export function useSignals(symbol: string) {
 export function useCorrelation() {
   return useQuery({
     queryKey: ["correlation"],
-    queryFn: async (): Promise<{ symbols: string[]; matrix: CorrelationMatrix }> => ({
-      symbols: CORRELATION_SYMBOLS,
-      matrix: generateCorrelationMatrix(CORRELATION_SYMBOLS),
-    }),
+    queryFn: async (): Promise<{ symbols: string[]; matrix: CorrelationMatrix }> => {
+      try {
+        // Backend: GET /api/v1/market/correlation?symbols=..&window=.. →
+        // Record<symbol, Record<symbol, float>> (symmetric).
+        const matrixMap = await get<Record<string, Record<string, number>>>(
+          "/market/correlation",
+          { symbols: CORRELATION_SYMBOLS, window: "30" }
+        );
+        if (matrixMap && typeof matrixMap[CORRELATION_SYMBOLS[0]] === "object") {
+          return {
+            symbols: CORRELATION_SYMBOLS,
+            matrix: CORRELATION_SYMBOLS.map((a) =>
+              CORRELATION_SYMBOLS.map((b) => num(matrixMap[a]?.[b], 0))
+            ),
+          };
+        }
+      } catch {
+        // fall through to fixture
+      }
+      return {
+        symbols: CORRELATION_SYMBOLS,
+        matrix: generateCorrelationMatrix(CORRELATION_SYMBOLS),
+      };
+    },
     staleTime: 60_000,
   });
 }

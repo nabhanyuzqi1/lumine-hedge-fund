@@ -6,12 +6,13 @@ proves the exact payload the browser will send.
 import hashlib
 import hmac
 import json
+import os
 import time
 import urllib.request
 import urllib.error
 
-BASE = "http://127.0.0.1:8010"
-SECRET = "bootstrap-secret-e2e"
+BASE = os.environ.get("BASE_URL", "http://127.0.0.1:8010")
+SECRET = os.environ.get("HMAC_SECRET_KEY", "bootstrap-secret-e2e")
 KEY = "bootstrap"
 
 _last_ts = {"v": 0}

@@ -186,7 +186,10 @@ class PositionSyncWorker:
     ) -> PositionSyncWorker:
         """Create PositionSyncWorker from database URL."""
         import asyncpg
-        pool = await asyncpg.create_pool(database_url)
+        # asyncpg accepts postgresql:// only — normalize the SQLAlchemy-style
+        # postgresql+asyncpg:// DSN used across the rest of the app.
+        dsn = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        pool = await asyncpg.create_pool(dsn)
         worker = cls(pool, market_service, interval_seconds)
         await worker.start()
         return worker

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { NumericText } from "@/components/ui/numeric-text";
 import { useStreamStore } from "@/stores/streamStore";
 import { useUiStore } from "@/stores/uiStore";
+import { StreamStatusList } from "@/components/streams/stream-status-list";
 
 const TOTAL_STREAMS = 6;
 
@@ -82,6 +83,9 @@ export function TopBar() {
           title={`${healthyCount} of ${TOTAL_STREAMS} streams healthy`}
         >
           {healthyCount}/{TOTAL_STREAMS}
+        </span>
+        <span className="hidden lg:inline-flex" data-testid="stream-status-dots">
+          <StreamStatusList />
         </span>
       </div>
     </header>
