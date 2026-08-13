@@ -27,6 +27,10 @@ class MockRegistry(ModelRegistry):
     def __init__(self):
         self.models: dict[str, ModelSpec] = {}
 
+    def register_model(self, spec: ModelSpec) -> None:
+        """Register a model specification."""
+        self.models[spec.model_version_id] = spec
+
     def get_model(self, model_version_id: str):
         return self.models.get(model_version_id)
 
@@ -132,7 +136,7 @@ class TestAdmissionControl:
         # 11th request should fail
         allowed, reason = control.acquire()
         assert allowed is False
-        assert reason == "concurrency_limit_released"
+        assert reason == "concurrency_limit_reached"
 
     def test_release_decrements_concurrent(self):
         control = AdmissionControl(enabled=True, max_concurrent=5)
