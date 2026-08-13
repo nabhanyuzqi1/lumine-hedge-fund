@@ -2,6 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { get } from "@/api/client";
 import type { Timeframe } from "@/components/charts/candlestick-chart";
+import { useUiStore } from "@/stores/uiStore";
+import * as adminClient from "@/lib/api/clients/adminClient";
+import * as ordersClient from "@/lib/api/clients/ordersClient";
+import type {
+  AdminKey,
+  MarketData,
+  Order as RestOrder,
+  Position as RestPosition,
+} from "@/lib/api/types";
 import {
   type ApiKeyFixture,
   type ChartBar,
@@ -15,7 +24,6 @@ import {
   type PositionFixture,
   type SignalPoint,
   type WorkflowRun,
-  generateApiKeySecret,
   generateApiKeys,
   generateBars,
   generateCorrelationMatrix,
@@ -42,6 +50,190 @@ const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
 
 export const CORRELATION_SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTCUSD"];
 
+/* ── Backend REST shapes (backend/src/lumine/api/schemas/api.py) ───────── */
+
+interface RestWorkflowRun {
+  run_id: string;
+  workflow_name: string;
+  status: "pending" | "running" | "completed" | "failed";
+  input_payload: Record<string, unknown>;
+  output_payload: Record<string, unknown> | null;
+  started_at: string;
+  finished_at: string | null;
+}
+
+interface RestJournalEntry {
+  entry_id: string;
+  trade_id: string;
+  agent_name: string;
+  reflection: string;
+  lesson: string;
+  created_at: string;
+}
+
+interface RestLineageRecord {
+  lineage_id: string;
+  decision_id: string;
+  decision_type: string;
+  agent_name: string;
+  inputs_hash: string;
+  outputs_hash: string;
+  policy_version: string;
+  created_at: string;
+}
+
+interface RestSignal {
+  signal_id: string;
+  symbol: string;
+  analyst: string;
+  direction: "bullish" | "bearish" | "neutral";
+  confidence: number;
+  rationale: string;
+  generated_at: string;
+}
+
+interface RestMarketBar {
+  symbol: string;
+  timeframe: string;
+  timestamp: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+/* ── REST → fixture shape mappers ─────────────────────────────────────────
+ * Backend Decimal fields serialize as strings (envelope middleware uses
+ * pydantic JSON mode), so every numeric field is coerced with Number().
+ */
+
+const num = (v: unknown, fallback = 0): number => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const epochSec = (iso: string | undefined): number =>
+  iso ? Math.floor(Date.parse(iso) / 1000) : 0;
+
+const ORDER_STATUS_MAP: Record<RestOrder["status"], OrderFixture["status"]> = {
+  pending: "ACTIVE",
+  filled: "FILLED",
+  partially_filled: "ACTIVE",
+  rejected: "REJECTED",
+  cancelled: "CANCELLED",
+};
+
+function toOrderFixture(order: RestOrder): OrderFixture {
+  const status = ORDER_STATUS_MAP[order.status] ?? "ACTIVE";
+  const entry = num(order.price);
+  return {
+    id: order.order_id,
+    portfolio_id: order.portfolio_id,
+    symbol: order.symbol,
+    side: order.side === "sell" ? "SELL" : "BUY",
+    quantity: num(order.volume),
+    type: order.order_type === "market" ? "MARKET" : order.order_type === "stop" ? "STOP" : "LIMIT",
+    status,
+    entry_price: entry,
+    current_price: entry,
+    pnl: 0,
+    created_at: order.created_at,
+    lifecycle: [{ status, timestamp: order.updated_at }],
+  };
+}
+
+function toPositionFixture(position: RestPosition): PositionFixture {
+  return {
+    id: position.position_id,
+    portfolio_id: position.portfolio_id,
+    symbol: position.symbol,
+    side: position.direction === "short" ? "SHORT" : "LONG",
+    quantity: num(position.volume),
+    avg_entry_price: num(position.entry_price),
+    current_price: num(position.current_price, num(position.entry_price)),
+    unrealized_pnl: num(position.unrealized_pnl),
+    updated_at: position.opened_at,
+  };
+}
+
+function toMarketQuote(quote: MarketData): MarketQuote {
+  return {
+    symbol: quote.symbol,
+    bid: num(quote.bid),
+    ask: num(quote.ask),
+    last: num(quote.last),
+    timestamp: epochSec(quote.timestamp),
+  };
+}
+
+function toChartBar(bar: RestMarketBar): ChartBar {
+  return {
+    time: epochSec(bar.timestamp),
+    open: num(bar.open),
+    high: num(bar.high),
+    low: num(bar.low),
+    close: num(bar.close),
+    volume: num(bar.volume),
+  };
+}
+
+function toWorkflowRun(run: RestWorkflowRun): WorkflowRun {
+  const status: WorkflowRun["status"] =
+    run.status === "running" ? "data_gathering" : run.status === "pending" ? "init" : run.status;
+  return {
+    id: run.run_id,
+    workflow_id: run.run_id,
+    workflow_name: run.workflow_name,
+    status,
+    started_at: run.started_at,
+    completed_at: run.finished_at ?? undefined,
+    model: "—",
+    cost_usd: 0,
+    error: undefined,
+    stages: [{ stage: "init", timestamp: run.started_at }],
+  };
+}
+
+function toLineageFixture(record: RestLineageRecord): LineageFixture {
+  return {
+    lineage_id: record.lineage_id,
+    run_id: record.decision_id,
+    workflow_id: "wf-api",
+    model: "—",
+    cost_usd: 0,
+    created_at: record.created_at,
+    root: {
+      id: "decision",
+      type: "decision",
+      label: `${record.decision_type} — ${record.agent_name}`,
+      detail: `inputs ${record.inputs_hash.slice(0, 12)} · outputs ${record.outputs_hash.slice(0, 12)} · policy ${record.policy_version}`,
+    },
+  };
+}
+
+function toJournalEntry(entry: RestJournalEntry): JournalPage["entries"][number] {
+  return {
+    id: entry.entry_id,
+    timestamp: entry.created_at,
+    portfolio_id: "portfolio-demo",
+    kind: entry.agent_name.includes("risk") ? "risk" : "note",
+    actor: entry.agent_name,
+    summary: entry.reflection || entry.lesson,
+  };
+}
+
+function toApiKeyFixture(key: AdminKey): ApiKeyFixture {
+  return {
+    key_id: key.key_id,
+    prefix: `sk-${key.key_id}`,
+    scopes: key.scopes,
+    created_at: key.created_at,
+    last_used_at: null,
+    revoked: key.revoked,
+  };
+}
+
 /**
  * Query hooks with fixture fallback: the Phase 9 backend is not implemented
  * yet, so every hook tries the REST contract first and falls back to a
@@ -54,8 +246,11 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
     queryKey: ["market-bars", symbol, timeframe],
     queryFn: async (): Promise<ChartBar[]> => {
       try {
-        const bars = await get<ChartBar[]>(`/market/quotes/${symbol}`);
-        if (bars.length > 0 && typeof bars[0]?.open === "number") return bars;
+        const bars = await get<RestMarketBar[]>(`/market/ohlcv/${symbol}`, {
+          timeframe: timeframe.toLowerCase(),
+          limit: "200",
+        });
+        if (Array.isArray(bars) && bars.length > 0) return bars.map(toChartBar);
       } catch {
         // fall through to fixture
       }
@@ -86,8 +281,16 @@ export function useExposure(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryKey: ["exposure", portfolioId],
     queryFn: async (): Promise<ExposureItem[]> => {
       try {
-        const items = await get<ExposureItem[]>(`/portfolio/${portfolioId}/exposure`);
-        if (items.length > 0 && typeof items[0]?.weight === "number") return items;
+        const page = await get<{ items: Array<{ symbol: string; pct_of_nav: number; correlated_bucket?: string | null }> }>(
+          `/portfolio/exposure`
+        );
+        if (Array.isArray(page?.items) && page.items.length > 0) {
+          return page.items.map((item) => ({
+            symbol: item.symbol,
+            assetClass: item.correlated_bucket ?? "other",
+            weight: num(item.pct_of_nav),
+          }));
+        }
       } catch {
         // fall through to fixture
       }
@@ -102,8 +305,14 @@ export function useSignals(symbol: string) {
     queryKey: ["signals", symbol],
     queryFn: async (): Promise<SignalPoint[]> => {
       try {
-        const points = await get<SignalPoint[]>(`/market/signals/${symbol}`);
-        if (points.length > 0 && typeof points[0]?.confidence === "number") return points;
+        const page = await get<{ items: RestSignal[] }>(`/market/signals`);
+        if (Array.isArray(page?.items) && page.items.length > 0) {
+          return page.items.map((signal) => ({
+            time: epochSec(signal.generated_at),
+            analyst: signal.analyst,
+            confidence: num(signal.confidence),
+          }));
+        }
       } catch {
         // fall through to fixture
       }
@@ -136,8 +345,8 @@ export function useQuote(symbol: string) {
     queryKey: ["quote", symbol],
     queryFn: async (): Promise<MarketQuote> => {
       try {
-        const quote = await get<MarketQuote>(`/market/quotes/${symbol}/latest`);
-        if (typeof quote?.last === "number") return quote;
+        const quote = await get<MarketData>(`/market/quote/${symbol}`);
+        if (typeof quote?.symbol === "string") return toMarketQuote(quote);
       } catch {
         // fall through to fixture
       }
@@ -152,8 +361,10 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryKey: ["positions", portfolioId],
     queryFn: async (): Promise<PositionFixture[]> => {
       try {
-        const items = await get<PositionFixture[]>(`/portfolio/${portfolioId}/positions`);
-        if (items.length > 0 && typeof items[0]?.avg_entry_price === "number") return items;
+        const page = await get<{ items: RestPosition[] }>(`/portfolio/positions`);
+        if (Array.isArray(page?.items) && page.items.length > 0) {
+          return page.items.map(toPositionFixture);
+        }
       } catch {
         // fall through to fixture
       }
@@ -168,8 +379,10 @@ export function useOrders(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryKey: ["orders", portfolioId],
     queryFn: async (): Promise<OrderFixture[]> => {
       try {
-        const items = await get<OrderFixture[]>(`/portfolio/${portfolioId}/orders`);
-        if (items.length > 0 && typeof items[0]?.entry_price === "number") return items;
+        const page = await get<{ items: RestOrder[] }>(`/orders`);
+        if (Array.isArray(page?.items) && page.items.length > 0) {
+          return page.items.map(toOrderFixture);
+        }
       } catch {
         // fall through to fixture
       }
@@ -184,10 +397,8 @@ export function useOrder(orderId: string) {
     queryKey: ["order", orderId],
     queryFn: async (): Promise<OrderFixture> => {
       try {
-        const order = await get<OrderFixture>(
-          `/portfolio/${DEFAULT_PORTFOLIO_ID}/orders/${orderId}`
-        );
-        if (typeof order?.id === "string") return order;
+        const order = await get<RestOrder>(`/orders/${orderId}`);
+        if (typeof order?.order_id === "string") return toOrderFixture(order);
       } catch {
         // fall through to fixture
       }
@@ -202,8 +413,8 @@ export function useRun(runId: string) {
     queryKey: ["run", runId],
     queryFn: async (): Promise<WorkflowRun> => {
       try {
-        const run = await get<WorkflowRun>(`/workflows/runs/${runId}`);
-        if (typeof run?.id === "string") return run;
+        const run = await get<RestWorkflowRun>(`/workflows/${runId}`);
+        if (typeof run?.run_id === "string") return toWorkflowRun(run);
       } catch {
         // fall through to fixture
       }
@@ -218,8 +429,8 @@ export function useLineage(lineageId: string) {
     queryKey: ["lineage", lineageId],
     queryFn: async (): Promise<LineageFixture> => {
       try {
-        const lineage = await get<LineageFixture>(`/lineage/${lineageId}`);
-        if (typeof lineage?.lineage_id === "string") return lineage;
+        const lineage = await get<RestLineageRecord>(`/lineage/${lineageId}`);
+        if (typeof lineage?.lineage_id === "string") return toLineageFixture(lineage);
       } catch {
         // fall through to fixture
       }
@@ -240,12 +451,19 @@ export function useJournal(filters: JournalFilters = {}) {
     queryKey: ["journal", filters],
     queryFn: async (): Promise<JournalPage> => {
       try {
-        const page = await get<JournalPage>("/journal", {
+        const page = await get<{ items: RestJournalEntry[]; total: number }>("/journal", {
+          limit: "50",
           ...(filters.symbol ? { symbol: filters.symbol } : {}),
           ...(filters.portfolioId ? { portfolio_id: filters.portfolioId } : {}),
           ...(filters.kind ? { kind: filters.kind } : {}),
         });
-        if (Array.isArray(page?.entries)) return page;
+        if (Array.isArray(page?.items)) {
+          return {
+            entries: page.items.map(toJournalEntry),
+            cursor: page.total > page.items.length ? String(page.items.length) : null,
+            has_more: page.total > page.items.length,
+          };
+        }
       } catch {
         // fall through to fixture
       }
@@ -265,8 +483,18 @@ export function useJournalPage(cursor: string | null, filters: JournalFilters = 
     queryFn: async (): Promise<JournalPage> => {
       if (cursor === null) return { entries: [], cursor: null, has_more: false };
       try {
-        const page = await get<JournalPage>("/journal", { cursor });
-        if (Array.isArray(page?.entries)) return page;
+        const page = await get<{ items: RestJournalEntry[]; total: number }>("/journal", {
+          limit: "50",
+          offset: cursor,
+        });
+        if (Array.isArray(page?.items)) {
+          const seen = Number.parseInt(cursor, 10) + page.items.length;
+          return {
+            entries: page.items.map(toJournalEntry),
+            cursor: page.total > seen ? String(seen) : null,
+            has_more: page.total > seen,
+          };
+        }
       } catch {
         // fall through to fixture
       }
@@ -282,8 +510,8 @@ export function useApiKeys() {
     queryKey: ["api-keys"],
     queryFn: async (): Promise<ApiKeyFixture[]> => {
       try {
-        const items = await get<ApiKeyFixture[]>("/admin/keys");
-        if (Array.isArray(items) && items.length > 0) return items;
+        const items = await get<AdminKey[]>("/admin/keys");
+        if (Array.isArray(items)) return items.map(toApiKeyFixture);
       } catch {
         // fall through to fixture
       }
@@ -294,10 +522,10 @@ export function useApiKeys() {
 }
 
 /**
- * Mutation hooks below are fixture-backed: no backend exists yet, so they
- * resolve against the deterministic generator and write the result into the
- * query cache (single source of truth for the page). Swap the body for the
- * real REST call once Phase 9 ships.
+ * Mutation hooks below call the live REST backend (admin/orders routers)
+ * and write the server-confirmed result into the query cache. When the
+ * backend is unreachable the error propagates to the caller, which is
+ * responsible for surfacing it (toast / inline error).
  */
 
 export function useCreateApiKey() {
@@ -306,20 +534,30 @@ export function useCreateApiKey() {
     mutationFn: async (
       scopes: string[]
     ): Promise<{ key_id: string; prefix: string; secret: string; scopes: string[] }> => {
-      const created = generateApiKeySecret(scopes);
-      await delay(250);
+      const keyId = `key-${Date.now().toString(36)}`;
+      const created = await adminClient.createApiKey({
+        key_id: keyId,
+        name: "web console",
+        scopes,
+      });
+      const shape = {
+        key_id: created.key_id,
+        prefix: `sk-${created.key_id}`,
+        secret: created.secret,
+        scopes: created.scopes,
+      };
       queryClient.setQueryData<ApiKeyFixture[]>(["api-keys"], (current) => [
         {
           key_id: created.key_id,
-          prefix: created.prefix,
+          prefix: shape.prefix,
           scopes: created.scopes,
-          created_at: new Date().toISOString(),
+          created_at: created.created_at,
           last_used_at: null,
           revoked: false,
         },
         ...(current ?? []),
       ]);
-      return created;
+      return shape;
     },
   });
 }
@@ -328,7 +566,7 @@ export function useRevokeApiKey() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (keyId: string): Promise<void> => {
-      await delay(250);
+      await adminClient.revokeApiKey(keyId);
       queryClient.setQueryData<ApiKeyFixture[]>(["api-keys"], (current) =>
         (current ?? []).map((key) => (key.key_id === keyId ? { ...key, revoked: true } : key))
       );
@@ -340,7 +578,7 @@ export function useCancelOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: string): Promise<void> => {
-      await delay(250);
+      await ordersClient.cancelOrder(orderId);
       queryClient.setQueryData<OrderFixture>(["order", orderId], (current) =>
         current ? { ...current, status: "CANCELLED" } : current
       );
@@ -349,7 +587,62 @@ export function useCancelOrder() {
   });
 }
 
-/** Minimal latency so mutation feedback (toast + cache update) is observable. */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Modify an existing order (price/volume adjustment before fill).
+ *
+ * PATCH `/api/v1/orders/:id` per ordersClient.modifyOrder — backend
+ * routers/orders.py. The server-confirmed order is mapped back into the
+ * fixture shape and written into the detail + list caches.
+ */
+export function useModifyOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orderId,
+      price,
+      volume,
+    }: {
+      orderId: string;
+      price?: number;
+      volume?: number;
+    }): Promise<OrderFixture> => {
+      const updatedRest = await ordersClient.modifyOrder(orderId, { price, volume });
+      const updated = toOrderFixture(updatedRest);
+      queryClient.setQueryData<OrderFixture>(["order", orderId], updated);
+      queryClient.setQueryData<OrderFixture[]>(["orders", DEFAULT_PORTFOLIO_ID], (list) =>
+        (list ?? []).map((order) => (order.id === orderId ? updated : order))
+      );
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      return updated;
+    },
+  });
+}
+
+export type KillSwitchTier = "global" | "book" | "strategy";
+
+export interface KillSwitchPayload {
+  active: boolean;
+  tier: KillSwitchTier;
+  reason?: string;
+}
+
+/**
+ * Engage/release the kill switch with an audit trail (tier + reason).
+ *
+ * POST `/api/v1/admin/kill-switch {armed, reason, tier}` per routers/admin.py.
+ * The ui store is updated from the server-confirmed status; the tier field
+ * is persisted backend-side and echoed back in KillSwitchStatus.
+ */
+export function useKillSwitch() {
+  const setKillSwitch = useUiStore((s) => s.setKillSwitch);
+  return useMutation({
+    mutationFn: async ({ active, tier, reason }: KillSwitchPayload): Promise<void> => {
+      const status = await adminClient.setKillSwitch({
+        armed: active,
+        reason: reason ?? "",
+        tier,
+      });
+      setKillSwitch(status.armed);
+    },
+  });
 }

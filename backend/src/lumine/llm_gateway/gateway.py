@@ -28,7 +28,7 @@ callers inject a session + spend aggregation; unit tests inject fakes.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 

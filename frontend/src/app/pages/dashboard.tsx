@@ -51,15 +51,6 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary">Dashboard</h1>
-          <p className="text-sm text-text-muted">
-            Institutional overview · XAUUSD live demo stream
-          </p>
-        </div>
-      </header>
-
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="md:col-span-2 xl:col-span-3">
           <CandlestickChart

@@ -49,6 +49,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}/simulate:
+    post:
+      tags:
+      - portfolio
+      summary: Simulate Trade
+      description: Project portfolio impact of a hypothetical trade (what-if, no execution).
+      operationId: simulate_trade_api_v1_portfolio__portfolio_id__simulate_post
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulateTradeRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulateTradeResult'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/portfolio/positions:
     get:
       tags:
@@ -376,6 +433,63 @@ paths:
           - type: string
           - type: 'null'
           title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - orders
+      summary: Modify Order
+      description: Modify price/volume of a pending order (ModifyOrderDialog contract).
+      operationId: modify_order_api_v1_orders__order_id__patch
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModifyOrderRequest'
       responses:
         '200':
           description: Successful Response
@@ -842,6 +956,608 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/quote/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Quote
+      description: Return the current bid/ask/last quote for a symbol.
+      operationId: get_quote_api_v1_market_quote__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketQuote'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/quotes:
+    get:
+      tags:
+      - market
+      summary: Get Quotes
+      description: Batch fetch quotes for multiple symbols (map of symbol → quote).
+      operationId: get_quotes_api_v1_market_quotes_get
+      parameters:
+      - name: symbols
+        in: query
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 50
+          title: Symbols
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/MarketQuote'
+                title: Response Get Quotes Api V1 Market Quotes Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/ohlcv/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Ohlcv
+      description: Return OHLCV bars for a symbol (deterministic demo random walk).
+      operationId: get_ohlcv_api_v1_market_ohlcv__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(1m|5m|15m|30m|1h|4h|1d|1w)$
+          default: 1h
+          title: Timeframe
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: since
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Since
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketBar'
+                title: Response Get Ohlcv Api V1 Market Ohlcv  Symbol  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/symbol/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Symbol Config
+      description: Return instrument specification for a symbol.
+      operationId: get_symbol_config_api_v1_market_symbol__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymbolConfig'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/symbols:
+    get:
+      tags:
+      - market
+      summary: List Symbols
+      description: List all active instruments (optionally including inactive ones).
+      operationId: list_symbols_api_v1_market_symbols_get
+      parameters:
+      - name: asset_class
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Class
+      - name: exchange
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Exchange
+      - name: include_inactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Include Inactive
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SymbolConfig'
+                title: Response List Symbols Api V1 Market Symbols Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/volatility/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Volatility
+      description: Return rolling volatility (fraction) for a symbol.
+      operationId: get_volatility_api_v1_market_volatility__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: window
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 365
+          minimum: 1
+          default: 14
+          title: Window
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolatilityResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/correlation:
+    get:
+      tags:
+      - market
+      summary: Get Correlation
+      description: Return a symmetric correlation matrix for the requested symbols.
+      operationId: get_correlation_api_v1_market_correlation_get
+      parameters:
+      - name: symbols
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          title: Symbols
+      - name: window
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 365
+          minimum: 1
+          default: 30
+          title: Window
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    type: number
+                title: Response Get Correlation Api V1 Market Correlation Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/spread/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Spread
+      description: Return spread statistics for a symbol over a period.
+      operationId: get_spread_api_v1_market_spread__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: period
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 86400
+          minimum: 1
+          default: 60
+          title: Period
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpreadMetrics'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/session/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Session
+      description: Return current trading session state for a symbol.
+      operationId: get_session_api_v1_market_session__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInfo'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/features/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Features
+      description: Return computed technical features for a symbol (FeaturePanel contract).
+      operationId: get_features_api_v1_market_features__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureSet'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/journal:
     get:
       tags:
@@ -965,14 +1681,14 @@ paths:
         heartbeat).
       operationId: stream_market_data_api_v1_streams_market_data_get
       parameters:
-      - name: _symbol
+      - name: symbol
         in: query
         required: true
         schema:
           type: string
           minLength: 1
           description: Symbol to subscribe (required)
-          title: ' Symbol'
+          title: Symbol
         description: Symbol to subscribe (required)
       - name: X-Lumine-API-Key
         in: header
@@ -1904,6 +2620,27 @@ components:
       - pct_of_nav
       title: ExposureSummary
       description: Exposure breakdown per symbol/bucket.
+    FeatureSet:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        features:
+          additionalProperties:
+            type: number
+          type: object
+          title: Features
+        computed_at:
+          type: string
+          format: date-time
+          title: Computed At
+      type: object
+      required:
+      - symbol
+      - features
+      - computed_at
+      title: FeatureSet
+      description: Computed technical features for a symbol.
     HTTPValidationError:
       properties:
         detail:
@@ -1955,6 +2692,15 @@ components:
           type: boolean
           title: Armed
           default: true
+        tier:
+          anyOf:
+          - type: string
+            enum:
+            - global
+            - book
+            - strategy
+          - type: 'null'
+          title: Tier
       type: object
       required:
       - reason
@@ -1970,6 +2716,15 @@ components:
           - type: string
           - type: 'null'
           title: Reason
+        tier:
+          anyOf:
+          - type: string
+            enum:
+            - global
+            - book
+            - strategy
+          - type: 'null'
+          title: Tier
         updated_at:
           anyOf:
           - type: string
@@ -2064,6 +2819,77 @@ components:
       - volume
       title: MarketBar
       description: OHLCV bar for market data endpoints.
+    MarketQuote:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        bid:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Bid
+        ask:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Ask
+        mid:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Mid
+        last:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Last
+        volume_24h:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Volume 24H
+        change_24h:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Change 24H
+        change_pct_24h:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Change Pct 24H
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+      type: object
+      required:
+      - symbol
+      - bid
+      - ask
+      - mid
+      - last
+      - volume_24h
+      - change_24h
+      - change_pct_24h
+      - timestamp
+      title: MarketQuote
+      description: Current bid/ask/last snapshot for a symbol.
+    ModifyOrderRequest:
+      properties:
+        price:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price
+        volume:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Volume
+      type: object
+      title: ModifyOrderRequest
+      description: Payload to modify a pending order (at least one field required).
     Order:
       properties:
         order_id:
@@ -2473,6 +3299,38 @@ components:
       - enqueued_at
       title: RpcCommandResponse
       description: RPC command acceptance receipt.
+    SessionInfo:
+      properties:
+        current_session:
+          type: string
+          enum:
+          - asian
+          - european
+          - american
+          - 'off'
+          title: Current Session
+        next_session:
+          type: string
+          enum:
+          - asian
+          - european
+          - american
+          - 'off'
+          title: Next Session
+        time_until_next:
+          type: integer
+          title: Time Until Next
+        is_trading_open:
+          type: boolean
+          title: Is Trading Open
+      type: object
+      required:
+      - current_session
+      - next_session
+      - time_until_next
+      - is_trading_open
+      title: SessionInfo
+      description: Current trading session state for a symbol.
     Signal:
       properties:
         signal_id:
@@ -2515,6 +3373,132 @@ components:
       - generated_at
       title: Signal
       description: Analyst signal view.
+    SimulateTradeRequest:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        side:
+          type: string
+          enum:
+          - buy
+          - sell
+          title: Side
+        volume:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Volume
+        price:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Price
+      type: object
+      required:
+      - symbol
+      - side
+      - volume
+      - price
+      title: SimulateTradeRequest
+      description: Payload for a what-if trade simulation.
+    SimulateTradeResult:
+      properties:
+        projected_nav:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Projected Nav
+        margin_required:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Margin Required
+        pnl_change:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Pnl Change
+      type: object
+      required:
+      - projected_nav
+      - margin_required
+      - pnl_change
+      title: SimulateTradeResult
+      description: Projected portfolio impact of a hypothetical trade.
+    SpreadMetrics:
+      properties:
+        avg_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Avg Spread
+        avg_pct_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Avg Pct Spread
+        min_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Min Spread
+        max_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Max Spread
+      type: object
+      required:
+      - avg_spread
+      - avg_pct_spread
+      - min_spread
+      - max_spread
+      title: SpreadMetrics
+      description: Spread statistics for a symbol over a period.
+    SymbolConfig:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        description:
+          type: string
+          title: Description
+        base_asset:
+          type: string
+          title: Base Asset
+        quote_currency:
+          type: string
+          title: Quote Currency
+        tick_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Tick Size
+        lot_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Lot Size
+        min_lot_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Min Lot Size
+        max_lot_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Max Lot Size
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - symbol
+      - description
+      - base_asset
+      - quote_currency
+      - tick_size
+      - lot_size
+      - min_lot_size
+      - max_lot_size
+      - is_active
+      title: SymbolConfig
+      description: Instrument specification for a trading symbol.
     TriggerWorkflowRequest:
       properties:
         workflow_name:
@@ -2555,6 +3539,16 @@ components:
       - msg
       - type
       title: ValidationError
+    VolatilityResponse:
+      properties:
+        volatility:
+          type: number
+          title: Volatility
+      type: object
+      required:
+      - volatility
+      title: VolatilityResponse
+      description: Rolling volatility for a symbol (fraction, e.g. 0.12 = 12%).
     WorkflowRun:
       properties:
         run_id:

@@ -31,7 +31,7 @@ whole KB.
 | Migration 0009 (TCA, brokers, accounts) | `repository-structure.md` | `alembic/versions/0009_add_tca_and_accounts.py` with indexes | Done | Tables created: `tca_records`, `brokers`, `accounts`. Sprint 7 | ADR-0040, ADR-0024 |
 || Agent registry spec | `agent-failure-matrix` (90) | `autogen_pipeline/agents/__init__.py` only | High | Implement typed `AgentSpec` registry in future sprint | ADR-0033 |
 | Monitoring module | `docs/11-infrastructure/observability.md` | `api/middleware/logging.py` — `RequestLoggingMiddleware` (structlog access logs, `trace_id` contextvars, `X-Request-ID` echo) wired outermost in `app.py` | Done | Logging + request tracing complete (G7, Sprint 4); metrics (Prometheus) and distributed tracing deferred to Sprint 5 | — |
-| LLM gateway | `docs/06-ai/llm-gateway.md` | `llm_gateway/__init__.py` only | High | Implement with admission control in Sprint 4 | ADR-0022 |
+| LLM gateway | `docs/06-ai/llm-gateway.md` | `llm_gateway/` implemented (11 files: `gateway.py` admission control + model routing, `providers.py`, `recorder.py`, `registry.py`; integration test `tests/integration/test_llm_gateway_integration.py`) | Partial | Implemented (commit `37835fa`); **52 test pre-existing FAIL di area pipeline** (`Registry.__init__` API mismatch — GAP B-07) — belum hijau | ADR-0022 |
 
 > ADR-0041* resolved as ADR-0070 (OpenAPI contract generation).
 

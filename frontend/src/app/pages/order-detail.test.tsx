@@ -29,7 +29,22 @@ function renderPage(orderId = "ord-001") {
 
 describe("OrderDetailPage", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("backend offline")));
+    // Query hooks fall back to fixtures when GETs reject, while the cancel
+    // mutation now hits the live DELETE /api/v1/orders/{id} endpoint.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "DELETE") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ data: { order_id: "ord-001", status: "cancelled" } }),
+              { status: 200, headers: { "Content-Type": "application/json" } }
+            )
+          );
+        }
+        return Promise.reject(new Error("backend offline"));
+      })
+    );
     useUiStore.setState({ killSwitchActive: false });
   });
 

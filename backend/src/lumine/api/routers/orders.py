@@ -12,7 +12,11 @@ from fastapi import APIRouter, Depends
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.api.middleware.rate_limit import rate_limit_dependency
-from lumine.api.schemas.api import CreateOrderRequest, Order
+from lumine.api.schemas.api import (
+    CreateOrderRequest,
+    ModifyOrderRequest,
+    Order,
+)
 from lumine.api.schemas.common import PaginatedList, Pagination
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -88,6 +92,33 @@ async def create_order(
         order_type=request.order_type,
         volume=request.volume,
         price=request.price,
+        status="pending",
+        filled_volume=Decimal(0),
+        created_at=now,
+        updated_at=now,
+    )
+
+
+@router.patch(
+    "/{order_id}",
+    response_model=Order,
+    dependencies=[Depends(rate_limit_dependency)],
+)
+async def modify_order(
+    order_id: UUID,
+    request: ModifyOrderRequest,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("write:orders")],
+) -> Order:
+    """Modify price/volume of a pending order (ModifyOrderDialog contract)."""
+    now = datetime.now(UTC)
+    return Order(
+        order_id=order_id,
+        portfolio_id="default",
+        symbol="XAUUSD",
+        side="buy",
+        order_type="limit",
+        volume=request.volume if request.volume is not None else Decimal("1.50"),
+        price=request.price if request.price is not None else Decimal("2435.80"),
         status="pending",
         filled_volume=Decimal(0),
         created_at=now,

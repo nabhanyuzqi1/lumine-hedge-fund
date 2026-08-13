@@ -384,6 +384,9 @@ export function generatePositions(seed = 43): PositionFixture[] {
   });
 }
 
+export const demoOrders = generateOrders();
+export const demoPositions = generatePositions();
+
 export function generateOrders(seed = 53): OrderFixture[] {
   const rand = mulberry32(seed);
   return Array.from({ length: 8 }, (_, i) =>

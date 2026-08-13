@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class PortfolioSummary(BaseModel):
@@ -171,6 +171,7 @@ class KillSwitchRequest(BaseModel):
 
     reason: str
     armed: bool = True
+    tier: Literal["global", "book", "strategy"] | None = None
 
 
 class KillSwitchStatus(BaseModel):
@@ -178,7 +179,99 @@ class KillSwitchStatus(BaseModel):
 
     armed: bool
     reason: str | None = None
+    tier: Literal["global", "book", "strategy"] | None = None
     updated_at: datetime | None = None
+
+
+class ModifyOrderRequest(BaseModel):
+    """Payload to modify a pending order (at least one field required)."""
+
+    price: Decimal | None = Field(default=None, gt=0)
+    volume: Decimal | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def _require_at_least_one_field(self) -> ModifyOrderRequest:
+        if self.price is None and self.volume is None:
+            msg = "at least one of price or volume must be provided"
+            raise ValueError(msg)
+        return self
+
+
+class MarketQuote(BaseModel):
+    """Current bid/ask/last snapshot for a symbol."""
+
+    symbol: str
+    bid: Decimal
+    ask: Decimal
+    mid: Decimal
+    last: Decimal
+    volume_24h: Decimal
+    change_24h: Decimal
+    change_pct_24h: Decimal
+    timestamp: datetime
+
+
+class SymbolConfig(BaseModel):
+    """Instrument specification for a trading symbol."""
+
+    symbol: str
+    description: str
+    base_asset: str
+    quote_currency: str
+    tick_size: Decimal
+    lot_size: Decimal
+    min_lot_size: Decimal
+    max_lot_size: Decimal
+    is_active: bool
+
+
+class VolatilityResponse(BaseModel):
+    """Rolling volatility for a symbol (fraction, e.g. 0.12 = 12%)."""
+
+    volatility: float
+
+
+class SpreadMetrics(BaseModel):
+    """Spread statistics for a symbol over a period."""
+
+    avg_spread: Decimal
+    avg_pct_spread: Decimal
+    min_spread: Decimal
+    max_spread: Decimal
+
+
+class SessionInfo(BaseModel):
+    """Current trading session state for a symbol."""
+
+    current_session: Literal["asian", "european", "american", "off"]
+    next_session: Literal["asian", "european", "american", "off"]
+    time_until_next: int  # seconds
+    is_trading_open: bool
+
+
+class FeatureSet(BaseModel):
+    """Computed technical features for a symbol."""
+
+    symbol: str
+    features: dict[str, float]
+    computed_at: datetime
+
+
+class SimulateTradeRequest(BaseModel):
+    """Payload for a what-if trade simulation."""
+
+    symbol: str
+    side: Literal["buy", "sell"]
+    volume: Decimal = Field(..., gt=0)
+    price: Decimal = Field(..., gt=0)
+
+
+class SimulateTradeResult(BaseModel):
+    """Projected portfolio impact of a hypothetical trade."""
+
+    projected_nav: Decimal
+    margin_required: Decimal
+    pnl_change: Decimal
 
 
 class CreatedAdminKey(BaseModel):

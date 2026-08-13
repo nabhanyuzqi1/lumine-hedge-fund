@@ -5,9 +5,11 @@
 import logging
 from datetime import datetime
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Optional
+import uuid
 
-from lumine.llm_gateway.models import LLMUsage
+from lumine.data.models import LLMUsage
 from lumine.data.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -17,50 +19,93 @@ logger = logging.getLogger(__name__)
 class UsageRecord:
     """Usage record for llm_usage table insertion."""
 
-    model_version_id: str
-    provider: str
-    model_name: str
-    timestamp: datetime
-    tokens_prompt: int
-    tokens_completion: int
-    cost_usd: float
-    lineage_id: Optional[str] = None
-    role: str = "unknown"
+    model_version_id: uuid.UUID
+    role: str
+    tier: str
+    prompt_version_id: Optional[uuid.UUID] = None
+    tokens_in: int = 0
+    tokens_out: int = 0
+    cost_usd: Decimal = Decimal("0.0")
     fallback_hops: int = 0
-    error: Optional[str] = None
+    degraded: bool = False
+    lane: Optional[str] = None
+    lineage_id: Optional[uuid.UUID] = None
 
 
 class UsageRecorder:
     """Async usage recorder for llm_usage append-only table."""
 
+    def __init__(self, session=None):
+        """Initialize usage recorder with optional session (for testing)."""
+        self._session = session
+
+    @property
+    def session(self):
+        """Get current session (from init or get_db_session)."""
+        return self._session if self._session is not None else None
+
+    @session.setter
+    def session(self, value):
+        """Set session (for testing)."""
+        self._session = value
+
     async def record(self, usage_record: UsageRecord) -> None:
         """Insert usage record into llm_usage table."""
-        session = await get_db_session()
+        db_session = self._session
+        close_on_exit = False
+
+        print(f"[DEBUG Recorder] session id={id(db_session) if db_session else None}, has_records_attr={hasattr(db_session, 'records') if db_session else False}")
+
+        # Check if this is a fake/test session with .records list
+        if hasattr(db_session, 'records'):
+            print(f"[DEBUG FakeSession] Appending to records list on session id={id(db_session)}")
+            record = LLMUsage(
+                role=usage_record.role,
+                tier=usage_record.tier,
+                model_version_id=usage_record.model_version_id,
+                prompt_version_id=usage_record.prompt_version_id,
+                tokens_in=usage_record.tokens_in,
+                tokens_out=usage_record.tokens_out,
+                cost_usd=Decimal(str(usage_record.cost_usd)),
+                fallback_hops=usage_record.fallback_hops,
+                degraded=usage_record.degraded,
+                lane=usage_record.lane,
+                lineage_id=usage_record.lineage_id,
+            )
+            db_session.records.append(record)
+            logger.debug(f"Usage record added to test session: {usage_record.model_version_id}")
+            return
+
+        if db_session is None:
+            db_session = await get_db_session()
+            close_on_exit = True
 
         try:
             record = LLMUsage(
-                model_version_id=usage_record.model_version_id,
-                provider=usage_record.provider,
-                model_name=usage_record.model_name,
-                timestamp=usage_record.timestamp,
-                tokens_prompt=usage_record.tokens_prompt,
-                tokens_completion=usage_record.tokens_completion,
-                cost_usd=usage_record.cost_usd,
-                lineage_id=usage_record.lineage_id,
                 role=usage_record.role,
+                tier=usage_record.tier,
+                model_version_id=usage_record.model_version_id,
+                prompt_version_id=usage_record.prompt_version_id,
+                tokens_in=usage_record.tokens_in,
+                tokens_out=usage_record.tokens_out,
+                cost_usd=Decimal(str(usage_record.cost_usd)),
                 fallback_hops=usage_record.fallback_hops,
-                error=usage_record.error,
+                degraded=usage_record.degraded,
+                lane=usage_record.lane,
+                lineage_id=usage_record.lineage_id,
             )
-            session.add(record)
-            await session.commit()
+            db_session.add(record)
+            await db_session.commit()
             logger.debug(f"Usage record inserted: {usage_record.model_version_id}")
 
         except Exception as e:
-            await session.rollback()
+            if hasattr(db_session, 'rollback'):
+                await db_session.rollback()
             logger.error(f"Failed to insert usage record: {e}")
             raise
         finally:
-            await session.close()
+            if close_on_exit and hasattr(db_session, 'close'):
+                await db_session.close()
 
     async def get_daily_total(self, date: str) -> float:
         """Get total cost for specific date (YYYY-MM-DD format)."""

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { useCancelOrder, useOrder } from "@/api/hooks";
+import { ModifyOrderDialog } from "@/components/orders/modify-order-dialog";
 import { OrderLifecycleTimeline } from "@/components/orders/order-lifecycle-timeline";
 import { ActivityLog } from "@/components/terminal/activity-log";
 import { Badge } from "@/components/ui/badge";
@@ -44,10 +45,12 @@ export function OrderDetailPage() {
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
   const { toast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [modifyOpen, setModifyOpen] = useState(false);
 
   const data = order.data;
   const isTerminal = data ? TERMINAL_ORDER_STATUSES.includes(data.status) : false;
   const canCancel = data && !isTerminal && !killSwitchActive;
+  const canModify = data && !isTerminal && !killSwitchActive;
 
   const handleCancel = async () => {
     if (!orderId) return;
@@ -94,6 +97,15 @@ export function OrderDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!canModify}
+            onClick={() => setModifyOpen(true)}
+            data-testid="modify-order-button"
+          >
+            Modify
+          </Button>
           <Button
             variant="danger"
             size="sm"
@@ -203,6 +215,10 @@ export function OrderDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {data && (
+        <ModifyOrderDialog order={data} open={modifyOpen} onOpenChange={setModifyOpen} />
+      )}
     </div>
   );
 }

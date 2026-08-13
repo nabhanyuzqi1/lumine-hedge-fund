@@ -155,13 +155,39 @@ async def lumine_exception_handler(request: Request, exc: Exception) -> JSONResp
     return _make_error_response(request, status_code, code, str(lumine_exc))
 
 
+def _sanitize_validation_errors(errors: list[dict]) -> list[dict]:
+    """Drop non-JSON-serializable context from pydantic error entries.
+
+    model_validator failures carry the raised exception in ``ctx.error``;
+    the envelope serializer cannot encode arbitrary exception objects, so
+    every ctx value is coerced to a scalar before the envelope is built.
+    """
+    sanitized: list[dict] = []
+    for entry in errors:
+        item = dict(entry)
+        ctx = item.get("ctx")
+        if isinstance(ctx, dict):
+            item["ctx"] = {
+                key: (
+                    str(value)
+                    if value is not None and not isinstance(value, (bool, int, float, str))
+                    else value
+                )
+                for key, value in ctx.items()
+            }
+        elif ctx is not None:
+            item["ctx"] = str(ctx)
+        sanitized.append(item)
+    return sanitized
+
+
 async def validation_exception_handler(
     request: Request,
     exc: Exception,
 ) -> JSONResponse:
     """Convert FastAPI request validation failures into the error envelope."""
     validation_exc = cast("RequestValidationError", exc)
-    details = {"errors": validation_exc.errors()}
+    details = {"errors": _sanitize_validation_errors(validation_exc.errors())}
     return _make_error_response(
         request, 400, "VALIDATION_FAILED", "request validation failed", details
     )

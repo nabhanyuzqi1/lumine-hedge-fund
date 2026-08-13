@@ -52,8 +52,10 @@ Deliver the frontend financial visualization layer per `docs/15-implementation/f
 
 ### 2.2 Out of scope (backend contract notes)
 
-- **No correlation endpoint exists** in `docs/09-api` — correlation pane consumes deterministic fixtures; a backend contract extension is required before live data (noted in `performance.md` demo-mode row).
-- SSE market/analyst streams (`sse-api.md`) not yet live — chart panes consume REST fixture fallback + `useDemoStreams` synthetic ticks.
+> **Update 2026-08-14:** backend kini live. `GET /market/correlation` diimplementasi (`routers/market.py`) — `useCorrelation` masih fixture-only di `hooks.ts:122` dan bisa di-rewire (GAP F-10). SSE 6 channel live di `/api/v1/streams/*`.
+
+- ~~**No correlation endpoint exists** in `docs/09-api`~~ — **RESOLVED**: `GET /api/v1/market/correlation?symbols=&window=` live (deterministik); correlation pane masih konsumsi fixture (`useCorrelation`).
+- SSE market/analyst streams (`sse-api.md`) now live — chart panes consume REST fixture fallback + `useDemoStreams` synthetic ticks; SSE realtime wiring per-pane adalah pekerjaan berikutnya (GAP F-02).
 
 ---
 
@@ -160,6 +162,7 @@ docs/15-implementation/frontend-sprint-plan.md (status)
 | Risk | Mitigation | Owner |
 |------|------------|-------|
 | Correlation endpoint missing in backend | Fixture fallback; contract extension request before live data | Backend |
+| Correlation endpoint status (2026-08-14) | Backend masih belum punya `/market/correlation`; consumer frontend `marketClient.getCorrelation` siap — lihat `FRONTEND-BACKEND-ROADMAP-CHECKPOINT.md` | Backend |
 | ECharts lazy chunk 201 kB gzip | Above budget only in aggregate, not critical path; revisit module granularity if bundle budget tightens | Frontend |
 | jsdom has no canvas | Chart libs mocked in tests; manual `__mocks__` verify pane option shapes | Frontend |
 | Timeout flakiness on loaded machines | `testTimeout: 20000` + explicit waitFor timeout on lazy-pane assertions | Frontend |

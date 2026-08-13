@@ -1,9 +1,10 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
 
+import { KillSwitchConfirmModal } from "@/app/components/kill-switch-confirm-modal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { type Workspace, useUiStore } from "@/stores/uiStore";
+import { useUiStore } from "@/stores/uiStore";
 
 interface CommandItem {
   id: string;
@@ -14,22 +15,15 @@ interface CommandItem {
   action: () => void;
 }
 
-const WORKSPACES: { id: Workspace; label: string; number: string }[] = [
-  { id: "trading", label: "Trading workspace", number: "1" },
-  { id: "research", label: "Research workspace", number: "2" },
-  { id: "risk", label: "Risk workspace", number: "3" },
-  { id: "ops", label: "Ops workspace", number: "4" },
-];
-
 export function CommandPalette() {
   const navigate = useNavigate();
   const open = useUiStore((s) => s.commandPaletteOpen);
   const setOpen = useUiStore((s) => s.setCommandPaletteOpen);
   const setWorkspace = useUiStore((s) => s.setWorkspace);
-  const setKillSwitch = useUiStore((s) => s.setKillSwitch);
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
   const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const [killSwitchConfirmOpen, setKillSwitchConfirmOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const run = React.useCallback(
@@ -82,14 +76,30 @@ export function CommandPalette() {
         group: "Go to",
         action: () => run(() => navigate("/streams")),
       },
-      ...WORKSPACES.map((ws) => ({
-        id: `workspace-${ws.id}`,
-        label: ws.label,
-        shortcut: ws.number,
-        keywords: [ws.id, ws.label, "workspace"],
+      {
+        id: "nav-dashboard",
+        label: "Go to Dashboard",
+        shortcut: "D",
+        keywords: ["dashboard", "research"],
         group: "Workspace",
-        action: () => run(() => setWorkspace(ws.id)),
-      })),
+        action: () => run(() => navigate("/dashboard")),
+      },
+      {
+        id: "nav-risk",
+        label: "Go to Risk",
+        shortcut: "R",
+        keywords: ["risk", "health", "limits"],
+        group: "Workspace",
+        action: () => run(() => navigate("/health")),
+      },
+      {
+        id: "nav-ops",
+        label: "Go to Ops",
+        shortcut: "O",
+        keywords: ["ops", "journal", "operations"],
+        group: "Workspace",
+        action: () => run(() => navigate("/journal")),
+      },
       {
         id: "symbol-xauusd",
         label: "Select symbol XAUUSD",
@@ -102,7 +112,7 @@ export function CommandPalette() {
         label: killSwitchActive ? "Deactivate kill switch" : "Activate kill switch",
         keywords: ["kill", "switch", "emergency", "stop"],
         group: "Action",
-        action: () => run(() => setKillSwitch(!killSwitchActive)),
+        action: () => run(() => setKillSwitchConfirmOpen(true)),
       },
       {
         id: "reset-workspace",
@@ -113,7 +123,7 @@ export function CommandPalette() {
       },
     ];
     return list;
-  }, [navigate, run, setKillSwitch, setWorkspace, killSwitchActive]);
+  }, [navigate, run, setWorkspace, killSwitchActive]);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -164,6 +174,7 @@ export function CommandPalette() {
   let globalIndex = 0;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         className="max-w-xl p-0"
@@ -229,5 +240,10 @@ export function CommandPalette() {
         </div>
       </DialogContent>
     </Dialog>
+    <KillSwitchConfirmModal
+      open={killSwitchConfirmOpen}
+      onOpenChange={setKillSwitchConfirmOpen}
+    />
+    </>
   );
 }

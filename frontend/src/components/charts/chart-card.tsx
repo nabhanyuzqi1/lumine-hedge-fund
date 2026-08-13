@@ -22,6 +22,7 @@ export interface ChartCardProps {
   height?: number;
   children: React.ReactNode;
   className?: string;
+  size?: "compact" | "normal";
 }
 
 /**
@@ -38,8 +39,10 @@ export function ChartCard({
   height = 320,
   children,
   className,
+  size = "normal",
 }: ChartCardProps) {
   const badge = status ? STATUS_TO_BADGE[status] : null;
+  const contentHeight = size === "compact" ? 160 : height;
 
   return (
     <Card className={cn("min-w-0", className)}>
@@ -54,7 +57,7 @@ export function ChartCard({
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="relative w-full overflow-hidden" style={{ height }}>
+        <div className="relative w-full overflow-hidden" style={{ height: contentHeight }}>
           {children}
         </div>
       </CardContent>

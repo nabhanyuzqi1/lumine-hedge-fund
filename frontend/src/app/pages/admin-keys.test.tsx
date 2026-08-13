@@ -28,7 +28,39 @@ function renderPage() {
 
 describe("AdminKeysPage", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("backend offline")));
+    // Query hooks fall back to fixtures when GETs reject; create/revoke
+    // mutations hit the live admin router and resolve with envelopes.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                data: {
+                  key_id: "key-abc123",
+                  secret: "sk-live-secret-abc",
+                  scopes: ["market.read", "portfolio.read"],
+                  created_at: new Date().toISOString(),
+                },
+              }),
+              { status: 201, headers: { "Content-Type": "application/json" } }
+            )
+          );
+        }
+        if (init?.method === "DELETE") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                data: { key_id: "key-001", scopes: [], revoked: true, created_at: new Date().toISOString() },
+              }),
+              { status: 200, headers: { "Content-Type": "application/json" } }
+            )
+          );
+        }
+        return Promise.reject(new Error("backend offline"));
+      })
+    );
     vi.stubGlobal("navigator", {
       ...navigator,
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },

@@ -2,6 +2,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
+import { ToastProvider, ToastViewport } from "./components/ui/toast";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { queryClient } from "./api/query-client";
 import { router } from "./app/router";
 import "./index.css";
@@ -18,9 +20,14 @@ const ReactQueryDevtools = import.meta.env.DEV
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-    </QueryClientProvider>
+    <TooltipProvider>
+      <ToastProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+          <ToastViewport />
+          {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+        </QueryClientProvider>
+      </ToastProvider>
+    </TooltipProvider>
   </StrictMode>
 );

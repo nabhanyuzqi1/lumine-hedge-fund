@@ -31,7 +31,6 @@ export function DataTable<T>({
   data,
   getRowId,
   rowHeight = 40,
-  className,
   emptyMessage = "No data",
 }: DataTableProps<T>) {
   const parentRef = React.useRef<HTMLDivElement>(null);
@@ -52,19 +51,16 @@ export function DataTable<T>({
   return (
     <div
       ref={parentRef}
-      className={cn(
-        "h-[400px] w-full overflow-auto rounded-panel border border-border-subtle",
-        className
-      )}
+      className="w-full overflow-hidden rounded-panel border border-border-subtle"
       data-testid="data-table-scroll"
     >
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-bg-raised">
+          <TableHeader className="sticky top-0 z-10 bg-bg-raised">
           <TableRow className="hover:bg-transparent">
             {columns.map((column) => (
               <TableHead
                 key={column.key}
-                style={column.width ? { width: column.width, minWidth: column.width } : undefined}
+                style={column.width ? { width: column.width, minWidth: column.width, maxWidth: column.width } : undefined}
               >
                 {column.header}
               </TableHead>
@@ -80,47 +76,50 @@ export function DataTable<T>({
             </TableRow>
           ) : (
             <tr>
-              <td
-                colSpan={columns.length}
-                style={{ height: `${totalSize}px`, position: "relative" }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${virtualRows[0]?.start ?? 0}px)`,
-                  }}
-                >
-                  {virtualRows.map((virtualRow) => {
-                    const row = data[virtualRow.index]!;
-                    return (
+          <td
+            colSpan={columns.length}
+            style={{ height: `${totalSize}px`, position: "relative" }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualRows[0]?.start ?? 0}px)`,
+              }}
+            >
+              {virtualRows.map((virtualRow) => {
+                const row = data[virtualRow.index]!;
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    ref={virtualizer.measureElement}
+                    className="flex items-center px-3 py-2 text-sm transition-colors hover:bg-table-row-hover"
+                    style={{ height: `${virtualRow.size}px` }}
+                  >
+                    {columns.map((column) => (
                       <div
-                        key={virtualRow.key}
-                        data-index={virtualRow.index}
-                        ref={virtualizer.measureElement}
-                        className="flex w-full items-center border-b border-border-subtle transition-colors hover:bg-table-row-hover"
-                        style={{ height: `${virtualRow.size}px` }}
+                        key={column.key}
+                        className={cn(
+                          "px-3 py-2 text-sm",
+                          /qty|avg|current|pnl|price/.test(column.key as string) ? "text-right font-mono tabular-nums" : "text-left"
+                        )}
+                        style={
+                          column.width
+                            ? { width: column.width, minWidth: column.width, flexShrink: 0 }
+                            : { flex: 1, minWidth: 0 }
+                        }
                       >
-                        {columns.map((column) => (
-                          <div
-                            key={column.key}
-                            className="flex items-center px-2 py-2 text-sm"
-                            style={
-                              column.width
-                                ? { width: column.width, minWidth: column.width, flexShrink: 0 }
-                                : { flex: 1, minWidth: 0 }
-                            }
-                          >
-                            {column.cell(row)}
-                          </div>
-                        ))}
+                        {column.cell(row)}
                       </div>
-                    );
-                  })}
-                </div>
-              </td>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </td>
             </tr>
           )}
         </TableBody>

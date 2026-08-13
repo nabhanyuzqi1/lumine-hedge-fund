@@ -652,3 +652,171 @@ def test_sse_replay_resumes_with_gap_detected() -> None:
     assert '"n": 7' in replay
 
     _run(stream.aclose())
+
+
+# ── Orders: PATCH modify (ModifyOrderDialog contract) ────────────────────
+
+
+def test_orders_patch_modify_updates_price(client: TestClient) -> None:
+    order_id = "12345678-1234-5678-1234-567812345678"
+    response = client.patch(
+        f"/api/v1/orders/{order_id}",
+        json={"price": "2450.00"},
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["order_id"] == order_id
+    assert data["price"] == "2450.00"
+    assert data["volume"] == "1.50"
+    assert data["status"] == "pending"
+
+
+def test_orders_patch_modify_updates_volume(client: TestClient) -> None:
+    order_id = "12345678-1234-5678-1234-567812345679"
+    response = client.patch(
+        f"/api/v1/orders/{order_id}",
+        json={"volume": "2.00"},
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["volume"] == "2.00"
+
+
+def test_orders_patch_rejects_empty_body(client: TestClient) -> None:
+    """PATCH with neither price nor volume → 400 VALIDATION_FAILED."""
+    response = client.patch("/api/v1/orders/12345678-1234-5678-1234-567812345678", json={})
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_FAILED"
+
+
+# ── Market cluster (marketClient.ts contract) ────────────────────────────
+
+
+def test_market_quote_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/quote/XAUUSD")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["symbol"] == "XAUUSD"
+    assert float(data["bid"]) < float(data["ask"])
+    assert float(data["last"]) > 0
+
+
+def test_market_quotes_batch_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/quotes?symbols=XAUUSD&symbols=EURUSD")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert set(data) == {"XAUUSD", "EURUSD"}
+
+
+def test_market_ohlcv_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/ohlcv/XAUUSD?timeframe=1h&limit=5")
+    assert response.status_code == 200
+    bars = response.json()["data"]
+    assert len(bars) == 5
+    assert bars[0]["symbol"] == "XAUUSD"
+    assert bars[0]["timeframe"] == "1h"
+    stamps = [b["timestamp"] for b in bars]
+    assert stamps == sorted(stamps)
+
+
+def test_market_ohlcv_rejects_bad_timeframe(client: TestClient) -> None:
+    response = client.get("/api/v1/market/ohlcv/XAUUSD?timeframe=2h")
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_FAILED"
+
+
+def test_market_symbol_and_symbols_endpoints(client: TestClient) -> None:
+    symbol = client.get("/api/v1/market/symbol/XAUUSD")
+    assert symbol.status_code == 200
+    data = symbol.json()["data"]
+    assert data["symbol"] == "XAUUSD"
+    assert data["tick_size"] == "0.01"
+    assert data["is_active"] is True
+
+    symbols = client.get("/api/v1/market/symbols")
+    assert symbols.status_code == 200
+    assert len(symbols.json()["data"]) >= 2
+
+    missing = client.get("/api/v1/market/symbol/UNKNOWN")
+    assert missing.status_code == 404
+
+
+def test_market_volatility_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/volatility/XAUUSD?window=14")
+    assert response.status_code == 200
+    volatility = response.json()["data"]["volatility"]
+    assert 0.0 < volatility < 1.0
+
+
+def test_market_correlation_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/correlation?symbols=XAUUSD&symbols=EURUSD")
+    assert response.status_code == 200
+    matrix = response.json()["data"]
+    assert matrix["XAUUSD"]["XAUUSD"] == 1.0
+    assert matrix["EURUSD"]["XAUUSD"] == matrix["XAUUSD"]["EURUSD"]
+
+
+def test_market_spread_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/spread/XAUUSD?period=60")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert float(data["min_spread"]) <= float(data["avg_spread"]) <= float(data["max_spread"])
+
+
+def test_market_session_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/session/XAUUSD")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["current_session"] in {"asian", "european", "american", "off"}
+    assert data["time_until_next"] >= 0
+    assert isinstance(data["is_trading_open"], bool)
+
+
+def test_market_features_endpoint(client: TestClient) -> None:
+    response = client.get("/api/v1/market/features/XAUUSD")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["symbol"] == "XAUUSD"
+    assert "rsi_14" in data["features"]
+    assert "ema_20" in data["features"]
+
+
+# ── Portfolio simulate (simulateTrade contract) ──────────────────────────
+
+
+def test_portfolio_simulate_endpoint(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/portfolio/default/simulate",
+        json={"symbol": "XAUUSD", "side": "buy", "volume": "0.40", "price": "2420.00"},
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert "projected_nav" in data
+    assert "margin_required" in data
+    assert "pnl_change" in data
+    assert float(data["margin_required"]) > 0
+
+
+# ── Kill switch tier round-trip ──────────────────────────────────────────
+
+
+def test_admin_kill_switch_tier_roundtrip(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake = FakeRedis()
+    monkeypatch.setattr(admin_router, "get_redis", _async_redis(fake), raising=False)
+
+    post_response = client.post(
+        "/api/v1/admin/kill-switch",
+        json={"reason": "news shock", "armed": True, "tier": "book"},
+    )
+    assert post_response.status_code == 200
+    data = post_response.json()["data"]
+    assert data["armed"] is True
+    assert data["tier"] == "book"
+
+    get_response = client.get("/api/v1/admin/kill-switch")
+    assert get_response.status_code == 200
+    persisted = get_response.json()["data"]
+    assert persisted["tier"] == "book"
+    assert persisted["reason"] == "news shock"

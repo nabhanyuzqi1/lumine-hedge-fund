@@ -151,6 +151,7 @@ async def get_kill_switch(
     return KillSwitchStatus(
         armed=decoded.get("armed") == "1",
         reason=decoded.get("reason") or None,
+        tier=decoded.get("tier") if decoded.get("tier") in {"global", "book", "strategy"} else None,
         updated_at=datetime.fromisoformat(decoded["updated_at"])
         if "updated_at" in decoded
         else None,
@@ -175,6 +176,7 @@ async def set_kill_switch(
         mapping={
             "armed": "1" if request.armed else "0",
             "reason": request.reason,
+            "tier": request.tier or "global",
             "updated_at": now.isoformat(),
             "updated_by": _principal.key_id,
         },
@@ -182,5 +184,6 @@ async def set_kill_switch(
     return KillSwitchStatus(
         armed=request.armed,
         reason=request.reason,
+        tier=request.tier,
         updated_at=now,
     )

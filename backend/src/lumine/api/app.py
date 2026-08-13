@@ -6,7 +6,8 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -32,15 +33,72 @@ from lumine.api.routers import (
     streams,
     workflows,
 )
+from lumine.api.sse.publisher import SSEPublisher
 from lumine.shared.config import Settings, get_settings
 from lumine.shared.errors import LumineError
+from lumine.trading.market_service import MarketService
+from lumine.trading.mt5_bridge import MT5Bridge
+from lumine.trading.position_sync import PositionSyncWorker
+
+
+_app_state: dict[str, object] = {}
 
 
 @asynccontextmanager
-async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Application lifespan: validate settings on startup."""
-    _ = get_settings()
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Application lifespan: initialize trading infrastructure."""
+    from lumine.shared.config import get_settings
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    settings = get_settings()
+
+    # Initialize MarketService for tick caching
+    market_service = MarketService()
+    _app_state["market_service"] = market_service
+
+    # Initialize SSEPublisher
+    sse_publisher = SSEPublisher(market_service)
+    _app_state["sse_publisher"] = sse_publisher
+
+    # Start SSE heartbeat
+    await sse_publisher.start_heartbeat()
+
+    # Initialize MT5Bridge if Redis configured
+    if settings.redis_url:
+        mt5_bridge = await MT5Bridge.from_url(settings.redis_url)
+        _app_state["mt5_bridge"] = mt5_bridge
+
+        # Wire MT5Bridge results to SSEPublisher
+        async def on_order_fill(result):
+            await sse_publisher.publish_order_fill(
+                order_id=result.order_id,
+                status=result.status,
+                fill_price=result.fill_price or 0.0,
+                fill_volume=result.fill_volume or 0.0,
+                mt5_ticket=result.ticket,
+            )
+
+        mt5_bridge.on_result(on_order_fill)
+        await mt5_bridge.start()
+
+    # Initialize PositionSyncWorker if database pool available
+    pool = getattr(settings, "database_url", None)
+    if pool:
+        from lumine.trading.position_sync import PositionSyncWorker
+        worker = PositionSyncWorker.from_pool(pool, market_service, interval_seconds=5.0)
+        _app_state["position_sync_worker"] = worker
+        await worker.start()
+
     yield
+
+    # Cleanup on shutdown
+    await sse_publisher.stop_heartbeat()
+    bridge = _app_state.get("mt5_bridge")
+    if bridge:
+        await bridge.stop()
+    worker = _app_state.get("position_sync_worker")
+    if worker:
+        await worker.stop()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

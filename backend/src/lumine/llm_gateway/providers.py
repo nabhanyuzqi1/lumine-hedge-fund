@@ -6,7 +6,6 @@ import logging
 from typing import Optional
 
 from lumine.llm_gateway.__init__ import ModelSpec, ModelStatus, ModelTier
-from lumine.llm_gateway.models import LLMUsage, ModelTier as DBModelTier
 from lumine.data.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -105,7 +104,7 @@ class DatabaseModelRegistry(SimpleModelRegistry):
 
         return count
 
-    def get_model(self, model_version_id: str) -> Optional[ModelSpec]:
+    async def get_model(self, model_version_id: str) -> Optional[ModelSpec]:
         """Override to ensure fresh load from database."""
         if model_version_id in self._models:
             return self._models[model_version_id]

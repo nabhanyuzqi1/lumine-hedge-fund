@@ -38,10 +38,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
+from lumine.trading.market_service import MarketService
+from lumine.api.sse.publisher import SSEPublisher, SSEEvent
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -55,6 +57,20 @@ _BUFFER_MAX_EVENTS = 1000
 _REPLAY_RETENTION_S = 300  # 5 minutes
 _HEARTBEAT_MARKET_S = 5
 _HEARTBEAT_DEFAULT_S = 15
+
+
+def get_market_service() -> MarketService:
+    """Dependency to access market service from app state."""
+    from lumine.api.app import _app_state
+    return _app_state.get("market_service")
+
+
+def get_sse_publisher(request: Request) -> SSEPublisher:
+    """Get SSEPublisher instance from request state or app state."""
+    if hasattr(request.state, "sse_publisher"):
+        return request.state.sse_publisher
+    from lumine.api.app import _app_state
+    return _app_state.get("sse_publisher")
 
 
 @dataclass(frozen=True)
@@ -209,11 +225,120 @@ def _stream_response(request: Request, channel: str, interval_s: float) -> Strea
 @router.get("/market-data")
 async def stream_market_data(
     request: Request,
-    _symbol: Annotated[str, Query(min_length=1, description="Symbol to subscribe (required)")],
+    symbol: Annotated[str, Query(min_length=1, description="Symbol to subscribe (required)")],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
 ) -> StreamingResponse:
     """SSE stream of market bar/tick updates for one symbol (~1/sec, 5s heartbeat)."""
-    return _stream_response(request, "market-data", _HEARTBEAT_MARKET_S)
+
+    async def market_event_stream():
+        """Emit tick updates from MarketService cache."""
+        host = "unknown" if request.client is None else request.client.host
+        key_id = request.state.principal.key_id if hasattr(request.state, "principal") else "anonymous"
+        _acquire_slot(key_id, host)
+
+        stream_id = uuid.uuid4().hex[:12]
+        started_at = _iso_utc_ms(datetime.now(UTC))
+        market_service = get_market_service()
+        publisher = get_sse_publisher(request)
+
+        try:
+            # Publish stream_open lifecycle event
+            await publisher.publish_stream_open(f"market:{symbol}")
+
+            yield _emit(
+                f"market:{symbol}",
+                stream_id,
+                "stream_open",
+                {"stream_id": stream_id, "started_at": started_at},
+            )
+
+            last_tick_time = time.time()
+            while not await request.is_disconnected():
+                try:
+                    tick = await market_service.get_quote(symbol)
+                    if tick and (time.time() - last_tick_time) > 1.0:
+                        frame = _emit(
+                            f"market:{symbol}",
+                            stream_id,
+                            "tick_update",
+                            {
+                                "symbol": symbol,
+                                "bid": tick.bid,
+                                "ask": tick.ask,
+                                "volume": tick.volume,
+                                "timestamp": _iso_utc_ms(tick.timestamp),
+                            },
+                        )
+                        yield frame
+                        last_tick_time = time.time()
+
+                    with contextlib.suppress(TimeoutError):
+                        await asyncio.wait_for(request.is_disconnected(), timeout=_HEARTBEAT_MARKET_S)
+                except Exception:
+                    break
+
+                yield ": heartbeat\n\n"
+        finally:
+            _release_slot(key_id, host)
+
+    return StreamingResponse(
+        market_event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+async def _event_stream_wrapper(
+    request: Request,
+    channel: str,
+    interval_s: float,
+) -> AsyncIterator[str]:
+    """SSE stream wrapper with SSEPublisher integration."""
+    host = "unknown" if request.client is None else request.client.host
+    key_id = request.state.principal.key_id if hasattr(request.state, "principal") else "anonymous"
+    _acquire_slot(key_id, host)
+
+    stream_id = uuid.uuid4().hex[:12]
+    started_at = _iso_utc_ms(datetime.now(UTC))
+
+    try:
+        publisher = get_sse_publisher(request)
+        await publisher.publish_stream_open(channel)
+
+        yield _emit(
+            channel,
+            stream_id,
+            "stream_open",
+            {"stream_id": stream_id, "started_at": started_at},
+        )
+
+        try:
+            last_event_id = int(request.headers.get("Last-Event-ID", "0"))
+        except ValueError:
+            last_event_id = 0
+
+        if last_event_id > 0:
+            oldest = min((b.event_id for b in _buffers.get(channel, ())), default=last_event_id + 1)
+            gap_detected = oldest > last_event_id + 1
+            yield _frame(
+                channel,
+                stream_id,
+                last_event_id,
+                "stream_resumed",
+                {"from_event_id": last_event_id, "gap_detected": gap_detected},
+            )
+            async for frame in _replay(channel, last_event_id):
+                yield frame
+
+        while not await request.is_disconnected():
+            yield ": heartbeat\n\n"
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(request.is_disconnected(), timeout=interval_s)
+    finally:
+        _release_slot(key_id, host)
 
 
 @router.get("/analyst-outputs")

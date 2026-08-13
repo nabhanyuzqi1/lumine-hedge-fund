@@ -8,13 +8,23 @@ from decimal import Decimal
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
+from lumine.api.demo_data import mid_price
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
-from lumine.api.schemas.api import ExposureSummary, PortfolioSummary, Position
+from lumine.api.middleware.rate_limit import rate_limit_dependency
+from lumine.api.schemas.api import (
+    ExposureSummary,
+    PortfolioSummary,
+    Position,
+    SimulateTradeRequest,
+    SimulateTradeResult,
+)
 from lumine.api.schemas.common import PaginatedList, Pagination
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
+
+_DEMO_NAV = Decimal("100000.00")
 
 
 @router.get("/summary", response_model=PortfolioSummary)
@@ -25,12 +35,36 @@ async def get_portfolio_summary(
     now = datetime.now(UTC)
     return PortfolioSummary(
         portfolio_id="default",
-        nav=Decimal("100000.00"),
+        nav=_DEMO_NAV,
         cash=Decimal("75000.00"),
         margin_used=Decimal("25000.00"),
         open_pnl=Decimal("1200.50"),
         closed_pnl=Decimal("8450.00"),
         timestamp=now,
+    )
+
+
+@router.post(
+    "/{portfolio_id}/simulate",
+    response_model=SimulateTradeResult,
+    dependencies=[Depends(rate_limit_dependency)],
+)
+async def simulate_trade(
+    portfolio_id: str,
+    request: SimulateTradeRequest,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
+) -> SimulateTradeResult:
+    """Project portfolio impact of a hypothetical trade (what-if, no execution)."""
+    if portfolio_id not in {"default", "portfolio-demo"}:
+        raise HTTPException(status_code=404, detail=f"unknown portfolio: {portfolio_id}")
+    mid = mid_price(request.symbol)
+    direction = 1.0 if request.side == "buy" else -1.0
+    pnl_change = (mid - float(request.price)) * float(request.volume) * direction
+    margin_required = float(request.price) * float(request.volume) * 0.01
+    return SimulateTradeResult(
+        projected_nav=_DEMO_NAV + Decimal(str(round(pnl_change, 2))),
+        margin_required=Decimal(str(round(margin_required, 2))),
+        pnl_change=Decimal(str(round(pnl_change, 2))),
     )
 
 

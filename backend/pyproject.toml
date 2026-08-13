@@ -18,10 +18,11 @@ dependencies = [
     "redis[hiredis]>=5.2.0",
     "structlog>=24.4.0",
     "httpx>=0.28.0",
-    "pyautogen>=0.5.0",
+    "pyautogen>=0.3.3",
     "python-json-logger>=3.2.0",
     "pyyaml>=6.0.2",
     "jsonschema>=4.23.0",
+    "orjson>=3.10.0",
 ]
 
 [dependency-groups]
@@ -36,6 +37,7 @@ dev = [
     "pip-audit>=2.7.0",
     "types-jsonschema>=4.23.0",
     "testcontainers[postgres,redis]>=4.0.0",
+    "fakeredis>=2.37.0",
 ]
 
 [tool.ruff]

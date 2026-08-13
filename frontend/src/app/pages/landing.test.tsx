@@ -1,39 +1,21 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { LandingPage } from "./landing";
 
 describe("LandingPage", () => {
-  it("renders the portal heading and entry cards", () => {
+  it("redirects to the terminal workspace", async () => {
     render(
-      <MemoryRouter>
-        <LandingPage />
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/terminal" element={<div data-testid="terminal-stub" />} />
+        </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByText("Institutional operating system for autonomous trading")).toBeDefined();
-    expect(screen.getByTestId("portal-terminal")).toBeDefined();
-    expect(screen.getByTestId("portal-dashboard")).toBeDefined();
-  });
 
-  it("links Terminal entry to /terminal", () => {
-    render(
-      <MemoryRouter>
-        <LandingPage />
-      </MemoryRouter>
-    );
-    const terminal = screen.getByTestId("portal-terminal");
-    expect(terminal.getAttribute("href")).toBe("/terminal");
-  });
-
-  it("renders sign-in button pointing to /auth", () => {
-    render(
-      <MemoryRouter>
-        <LandingPage />
-      </MemoryRouter>
-    );
-    const signin = screen.getByTestId("portal-signin");
-    expect(signin.getAttribute("href")).toBe("/auth");
-    expect(screen.getByText("Sign In")).toBeDefined();
+    // LandingPage is a redirect stub; the terminal route must take over.
+    expect(await screen.findByTestId("terminal-stub")).toBeDefined();
   });
 });

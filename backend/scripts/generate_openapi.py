@@ -28,7 +28,9 @@ def generate() -> str:
 
 
 def main() -> None:
-    DOCS_PATH.write_text(generate(), encoding="utf-8")
+    # write_bytes avoids newline translation (Path.write_text converts
+    # LF to CRLF on Windows, breaking the byte-identical contract test).
+    DOCS_PATH.write_bytes(generate().encode("utf-8"))
     print(f"OpenAPI contract written to {DOCS_PATH}")  # noqa: T201 — CLI output
 
 

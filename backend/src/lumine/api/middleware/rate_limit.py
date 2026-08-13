@@ -32,11 +32,20 @@ async def rate_limit_dependency(
     if limit <= 0:
         return principal
 
+    # Degrade gracefully when Redis is not configured (local/dev mode):
+    # rate limiting is an enhancement, not a gate on API availability.
+    if not settings.redis_url:
+        return principal
+
     window_seconds = 60
     now = time.time()
     bucket = f"lumine:rate_limit:{principal.key_id}"
 
-    r = await get_redis()
+    try:
+        r = await get_redis()
+    except Exception:  # noqa: BLE001 — Redis down must not 500 write endpoints
+        return principal
+
     cutoff = now - window_seconds
     await r.zremrangebyscore(bucket, 0, cutoff)
     current = await r.zcard(bucket)

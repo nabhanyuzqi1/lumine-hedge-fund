@@ -2,7 +2,7 @@ prompts:
 - sub_role: technical_analyst
   version: v1
   prompt_ref: technical_analyst@v1.prompt
-  expected_hash: 64a61c6bdf4f19a51d2aa125be5f2d45947c97642ac257ab7a10b21aa63852fa
+  expected_hash: ecc53dcb21287225d2e9ca2904c8dc64e623abb53072962049b03faed21c47c9
   model_tier_hint: cost-efficient
   variables:
   - symbol
@@ -19,7 +19,7 @@ prompts:
 - sub_role: macro_analyst
   version: v1
   prompt_ref: macro_analyst@v1.prompt
-  expected_hash: c5395c0b0fb9623fdf03270305d7fa9e36ced7e55cc3f842c53c3bbbd9c1f01e
+  expected_hash: bc1bba5ecad38fe5811f8f193403acdae2b167556f0058b512dfbd14ff053648
   model_tier_hint: context-rich
   variables:
   - symbol
@@ -36,7 +36,7 @@ prompts:
 - sub_role: news_analyst
   version: v1
   prompt_ref: news_analyst@v1.prompt
-  expected_hash: accdc6b58737652ee16b8f95735d106a7d8636636348079922d48edc764a6283
+  expected_hash: 9bd6b4278213ee8153d5263ab8c6181343f9cca7ee2e0d6d20f131ee44888936
   model_tier_hint: cost-efficient
   variables:
   - symbol
@@ -51,7 +51,7 @@ prompts:
 - sub_role: smc_analyst
   version: v1
   prompt_ref: smc_analyst@v1.prompt
-  expected_hash: 5ced1cb22e9782e4236037ff9c6a00d648c688c4b1808b0a40b03339a7edf584
+  expected_hash: e64c3ae47adad0f7efdbf379c70ed5a8026b9641b182f8f3604bc2efe60c7231
   model_tier_hint: specialized
   variables:
   - symbol
@@ -67,7 +67,7 @@ prompts:
 - sub_role: ic_forum
   version: v1
   prompt_ref: ic_forum@v1.prompt
-  expected_hash: b4742f7bbf15bf4af9aba860bc403e7ef5cedbec0b9b6e7091e13e6aa8e8561f
+  expected_hash: 1abdcfe47fa3e66a04a62b97489a89d562345fa8934e8c0c43eef5f91d7cbb85
   model_tier_hint: balanced
   variables:
   - symbol
@@ -79,7 +79,7 @@ prompts:
 - sub_role: debate_moderator
   version: v1
   prompt_ref: debate_moderator@v1.prompt
-  expected_hash: 429036899a6cfa3a409621443f404a7d8719537a11d45d95b30ce0c13c75d3a5
+  expected_hash: 0718950841ad6f8065d46fcbe77b33cd4ff03331f343c94b00fe5cbf249db288
   model_tier_hint: context-rich
   variables:
   - symbol
@@ -91,7 +91,7 @@ prompts:
 - sub_role: cio_proposer
   version: v1
   prompt_ref: cio_proposer@v1.prompt
-  expected_hash: 857b6372a141f89c36536477b7da12ce074965957920b667855019947d46d479
+  expected_hash: 7f684c5f2fdeb4d2d11273d51d81719deec2860327e60693caeb053b10f9c489
   model_tier_hint: frontier
   variables:
   - symbol
@@ -108,7 +108,7 @@ prompts:
 - sub_role: risk_assessor
   version: v1
   prompt_ref: risk_assessor@v1.prompt
-  expected_hash: 1d5749905c7bfc4aa32d9e4a8fbe4aed878647f6451f2da4b1250ccdd55d9923
+  expected_hash: c09ee9a322c945eb72517d9e8418fe33cbf35ce3ac0cce50d074cee6c6f0aa95
   model_tier_hint: context-rich
   variables:
   - symbol

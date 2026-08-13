@@ -5,9 +5,12 @@
  * backend). Returns the `data` field of the common envelope and maps
  * errors to typed `ApiError` instances.
  *
- * HMAC-SHA256 signing is Phase 14 scope; headers can be injected through
- * `options.headers` without changing call sites.
+ * When `VITE_LUMINE_API_KEY` + `VITE_LUMINE_API_SECRET` are set, every
+ * request is HMAC-SHA256 signed per docs/09-api/auth.md (backend
+ * middleware/auth.py); otherwise requests go out unsigned (dev mode).
  */
+
+import { buildAuthHeaders, getHmacCredentials } from "../lib/api/auth";
 
 const DEFAULT_BASE_URL = "http://localhost:8000/api/v1";
 
@@ -105,17 +108,39 @@ function throwOnError<T>(envelope: ApiEnvelope<T>, status: number, allowNull = f
   return envelope.data as T;
 }
 
+async function signedHeaders(
+  method: string,
+  url: string,
+  body: unknown,
+  headers: Record<string, string>
+): Promise<Record<string, string>> {
+  // Sign the path+query exactly as the server receives it.
+  const credentials = getHmacCredentials();
+  if (!credentials) return headers;
+  const signTarget = url.replace(/^https?:\/\/[^/]+/, "");
+  const auth = await buildAuthHeaders(
+    method,
+    signTarget,
+    typeof body === "string" ? body : body == null ? "" : JSON.stringify(body),
+    credentials.apiKey,
+    credentials.apiSecret
+  );
+  return { ...headers, ...auth };
+}
+
 export async function get<T>(
   path: string,
   params?: Record<string, string | string[]>,
   options: RequestOptions = {}
 ): Promise<T> {
-  const response = await fetch(buildUrl(path, params), {
+  const url = buildUrl(path, params);
+  const headers = await signedHeaders("GET", url, "", {
+    Accept: "application/json",
+    ...options.headers,
+  });
+  const response = await fetch(url, {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-      ...options.headers,
-    },
+    headers,
     signal: options.signal,
   });
 
@@ -128,13 +153,15 @@ export async function post<T>(
   body: unknown,
   options: RequestOptions = {}
 ): Promise<T> {
-  const response = await fetch(buildUrl(path), {
+  const url = buildUrl(path);
+  const headers = await signedHeaders("POST", url, body, {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    ...options.headers,
+  });
+  const response = await fetch(url, {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
     body: JSON.stringify(body),
     signal: options.signal,
   });
@@ -144,12 +171,14 @@ export async function post<T>(
 }
 
 export async function del(path: string, options: RequestOptions = {}): Promise<void> {
-  const response = await fetch(buildUrl(path), {
+  const url = buildUrl(path);
+  const headers = await signedHeaders("DELETE", url, "", {
+    Accept: "application/json",
+    ...options.headers,
+  });
+  const response = await fetch(url, {
     method: "DELETE",
-    headers: {
-      Accept: "application/json",
-      ...options.headers,
-    },
+    headers,
     signal: options.signal,
   });
 
