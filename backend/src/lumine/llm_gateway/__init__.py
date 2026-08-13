@@ -12,6 +12,8 @@ import json
 import logging
 from typing import Any, Optional
 
+from lumine.llm_gateway.recorder import UsageRecorder
+
 logger = logging.getLogger(__name__)
 
 
@@ -82,23 +84,6 @@ class GatewayResponse:
     latency_seconds: float
     fallback_hops: int = 0     # number of fallback hops attempted
     error_message: Optional[str] = None
-
-
-@dataclass
-class UsageRecord:
-    """Async usage record for llm_usage table append."""
-
-    model_version_id: str
-    provider: str
-    model_name: str
-    timestamp: datetime
-    tokens_prompt: int
-    tokens_completion: int
-    cost_usd: float
-    lineage_id: Optional[str]
-    role: str
-    fallback_hops: int = 0
-    error: Optional[str] = None
 
 
 @dataclass
@@ -348,6 +333,7 @@ class LLMGateway:
         budget_tracker: Optional[BudgetTracker] = None,
         admission_control: Optional[AdmissionControl] = None,
         circuit_breakers: Optional[dict[str, CircuitBreaker]] = None,
+        usage_recorder: Optional[UsageRecorder] = None,
     ):
         self.registry = registry
         self.client = nine_router_client
@@ -355,6 +341,7 @@ class LLMGateway:
         self.admission = admission_control or AdmissionControl()
         self.circuits = circuit_breakers or {}
         self.fallback = TierFallbackChain(registry)
+        self.usage_recorder = usage_recorder or UsageRecorder()
 
     async def invoke(self, request: GatewayRequest) -> GatewayResponse:
         """Primary entry point: invoke model with fallback chain."""
@@ -510,14 +497,34 @@ class LLMGateway:
             self._open_circuit(provider)
 
     def _record_usage(self, response: GatewayResponse, model: ModelSpec) -> None:
-        """Record usage to budget tracker (async in production)."""
+        """Schedule usage recording to database (async in production)."""
         tokens_total = sum(response.tokens_used.values())
         estimated_cost = (tokens_total / 1_000_000) * model.base_cost_per_million_tokens
 
         self.budget.record_spending(estimated_cost)
 
-        # In production: enqueue to async worker for database insertion
-        # For now, log the record
+        # Enqueue for async database insertion via UsageRecorder
+        record = UsageRecord(
+            model_version_id=response.model_version_id,
+            provider=model.provider,
+            model_name=model.model_name,
+            timestamp=datetime.now(),
+            tokens_prompt=response.tokens_used.get("prompt", 0),
+            tokens_completion=response.tokens_used.get("completion", 0),
+            cost_usd=estimated_cost,
+            lineage_id=None,  # Would come from request if available
+            role="unknown",  # Would come from request if available
+            fallback_hops=response.fallback_hops,
+        )
+
+        # Fire-and-forget async record (fire_and_forget pattern)
+        import asyncio
+        try:
+            asyncio.create_task(self.usage_recorder.record(record))
+        except RuntimeError:
+            # No event loop running (e.g., synchronous context)
+            logger.debug(f"Usage recorder skipped: no event loop")
+
         logger.info(
             f"Usage recorded: model={model.model_version_id}, "
             f"tokens={sum(response.tokens_used.values())}, "
@@ -558,6 +565,7 @@ def create_gateway_from_env() -> LLMGateway:
     import os
 
     from lumine.llm_gateway.providers import SimpleModelRegistry
+    from lumine.llm_gateway.recorder import UsageRecorder
 
     base_url = os.getenv("LLM_GATEWAY_9ROUTER_URL", "https://api.9router.com")
     api_key = os.getenv("LLM_GATEWAY_API_KEY", "")
@@ -568,9 +576,11 @@ def create_gateway_from_env() -> LLMGateway:
     registry = SimpleModelRegistry()  # Will be populated from database
     client = NineRouterClient(base_url, api_key)
     budget = BudgetTracker(daily_budget_usd=daily_budget, weekly_budget_usd=weekly_budget)
+    usage_recorder = UsageRecorder()
 
     return LLMGateway(
         registry=registry,
         nine_router_client=client,
         budget_tracker=budget,
+        usage_recorder=usage_recorder,
     )
