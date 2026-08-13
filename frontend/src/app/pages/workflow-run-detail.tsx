@@ -1,23 +1,23 @@
-import { useParams } from 'react-router-dom';
+import { useParams } from "react-router-dom";
 
-import { useRun } from '@/api/hooks';
-import { CommitteeFeed } from '@/components/terminal/committee-feed';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { NumericText } from '@/components/ui/numeric-text';
-import { RunStepper } from '@/components/workflows/run-stepper';
-import { RUN_TERMINAL_STATES } from '@/data/fixtures';
+import { useRun } from "@/api/hooks";
+import { CommitteeFeed } from "@/components/terminal/committee-feed";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { NumericText } from "@/components/ui/numeric-text";
+import { RunStepper } from "@/components/workflows/run-stepper";
+import { RUN_TERMINAL_STATES } from "@/data/fixtures";
 
 const TERMINAL_TONE = {
-  completed: 'ok',
-  failed: 'danger',
-  cancelled: 'warn',
-  killed: 'danger',
+  completed: "ok",
+  failed: "danger",
+  cancelled: "warn",
+  killed: "danger",
 } as const;
 
 export function WorkflowRunDetailPage() {
   const { workflowId, runId } = useParams<{ workflowId: string; runId: string }>();
-  const run = useRun(runId ?? '');
+  const run = useRun(runId ?? "");
   const data = run.data;
 
   const isTerminal = data
@@ -66,10 +66,10 @@ export function WorkflowRunDetailPage() {
             <CardDescription>
               <Badge
                 tone={
-                  isTerminal ? TERMINAL_TONE[data.status as keyof typeof TERMINAL_TONE] : 'info'
+                  isTerminal ? TERMINAL_TONE[data.status as keyof typeof TERMINAL_TONE] : "info"
                 }
                 label={data.status}
-              />{' '}
+              />{" "}
               <span className="text-text-secondary">{data.model}</span>
             </CardDescription>
           </CardHeader>

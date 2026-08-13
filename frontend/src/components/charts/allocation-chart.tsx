@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
-import type { EChartsCoreOption } from 'echarts/core';
+import type { EChartsCoreOption } from "echarts/core";
 
-import { ChartCard } from '@/components/charts/chart-card';
-import { useEcharts } from '@/hooks/useEcharts';
-import { exposureToTreemap } from '@/lib/chart-transform';
-import type { ExposureItem } from '@/data/fixtures';
+import { ChartCard } from "@/components/charts/chart-card";
+import type { ExposureItem } from "@/data/fixtures";
+import { useEcharts } from "@/hooks/useEcharts";
+import { exposureToTreemap } from "@/lib/chart-transform";
 
 export interface AllocationChartProps {
   items: ExposureItem[];
@@ -26,18 +26,18 @@ export function AllocationChart({ items, height = 320 }: AllocationChartProps) {
       },
       series: [
         {
-          type: 'treemap',
+          type: "treemap",
           data: exposureToTreemap(items),
           roam: false,
           nodeClick: false,
           breadcrumb: { show: false },
           label: {
             show: true,
-            formatter: '{b}\n{c}%',
+            formatter: "{b}\n{c}%",
             fontSize: 11,
           },
           itemStyle: {
-            borderColor: '#0b0f17',
+            borderColor: "#0b0f17",
             borderWidth: 2,
             gapWidth: 2,
           },
@@ -50,7 +50,7 @@ export function AllocationChart({ items, height = 320 }: AllocationChartProps) {
         },
       ],
     }),
-    [items],
+    [items]
   );
 
   const containerRef = useEcharts(option);

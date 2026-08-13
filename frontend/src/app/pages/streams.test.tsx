@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { StreamsPage } from './streams';
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { StreamsPage } from "./streams";
 
 class MockReadableStream {
   private chunks: Uint8Array[] = [];
@@ -15,7 +15,7 @@ class MockReadableStream {
   }
 
   getReader() {
-    if (this.locked) throw new Error('Stream already locked');
+    if (this.locked) throw new Error("Stream already locked");
     this.locked = true;
 
     return {
@@ -32,23 +32,23 @@ class MockReadableStream {
   }
 }
 
-describe('StreamsPage', () => {
-  it('renders stream dashboard', async () => {
+describe("StreamsPage", () => {
+  it("renders stream dashboard", async () => {
     const stream = new MockReadableStream();
     vi.stubGlobal(
-      'fetch',
+      "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         headers: new Headers(),
         body: stream as unknown as ReadableStream<Uint8Array>,
-      }),
+      })
     );
 
     render(<StreamsPage />);
 
-    expect(screen.getByText('Realtime streams')).toBeInTheDocument();
-    expect(screen.getByText('Positions')).toBeInTheDocument();
+    expect(screen.getByText("Realtime streams")).toBeInTheDocument();
+    expect(screen.getByText("Positions")).toBeInTheDocument();
 
     stream.close();
     vi.unstubAllGlobals();

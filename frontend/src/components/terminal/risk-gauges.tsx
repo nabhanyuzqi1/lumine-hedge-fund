@@ -1,24 +1,24 @@
-import { NumericText } from '@/components/ui/numeric-text';
+import { NumericText } from "@/components/ui/numeric-text";
 
 interface Gauge {
   label: string;
   value: number;
   cap: number;
-  tone: 'ok' | 'warn' | 'danger';
+  tone: "ok" | "warn" | "danger";
   suffix: string;
 }
 
 const GAUGES: Gauge[] = [
-  { label: 'Exposure', value: 8.2, cap: 15, tone: 'ok', suffix: '%' },
-  { label: 'Leverage', value: 2.1, cap: 5, tone: 'ok', suffix: 'x' },
-  { label: 'Drawdown', value: 4.1, cap: 6, tone: 'warn', suffix: '%' },
-  { label: 'Margin used', value: 63, cap: 100, tone: 'warn', suffix: '%' },
+  { label: "Exposure", value: 8.2, cap: 15, tone: "ok", suffix: "%" },
+  { label: "Leverage", value: 2.1, cap: 5, tone: "ok", suffix: "x" },
+  { label: "Drawdown", value: 4.1, cap: 6, tone: "warn", suffix: "%" },
+  { label: "Margin used", value: 63, cap: 100, tone: "warn", suffix: "%" },
 ];
 
-const TONE_HEX: Record<Gauge['tone'], string> = {
-  ok: 'bg-up',
-  warn: 'bg-warn',
-  danger: 'bg-danger',
+const TONE_HEX: Record<Gauge["tone"], string> = {
+  ok: "bg-up",
+  warn: "bg-warn",
+  danger: "bg-danger",
 };
 
 /**
@@ -40,7 +40,7 @@ export function RiskGauges() {
                 {value}
                 {suffix}
                 <span className="text-text-tertiary">
-                  {' '}
+                  {" "}
                   / {cap}
                   {suffix}
                 </span>

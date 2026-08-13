@@ -1,29 +1,29 @@
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useState } from "react";
 
-import { CandlestickChart, type Timeframe } from '@/components/charts/candlestick-chart';
-import { ChartCard } from '@/components/charts/chart-card';
-import { DrawdownChart } from '@/components/charts/drawdown-chart';
-import { EquityChart } from '@/components/charts/equity-chart';
-import { PnlSparkline } from '@/components/charts/pnl-sparkline';
 import {
+  useCorrelation,
   useEquityCurve,
   useExposure,
   useMarketBars,
   useSignals,
-  useCorrelation,
-} from '@/api/hooks';
-import { useDemoStreams } from '@/hooks/useDemoStreams';
+} from "@/api/hooks";
+import { CandlestickChart, type Timeframe } from "@/components/charts/candlestick-chart";
+import { ChartCard } from "@/components/charts/chart-card";
+import { DrawdownChart } from "@/components/charts/drawdown-chart";
+import { EquityChart } from "@/components/charts/equity-chart";
+import { PnlSparkline } from "@/components/charts/pnl-sparkline";
+import { useDemoStreams } from "@/hooks/useDemoStreams";
 
 // ECharts panes are code-split: `echarts/core` never enters the critical
 // bundle. Each lazy pane keeps the <300KB gzip budget.
 const LazyAllocation = lazy(() =>
-  import('@/components/charts/allocation-chart').then((m) => ({ default: m.AllocationChart })),
+  import("@/components/charts/allocation-chart").then((m) => ({ default: m.AllocationChart }))
 );
 const LazyCorrelation = lazy(() =>
-  import('@/components/charts/correlation-chart').then((m) => ({ default: m.CorrelationChart })),
+  import("@/components/charts/correlation-chart").then((m) => ({ default: m.CorrelationChart }))
 );
 const LazyConfidence = lazy(() =>
-  import('@/components/charts/confidence-chart').then((m) => ({ default: m.ConfidenceChart })),
+  import("@/components/charts/confidence-chart").then((m) => ({ default: m.ConfidenceChart }))
 );
 
 function PaneFallback({ title, height = 320 }: { title: string; height?: number }) {
@@ -40,14 +40,14 @@ function PaneFallback({ title, height = 320 }: { title: string; height?: number 
  * from the demo stream hook until the backend SSE endpoints are live.
  */
 export function DashboardPage() {
-  const [timeframe, setTimeframe] = useState<Timeframe>('5m');
+  const [timeframe, setTimeframe] = useState<Timeframe>("5m");
 
-  const bars = useMarketBars('XAUUSD', timeframe);
+  const bars = useMarketBars("XAUUSD", timeframe);
   const equity = useEquityCurve();
   const exposure = useExposure();
-  const signals = useSignals('XAUUSD');
+  const signals = useSignals("XAUUSD");
   const correlation = useCorrelation();
-  const demo = useDemoStreams(true, 'XAUUSD');
+  const demo = useDemoStreams(true, "XAUUSD");
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4">

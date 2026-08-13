@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ToastProvider, useToast, ToastViewport } from './toast';
+import { ToastProvider, ToastViewport, useToast } from "./toast";
 
 function TestHarness() {
   const { toast } = useToast();
@@ -11,9 +11,9 @@ function TestHarness() {
         type="button"
         onClick={() =>
           toast({
-            variant: 'success',
-            title: 'Order filled',
-            description: 'XAUUSD buy @ 2450.30',
+            variant: "success",
+            title: "Order filled",
+            description: "XAUUSD buy @ 2450.30",
             duration: 1000,
           })
         }
@@ -24,8 +24,8 @@ function TestHarness() {
         type="button"
         onClick={() =>
           toast({
-            variant: 'danger',
-            title: 'Stream dropped',
+            variant: "danger",
+            title: "Stream dropped",
           })
         }
       >
@@ -36,50 +36,50 @@ function TestHarness() {
   );
 }
 
-describe('Toast', () => {
+describe("Toast", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
-  it('renders a toast and dismisses manually', () => {
+  it("renders a toast and dismisses manually", () => {
     render(
       <ToastProvider>
         <TestHarness />
-      </ToastProvider>,
+      </ToastProvider>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Notify' }));
-    expect(screen.getByText('Order filled')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Notify" }));
+    expect(screen.getByText("Order filled")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss notification" }));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it('auto-dismisses after duration', async () => {
+  it("auto-dismisses after duration", async () => {
     render(
       <ToastProvider>
         <TestHarness />
-      </ToastProvider>,
+      </ToastProvider>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Notify' }));
-    expect(screen.getByText('Order filled')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Notify" }));
+    expect(screen.getByText("Order filled")).toBeInTheDocument();
 
     act(() => vi.advanceTimersByTime(1100));
     await waitFor(() => {
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
     });
   });
 
-  it('uses assertive aria-live for danger', () => {
+  it("uses assertive aria-live for danger", () => {
     render(
       <ToastProvider>
         <TestHarness />
-      </ToastProvider>,
+      </ToastProvider>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Alert' }));
-    const toast = screen.getByRole('status');
-    expect(toast).toHaveAttribute('aria-live', 'assertive');
+    fireEvent.click(screen.getByRole("button", { name: "Alert" }));
+    const toast = screen.getByRole("status");
+    expect(toast).toHaveAttribute("aria-live", "assertive");
   });
 });

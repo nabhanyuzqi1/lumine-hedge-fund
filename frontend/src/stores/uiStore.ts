@@ -1,12 +1,12 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type Workspace = 'trading' | 'research' | 'risk' | 'ops';
+export type Workspace = "trading" | "research" | "risk" | "ops";
 
 export const WORKSPACES: Array<{ id: Workspace; label: string }> = [
-  { id: 'trading', label: 'Trading' },
-  { id: 'research', label: 'Research' },
-  { id: 'risk', label: 'Risk' },
-  { id: 'ops', label: 'Ops' },
+  { id: "trading", label: "Trading" },
+  { id: "research", label: "Research" },
+  { id: "risk", label: "Risk" },
+  { id: "ops", label: "Ops" },
 ];
 
 interface UiState {
@@ -28,11 +28,11 @@ interface UiState {
  * event once the backend is live; demo mode toggles it locally.
  */
 export const useUiStore = create<UiState>((set, get) => ({
-  workspace: 'trading',
+  workspace: "trading",
   setWorkspace: (workspace) => set({ workspace }),
   killSwitchActive: false,
   setKillSwitch: (killSwitchActive) => set({ killSwitchActive }),
-  selectedSymbol: 'XAUUSD',
+  selectedSymbol: "XAUUSD",
   setSelectedSymbol: (selectedSymbol) => set({ selectedSymbol }),
   commandPaletteOpen: false,
   setCommandPaletteOpen: (commandPaletteOpen) => set({ commandPaletteOpen }),

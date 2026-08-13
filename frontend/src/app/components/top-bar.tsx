@@ -1,23 +1,23 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "zustand/react/shallow";
 
-import { useQuote } from '@/api/hooks';
-import { Badge } from '@/components/ui/badge';
-import { NumericText } from '@/components/ui/numeric-text';
-import { useStreamStore } from '@/stores/streamStore';
-import { useUiStore } from '@/stores/uiStore';
+import { useQuote } from "@/api/hooks";
+import { Badge } from "@/components/ui/badge";
+import { NumericText } from "@/components/ui/numeric-text";
+import { useStreamStore } from "@/stores/streamStore";
+import { useUiStore } from "@/stores/uiStore";
 
 const TOTAL_STREAMS = 6;
 
 function formatUTC(date: Date): string {
-  return date.toISOString().replace('T', ' ').slice(0, 19);
+  return date.toISOString().replace("T", " ").slice(0, 19);
 }
 
 function ShortcutLabel() {
   const isMac =
-    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
-  return <span aria-hidden="true">{isMac ? '⌘K' : 'Ctrl+K'}</span>;
+    typeof navigator !== "undefined" && navigator.platform.toLowerCase().includes("mac");
+  return <span aria-hidden="true">{isMac ? "⌘K" : "Ctrl+K"}</span>;
 }
 
 export function TopBar() {
@@ -33,7 +33,7 @@ export function TopBar() {
     return () => clearInterval(id);
   }, []);
 
-  const healthyCount = streams.filter((s) => s.status === 'open' && !s.stale).length;
+  const healthyCount = streams.filter((s) => s.status === "open" && !s.stale).length;
 
   return (
     <header

@@ -1,14 +1,14 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import * as lwc from 'lightweight-charts';
+import * as lwc from "lightweight-charts";
 
-vi.mock('lightweight-charts');
+vi.mock("lightweight-charts");
 
-import { CandlestickChart, TICK_DEBOUNCE_MS } from '@/components/charts/candlestick-chart';
-import type { ChartBar } from '@/data/fixtures';
-import { CHART_COLORS } from '@/lib/chart-theme';
-import type { MarketTick } from '@/stores';
+import { CandlestickChart, TICK_DEBOUNCE_MS } from "@/components/charts/candlestick-chart";
+import type { ChartBar } from "@/data/fixtures";
+import { CHART_COLORS } from "@/lib/chart-theme";
+import type { MarketTick } from "@/stores";
 
 /**
  * Manual `__mocks__/lightweight-charts` auto-applies in jsdom; instances are
@@ -37,14 +37,14 @@ const BARS: ChartBar[] = [
 ];
 
 const TICK: MarketTick = {
-  symbol: 'XAUUSD',
+  symbol: "XAUUSD",
   bid: 111.8,
   ask: 112.2,
   last: 112,
-  timestamp: '2026-08-10T00:00:00Z',
+  timestamp: "2026-08-10T00:00:00Z",
 };
 
-describe('CandlestickChart', () => {
+describe("CandlestickChart", () => {
   beforeEach(() => {
     mockLwc.__resetCharts();
   });
@@ -53,7 +53,7 @@ describe('CandlestickChart', () => {
     vi.useRealTimers();
   });
 
-  it('creates candle + volume series and loads bars once', () => {
+  it("creates candle + volume series and loads bars once", () => {
     render(<CandlestickChart bars={BARS} timeframe="5m" />);
 
     expect(lwc.createChart).toHaveBeenCalledTimes(1);
@@ -61,7 +61,7 @@ describe('CandlestickChart', () => {
     expect(chart).toBeDefined();
 
     const addCalls = chart!.addSeries.mock.calls;
-    expect(addCalls.map((call) => call[0])).toEqual(['CandlestickSeries', 'HistogramSeries']);
+    expect(addCalls.map((call) => call[0])).toEqual(["CandlestickSeries", "HistogramSeries"]);
 
     const candles = chart!.addSeries.mock.results[0]!.value as MockSeries;
     const volumes = chart!.addSeries.mock.results[1]!.value as MockSeries;
@@ -75,7 +75,7 @@ describe('CandlestickChart', () => {
     ]);
   });
 
-  it('debounces live ticks and mutates only the last bar', () => {
+  it("debounces live ticks and mutates only the last bar", () => {
     vi.useFakeTimers();
     render(<CandlestickChart bars={BARS} lastTick={TICK} timeframe="5m" />);
 
@@ -108,18 +108,18 @@ describe('CandlestickChart', () => {
     });
   });
 
-  it('renders timeframe buttons and reports changes', () => {
+  it("renders timeframe buttons and reports changes", () => {
     const onTimeframeChange = vi.fn();
     render(<CandlestickChart bars={BARS} timeframe="5m" onTimeframeChange={onTimeframeChange} />);
 
-    const active = screen.getByRole('button', { name: '5m' });
-    expect(active).toHaveAttribute('aria-pressed', 'true');
+    const active = screen.getByRole("button", { name: "5m" });
+    expect(active).toHaveAttribute("aria-pressed", "true");
 
-    fireEvent.click(screen.getByRole('button', { name: '1H' }));
-    expect(onTimeframeChange).toHaveBeenCalledWith('1H');
+    fireEvent.click(screen.getByRole("button", { name: "1H" }));
+    expect(onTimeframeChange).toHaveBeenCalledWith("1H");
   });
 
-  it('removes the chart instance on unmount', () => {
+  it("removes the chart instance on unmount", () => {
     const { unmount } = render(<CandlestickChart bars={BARS} timeframe="5m" />);
     const chart = mockLwc.__getCharts()[0]!;
 

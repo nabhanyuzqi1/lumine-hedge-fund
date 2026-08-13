@@ -1,15 +1,15 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock('lightweight-charts');
+vi.mock("lightweight-charts");
 
-import * as lwc from 'lightweight-charts';
+import * as lwc from "lightweight-charts";
 
-import { DrawdownChart } from '@/components/charts/drawdown-chart';
-import { EquityChart } from '@/components/charts/equity-chart';
-import { PnlSparkline } from '@/components/charts/pnl-sparkline';
-import type { EquityPoint } from '@/data/fixtures';
-import { equityToArea, equityToDrawdown, pnlToLine } from '@/lib/chart-transform';
+import { DrawdownChart } from "@/components/charts/drawdown-chart";
+import { EquityChart } from "@/components/charts/equity-chart";
+import { PnlSparkline } from "@/components/charts/pnl-sparkline";
+import type { EquityPoint } from "@/data/fixtures";
+import { equityToArea, equityToDrawdown, pnlToLine } from "@/lib/chart-transform";
 
 type MockSeries = {
   setData: ReturnType<typeof vi.fn>;
@@ -35,24 +35,24 @@ const EQUITY: EquityPoint[] = [
   { time: 3000, value: 99 },
 ];
 
-describe('EquityChart', () => {
+describe("EquityChart", () => {
   beforeEach(() => {
     mockLwc.__resetCharts();
   });
 
-  it('renders its card and loads an area series with transformed points', () => {
+  it("renders its card and loads an area series with transformed points", () => {
     render(<EquityChart points={EQUITY} />);
 
-    expect(screen.getByText('Portfolio Equity')).toBeDefined();
-    expect(screen.getByText('Daily equity curve · USD')).toBeDefined();
+    expect(screen.getByText("Portfolio Equity")).toBeDefined();
+    expect(screen.getByText("Daily equity curve · USD")).toBeDefined();
 
     const chart = mockLwc.__getCharts()[0]!;
-    expect(chart.addSeries).toHaveBeenCalledWith('AreaSeries', expect.anything());
+    expect(chart.addSeries).toHaveBeenCalledWith("AreaSeries", expect.anything());
     const area = chart.addSeries.mock.results[0]!.value as MockSeries;
     expect(area.setData).toHaveBeenCalledWith(equityToArea(EQUITY));
   });
 
-  it('skips setData on empty input without crashing', () => {
+  it("skips setData on empty input without crashing", () => {
     render(<EquityChart points={[]} />);
     const chart = mockLwc.__getCharts()[0]!;
     const area = chart.addSeries.mock.results[0]!.value as MockSeries;
@@ -60,15 +60,15 @@ describe('EquityChart', () => {
   });
 });
 
-describe('DrawdownChart', () => {
+describe("DrawdownChart", () => {
   beforeEach(() => {
     mockLwc.__resetCharts();
   });
 
-  it('derives the underwater series from the same equity points', () => {
+  it("derives the underwater series from the same equity points", () => {
     render(<DrawdownChart equity={EQUITY} />);
 
-    expect(screen.getByText('Drawdown')).toBeDefined();
+    expect(screen.getByText("Drawdown")).toBeDefined();
 
     const chart = mockLwc.__getCharts()[0]!;
     const area = chart.addSeries.mock.results[0]!.value as MockSeries;
@@ -78,12 +78,12 @@ describe('DrawdownChart', () => {
   });
 });
 
-describe('PnlSparkline', () => {
+describe("PnlSparkline", () => {
   beforeEach(() => {
     mockLwc.__resetCharts();
   });
 
-  it('hides the axes and loads a line series with pnl points', () => {
+  it("hides the axes and loads a line series with pnl points", () => {
     render(<PnlSparkline points={EQUITY} />);
 
     const options = mockLwc.createChart.mock.calls[0]![1] as {
@@ -94,12 +94,12 @@ describe('PnlSparkline', () => {
     expect(options.rightPriceScale.visible).toBe(false);
 
     const chart = mockLwc.__getCharts()[0]!;
-    expect(chart.addSeries).toHaveBeenCalledWith('LineSeries', expect.anything());
+    expect(chart.addSeries).toHaveBeenCalledWith("LineSeries", expect.anything());
     const line = chart.addSeries.mock.results[0]!.value as MockSeries;
     expect(line.setData).toHaveBeenCalledWith(pnlToLine(EQUITY));
   });
 
-  it('removes the chart instance on unmount', () => {
+  it("removes the chart instance on unmount", () => {
     const { unmount } = render(<PnlSparkline points={EQUITY} />);
     const chart = mockLwc.__getCharts()[0]!;
 

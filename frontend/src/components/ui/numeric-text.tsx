@@ -1,12 +1,12 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 export interface NumericTextProps {
   value: number;
   decimals?: number;
   showSign?: boolean;
-  tone?: 'up' | 'down' | 'neutral';
+  tone?: "up" | "down" | "neutral";
   suffix?: string;
   className?: string;
 }
@@ -15,18 +15,18 @@ export function NumericText({
   value,
   decimals = 2,
   showSign = false,
-  tone = 'neutral',
+  tone = "neutral",
   suffix,
   className,
 }: NumericTextProps) {
   const previous = React.useRef(value);
-  const [flash, setFlash] = React.useState<'up' | 'down' | null>(null);
+  const [flash, setFlash] = React.useState<"up" | "down" | null>(null);
 
   React.useEffect(() => {
     if (value > previous.current) {
-      setFlash('up');
+      setFlash("up");
     } else if (value < previous.current) {
-      setFlash('down');
+      setFlash("down");
     }
     previous.current = value;
 
@@ -34,19 +34,19 @@ export function NumericText({
     return () => clearTimeout(timer);
   }, [value]);
 
-  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
   const absolute = Math.abs(value).toFixed(decimals);
 
-  const toneClass = tone === 'up' ? 'text-up' : tone === 'down' ? 'text-down' : 'text-text-primary';
+  const toneClass = tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-text-primary";
 
   return (
     <span
       className={cn(
-        'font-mono tabular-nums',
-        flash === 'up' && 'animate-flash-up',
-        flash === 'down' && 'animate-flash-down',
+        "font-mono tabular-nums",
+        flash === "up" && "animate-flash-up",
+        flash === "down" && "animate-flash-down",
         toneClass,
-        className,
+        className
       )}
       aria-label={`${value}`}
     >

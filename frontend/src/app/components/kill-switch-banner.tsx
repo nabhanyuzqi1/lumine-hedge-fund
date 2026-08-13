@@ -1,4 +1,4 @@
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from "@/stores/uiStore";
 
 export function KillSwitchBanner() {
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);

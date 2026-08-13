@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { get, ApiError } from '@/api/client';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { NumericText } from '@/components/ui/numeric-text';
+import { ApiError, get } from "@/api/client";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { NumericText } from "@/components/ui/numeric-text";
+import { useQuery } from "@tanstack/react-query";
 
 interface QuoteSnapshot {
   symbol: string;
@@ -19,13 +19,13 @@ async function fetchQuote(symbol: string): Promise<QuoteSnapshot> {
 /** Portal liveness check — now a real API probe via TanStack Query. */
 export function HealthPage() {
   const { data, isLoading, error, dataUpdatedAt } = useQuery({
-    queryKey: ['market', 'quotes', 'XAUUSD'],
-    queryFn: () => fetchQuote('XAUUSD'),
+    queryKey: ["market", "quotes", "XAUUSD"],
+    queryFn: () => fetchQuote("XAUUSD"),
     refetchInterval: 5_000,
     retry: 3,
   });
 
-  const status = error ? 'degraded' : 'ok';
+  const status = error ? "degraded" : "ok";
   const apiError = error instanceof ApiError ? error : null;
 
   return (
@@ -38,7 +38,7 @@ export function HealthPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-text-secondary">Status</span>
-            <Badge tone={status === 'ok' ? 'ok' : 'warn'} label={status} />
+            <Badge tone={status === "ok" ? "ok" : "warn"} label={status} />
           </div>
 
           {isLoading && <p className="text-sm text-text-muted">Loading quote...</p>}
@@ -79,7 +79,7 @@ export function HealthPage() {
           )}
 
           <p className="text-xs text-text-muted">
-            Last checked: {dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : '—'}
+            Last checked: {dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : "—"}
           </p>
         </CardContent>
       </Card>

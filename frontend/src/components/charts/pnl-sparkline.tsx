@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
-import { LineSeries, createChart, type IChartApi, type ISeriesApi } from 'lightweight-charts';
+import { type IChartApi, type ISeriesApi, LineSeries, createChart } from "lightweight-charts";
 
-import { useChartResize } from '@/hooks/useChartResize';
-import { buildLwcOptions, getChartColors } from '@/lib/chart-theme';
-import { pnlToLine } from '@/lib/chart-transform';
-import type { EquityPoint } from '@/data/fixtures';
+import type { EquityPoint } from "@/data/fixtures";
+import { useChartResize } from "@/hooks/useChartResize";
+import { buildLwcOptions, getChartColors } from "@/lib/chart-theme";
+import { pnlToLine } from "@/lib/chart-transform";
 
 export interface PnlSparklineProps {
   points: EquityPoint[];
@@ -18,7 +18,7 @@ export interface PnlSparklineProps {
 export function PnlSparkline({ points }: PnlSparklineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;

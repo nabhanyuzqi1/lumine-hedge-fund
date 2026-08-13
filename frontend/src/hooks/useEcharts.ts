@@ -1,17 +1,17 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { type RefObject, useEffect, useRef } from "react";
 
-import * as echarts from 'echarts/core';
-import { HeatmapChart, LineChart, TreemapChart } from 'echarts/charts';
+import { HeatmapChart, LineChart, TreemapChart } from "echarts/charts";
 import {
   GridComponent,
   LegendComponent,
   TooltipComponent,
   VisualMapComponent,
-} from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
-import type { EChartsCoreOption } from 'echarts/core';
+} from "echarts/components";
+import * as echarts from "echarts/core";
+import type { EChartsCoreOption } from "echarts/core";
+import { CanvasRenderer } from "echarts/renderers";
 
-import { buildEchartsTheme } from '@/lib/chart-theme';
+import { buildEchartsTheme } from "@/lib/chart-theme";
 
 // Register once per bundle — this module is only imported from lazily-loaded
 // chart panes, so ECharts never enters the critical bundle.
@@ -43,7 +43,7 @@ export function useEcharts(option: EChartsCoreOption | null): RefObject<HTMLDivE
     chartRef.current = chart;
 
     let observer: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined') {
+    if (typeof ResizeObserver !== "undefined") {
       observer = new ResizeObserver(() => chart.resize());
       observer.observe(container);
     }

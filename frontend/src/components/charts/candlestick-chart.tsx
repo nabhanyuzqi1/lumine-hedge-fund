@@ -1,26 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 import {
   CandlestickSeries,
   HistogramSeries,
-  createChart,
   type IChartApi,
   type ISeriesApi,
-} from 'lightweight-charts';
+  createChart,
+} from "lightweight-charts";
 
-import { ChartCard } from '@/components/charts/chart-card';
-import { useChartResize } from '@/hooks/useChartResize';
-import { buildLwcOptions, getChartColors } from '@/lib/chart-theme';
+import { ChartCard } from "@/components/charts/chart-card";
+import type { ChartBar } from "@/data/fixtures";
+import { useChartResize } from "@/hooks/useChartResize";
+import { buildLwcOptions, getChartColors } from "@/lib/chart-theme";
 import {
   barsToCandles,
   candleFromBar,
   updateBarWithTick,
   volumeFromBar,
-} from '@/lib/chart-transform';
-import { cn } from '@/lib/utils';
-import type { ChartBar } from '@/data/fixtures';
+} from "@/lib/chart-transform";
+import { cn } from "@/lib/utils";
 
-export const TIMEFRAMES = ['5m', '15m', '1H', '4H'] as const;
+export const TIMEFRAMES = ["5m", "15m", "1H", "4H"] as const;
 export type Timeframe = (typeof TIMEFRAMES)[number];
 
 /** Batch live ticks into one series update — exit criterion: <150ms switch, no dropped frames. */
@@ -49,8 +49,8 @@ export function CandlestickChart({
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<{
-    candles: ISeriesApi<'Candlestick'> | null;
-    volumes: ISeriesApi<'Histogram'> | null;
+    candles: ISeriesApi<"Candlestick"> | null;
+    volumes: ISeriesApi<"Histogram"> | null;
   }>({ candles: null, volumes: null });
   const lastBarRef = useRef<ChartBar | null>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
@@ -71,10 +71,10 @@ export function CandlestickChart({
       wickDownColor: colors.down,
     });
     const volumes = chartInstance.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: '',
+      priceFormat: { type: "volume" },
+      priceScaleId: "",
     });
-    chartInstance.priceScale('').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    chartInstance.priceScale("").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
     seriesRef.current = { candles, volumes };
     setChart(chartInstance);
@@ -130,10 +130,10 @@ export function CandlestickChart({
               onClick={() => onTimeframeChange?.(tf)}
               aria-pressed={tf === timeframe}
               className={cn(
-                'rounded px-2 py-1 font-mono text-[11px] transition-colors',
+                "rounded px-2 py-1 font-mono text-[11px] transition-colors",
                 tf === timeframe
-                  ? 'bg-accent text-white'
-                  : 'text-text-muted hover:text-text-primary',
+                  ? "bg-accent text-white"
+                  : "text-text-muted hover:text-text-primary"
               )}
             >
               {tf}

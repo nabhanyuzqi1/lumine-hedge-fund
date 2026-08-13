@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 
-import { useJournal, useJournalPage, type JournalFilters } from '@/api/hooks';
-import { JournalTable } from '@/components/journal/journal-table';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { JournalEntry, JournalPage } from '@/data/fixtures';
+import { type JournalFilters, useJournal, useJournalPage } from "@/api/hooks";
+import { JournalTable } from "@/components/journal/journal-table";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { JournalEntry, JournalPage } from "@/data/fixtures";
 
-const ALL = 'all';
+const ALL = "all";
 
-type LocalFilters = Required<Omit<JournalFilters, 'portfolioId'>> & {
+type LocalFilters = Required<Omit<JournalFilters, "portfolioId">> & {
   portfolioId: string;
   start?: string;
   end?: string;
@@ -46,7 +46,7 @@ export function JournalPage() {
       portfolioId: filters.portfolioId === ALL ? undefined : filters.portfolioId,
       kind: filters.kind === ALL ? undefined : filters.kind,
     }),
-    [filters],
+    [filters]
   );
 
   const first = useJournal(backendFilters);
@@ -73,8 +73,7 @@ export function JournalPage() {
         if (
           prev.some(
             (p) =>
-              p.cursor === nextPage.data.cursor &&
-              p.entries.length === nextPage.data.entries.length,
+              p.cursor === nextPage.data.cursor && p.entries.length === nextPage.data.entries.length
           )
         ) {
           return prev;
@@ -91,11 +90,11 @@ export function JournalPage() {
 
   const symbols = useMemo(
     () => Array.from(new Set(allEntries.map((e) => e.symbol).filter(Boolean))),
-    [allEntries],
+    [allEntries]
   );
   const portfolios = useMemo(
     () => Array.from(new Set(allEntries.map((e) => e.portfolio_id))),
-    [allEntries],
+    [allEntries]
   );
 
   const handleLoadMore = () => {
@@ -202,7 +201,7 @@ export function JournalPage() {
               <input
                 id="start"
                 type="date"
-                value={filters.start ?? ''}
+                value={filters.start ?? ""}
                 onChange={(e) => setFilters((f) => ({ ...f, start: e.target.value || undefined }))}
                 className="mt-1 block rounded-chip border border-border-subtle bg-bg-base px-2 py-1.5 text-xs text-text-primary"
                 data-testid="journal-start-date"
@@ -219,7 +218,7 @@ export function JournalPage() {
               <input
                 id="end"
                 type="date"
-                value={filters.end ?? ''}
+                value={filters.end ?? ""}
                 onChange={(e) => setFilters((f) => ({ ...f, end: e.target.value || undefined }))}
                 className="mt-1 block rounded-chip border border-border-subtle bg-bg-base px-2 py-1.5 text-xs text-text-primary"
                 data-testid="journal-end-date"

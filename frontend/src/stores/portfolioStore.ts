@@ -1,11 +1,11 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export interface Position {
   id: string;
   portfolio_id: string;
   symbol: string;
   quantity: number;
-  side: 'LONG' | 'SHORT';
+  side: "LONG" | "SHORT";
   avg_entry_price: number;
   unrealized_pnl: number;
   updated_at: string;
@@ -15,9 +15,9 @@ export interface Order {
   id: string;
   portfolio_id: string;
   symbol: string;
-  side: 'BUY' | 'SELL';
+  side: "BUY" | "SELL";
   quantity: number;
-  status: 'PENDING' | 'ACTIVE' | 'FILLED' | 'CANCELLED';
+  status: "PENDING" | "ACTIVE" | "FILLED" | "CANCELLED";
   type: string;
   created_at: string;
 }
@@ -34,7 +34,7 @@ interface PortfolioActions {
   removeOrder: (id: string) => void;
   getPositions: () => Position[];
   getOrders: () => Order[];
-  getOrdersByStatus: (statuses: Order['status'][]) => Order[];
+  getOrdersByStatus: (statuses: Order["status"][]) => Order[];
 }
 
 export const usePortfolioStore = create<PortfolioState & PortfolioActions>((set, get) => ({

@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState } from "react";
+import { useParams } from "react-router-dom";
 
-import { useCancelOrder, useOrder } from '@/api/hooks';
-import { OrderLifecycleTimeline } from '@/components/orders/order-lifecycle-timeline';
-import { ActivityLog } from '@/components/terminal/activity-log';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCancelOrder, useOrder } from "@/api/hooks";
+import { OrderLifecycleTimeline } from "@/components/orders/order-lifecycle-timeline";
+import { ActivityLog } from "@/components/terminal/activity-log";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,22 +14,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { NumericText } from '@/components/ui/numeric-text';
-import { useToast } from '@/components/ui/toast';
-import { useUiStore } from '@/stores/uiStore';
-import type { OrderStatus } from '@/data/fixtures';
+} from "@/components/ui/dialog";
+import { NumericText } from "@/components/ui/numeric-text";
+import { useToast } from "@/components/ui/toast";
+import type { OrderStatus } from "@/data/fixtures";
+import { useUiStore } from "@/stores/uiStore";
 
-const TERMINAL_ORDER_STATUSES: OrderStatus[] = ['FILLED', 'CANCELLED', 'REJECTED'];
+const TERMINAL_ORDER_STATUSES: OrderStatus[] = ["FILLED", "CANCELLED", "REJECTED"];
 
-const ORDER_STATUS_TONE: Record<OrderStatus, 'ok' | 'warn' | 'danger' | 'info'> = {
-  RECEIVED: 'info',
-  VALIDATED: 'info',
-  RISK_CHECK: 'warn',
-  ACTIVE: 'info',
-  FILLED: 'ok',
-  CANCELLED: 'warn',
-  REJECTED: 'danger',
+const ORDER_STATUS_TONE: Record<OrderStatus, "ok" | "warn" | "danger" | "info"> = {
+  RECEIVED: "info",
+  VALIDATED: "info",
+  RISK_CHECK: "warn",
+  ACTIVE: "info",
+  FILLED: "ok",
+  CANCELLED: "warn",
+  REJECTED: "danger",
 };
 
 /**
@@ -39,7 +39,7 @@ const ORDER_STATUS_TONE: Record<OrderStatus, 'ok' | 'warn' | 'danger' | 'info'> 
  */
 export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
-  const order = useOrder(orderId ?? '');
+  const order = useOrder(orderId ?? "");
   const cancel = useCancelOrder();
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
   const { toast } = useToast();
@@ -54,8 +54,8 @@ export function OrderDetailPage() {
     await cancel.mutateAsync(orderId);
     setConfirmOpen(false);
     toast({
-      variant: 'success',
-      title: 'Order cancelled',
+      variant: "success",
+      title: "Order cancelled",
       description: `${orderId} has been marked CANCELLED (demo fixture).`,
     });
   };
@@ -117,7 +117,7 @@ export function OrderDetailPage() {
           <CardHeader>
             <CardTitle>Order summary</CardTitle>
             <CardDescription>
-              <Badge tone={data.side === 'BUY' ? 'ok' : 'danger'} label={data.side} />{' '}
+              <Badge tone={data.side === "BUY" ? "ok" : "danger"} label={data.side} />{" "}
               <Badge tone={ORDER_STATUS_TONE[data.status]} label={data.status} />
             </CardDescription>
           </CardHeader>
@@ -150,7 +150,7 @@ export function OrderDetailPage() {
                     value={data.pnl}
                     decimals={2}
                     showSign
-                    tone={data.pnl >= 0 ? 'up' : 'down'}
+                    tone={data.pnl >= 0 ? "up" : "down"}
                   />
                 </dd>
               </div>

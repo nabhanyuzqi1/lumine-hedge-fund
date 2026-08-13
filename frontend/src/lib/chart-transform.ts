@@ -1,3 +1,4 @@
+import type { ChartBar, EquityPoint, ExposureItem, SignalPoint } from "@/data/fixtures";
 /**
  * Pure chart data transforms — deterministic inputs to chart series data.
  *
@@ -12,9 +13,8 @@ import type {
   HistogramData,
   LineData,
   UTCTimestamp,
-} from 'lightweight-charts';
-import { CHART_COLORS } from './chart-theme';
-import type { ChartBar, EquityPoint, ExposureItem, SignalPoint } from '@/data/fixtures';
+} from "lightweight-charts";
+import { CHART_COLORS } from "./chart-theme";
 
 export function toUTCTime(seconds: number): UTCTimestamp {
   return Math.floor(seconds) as UTCTimestamp;
@@ -39,7 +39,7 @@ export function candleFromBar(bar: ChartBar): CandlestickData<UTCTimestamp> {
 /** Single bar → volume point (incremental `series.update()`). */
 export function volumeFromBar(
   bar: ChartBar,
-  colors: { up: string; down: string } = CHART_COLORS,
+  colors: { up: string; down: string } = CHART_COLORS
 ): HistogramData<UTCTimestamp> {
   return {
     time: toUTCTime(bar.time),
@@ -51,7 +51,7 @@ export function volumeFromBar(
 /** Split OHLCV bars into candle + volume series. Volume bars inherit up/down color. */
 export function barsToCandles(
   bars: ChartBar[],
-  colors: { up: string; down: string } = CHART_COLORS,
+  colors: { up: string; down: string } = CHART_COLORS
 ): CandlePayload {
   const candles: CandlestickData<UTCTimestamp>[] = [];
   const volumes: HistogramData<UTCTimestamp>[] = [];
@@ -99,7 +99,7 @@ export function pnlToLine(points: EquityPoint[]): LineData<UTCTimestamp>[] {
  * drawdown chart can never disagree with the equity chart.
  */
 export function equityToDrawdown(points: EquityPoint[]): EquityPoint[] {
-  let peak = -Infinity;
+  let peak = Number.NEGATIVE_INFINITY;
   return points.map((p) => {
     peak = Math.max(peak, p.value);
     return { time: p.time, value: p.value / peak - 1 };

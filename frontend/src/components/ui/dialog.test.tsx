@@ -1,20 +1,20 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
+import { Button } from "./button";
 import {
   Dialog,
-  DialogTrigger,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
-} from './dialog';
-import { Button } from './button';
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./dialog";
 
-describe('Dialog', () => {
-  it('opens and closes', async () => {
+describe("Dialog", () => {
+  it("opens and closes", async () => {
     render(
       <Dialog>
         <DialogTrigger asChild>
@@ -31,36 +31,36 @@ describe('Dialog', () => {
             </DialogClose>
           </DialogFooter>
         </DialogContent>
-      </Dialog>,
+      </Dialog>
     );
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
-    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeInTheDocument();
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.getByText("This action cannot be undone.")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
 
-  it('closes with Escape', async () => {
+  it("closes with Escape", async () => {
     render(
       <Dialog defaultOpen>
         <DialogContent>
           <DialogTitle>Kill switch</DialogTitle>
         </DialogContent>
-      </Dialog>,
+      </Dialog>
     );
 
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
 });

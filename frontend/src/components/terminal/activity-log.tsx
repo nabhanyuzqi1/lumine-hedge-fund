@@ -1,12 +1,12 @@
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "zustand/react/shallow";
 
-import { Badge } from '@/components/ui/badge';
-import { useActivityStore, type LogLevel } from '@/stores/activityStore';
+import { Badge } from "@/components/ui/badge";
+import { type LogLevel, useActivityStore } from "@/stores/activityStore";
 
-const LEVEL_TONE: Record<LogLevel, 'info' | 'ok' | 'warn' | 'danger'> = {
-  info: 'info',
-  warn: 'warn',
-  danger: 'danger',
+const LEVEL_TONE: Record<LogLevel, "info" | "ok" | "warn" | "danger"> = {
+  info: "info",
+  warn: "warn",
+  danger: "danger",
 };
 
 /**

@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useUiStore, type Workspace } from '@/stores/uiStore';
-import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { type Workspace, useUiStore } from "@/stores/uiStore";
 
 interface CommandItem {
   id: string;
@@ -15,10 +15,10 @@ interface CommandItem {
 }
 
 const WORKSPACES: { id: Workspace; label: string; number: string }[] = [
-  { id: 'trading', label: 'Trading workspace', number: '1' },
-  { id: 'research', label: 'Research workspace', number: '2' },
-  { id: 'risk', label: 'Risk workspace', number: '3' },
-  { id: 'ops', label: 'Ops workspace', number: '4' },
+  { id: "trading", label: "Trading workspace", number: "1" },
+  { id: "research", label: "Research workspace", number: "2" },
+  { id: "risk", label: "Risk workspace", number: "3" },
+  { id: "ops", label: "Ops workspace", number: "4" },
 ];
 
 export function CommandPalette() {
@@ -28,7 +28,7 @@ export function CommandPalette() {
   const setWorkspace = useUiStore((s) => s.setWorkspace);
   const setKillSwitch = useUiStore((s) => s.setKillSwitch);
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
-  const [query, setQuery] = React.useState('');
+  const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -36,80 +36,80 @@ export function CommandPalette() {
     (action: () => void) => {
       action();
       setOpen(false);
-      setQuery('');
+      setQuery("");
       setActiveIndex(0);
     },
-    [setOpen],
+    [setOpen]
   );
 
   const items: CommandItem[] = React.useMemo(() => {
     const list: CommandItem[] = [
       {
-        id: 'nav-terminal',
-        label: 'Go to Terminal',
-        shortcut: '1',
-        keywords: ['home', 'terminal', 'trading'],
-        group: 'Go to',
-        action: () => run(() => navigate('/')),
+        id: "nav-terminal",
+        label: "Go to Terminal",
+        shortcut: "1",
+        keywords: ["home", "terminal", "trading"],
+        group: "Go to",
+        action: () => run(() => navigate("/")),
       },
       {
-        id: 'nav-journal',
-        label: 'Go to Journal',
-        shortcut: 'J',
-        keywords: ['journal', 'logs', 'audit'],
-        group: 'Go to',
-        action: () => run(() => navigate('/journal')),
+        id: "nav-journal",
+        label: "Go to Journal",
+        shortcut: "J",
+        keywords: ["journal", "logs", "audit"],
+        group: "Go to",
+        action: () => run(() => navigate("/journal")),
       },
       {
-        id: 'nav-admin',
-        label: 'Go to Admin Keys',
-        shortcut: 'A',
-        keywords: ['admin', 'keys', 'api'],
-        group: 'Go to',
-        action: () => run(() => navigate('/admin/keys')),
+        id: "nav-admin",
+        label: "Go to Admin Keys",
+        shortcut: "A",
+        keywords: ["admin", "keys", "api"],
+        group: "Go to",
+        action: () => run(() => navigate("/admin/keys")),
       },
       {
-        id: 'nav-health',
-        label: 'Go to Health',
-        keywords: ['health', 'status'],
-        group: 'Go to',
-        action: () => run(() => navigate('/health')),
+        id: "nav-health",
+        label: "Go to Health",
+        keywords: ["health", "status"],
+        group: "Go to",
+        action: () => run(() => navigate("/health")),
       },
       {
-        id: 'nav-streams',
-        label: 'Go to Streams',
-        keywords: ['streams', 'sse', 'realtime'],
-        group: 'Go to',
-        action: () => run(() => navigate('/streams')),
+        id: "nav-streams",
+        label: "Go to Streams",
+        keywords: ["streams", "sse", "realtime"],
+        group: "Go to",
+        action: () => run(() => navigate("/streams")),
       },
       ...WORKSPACES.map((ws) => ({
         id: `workspace-${ws.id}`,
         label: ws.label,
         shortcut: ws.number,
-        keywords: [ws.id, ws.label, 'workspace'],
-        group: 'Workspace',
+        keywords: [ws.id, ws.label, "workspace"],
+        group: "Workspace",
         action: () => run(() => setWorkspace(ws.id)),
       })),
       {
-        id: 'symbol-xauusd',
-        label: 'Select symbol XAUUSD',
-        keywords: ['xauusd', 'gold', 'symbol'],
-        group: 'Symbol',
+        id: "symbol-xauusd",
+        label: "Select symbol XAUUSD",
+        keywords: ["xauusd", "gold", "symbol"],
+        group: "Symbol",
         action: () => run(() => {}),
       },
       {
-        id: 'kill-switch',
-        label: killSwitchActive ? 'Deactivate kill switch' : 'Activate kill switch',
-        keywords: ['kill', 'switch', 'emergency', 'stop'],
-        group: 'Action',
+        id: "kill-switch",
+        label: killSwitchActive ? "Deactivate kill switch" : "Activate kill switch",
+        keywords: ["kill", "switch", "emergency", "stop"],
+        group: "Action",
         action: () => run(() => setKillSwitch(!killSwitchActive)),
       },
       {
-        id: 'reset-workspace',
-        label: 'Reset workspace to Trading',
-        keywords: ['reset', 'workspace', 'trading'],
-        group: 'Action',
-        action: () => run(() => setWorkspace('trading')),
+        id: "reset-workspace",
+        label: "Reset workspace to Trading",
+        keywords: ["reset", "workspace", "trading"],
+        group: "Action",
+        action: () => run(() => setWorkspace("trading")),
       },
     ];
     return list;
@@ -122,7 +122,7 @@ export function CommandPalette() {
       (item) =>
         item.label.toLowerCase().includes(q) ||
         item.keywords.some((kw) => kw.toLowerCase().includes(q)) ||
-        item.group.toLowerCase().includes(q),
+        item.group.toLowerCase().includes(q)
     );
   }, [items, query]);
 
@@ -139,13 +139,13 @@ export function CommandPalette() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (filtered.length === 0) return;
-    if (e.key === 'ArrowDown') {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => (i + 1) % filtered.length);
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex((i) => (i - 1 + filtered.length) % filtered.length);
-    } else if (e.key === 'Enter') {
+    } else if (e.key === "Enter") {
       e.preventDefault();
       filtered[activeIndex]?.action();
     }
@@ -204,11 +204,11 @@ export function CommandPalette() {
                           type="button"
                           onClick={item.action}
                           className={cn(
-                            'flex w-full items-center justify-between rounded-chip px-3 py-2 text-left text-sm',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                            "flex w-full items-center justify-between rounded-chip px-3 py-2 text-left text-sm",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                             isActive
-                              ? 'bg-accent/10 text-text-primary'
-                              : 'text-text-secondary hover:bg-bg-raised hover:text-text-primary',
+                              ? "bg-accent/10 text-text-primary"
+                              : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
                           )}
                           onMouseEnter={() => setActiveIndex(index)}
                         >

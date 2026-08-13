@@ -2,7 +2,7 @@
  * Manual mock for `echarts/core` — jsdom cannot render canvas. The real
  * module stays out of every test bundle; assertions use `__getInstances()`.
  */
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 const instances: Array<{
   setOption: ReturnType<typeof vi.fn>;

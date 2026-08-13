@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
  * `/` — Landing portal (card hub). Entry surface for the Lumine operating
@@ -15,52 +15,52 @@ type PortalEntry = {
   href: string;
   title: string;
   blurb: string;
-  group: 'Live' | 'Surfaces' | 'Ops';
+  group: "Live" | "Surfaces" | "Ops";
 };
 
 const PORTAL: PortalEntry[] = [
   {
-    href: '/terminal',
-    title: 'Terminal',
-    blurb: 'Live XAUUSD trading workspace — chart, quote, positions, orders, risk, committee.',
-    group: 'Live',
+    href: "/terminal",
+    title: "Terminal",
+    blurb: "Live XAUUSD trading workspace — chart, quote, positions, orders, risk, committee.",
+    group: "Live",
   },
   {
-    href: '/dashboard',
-    title: 'Dashboard',
-    blurb: 'Portfolio, risk, and execution overview with institutional chart grid.',
-    group: 'Surfaces',
+    href: "/dashboard",
+    title: "Dashboard",
+    blurb: "Portfolio, risk, and execution overview with institutional chart grid.",
+    group: "Surfaces",
   },
   {
-    href: '/streams',
-    title: 'Streams',
-    blurb: 'Realtime market, agent, and committee event streams with health.',
-    group: 'Live',
+    href: "/streams",
+    title: "Streams",
+    blurb: "Realtime market, agent, and committee event streams with health.",
+    group: "Live",
   },
   {
-    href: '/journal',
-    title: 'Journal',
-    blurb: 'Trade journal and performance review across sessions.',
-    group: 'Surfaces',
+    href: "/journal",
+    title: "Journal",
+    blurb: "Trade journal and performance review across sessions.",
+    group: "Surfaces",
   },
   {
-    href: '/health',
-    title: 'Health',
-    blurb: 'Infrastructure and data-freshness health dashboard.',
-    group: 'Ops',
+    href: "/health",
+    title: "Health",
+    blurb: "Infrastructure and data-freshness health dashboard.",
+    group: "Ops",
   },
   {
-    href: '/admin/keys',
-    title: 'Admin Keys',
-    blurb: 'API key and credential management for operators.',
-    group: 'Ops',
+    href: "/admin/keys",
+    title: "Admin Keys",
+    blurb: "API key and credential management for operators.",
+    group: "Ops",
   },
 ];
 
-const GROUP_TONE: Record<PortalEntry['group'], 'ok' | 'info' | 'warn'> = {
-  Live: 'ok',
-  Surfaces: 'info',
-  Ops: 'warn',
+const GROUP_TONE: Record<PortalEntry["group"], "ok" | "info" | "warn"> = {
+  Live: "ok",
+  Surfaces: "info",
+  Ops: "warn",
 };
 
 export function LandingPage() {
@@ -100,7 +100,7 @@ export function LandingPage() {
             <li key={entry.href}>
               <Link
                 to={entry.href}
-                data-testid={`portal-${entry.title.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`portal-${entry.title.toLowerCase().replace(/\s+/g, "-")}`}
                 className="group block h-full rounded-panel border border-border-subtle bg-bg-raised p-0 shadow-panel outline-none transition-colors hover:border-accent/60 focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <Card className="border-0 bg-transparent shadow-none">
@@ -114,7 +114,10 @@ export function LandingPage() {
                     </CardDescription>
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent">
                       Enter
-                      <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
+                      <span
+                        aria-hidden="true"
+                        className="transition-transform group-hover:translate-x-0.5"
+                      >
                         →
                       </span>
                     </span>

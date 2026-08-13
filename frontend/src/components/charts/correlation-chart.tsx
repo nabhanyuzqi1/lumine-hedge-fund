@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
-import type { EChartsCoreOption } from 'echarts/core';
+import type { EChartsCoreOption } from "echarts/core";
 
-import { ChartCard } from '@/components/charts/chart-card';
-import { useEcharts } from '@/hooks/useEcharts';
-import { correlationToHeatmap } from '@/lib/chart-transform';
-import type { CorrelationMatrix } from '@/data/fixtures';
+import { ChartCard } from "@/components/charts/chart-card";
+import type { CorrelationMatrix } from "@/data/fixtures";
+import { useEcharts } from "@/hooks/useEcharts";
+import { correlationToHeatmap } from "@/lib/chart-transform";
 
 export interface CorrelationChartProps {
   symbols: string[];
@@ -29,24 +29,24 @@ export function CorrelationChart({ symbols, matrix, height = 320 }: CorrelationC
         },
       },
       grid: { left: 56, right: 12, top: 8, bottom: 48 },
-      xAxis: { type: 'category', data: labels, axisLabel: { rotate: 30 } },
-      yAxis: { type: 'category', data: labels },
+      xAxis: { type: "category", data: labels, axisLabel: { rotate: 30 } },
+      yAxis: { type: "category", data: labels },
       visualMap: {
         min: -1,
         max: 1,
         calculable: false,
-        orient: 'horizontal',
-        left: 'center',
+        orient: "horizontal",
+        left: "center",
         bottom: 0,
         itemWidth: 10,
         itemHeight: 90,
-        inRange: { color: ['#f0555b', '#0f1522', '#34d399'] },
+        inRange: { color: ["#f0555b", "#0f1522", "#34d399"] },
       },
       series: [
         {
-          type: 'heatmap',
+          type: "heatmap",
           data,
-          emphasis: { itemStyle: { borderColor: '#e8eef7', borderWidth: 1 } },
+          emphasis: { itemStyle: { borderColor: "#e8eef7", borderWidth: 1 } },
         },
       ],
     };

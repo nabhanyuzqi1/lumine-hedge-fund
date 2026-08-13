@@ -1,10 +1,10 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet } from "react-router-dom";
 
-import { CommandPalette } from './command-palette';
-import { KeyboardProvider } from './keyboard-provider';
-import { KillSwitchBanner } from './kill-switch-banner';
-import { Rail } from './rail';
-import { TopBar } from './top-bar';
+import { CommandPalette } from "./command-palette";
+import { KeyboardProvider } from "./keyboard-provider";
+import { KillSwitchBanner } from "./kill-switch-banner";
+import { Rail } from "./rail";
+import { TopBar } from "./top-bar";
 
 /**
  * App shell (F-Sprint 6). Wraps every portal route with the live top bar,

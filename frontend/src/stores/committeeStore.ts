@@ -1,8 +1,8 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export interface CommitteeActivity {
   id: string;
-  type: 'analyst_output' | 'ic_decision' | 'cio_proposal' | 'risk_assessment';
+  type: "analyst_output" | "ic_decision" | "cio_proposal" | "risk_assessment";
   workflow_run_id?: string;
   agent?: string;
   decision?: string;
@@ -17,7 +17,7 @@ interface CommitteeState {
 interface CommitteeActions {
   appendActivity: (activity: CommitteeActivity) => void;
   getActivities: () => CommitteeActivity[];
-  getActivitiesByType: (type: CommitteeActivity['type']) => CommitteeActivity[];
+  getActivitiesByType: (type: CommitteeActivity["type"]) => CommitteeActivity[];
 }
 
 const MAX_ACTIVITIES = 500;

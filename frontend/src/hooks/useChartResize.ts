@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { type RefObject, useEffect } from "react";
 
 /**
  * Shared ResizeObserver wiring for chart panes. One observer per container;
@@ -13,12 +13,12 @@ export interface ResizableChart {
 
 export function useChartResize<T extends ResizableChart>(
   chart: T | null,
-  containerRef: RefObject<HTMLDivElement | null>,
+  containerRef: RefObject<HTMLDivElement | null>
 ): void {
   useEffect(() => {
     if (!chart) return;
     const container = containerRef.current;
-    if (!container || typeof ResizeObserver === 'undefined') return;
+    if (!container || typeof ResizeObserver === "undefined") return;
 
     const observer = new ResizeObserver(() => {
       chart.resize(container.clientWidth, container.clientHeight);

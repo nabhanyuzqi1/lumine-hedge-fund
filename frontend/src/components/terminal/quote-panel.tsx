@@ -1,8 +1,8 @@
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "zustand/react/shallow";
 
-import { NumericText } from '@/components/ui/numeric-text';
-import { useQuote } from '@/api/hooks';
-import { useMarketStore } from '@/stores/marketStore';
+import { useQuote } from "@/api/hooks";
+import { NumericText } from "@/components/ui/numeric-text";
+import { useMarketStore } from "@/stores/marketStore";
 
 /**
  * Quote panel: REST/fixture quote overlaid by the live tick from the
@@ -22,7 +22,7 @@ export function QuotePanel({ symbol }: { symbol: string }) {
 
   const rows: Array<{ label: string; node: React.ReactNode }> = [
     {
-      label: 'Last',
+      label: "Last",
       node:
         last !== undefined ? (
           <NumericText value={last} decimals={2} tone="neutral" />
@@ -31,7 +31,7 @@ export function QuotePanel({ symbol }: { symbol: string }) {
         ),
     },
     {
-      label: 'Bid / Ask',
+      label: "Bid / Ask",
       node:
         bid !== undefined && ask !== undefined ? (
           <span className="flex gap-1.5 font-mono tabular-nums">
@@ -44,7 +44,7 @@ export function QuotePanel({ symbol }: { symbol: string }) {
         ),
     },
     {
-      label: 'Spread',
+      label: "Spread",
       node:
         spread !== undefined ? (
           <NumericText value={spread} decimals={2} tone="neutral" />
@@ -53,7 +53,7 @@ export function QuotePanel({ symbol }: { symbol: string }) {
         ),
     },
     {
-      label: 'Session H / L',
+      label: "Session H / L",
       node:
         high !== undefined && low !== undefined ? (
           <span className="flex gap-1.5 font-mono tabular-nums">

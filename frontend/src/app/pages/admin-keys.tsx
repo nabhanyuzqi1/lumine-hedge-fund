@@ -1,10 +1,10 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '@/api/hooks';
-import { ApiKeyTable } from '@/components/admin/api-key-table';
-import { CreateKeyModal } from '@/components/admin/create-key-modal';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/api/hooks";
+import { ApiKeyTable } from "@/components/admin/api-key-table";
+import { CreateKeyModal } from "@/components/admin/create-key-modal";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/toast';
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
 
 /**
  * `/admin/keys` — API key management (W6). Lists keys, creates new keys with a
@@ -35,7 +35,7 @@ export function AdminKeysPage() {
       onSuccess: (created) => {
         setSecret({ key_id: created.key_id, secret: created.secret });
         setCreateOpen(false);
-        toast({ variant: 'success', title: 'API key created', description: created.key_id });
+        toast({ variant: "success", title: "API key created", description: created.key_id });
       },
     });
   };
@@ -45,7 +45,7 @@ export function AdminKeysPage() {
     revoke.mutate(revokeTarget, {
       onSuccess: () => {
         setRevokeTarget(null);
-        toast({ variant: 'warn', title: 'API key revoked', description: revokeTarget });
+        toast({ variant: "warn", title: "API key revoked", description: revokeTarget });
       },
     });
   };
@@ -54,9 +54,9 @@ export function AdminKeysPage() {
     if (!secret) return;
     try {
       await navigator.clipboard.writeText(secret.secret);
-      toast({ variant: 'success', title: 'Secret copied to clipboard' });
+      toast({ variant: "success", title: "Secret copied to clipboard" });
     } catch {
-      toast({ variant: 'danger', title: 'Failed to copy secret' });
+      toast({ variant: "danger", title: "Failed to copy secret" });
     }
   };
 

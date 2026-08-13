@@ -1,4 +1,4 @@
-import { WORKSPACES, useUiStore } from '@/stores/uiStore';
+import { WORKSPACES, useUiStore } from "@/stores/uiStore";
 
 export function Rail() {
   const workspace = useUiStore((s) => s.workspace);
@@ -17,14 +17,14 @@ export function Rail() {
             key={ws.id}
             type="button"
             onClick={() => setWorkspace(ws.id)}
-            aria-current={active ? 'page' : undefined}
+            aria-current={active ? "page" : undefined}
             data-testid={`rail-${ws.id}`}
             className={[
-              'flex flex-col items-center justify-center rounded-chip text-[10px] font-medium transition-colors md:w-full md:py-2',
+              "flex flex-col items-center justify-center rounded-chip text-[10px] font-medium transition-colors md:w-full md:py-2",
               active
-                ? 'bg-bg-base text-text-primary'
-                : 'text-text-secondary hover:bg-bg-base/50 hover:text-text-primary',
-            ].join(' ')}
+                ? "bg-bg-base text-text-primary"
+                : "text-text-secondary hover:bg-bg-base/50 hover:text-text-primary",
+            ].join(" ")}
           >
             <span className="text-xs font-semibold md:hidden">{ws.label.slice(0, 2)}</span>
             <span className="hidden md:block">{ws.label.slice(0, 2)}</span>

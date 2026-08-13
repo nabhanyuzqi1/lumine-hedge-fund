@@ -1,7 +1,7 @@
-import * as React from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
+import { cn } from "@/lib/utils";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import * as React from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
 
 export interface DataTableColumn<T> {
   key: string;
@@ -32,7 +32,7 @@ export function DataTable<T>({
   getRowId,
   rowHeight = 40,
   className,
-  emptyMessage = 'No data',
+  emptyMessage = "No data",
 }: DataTableProps<T>) {
   const parentRef = React.useRef<HTMLDivElement>(null);
 
@@ -53,8 +53,8 @@ export function DataTable<T>({
     <div
       ref={parentRef}
       className={cn(
-        'h-[400px] w-full overflow-auto rounded-panel border border-border-subtle',
-        className,
+        "h-[400px] w-full overflow-auto rounded-panel border border-border-subtle",
+        className
       )}
       data-testid="data-table-scroll"
     >
@@ -82,14 +82,14 @@ export function DataTable<T>({
             <tr>
               <td
                 colSpan={columns.length}
-                style={{ height: `${totalSize}px`, position: 'relative' }}
+                style={{ height: `${totalSize}px`, position: "relative" }}
               >
                 <div
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     top: 0,
                     left: 0,
-                    width: '100%',
+                    width: "100%",
                     transform: `translateY(${virtualRows[0]?.start ?? 0}px)`,
                   }}
                 >

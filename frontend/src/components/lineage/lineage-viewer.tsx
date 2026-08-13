@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import type { LineageNode } from '@/data/fixtures';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { LineageNode } from "@/data/fixtures";
+import { cn } from "@/lib/utils";
 
 interface LineageViewerProps {
   root: LineageNode;
@@ -17,18 +17,18 @@ interface FlatNode {
   depth: number;
 }
 
-const TYPE_TONE: Record<LineageNode['type'], 'info' | 'ok' | 'warn' | 'danger' | 'neutral'> = {
-  decision: 'info',
-  input: 'neutral',
-  output: 'ok',
-  override: 'danger',
+const TYPE_TONE: Record<LineageNode["type"], "info" | "ok" | "warn" | "danger" | "neutral"> = {
+  decision: "info",
+  input: "neutral",
+  output: "ok",
+  override: "danger",
 };
 
-const TYPE_LABEL: Record<LineageNode['type'], string> = {
-  decision: 'decision',
-  input: 'input',
-  output: 'output',
-  override: 'override',
+const TYPE_LABEL: Record<LineageNode["type"], string> = {
+  decision: "decision",
+  input: "input",
+  output: "output",
+  override: "override",
 };
 
 function flatten(node: LineageNode, path: string, depth: number, out: FlatNode[]) {
@@ -48,7 +48,7 @@ function nodeMatches(node: LineageNode, path: string, term: string) {
 
 function collectVisiblePaths(
   flat: FlatNode[],
-  term: string,
+  term: string
 ): { visible: Set<string>; expanded: Set<string> } {
   const visible = new Set<string>();
   const expanded = new Set<string>();
@@ -58,7 +58,7 @@ function collectVisiblePaths(
     if (node.children) {
       childrenMap.set(
         path,
-        node.children.map((c) => `${path}.${c.id}`),
+        node.children.map((c) => `${path}.${c.id}`)
       );
     }
   });
@@ -68,8 +68,8 @@ function collectVisiblePaths(
     if (nodeMatches(node, path, term)) {
       visible.add(path);
       let p = path;
-      while (p.includes('.')) {
-        p = p.slice(0, p.lastIndexOf('.'));
+      while (p.includes(".")) {
+        p = p.slice(0, p.lastIndexOf("."));
         expanded.add(p);
         visible.add(p);
       }
@@ -123,15 +123,15 @@ function TreeNode({
       <div className="group flex items-start gap-2 py-1">
         <button
           type="button"
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          aria-label={isExpanded ? "Collapse" : "Expand"}
           className={cn(
-            'mt-1 h-3 w-3 shrink-0 rounded-sm text-text-tertiary hover:text-text-primary',
-            !hasChildren && 'invisible',
+            "mt-1 h-3 w-3 shrink-0 rounded-sm text-text-tertiary hover:text-text-primary",
+            !hasChildren && "invisible"
           )}
           onClick={() => setExpanded((e) => !e)}
           data-testid={`toggle-${node.id}`}
         >
-          {isExpanded ? '▼' : '▶'}
+          {isExpanded ? "▼" : "▶"}
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -175,7 +175,7 @@ function TreeNode({
  * Recursive JSONB-style lineage tree. Supports search filtering, expand/collapse,
  * copy-path, and override badges. Defaults to expanding the first two levels.
  */
-export function LineageViewer({ root, search = '', defaultExpandedDepth = 2 }: LineageViewerProps) {
+export function LineageViewer({ root, search = "", defaultExpandedDepth = 2 }: LineageViewerProps) {
   const flat = useMemo(() => {
     const out: FlatNode[] = [];
     flatten(root, root.id, 0, out);
@@ -184,7 +184,7 @@ export function LineageViewer({ root, search = '', defaultExpandedDepth = 2 }: L
 
   const { visible: visiblePaths } = useMemo(
     () => collectVisiblePaths(flat, search.trim()),
-    [flat, search],
+    [flat, search]
   );
 
   const forceExpanded = search.trim().length > 0;

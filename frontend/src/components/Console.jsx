@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 /*
  * The Console — signature element of the page.
@@ -17,23 +17,23 @@ function stamp(cycle, offset) {
 }
 
 const STAGES = [
-  { id: 'dispatch', label: 'scheduler', detail: 'dispatch trade-core' },
+  { id: "dispatch", label: "scheduler", detail: "dispatch trade-core" },
   {
-    id: 'committee',
-    label: 'llm.committee',
-    detail: '4 analysts · debate · IC · CIO proposal',
+    id: "committee",
+    label: "llm.committee",
+    detail: "4 analysts · debate · IC · CIO proposal",
   },
-  { id: 'risk', label: 'risk.validator', detail: 'deterministic veto — no LLM above this line' },
-  { id: 'sizing', label: 'portfolio.sizer', detail: 'position size · exposure bounds' },
+  { id: "risk", label: "risk.validator", detail: "deterministic veto — no LLM above this line" },
+  { id: "sizing", label: "portfolio.sizer", detail: "position size · exposure bounds" },
   {
-    id: 'exec',
-    label: 'execution.router',
-    detail: 'BEGIN TX · insert lineage_records · COMMIT · publish mt5.commands',
+    id: "exec",
+    label: "execution.router",
+    detail: "BEGIN TX · insert lineage_records · COMMIT · publish mt5.commands",
   },
   {
-    id: 'bridge',
-    label: 'mt5.bridge',
-    detail: 'fill · listener · UPDATE positions / INSERT fills',
+    id: "bridge",
+    label: "mt5.bridge",
+    detail: "fill · listener · UPDATE positions / INSERT fills",
   },
 ];
 
@@ -61,9 +61,9 @@ export default function Console() {
   const shown = STAGES.slice(0, len);
 
   const statusOf = (i) => {
-    if (i < stage) return 'done';
-    if (i === stage) return vetoed ? 'veto' : 'active';
-    return 'pending';
+    if (i < stage) return "done";
+    if (i === stage) return vetoed ? "veto" : "active";
+    return "pending";
   };
 
   return (
@@ -76,8 +76,8 @@ export default function Console() {
           <span className="size-2.5 rounded-full bg-up/70" />
         </span>
         <span className="font-mono text-[11px] text-ink-dim">
-          lumine · trade-core — cycle{' '}
-          <span className="text-ink">{String(cycle).padStart(3, '0')}</span>
+          lumine · trade-core — cycle{" "}
+          <span className="text-ink">{String(cycle).padStart(3, "0")}</span>
         </span>
         <span className="ml-auto inline-flex items-center gap-1.5 font-mono text-[11px] text-up">
           <span className="size-1.5 animate-pulse rounded-full bg-up" aria-hidden="true" />
@@ -88,24 +88,24 @@ export default function Console() {
       {/* body */}
       <div className="console-scroll max-h-[380px] overflow-y-auto px-4 py-4 font-mono text-[11.5px] leading-relaxed sm:max-h-[420px]">
         <p className="text-ink-faint">
-          <span className="text-accent">$</span> cycle {String(cycle).padStart(3, '0')} · session
+          <span className="text-accent">$</span> cycle {String(cycle).padStart(3, "0")} · session
           opened <span className="text-ink-dim">09:30:00 UTC</span>
         </p>
 
         {shown.map((s, i) => {
           const st = statusOf(i);
           const when = stamp(cycle, i);
-          const done = st === 'done';
-          const active = st === 'active';
-          const veto = st === 'veto';
+          const done = st === "done";
+          const active = st === "active";
+          const veto = st === "veto";
           const color = veto
-            ? 'var(--color-down)'
+            ? "var(--color-down)"
             : done
-              ? 'var(--color-up)'
+              ? "var(--color-up)"
               : active
-                ? 'var(--color-cyan)'
-                : 'var(--color-ink-faint)';
-          const marker = veto ? '✗' : done ? '✓' : active ? '▸' : '·';
+                ? "var(--color-cyan)"
+                : "var(--color-ink-faint)";
+          const marker = veto ? "✗" : done ? "✓" : active ? "▸" : "·";
           return (
             <p
               key={`${cycle}-${s.id}`}

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import { useActivityStore } from '@/stores/activityStore';
-import { useMarketStore, type MarketTick } from '@/stores';
-import { generatePnl, mulberry32, type EquityPoint } from '@/data/fixtures';
+import { type EquityPoint, generatePnl, mulberry32 } from "@/data/fixtures";
+import { type MarketTick, useMarketStore } from "@/stores";
+import { useActivityStore } from "@/stores/activityStore";
 
 const DEMO_SEED = 999;
 
@@ -19,8 +19,8 @@ export interface DemoStreams {
  */
 export function useDemoStreams(
   enabled: boolean,
-  symbol = 'XAUUSD',
-  intervalMs = 1_000,
+  symbol = "XAUUSD",
+  intervalMs = 1_000
 ): DemoStreams {
   const upsertTick = useMarketStore((state) => state.upsertTick);
   const lastTick = useMarketStore((state) => state.ticks[symbol] ?? null);
@@ -30,7 +30,7 @@ export function useDemoStreams(
   useEffect(() => {
     if (!enabled) return;
 
-    appendLog({ stream: 'market', message: `Demo stream started for ${symbol}`, level: 'info' });
+    appendLog({ stream: "market", message: `Demo stream started for ${symbol}`, level: "info" });
 
     const rand = mulberry32(DEMO_SEED);
     let price = 2_400;
@@ -54,9 +54,9 @@ export function useDemoStreams(
         tickCount += 1;
         if (tickCount % 5 === 0) {
           appendLog({
-            stream: 'market',
+            stream: "market",
             message: `${symbol} tick ${tick.last.toFixed(2)}`,
-            level: 'info',
+            level: "info",
           });
         }
         setPnlSeries((prev) => {
@@ -71,13 +71,13 @@ export function useDemoStreams(
     };
 
     const requestIdle =
-      typeof window.requestIdleCallback === 'function'
+      typeof window.requestIdleCallback === "function"
         ? window.requestIdleCallback(schedule, { timeout: 2_000 })
         : (setTimeout(schedule, 1_000) as unknown as number);
 
     return () => {
       if (timer) clearInterval(timer);
-      if (typeof window.cancelIdleCallback === 'function') {
+      if (typeof window.cancelIdleCallback === "function") {
         window.cancelIdleCallback(requestIdle);
       } else {
         clearTimeout(requestIdle);

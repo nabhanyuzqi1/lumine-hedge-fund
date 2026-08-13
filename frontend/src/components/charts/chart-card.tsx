@@ -1,15 +1,15 @@
-import * as React from 'react';
+import type * as React from "react";
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-export type ChartStatus = 'live' | 'stale' | 'offline';
+export type ChartStatus = "live" | "stale" | "offline";
 
-const STATUS_TO_BADGE: Record<ChartStatus, { tone: 'ok' | 'warn' | 'danger'; label: string }> = {
-  live: { tone: 'ok', label: 'LIVE' },
-  stale: { tone: 'warn', label: 'STALE' },
-  offline: { tone: 'danger', label: 'OFFLINE' },
+const STATUS_TO_BADGE: Record<ChartStatus, { tone: "ok" | "warn" | "danger"; label: string }> = {
+  live: { tone: "ok", label: "LIVE" },
+  stale: { tone: "warn", label: "STALE" },
+  offline: { tone: "danger", label: "OFFLINE" },
 };
 
 export interface ChartCardProps {
@@ -42,7 +42,7 @@ export function ChartCard({
   const badge = status ? STATUS_TO_BADGE[status] : null;
 
   return (
-    <Card className={cn('min-w-0', className)}>
+    <Card className={cn("min-w-0", className)}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="min-w-0">
           <CardTitle>{title}</CardTitle>

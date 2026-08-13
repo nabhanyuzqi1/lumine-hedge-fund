@@ -1,8 +1,8 @@
-import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
 
-import { resolveShortcut } from '@/lib/keyboard';
-import { useUiStore } from '@/stores/uiStore';
+import { resolveShortcut } from "@/lib/keyboard";
+import { useUiStore } from "@/stores/uiStore";
 
 export function KeyboardProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -17,34 +17,34 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
       event.preventDefault();
 
       switch (shortcut) {
-        case 'command-palette:toggle':
+        case "command-palette:toggle":
           setCommandPaletteOpen(true);
           break;
-        case 'workspace:trading':
-          setWorkspace('trading');
+        case "workspace:trading":
+          setWorkspace("trading");
           break;
-        case 'workspace:research':
-          setWorkspace('research');
+        case "workspace:research":
+          setWorkspace("research");
           break;
-        case 'workspace:risk':
-          setWorkspace('risk');
+        case "workspace:risk":
+          setWorkspace("risk");
           break;
-        case 'workspace:ops':
-          setWorkspace('ops');
+        case "workspace:ops":
+          setWorkspace("ops");
           break;
-        case 'nav:journal':
-          navigate('/journal');
+        case "nav:journal":
+          navigate("/journal");
           break;
-        case 'nav:admin-keys':
-          navigate('/admin/keys');
+        case "nav:admin-keys":
+          navigate("/admin/keys");
           break;
         default:
           break;
       }
     };
 
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [navigate, setCommandPaletteOpen, setWorkspace]);
 
   return <>{children}</>;

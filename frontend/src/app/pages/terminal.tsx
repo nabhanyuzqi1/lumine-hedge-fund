@@ -1,39 +1,38 @@
-import { Suspense, lazy, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Suspense, lazy, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { useMarketBars, useOrders, usePositions } from '@/api/hooks';
-import type { Timeframe } from '@/components/charts/candlestick-chart';
-import { ChartCard } from '@/components/charts/chart-card';
+import { useMarketBars, useOrders, usePositions } from "@/api/hooks";
+import type { Timeframe } from "@/components/charts/candlestick-chart";
+import { ChartCard } from "@/components/charts/chart-card";
 
 // lightweight-charts (~500 kB) stays out of the entry eval window: the chart
 // only mounts after market bars resolve, so its chunk loads during idle.
 const LazyCandlestickChart = lazy(() =>
-  import('@/components/charts/candlestick-chart').then((m) => ({
+  import("@/components/charts/candlestick-chart").then((m) => ({
     default: m.CandlestickChart,
-  })),
+  }))
 );
-import { ActivityLog } from '@/components/terminal/activity-log';
-import { CommitteeFeed } from '@/components/terminal/committee-feed';
-import { QuotePanel } from '@/components/terminal/quote-panel';
-import { RiskGauges } from '@/components/terminal/risk-gauges';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTable } from '@/components/ui/data-table';
-import { NumericText } from '@/components/ui/numeric-text';
-import { useDemoStreams } from '@/hooks/useDemoStreams';
-import { useUiStore } from '@/stores/uiStore';
-import type { OrderStatus, PositionFixture, OrderFixture } from '@/data/fixtures';
+import { ActivityLog } from "@/components/terminal/activity-log";
+import { CommitteeFeed } from "@/components/terminal/committee-feed";
+import { QuotePanel } from "@/components/terminal/quote-panel";
+import { RiskGauges } from "@/components/terminal/risk-gauges";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import { NumericText } from "@/components/ui/numeric-text";
+import type { OrderFixture, OrderStatus, PositionFixture } from "@/data/fixtures";
+import { useDemoStreams } from "@/hooks/useDemoStreams";
+import { useUiStore } from "@/stores/uiStore";
 
-const ORDER_STATUS_TONE: Record<OrderStatus, 'ok' | 'warn' | 'danger' | 'info'> = {
-  RECEIVED: 'info',
-  VALIDATED: 'info',
-  RISK_CHECK: 'warn',
-  ACTIVE: 'info',
-  FILLED: 'ok',
-  CANCELLED: 'warn',
-  REJECTED: 'danger',
+const ORDER_STATUS_TONE: Record<OrderStatus, "ok" | "warn" | "danger" | "info"> = {
+  RECEIVED: "info",
+  VALIDATED: "info",
+  RISK_CHECK: "warn",
+  ACTIVE: "info",
+  FILLED: "ok",
+  CANCELLED: "warn",
+  REJECTED: "danger",
 };
-
 
 function PositionsTable({ positions }: { positions: PositionFixture[] }) {
   return (
@@ -43,39 +42,39 @@ function PositionsTable({ positions }: { positions: PositionFixture[] }) {
       className="data-testid-positions-table"
       columns={[
         {
-          key: 'symbol',
-          header: 'Symbol',
+          key: "symbol",
+          header: "Symbol",
           cell: (row) => <span className="font-mono text-xs">{row.symbol}</span>,
         },
         {
-          key: 'side',
-          header: 'Side',
-          cell: (row) => <Badge tone={row.side === 'LONG' ? 'ok' : 'danger'} label={row.side} />,
+          key: "side",
+          header: "Side",
+          cell: (row) => <Badge tone={row.side === "LONG" ? "ok" : "danger"} label={row.side} />,
         },
         {
-          key: 'qty',
-          header: 'Qty',
+          key: "qty",
+          header: "Qty",
           cell: (row) => <span className="font-mono tabular-nums">{row.quantity.toFixed(2)}</span>,
         },
         {
-          key: 'avg',
-          header: 'Avg entry',
+          key: "avg",
+          header: "Avg entry",
           cell: (row) => <NumericText value={row.avg_entry_price} decimals={2} tone="neutral" />,
         },
         {
-          key: 'current',
-          header: 'Current',
+          key: "current",
+          header: "Current",
           cell: (row) => <NumericText value={row.current_price} decimals={2} tone="neutral" />,
         },
         {
-          key: 'pnl',
-          header: 'U/P&L',
+          key: "pnl",
+          header: "U/P&L",
           cell: (row) => (
             <NumericText
               value={row.unrealized_pnl}
               decimals={2}
               showSign
-              tone={row.unrealized_pnl >= 0 ? 'up' : 'down'}
+              tone={row.unrealized_pnl >= 0 ? "up" : "down"}
             />
           ),
         },
@@ -93,8 +92,8 @@ function OrdersTable({ orders }: { orders: OrderFixture[] }) {
       className="data-testid-orders-table"
       columns={[
         {
-          key: 'id',
-          header: 'Order',
+          key: "id",
+          header: "Order",
           cell: (row) => (
             <button
               type="button"
@@ -106,34 +105,34 @@ function OrdersTable({ orders }: { orders: OrderFixture[] }) {
           ),
         },
         {
-          key: 'symbol',
-          header: 'Symbol',
+          key: "symbol",
+          header: "Symbol",
           cell: (row) => <span className="font-mono text-xs">{row.symbol}</span>,
         },
         {
-          key: 'side',
-          header: 'Side',
-          cell: (row) => <Badge tone={row.side === 'BUY' ? 'ok' : 'danger'} label={row.side} />,
+          key: "side",
+          header: "Side",
+          cell: (row) => <Badge tone={row.side === "BUY" ? "ok" : "danger"} label={row.side} />,
         },
         {
-          key: 'qty',
-          header: 'Qty',
+          key: "qty",
+          header: "Qty",
           cell: (row) => <span className="font-mono tabular-nums">{row.quantity.toFixed(2)}</span>,
         },
         {
-          key: 'status',
-          header: 'Status',
+          key: "status",
+          header: "Status",
           cell: (row) => <Badge tone={ORDER_STATUS_TONE[row.status]} label={row.status} />,
         },
         {
-          key: 'pnl',
-          header: 'P&L',
+          key: "pnl",
+          header: "P&L",
           cell: (row) => (
             <NumericText
               value={row.pnl}
               decimals={2}
               showSign
-              tone={row.pnl >= 0 ? 'up' : 'down'}
+              tone={row.pnl >= 0 ? "up" : "down"}
             />
           ),
         },
@@ -144,7 +143,7 @@ function OrdersTable({ orders }: { orders: OrderFixture[] }) {
 
 function TradingWorkspace() {
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);
-  const [timeframe, setTimeframe] = useState<Timeframe>('5m');
+  const [timeframe, setTimeframe] = useState<Timeframe>("5m");
 
   const bars = useMarketBars(selectedSymbol, timeframe);
   const positions = usePositions();

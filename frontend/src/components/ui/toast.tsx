@@ -1,9 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import * as React from 'react';
+import * as React from "react";
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
-type ToastVariant = 'neutral' | 'success' | 'warn' | 'danger';
+type ToastVariant = "neutral" | "success" | "warn" | "danger";
 
 interface ToastItem {
   id: string;
@@ -15,7 +15,7 @@ interface ToastItem {
 
 interface ToastContextValue {
   toasts: ToastItem[];
-  toast: (item: Omit<ToastItem, 'id'>) => string;
+  toast: (item: Omit<ToastItem, "id">) => string;
   dismiss: (id: string) => void;
 }
 
@@ -24,7 +24,7 @@ const ToastContext = React.createContext<ToastContextValue | null>(null);
 function useToastContext() {
   const context = React.useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
+    throw new Error("useToast must be used within a ToastProvider");
   }
   return context;
 }
@@ -32,7 +32,7 @@ function useToastContext() {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([]);
 
-  const toast = React.useCallback((item: Omit<ToastItem, 'id'>) => {
+  const toast = React.useCallback((item: Omit<ToastItem, "id">) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     setToasts((prev) => [...prev, { ...item, id }]);
     return id;
@@ -52,10 +52,10 @@ export function useToast() {
 }
 
 const variantClasses: Record<ToastVariant, string> = {
-  neutral: 'border border-border-subtle bg-bg-raised text-text-primary',
-  success: 'border border-up/30 bg-up/10 text-up',
-  warn: 'border border-warn/30 bg-warn/10 text-warn',
-  danger: 'border border-danger/30 bg-danger/10 text-danger',
+  neutral: "border border-border-subtle bg-bg-raised text-text-primary",
+  success: "border border-up/30 bg-up/10 text-up",
+  warn: "border border-warn/30 bg-warn/10 text-warn",
+  danger: "border border-danger/30 bg-danger/10 text-danger",
 };
 
 export function ToastViewport() {
@@ -81,15 +81,15 @@ function Toast({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) 
     return () => clearTimeout(timer);
   }, [item.duration, onDismiss]);
 
-  const isDanger = item.variant === 'danger';
+  const isDanger = item.variant === "danger";
 
   return (
     <div
       role="status"
-      aria-live={isDanger ? 'assertive' : 'polite'}
+      aria-live={isDanger ? "assertive" : "polite"}
       className={cn(
-        'flex items-start justify-between gap-3 rounded-panel p-3 shadow-panel',
-        variantClasses[item.variant],
+        "flex items-start justify-between gap-3 rounded-panel p-3 shadow-panel",
+        variantClasses[item.variant]
       )}
     >
       <div className="min-w-0">

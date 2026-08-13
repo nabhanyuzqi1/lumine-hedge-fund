@@ -1,8 +1,6 @@
-import * as React from 'react';
-
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { ApiKeyFixture } from '@/data/fixtures';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { ApiKeyFixture } from "@/data/fixtures";
 
 interface ApiKeyTableProps {
   keys: ApiKeyFixture[];
@@ -49,7 +47,7 @@ export function ApiKeyTable({ keys, onRevoke, disabled }: ApiKeyTableProps) {
                 {new Date(key.created_at).toISOString()}
               </td>
               <td className="px-3 py-2 font-mono text-text-secondary">
-                {key.last_used_at ? new Date(key.last_used_at).toISOString() : 'Never'}
+                {key.last_used_at ? new Date(key.last_used_at).toISOString() : "Never"}
               </td>
               <td className="px-3 py-2">
                 {key.revoked ? (
