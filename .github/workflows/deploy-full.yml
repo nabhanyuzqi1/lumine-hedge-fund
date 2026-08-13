@@ -205,10 +205,25 @@ jobs:
 
       - name: Deploy docker-compose.prod.yml
         run: |
+          ssh -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            "mkdir -p /opt/lumine/backend/scripts/deploy/mt5"
+
           scp -o StrictHostKeyChecking=no \
             -i ~/.ssh/deploy_key \
             ./backend/docker-compose.prod.yml \
             root@${{ secrets.DEPLOY_HOST }}:/opt/lumine/backend/docker-compose.prod.yml
+
+          scp -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            ./backend/Dockerfile \
+            root@${{ secrets.DEPLOY_HOST }}:/opt/lumine/backend/Dockerfile
+
+          scp -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            ./scripts/deploy/mt5/Dockerfile \
+            ./scripts/deploy/mt5/entrypoint.sh \
+            root@${{ secrets.DEPLOY_HOST }}:/opt/lumine/backend/scripts/deploy/mt5/
 
       - name: Copy .env template
         run: |
