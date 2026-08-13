@@ -85,8 +85,9 @@ async def _read_state(session: AsyncSession, table_name: str) -> AnchorState | N
 
 
 async def _write_state(session: AsyncSession, state: AnchorState) -> None:
-    session.add(state)
-    # UPSERT semantics: the state row exists after the first anchor.
+    # UPSERT semantics: the state row exists after the first anchor, so a
+    # plain session.add() would violate the table_name PK on the second
+    # write. The explicit ON CONFLICT upsert below is the only write path.
     stmt = text(
         "INSERT INTO anchor_state (table_name, last_anchor_seq, last_row_count, last_anchor_ts) "
         "VALUES (:t, :seq, :count, :ts) "

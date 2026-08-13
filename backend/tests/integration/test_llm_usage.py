@@ -98,6 +98,11 @@ async def _seed_registry(db_session: AsyncSession) -> dict[str, uuid.UUID]:
         trigger={"type": "test"},
         proposal={"version": "v1", "action": "HOLD"},
         risk_context={"violations": []},
+        # ADR-0017 hash-chain columns are NOT NULL; this fixture is not
+        # exercising chain verification, so dummy hashes satisfy the schema.
+        prev_hash="0" * 64,
+        self_hash="1" * 64,
+        canonicalization_version=1,
     )
     # Flush the FK parents first: without relationship() edges the unit
     # of work does not reorder plain-FK inserts, so lineage must come

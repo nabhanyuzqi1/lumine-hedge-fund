@@ -27,7 +27,7 @@ class TestCalculateTca:
         )
         
         assert result.slippage == Decimal("0.10")
-        assert result.slippage_bps == Decimal("3.6364")
+        assert result.slippage_bps == Decimal("0.3636")
         assert result.slippage_cost_ccy == Decimal("1.0000")
         assert result.benchmark_source == "arrival_mid"
 
@@ -42,7 +42,7 @@ class TestCalculateTca:
         )
         
         assert result.slippage == Decimal("0.10")
-        assert result.slippage_bps == Decimal("3.6364")
+        assert result.slippage_bps == Decimal("0.3636")
         assert result.slippage_cost_ccy == Decimal("1.0000")
 
     def test_buy_no_slippage(self):

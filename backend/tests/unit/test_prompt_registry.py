@@ -66,8 +66,11 @@ def _sha256(content: str) -> str:
 
 
 def _write(path: Path, content: str) -> None:
+    """Write text file with Unix LF line endings for cross-platform hash consistency."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    # Normalize line endings to LF before writing (hashes are LF-only)
+    normalized = content.replace("\r\n", "\n").replace("\r", "\n")
+    path.write_text(normalized, encoding="utf-8", newline="\n")
 
 
 def _build_registry(tmp_path: Path, entries: Sequence[_PromptEntry]) -> Path:
@@ -160,7 +163,9 @@ class TestHashVerification:
         reg_path = prompt_dir / "registry.yaml"
         data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
         data["prompts"][0]["expected_hash"] = "0" * 64
-        reg_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+        # Normalize line endings to match what registry reader expects
+        normalized = yaml.safe_dump(data).replace("\r\n", "\n").replace("\r", "\n")
+        reg_path.write_text(normalized, encoding="utf-8", newline="\n")
 
         with pytest.raises(HashMismatchError):
             load_registry(prompt_dir)
@@ -184,7 +189,9 @@ class TestHashVerification:
         reg_path = prompt_dir / "registry.yaml"
         data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
         data["prompts"][0]["expected_hash"] = "1" * 64
-        reg_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+        # Normalize line endings to match what registry reader expects
+        normalized = yaml.safe_dump(data).replace("\r\n", "\n").replace("\r", "\n")
+        reg_path.write_text(normalized, encoding="utf-8", newline="\n")
 
         with pytest.raises(HashMismatchError, match="technical_analyst"):
             load_registry(prompt_dir)

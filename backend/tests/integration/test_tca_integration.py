@@ -133,12 +133,23 @@ class TestExecutionRouterWithTca:
         session.get = AsyncMock(return_value=None)
         session.add = MagicMock()
         session.commit = AsyncMock()
+
+        # persist_tca resolves the arrival-mid benchmark from the DB
+        # (ADR-0040: DB-authoritative benchmark), so session.execute must
+        # yield a tick row for the symbol/decision_ts lookup.
+        mock_tick = MagicMock()
+        mock_tick.bid = Decimal("2750.00")
+        mock_tick.ask = Decimal("2750.10")
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none = MagicMock(return_value=mock_tick)
+        session.execute = AsyncMock(return_value=mock_result)
         
         from lumine.bridge.types import BridgeCommand
         
         command = BridgeCommand(
+            command_id=str(uuid4()),
             symbol="XAUUSD",
-            action="buy",
+            action="BUY",
             volume=Decimal("1.0"),
             order_type="market",
         )

@@ -56,32 +56,12 @@ def upgrade() -> None:
         ondelete="CASCADE",
     )
 
-    # Add TCA records table (ADR-0040)
-    op.create_table(
-        "tca_records",
-        sa.Column("tca_record_id", sa.Text(), nullable=False, primary_key=True),
-        sa.Column("fill_id", sa.Text(), nullable=False, unique=True),
-        sa.Column("benchmark_price", sa.Numeric(38, 18), nullable=False),
-        sa.Column("slippage_bps", sa.Numeric(18, 4), nullable=False),
-        sa.Column("slippage_cost_ccy", sa.Numeric(22, 6), nullable=False),
-        sa.Column("decision_ts", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("regime_id", sa.Text(), nullable=False),
-        sa.Column("broker_id", sa.Text(), nullable=False),
-        sa.Column("account_id", sa.Text(), nullable=False),
-        sa.Column("benchmark_source", sa.Text(), nullable=False, server_default="arrival_mid"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-    )
+    # NOTE: tca_records is created by 0007_add_audit_hardening (ADR-0040,
+    # schema matches data/models.py: tca_id UUID PK, fill_id UUID FK).
+    # This migration only adds brokers/accounts FKs + query indexes to it.
 
-    # Add foreign keys for TCA
-    op.create_foreign_key(
-        "tca_records_fill_id_fkey",
-        "tca_records",
-        "fills",
-        ["fill_id"],
-        ["fill_id"],
-        ondelete="CASCADE",
-    )
-    
+    # Add foreign keys for TCA (broker/account slices; fill_id FK already
+    # exists from 0007's inline ForeignKey)
     op.create_foreign_key(
         "tca_records_broker_id_fkey",
         "tca_records",
@@ -136,8 +116,6 @@ def downgrade() -> None:
 
     op.drop_constraint("tca_records_account_id_fkey", "tca_records", type_="foreignkey")
     op.drop_constraint("tca_records_broker_id_fkey", "tca_records", type_="foreignkey")
-    op.drop_constraint("tca_records_fill_id_fkey", "tca_records", type_="foreignkey")
 
-    op.drop_table("tca_records")
     op.drop_table("accounts")
     op.drop_table("brokers")

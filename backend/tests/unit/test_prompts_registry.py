@@ -10,12 +10,21 @@ from lumine.prompts.registry import Registry, PromptRef
 @pytest.fixture
 def sample_registry_path(tmp_path: Path):
     """Create a temporary registry.yaml for testing."""
-    registry_content = """
+    # Hashes are computed from the exact bytes written below so the fixture
+    # stays correct across platforms (no hardcoded/line-ending drift).
+    import hashlib
+
+    tech_prompt = "# Technical Analyst Prompt"
+    macro_prompt = "# Macro Analyst Prompt"
+    tech_hash = hashlib.sha256(tech_prompt.encode()).hexdigest()
+    macro_hash = hashlib.sha256(macro_prompt.encode()).hexdigest()
+
+    registry_content = f"""
 prompts:
 - sub_role: technical_analyst
   version: v1
   prompt_ref: prompts/technical_analyst@v1.prompt
-  expected_hash: 64a61c6bdf4f19a51d2aa125be5f2d45947c97642ac257ab7a10b21aa63852fa
+  expected_hash: {tech_hash}
   model_tier_hint: cost-efficient
   variables:
   - symbol
@@ -24,7 +33,7 @@ prompts:
 - sub_role: macro_analyst
   version: v1
   prompt_ref: prompts/macro_analyst@v1.prompt
-  expected_hash: c5395c0b0fb9623fdf03270305d7fa9e36ced7e55cc3f842c53c3bbbd9c1f01e
+  expected_hash: {macro_hash}
   model_tier_hint: context-rich
   variables:
   - symbol
@@ -40,12 +49,21 @@ prompts:
     prompts_dir.mkdir()
     
     (prompts_dir / "technical_analyst@v1.prompt").write_text(
-        "# Technical Analyst Prompt", encoding="utf-8"
+        tech_prompt, encoding="utf-8"
     )
     (prompts_dir / "macro_analyst@v1.prompt").write_text(
-        "# Macro Analyst Prompt", encoding="utf-8"
+        macro_prompt, encoding="utf-8"
     )
-    
+
+    # Output schema referenced by output_schema_ref entries
+    schemas_dir = tmp_path / "schemas"
+    schemas_dir.mkdir()
+    (schemas_dir / "analyst_output.json").write_text(
+        '{"type": "object", "required": ["symbol", "bias"], '
+        '"properties": {"symbol": {"type": "string"}, "bias": {"type": "string"}}}',
+        encoding="utf-8",
+    )
+
     return tmp_path
 
 
@@ -126,15 +144,14 @@ class TestLoadedPrompt:
     """Test LoadedPrompt class."""
 
     def test_prompt_hash_validation(self, sample_registry_path: Path):
-        """LoadedPrompt computes and validates hash."""
+        """get_prompt computes and validates the prompt hash at load."""
         registry = Registry(base_path=sample_registry_path)
-        
-        # Note: This will fail because the hash doesn't match actual file content
-        # but we're testing that validation mechanism exists
-        loaded = registry.load("technical_analyst", "v1")
-        
+
+        loaded = registry.get_prompt("technical_analyst", "v1")
+
         assert loaded is not None
-        assert loaded.ref.sub_role == "technical_analyst"
+        assert loaded.pins.sub_role == "technical_analyst"
+        assert loaded.pins.prompt_hash == registry.get("technical_analyst", "v1").expected_hash
 
 
 if __name__ == "__main__":
