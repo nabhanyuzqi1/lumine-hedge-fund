@@ -103,7 +103,7 @@ echo "[4/6] ✅ Directories created!"
 # STEP 5: Clone Repository & Setup Backend Services
 # ──────────────────────────────────────────────────────────
 
-echo "[5/6] Cloning Lumine repository..."
+echo "[5/6] Cloning/updating Lumine repository..."
 
 # Check if Git clone token needed (for private repos)
 if [ -n "$GITHUB_TOKEN" ]; then
@@ -113,7 +113,14 @@ else
 fi
 
 cd /opt/lumine
-git clone $REPO_URL . || echo "Note: Git clone may need authentication token"
+
+# Clone if not exists, otherwise pull latest
+if [ ! -d ".git" ]; then
+    git clone $REPO_URL . || echo "Note: Git clone may need authentication token"
+else
+    git checkout main || true
+    git pull origin main --force
+fi
 
 echo "[5/6] Repository cloned!"
 
