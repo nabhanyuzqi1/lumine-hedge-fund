@@ -75,11 +75,11 @@ jobs:
       - name: Verify Setup
         id: check
         run: |
-          RESULT=$(ssh -o StrictHostKeyChecking=no \
+          ssh -o StrictHostKeyChecking=no \
             -i ~/.ssh/deploy_key \
-            root@${{ secrets.DEPLOY_HOST }} << 'ENDSSH'
-          docker --version >/dev/null 2>&1 && echo "Docker OK" || echo "FAIL"
-          ENDSSH
+            root@${{ secrets.DEPLOY_HOST }} docker --version >/dev/null 2>&1 && echo "Docker OK" || echo "FAIL" > /tmp/docker_check.txt
+          
+          RESULT=$(cat /tmp/docker_check.txt)
           
           if [ "$RESULT" == "Docker OK" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
