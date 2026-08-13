@@ -1,12 +1,18 @@
-name: Supply Chain Audit
+name: Supply Chain Audit - SECURE & RELIABLE v2.0
 
 on:
   schedule:
     - cron: '0 0 * * 6'  # Weekly on Saturday at midnight WIB
   workflow_dispatch:     # Manual trigger available
 
+# Explicit permissions for workflow security
 permissions:
   contents: read
+
+# Cache settings to prevent stale runs
+concurrency:
+  group: supply-chain-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   audit-dependencies:
