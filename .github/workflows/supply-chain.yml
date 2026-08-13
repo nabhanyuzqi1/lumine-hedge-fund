@@ -22,16 +22,16 @@ jobs:
       - name: Simple Secret Detection
         run: |
           echo "🔍 Scanning for secrets..."
-          
-          # Just check common patterns in backend
-          RESULT=$(grep -rn "password\|secret\|api_key" backend/src --include="*.py" 2>/dev/null | grep -v "#" | head -5 || true)
-          
+
+          # Check common patterns in backend source files
+          RESULT=$(grep -rn -E "(password|secret|api_key|token)" backend/src --include="*.py" 2>/dev/null | grep -v "^#" | grep -v "\.pyc" | grep -v "__pycache__" | head -5 || true)
+
           if [ -n "$RESULT" ]; then
-            echo "⚠️ Potential issues found"
+            echo "⚠️ Potential hardcoded credentials found:"
             echo "$RESULT"
             exit 1
           fi
-          
+
           echo "✅ No obvious secrets detected"
       
       - name: Verify .gitignore

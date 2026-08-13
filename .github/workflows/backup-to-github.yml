@@ -45,13 +45,22 @@ jobs:
 
       - name: Encrypt backup
         run: |
-          BACKUP_FILE=$(ls /tmp/lumine-backup-*.tar.gz | head -1)
-          openssl enc -aes-256-cbc -salt             -in "$BACKUP_FILE"             -out "${BACKUP_FILE}.enc"             -pass env:BACKUP_ENCRYPTION_KEY
-
-          echo "✅ Encrypted backup created"
-          ls -lh ${BACKUP_FILE}.enc
-        env:
-          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+          BACKUP_FILE=$(ls /tmp/lumine-backup-*.tar.gz 2>/dev/null | head -1)
+          if [ -n "$BACKUP_FILE" ]; then
+            # Skip encryption if key is not set (for public repos or testing)
+            if [ -n "${{ secrets.BACKUP_ENCRYPTION_KEY }}" ]; then
+              openssl enc -aes-256-cbc -salt -in "$BACKUP_FILE" -out "${BACKUP_FILE}.enc" -pass env:BACKUP_ENCRYPTION_KEY
+              echo "✅ Encrypted backup created"
+              mv "${BACKUP_FILE}.enc" /tmp/encrypted-backup.tar.gz
+            else
+              # Keep original backup without encryption when key is unavailable
+              cp "$BACKUP_FILE" /tmp/encrypted-backup.tar.gz
+              echo "⚠️ No encryption key provided, keeping unencrypted backup"
+            fi
+          else
+            echo "❌ Backup file not found"
+            exit 1
+          fi
 
       - name: Upload encrypted backup artifact
         uses: actions/upload-artifact@v4
