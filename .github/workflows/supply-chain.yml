@@ -19,22 +19,22 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Run dependency scan
         uses: snyk/actions/python@master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        
+
       - name: Check for secrets
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Scan container images
         uses: aquasecurity/trivy-action@master
         with:
@@ -42,22 +42,23 @@ jobs:
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
-      
+
       - name: Generate SBOM
         uses: anchore/sbom-action@main
         with:
           output-file: sbom.spdx.json
           format: spdx
-      
+
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
           name: sbom-${{ github.sha }}
           path: sbom.spdx.json
           retention-days: 90
-      
+
       - name: Notify failure
         if: failure()
         run: |
           echo "⚠️ Security audit detected vulnerabilities"
           echo "Review results in GitHub Actions tab"
+

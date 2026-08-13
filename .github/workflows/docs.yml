@@ -10,27 +10,28 @@ jobs:
   validate-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Validate Markdown syntax
         run: |
           echo "Checking Markdown syntax..."
           find . -name "*.md" -type f | xargs -I {} sh -c 'echo "Validating: {}"' 2>&1 || true
-      
+
       - name: Check YAML frontmatter
         run: |
           echo "Checking YAML frontmatter..."
           grep -r "^---$" . --include="*.md" | wc -l | xargs -I {} echo "Found {} frontmatter markers"
-      
+
       - name: Detect orphaned files
         run: |
           echo "Scanning for potential orphaned markdown files..."
           find . -name "*.md" -type f -size +100c ! -path "./.github/*" | wc -l | xargs -I {} echo "{} documentation files found"
-      
+
       - name: Report results
         run: |
           echo "✅ Documentation validation complete!"
           echo "All markdown files are syntactically valid"
+
