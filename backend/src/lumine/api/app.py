@@ -89,6 +89,13 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         _app_state["position_sync_worker"] = worker
         await worker.start()
 
+    # RPC worker (B-04): consume the rpc:commands stream.
+    if settings.redis_url:
+        from lumine.rpc.worker import run_worker
+
+        rpc_task = asyncio.create_task(run_worker(sse_publisher, settings))
+        _app_state["rpc_worker_task"] = rpc_task
+
     yield
 
     # Cleanup on shutdown
@@ -99,6 +106,13 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     worker = _app_state.get("position_sync_worker")
     if worker:
         await worker.stop()
+    rpc_task = _app_state.get("rpc_worker_task")
+    if rpc_task:
+        rpc_task.cancel()  # type: ignore[union-attr]
+        try:
+            await rpc_task  # type: ignore[union-attr]
+        except asyncio.CancelledError:
+            pass
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

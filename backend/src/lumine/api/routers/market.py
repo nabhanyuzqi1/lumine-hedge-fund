@@ -64,6 +64,33 @@ async def list_bars(
     )
 
 
+@router.get("/signals/{symbol}", response_model=PaginatedList[Signal])
+async def list_symbol_signals(
+    symbol: str,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
+    pagination: Annotated[Pagination, Depends()],
+) -> PaginatedList[Signal]:
+    """Return recent analyst signals for one symbol (B-06)."""
+    now = datetime.now(UTC)
+    analysts = ["technical_analyst", "news_analyst", "smc_analyst"]
+    directions = ["bullish", "bearish", "neutral"]
+    seed = sum(ord(c) for c in symbol)
+    items = [
+        Signal(
+            signal_id=uuid4(),
+            symbol=symbol,
+            analyst=analysts[(seed + i) % len(analysts)],
+            direction=directions[(seed + i) % len(directions)],
+            confidence=round(0.5 + ((seed + i) % 40) / 100, 2),
+            rationale=f"deterministic demo signal {i + 1} for {symbol}",
+            generated_at=now - timedelta(seconds=i * 300),
+        )
+        for i in range(3)
+    ]
+    visible = items[pagination.offset : pagination.offset + pagination.limit]
+    return PaginatedList(items=visible, total=len(items), limit=pagination.limit, offset=pagination.offset)
+
+
 @router.get("/signals", response_model=PaginatedList[Signal])
 async def list_signals(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],

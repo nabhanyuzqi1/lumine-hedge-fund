@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     # Redis key under which a reconciliation/risk mismatch arms the kill switch.
     kill_switch_key: str = "kill:switch"
 
+    # ── Data mode (B-05) ──────────────────────────────────────────────────
+    # True = routers serve deterministic demo_data (no storage wiring);
+    # False = repositories read/write PostgreSQL (orders/positions).
+    demo_data: bool = True
+
     # ── Decision cycle (D3-12) ────────────────────────────────────────────
     decision_cycle_timeout_s: int = 60  # total soft deadline for one cycle
 

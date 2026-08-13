@@ -400,6 +400,30 @@ class Fill(Base):
     )
 
 
+class Order(Base):
+    """Order lifecycle record (B-05: physical table, previously demo-only)."""
+
+    __tablename__ = "orders"
+
+    order_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(Text, nullable=False)
+    symbol: Mapped[str] = mapped_column(Text, nullable=False)
+    side: Mapped[str] = mapped_column(Text, nullable=False)
+    order_type: Mapped[str] = mapped_column(Text, nullable=False)
+    volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False)
+    price: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    filled_volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False, default=Decimal("0"))
+    rejected_reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+    __table_args__ = (
+        Index("ix_orders_portfolio_status", "portfolio_id", "status"),
+        Index("ix_orders_symbol_created", "symbol", "created_at"),
+    )
+
+
 class Position(Base):
     """Derived current state. Mutated on each fill. Rebuildable from fills."""
 

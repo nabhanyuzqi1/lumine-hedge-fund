@@ -298,3 +298,65 @@ class RpcCommandResponse(BaseModel):
     status: Literal["accepted", "rejected"]
     reason: str | None = None
     enqueued_at: datetime
+
+
+class RpcCommandResult(BaseModel):
+    """RPC command execution status/result (polled by command_id)."""
+
+    command_id: UUID
+    command: str
+    status: Literal["queued", "processing", "completed", "failed"]
+    result: dict[str, Any] | None = None
+    error: str | None = None
+    enqueued_at: str | None = None
+    processed_at: str | None = None
+
+
+# ── B-06 additions ─────────────────────────────────────────────────────────
+
+class EquityPoint(BaseModel):
+    """One point on the portfolio equity curve."""
+
+    ts: datetime
+    nav: Decimal
+    equity: Decimal
+    drawdown: Decimal
+
+
+class OrderHistoryEntry(BaseModel):
+    """One order state transition (append-only audit)."""
+
+    order_id: UUID
+    previous_state: str
+    new_state: str
+    actor_role: str
+    actor_id: str | None = None
+    reason: str | None = None
+    decision_ts: datetime
+
+
+class BulkStatusRequest(BaseModel):
+    """Batch order status check payload."""
+
+    order_ids: list[UUID] = Field(min_length=1, max_length=100)
+
+
+class BulkStatusResult(BaseModel):
+    """Batch order status check result."""
+
+    statuses: dict[str, str]
+    total: int
+
+
+class CreatePortfolioRequest(BaseModel):
+    """Create a portfolio (single-portfolio v1: returns the default)."""
+
+    name: str = "default"
+    currency: str = "USD"
+
+
+class CancelAllResult(BaseModel):
+    """Cancel-all outcome."""
+
+    cancelled: int
+    portfolio_id: str

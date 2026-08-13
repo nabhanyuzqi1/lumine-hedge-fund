@@ -49,6 +49,333 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio:
+    get:
+      tags:
+      - portfolio
+      summary: Get Portfolio
+      description: Return the single (default) portfolio (B-06 portfolio CRUD).
+      operationId: get_portfolio_api_v1_portfolio_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - portfolio
+      summary: Create Portfolio
+      description: Create a portfolio — single-portfolio v1 returns the default book.
+      operationId: create_portfolio_api_v1_portfolio_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePortfolioRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}:
+    put:
+      tags:
+      - portfolio
+      summary: Update Portfolio
+      description: Rename/update the portfolio (demo echo; single-portfolio v1).
+      operationId: update_portfolio_api_v1_portfolio__portfolio_id__put
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePortfolioRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - portfolio
+      summary: Delete Portfolio
+      description: Delete a portfolio — v1 refuses the only book (safe default).
+      operationId: delete_portfolio_api_v1_portfolio__portfolio_id__delete
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}/equity:
+    get:
+      tags:
+      - portfolio
+      summary: Get Equity Curve
+      description: 'Equity curve (B-06) — deterministic demo series until storage
+        wiring.
+
+
+        Points: nav/equity with a mild upward drift and a drawdown dip at the
+
+        2/3 mark, 1h spacing, newest first.'
+      operationId: get_equity_curve_api_v1_portfolio__portfolio_id__equity_get
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_EquityPoint_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}/orders:
+    delete:
+      tags:
+      - portfolio
+      summary: Cancel All Orders
+      description: Cancel every open order in the portfolio (B-06 cancel-all).
+      operationId: cancel_all_orders_api_v1_portfolio__portfolio_id__orders_delete
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelAllResult'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/portfolio/{portfolio_id}/simulate:
     post:
       tags:
@@ -287,7 +614,7 @@ paths:
       tags:
       - orders
       summary: List Orders
-      description: List orders.
+      description: List orders (DB-backed when DEMO_DATA=0).
       operationId: list_orders_api_v1_orders_get
       parameters:
       - name: limit
@@ -348,7 +675,7 @@ paths:
       tags:
       - orders
       summary: Create Order
-      description: Submit a new order.
+      description: Submit a new order (persisted when DEMO_DATA=0).
       operationId: create_order_api_v1_orders_post
       parameters:
       - name: X-Lumine-API-Key
@@ -399,7 +726,7 @@ paths:
       tags:
       - orders
       summary: Get Order
-      description: Return a single order.
+      description: Return a single order (DB-backed when DEMO_DATA=0).
       operationId: get_order_api_v1_orders__order_id__get
       parameters:
       - name: order_id
@@ -507,7 +834,7 @@ paths:
       tags:
       - orders
       summary: Cancel Order
-      description: Cancel an open order.
+      description: Cancel an open order (persisted when DEMO_DATA=0).
       operationId: cancel_order_api_v1_orders__order_id__delete
       parameters:
       - name: order_id
@@ -548,6 +875,133 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orders/{order_id}/history:
+    get:
+      tags:
+      - orders
+      summary: Order History
+      description: 'Append-only state transitions for one order (B-06 order history).
+
+
+        Demo path yields a deterministic lifecycle (submitted → pending →
+
+        filled); the DB path reads ``order_state_transitions`` when storage
+
+        wiring lands.'
+      operationId: order_history_api_v1_orders__order_id__history_get
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_OrderHistoryEntry_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orders/bulk-status:
+    post:
+      tags:
+      - orders
+      summary: Bulk Order Status
+      description: Batch order status check (B-06).
+      operationId: bulk_order_status_api_v1_orders_bulk_status_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkStatusRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkStatusResult'
         '422':
           description: Validation Error
           content:
@@ -888,6 +1342,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedList_MarketBar_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/signals/{symbol}:
+    get:
+      tags:
+      - market
+      summary: List Symbol Signals
+      description: Return recent analyst signals for one symbol (B-06).
+      operationId: list_symbol_signals_api_v1_market_signals__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_Signal_'
         '422':
           description: Validation Error
           content:
@@ -2297,6 +2819,14 @@ paths:
           - type: string
           - type: 'null'
           title: X-Lumine-Signature
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/RpcCommandRequest'
+              - type: 'null'
+              title: Request
       responses:
         '200':
           description: Successful Response
@@ -2451,6 +2981,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/rpc/commands/{command_id}:
+    get:
+      tags:
+      - rpc
+      summary: Get Command Status
+      description: Return the execution status/result of a previously enqueued command.
+      operationId: get_command_status_api_v1_rpc_commands__command_id__get
+      parameters:
+      - name: command_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Command Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RpcCommandResult'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AdminKey:
@@ -2482,6 +3064,51 @@ components:
       - created_at
       title: AdminKey
       description: API key management view.
+    BulkStatusRequest:
+      properties:
+        order_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 100
+          minItems: 1
+          title: Order Ids
+      type: object
+      required:
+      - order_ids
+      title: BulkStatusRequest
+      description: Batch order status check payload.
+    BulkStatusResult:
+      properties:
+        statuses:
+          additionalProperties:
+            type: string
+          type: object
+          title: Statuses
+        total:
+          type: integer
+          title: Total
+      type: object
+      required:
+      - statuses
+      - total
+      title: BulkStatusResult
+      description: Batch order status check result.
+    CancelAllResult:
+      properties:
+        cancelled:
+          type: integer
+          title: Cancelled
+        portfolio_id:
+          type: string
+          title: Portfolio Id
+      type: object
+      required:
+      - cancelled
+      - portfolio_id
+      title: CancelAllResult
+      description: Cancel-all outcome.
     CreateKeyRequest:
       properties:
         key_id:
@@ -2570,6 +3197,19 @@ components:
       - volume
       title: CreateOrderRequest
       description: Payload to submit a new order.
+    CreatePortfolioRequest:
+      properties:
+        name:
+          type: string
+          title: Name
+          default: default
+        currency:
+          type: string
+          title: Currency
+          default: USD
+      type: object
+      title: CreatePortfolioRequest
+      description: 'Create a portfolio (single-portfolio v1: returns the default).'
     CreatedAdminKey:
       properties:
         key_id:
@@ -2595,6 +3235,32 @@ components:
       - created_at
       title: CreatedAdminKey
       description: API key creation response containing the secret exactly once.
+    EquityPoint:
+      properties:
+        ts:
+          type: string
+          format: date-time
+          title: Ts
+        nav:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Nav
+        equity:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Equity
+        drawdown:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Drawdown
+      type: object
+      required:
+      - ts
+      - nav
+      - equity
+      - drawdown
+      title: EquityPoint
+      description: One point on the portfolio equity curve.
     ExposureSummary:
       properties:
         symbol:
@@ -2965,6 +3631,67 @@ components:
       - updated_at
       title: Order
       description: Order lifecycle record.
+    OrderHistoryEntry:
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          title: Order Id
+        previous_state:
+          type: string
+          title: Previous State
+        new_state:
+          type: string
+          title: New State
+        actor_role:
+          type: string
+          title: Actor Role
+        actor_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Id
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        decision_ts:
+          type: string
+          format: date-time
+          title: Decision Ts
+      type: object
+      required:
+      - order_id
+      - previous_state
+      - new_state
+      - actor_role
+      - decision_ts
+      title: OrderHistoryEntry
+      description: One order state transition (append-only audit).
+    PaginatedList_EquityPoint_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/EquityPoint'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[EquityPoint]
     PaginatedList_ExposureSummary_:
       properties:
         items:
@@ -3057,6 +3784,29 @@ components:
       - limit
       - offset
       title: PaginatedList[MarketBar]
+    PaginatedList_OrderHistoryEntry_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/OrderHistoryEntry'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[OrderHistoryEntry]
     PaginatedList_Order_:
       properties:
         items:
@@ -3299,6 +4049,51 @@ components:
       - enqueued_at
       title: RpcCommandResponse
       description: RPC command acceptance receipt.
+    RpcCommandResult:
+      properties:
+        command_id:
+          type: string
+          format: uuid
+          title: Command Id
+        command:
+          type: string
+          title: Command
+        status:
+          type: string
+          enum:
+          - queued
+          - processing
+          - completed
+          - failed
+          title: Status
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        enqueued_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Enqueued At
+        processed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Processed At
+      type: object
+      required:
+      - command_id
+      - command
+      - status
+      title: RpcCommandResult
+      description: RPC command execution status/result (polled by command_id).
     SessionInfo:
       properties:
         current_session:

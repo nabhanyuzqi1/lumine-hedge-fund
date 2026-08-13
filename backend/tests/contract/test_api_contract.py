@@ -23,6 +23,7 @@ from lumine.api.middleware.auth import AuthenticatedPrincipal, authenticate_requ
 from lumine.api.routers import admin as admin_router
 from lumine.api.routers import rpc as rpc_router
 from lumine.api.routers import streams
+from lumine.rpc import queue as rpc_queue
 from lumine.shared.config import Settings
 
 if TYPE_CHECKING:
@@ -39,6 +40,8 @@ class FakeRedis:
         self.data: dict[str, dict[str, str]] = {}
         self.strings: dict[str, str] = {}
         self.zsets: dict[str, dict[str, float]] = {}
+        self.streams: dict[str, list[tuple[str, dict[str, str]]]] = {}
+        self._seq = 0
 
     async def hgetall(self, key: str) -> dict[str, str]:
         return self.data.get(key, {})
@@ -61,6 +64,20 @@ class FakeRedis:
 
     async def exists(self, key: str) -> int:
         return 1 if key in self.data else 0
+
+    # ── stream + string ops (RPC queue B-04) ──────────────────────────────
+    async def xadd(self, name: str, fields: dict[str, str]) -> str:
+        self._seq += 1
+        message_id = f"0-{self._seq}"
+        self.streams.setdefault(name, []).append((message_id, fields))
+        return message_id
+
+    async def expire(self, name: str, seconds: int) -> int:
+        return 1
+
+    async def set(self, name: str, value: str, ex: int | None = None) -> str:
+        self.strings[name] = value
+        return "OK"
 
     async def get(self, key: str) -> str | None:
         return self.strings.get(key)
@@ -101,6 +118,11 @@ def _async_redis(fake: FakeRedis) -> Callable[[], Awaitable[FakeRedis]]:
         return fake
 
     return _get_redis
+
+
+async def _async_false(*_args: object, **_kwargs: object) -> bool:
+    """Async stand-in returning False (kill switch not armed)."""
+    return False
 
 
 class _FakeStreamRequest:
@@ -329,13 +351,111 @@ def test_journal_endpoint_envelope(client: TestClient) -> None:
 
 def test_rpc_endpoint_envelope(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeRedis()
-    monkeypatch.setattr(rpc_router, "get_redis", _async_redis(fake), raising=False)
+    monkeypatch.setattr(rpc_router, "_kill_switch_armed", _async_false, raising=False)
+    from lumine.rpc import queue as rpc_queue
+
+    monkeypatch.setattr(rpc_queue, "get_redis", _async_redis(fake), raising=False)
 
     response = client.post("/api/v1/rpc/run-decision-cycle")
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["command"] == "run_decision_cycle"
     assert data["status"] == "accepted"
+    assert data["command_id"] != "00000000-0000-0000-0000-000000000000"
+    # The command was actually enqueued to the stream (B-04 dispatch).
+    assert len(fake.streams["rpc:commands"]) == 1
+    assert fake.streams["rpc:commands"][0][1]["command"] == "run_decision_cycle"
+
+
+def test_rpc_halt_trading_enqueues(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeRedis()
+    from lumine.rpc import queue as rpc_queue
+
+    monkeypatch.setattr(rpc_queue, "get_redis", _async_redis(fake), raising=False)
+
+    response = client.post("/api/v1/rpc/halt-trading")
+    assert response.status_code == 200
+    assert response.json()["data"]["command"] == "halt_trading"
+    assert fake.streams["rpc:commands"][0][1]["command"] == "halt_trading"
+
+
+def test_rpc_command_status_endpoint(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    command_id = "11111111-2222-3333-4444-555555555555"
+    from lumine.rpc import queue as rpc_queue
+
+    async def _fake_result(cid: str) -> dict | None:
+        if cid != command_id:
+            return None
+        return {
+            "command_id": cid,
+            "command": "halt_trading",
+            "status": "completed",
+            "result": {"armed": True, "tier": "global"},
+            "error": None,
+            "processed_at": "2026-08-14T00:00:00+00:00",
+        }
+
+    monkeypatch.setattr(rpc_router, "get_result", _fake_result, raising=False)
+
+    response = client.get(f"/api/v1/rpc/commands/{command_id}")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["status"] == "completed"
+    assert data["result"] == {"armed": True, "tier": "global"}
+
+    response = client.get("/api/v1/rpc/commands/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+    assert response.status_code == 404
+
+
+def test_b06_portfolio_and_orders_endpoints(client: TestClient) -> None:
+    """B-06 additions: equity curve, cancel-all, history, bulk, signals/symbol."""
+
+    # Equity curve (paginated)
+    response = client.get("/api/v1/portfolio/default/equity?limit=5")
+    assert response.status_code == 200
+    equity = response.json()["data"]
+    assert equity["total"] == 240
+    assert len(equity["items"]) == 5
+    assert set(equity["items"][0]) == {"ts", "nav", "equity", "drawdown"}
+
+    # Cancel-all
+    response = client.delete("/api/v1/portfolio/default/orders")
+    assert response.status_code == 200
+    assert response.json()["data"] == {"cancelled": 3, "portfolio_id": "default"}
+
+    # Order history
+    order_id = "11111111-2222-3333-4444-555555555555"
+    response = client.get(f"/api/v1/orders/{order_id}/history")
+    assert response.status_code == 200
+    history = response.json()["data"]
+    assert history["total"] == 2
+    assert history["items"][0]["new_state"] == "pending"
+
+    # Bulk status
+    response = client.post(
+        "/api/v1/orders/bulk-status",
+        json={"order_ids": [order_id, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"]},
+    )
+    assert response.status_code == 200
+    bulk = response.json()["data"]
+    assert bulk["total"] == 2
+    assert bulk["statuses"][order_id] == "filled"
+
+    # Signals per symbol
+    response = client.get("/api/v1/market/signals/XAUUSD")
+    assert response.status_code == 200
+    signals = response.json()["data"]
+    assert signals["total"] == 3
+    assert all(item["symbol"] == "XAUUSD" for item in signals["items"])
+
+    # Portfolio CRUD (single-portfolio v1)
+    response = client.get("/api/v1/portfolio")
+    assert response.status_code == 200
+    assert response.json()["data"]["portfolio_id"] == "default"
+    response = client.post("/api/v1/portfolio", json={"name": "book-a", "currency": "USD"})
+    assert response.status_code == 201
+    response = client.delete("/api/v1/portfolio/default")
+    assert response.status_code == 409
 
 
 def test_sse_stream_is_not_enveloped(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -375,7 +495,8 @@ def test_idempotency_replay_returns_original_envelope(
 ) -> None:
     """Same key + same body → 200 with meta.idempotent_replay (error-contract.md:182)."""
     fake = FakeRedis()
-    monkeypatch.setattr(rpc_router, "get_redis", _async_redis(fake), raising=False)
+    monkeypatch.setattr(rpc_router, "_kill_switch_armed", _async_false, raising=False)
+    monkeypatch.setattr(rpc_queue, "get_redis", _async_redis(fake), raising=False)
     monkeypatch.setattr(idempotency, "get_redis", _async_redis(fake), raising=False)
 
     headers = {"X-Idempotency-Key": "order-create-1"}
@@ -395,7 +516,8 @@ def test_idempotency_conflict_on_different_body(
 ) -> None:
     """Same key + different body → 409 CONFLICT (error-contract.md:183)."""
     fake = FakeRedis()
-    monkeypatch.setattr(rpc_router, "get_redis", _async_redis(fake), raising=False)
+    monkeypatch.setattr(rpc_router, "_kill_switch_armed", _async_false, raising=False)
+    monkeypatch.setattr(rpc_queue, "get_redis", _async_redis(fake), raising=False)
     monkeypatch.setattr(idempotency, "get_redis", _async_redis(fake), raising=False)
 
     headers = {"X-Idempotency-Key": "order-create-2"}
@@ -416,7 +538,8 @@ def test_idempotency_key_is_per_api_key(
 ) -> None:
     """The same key under a different API key is not a replay (error-contract.md)."""
     fake = FakeRedis()
-    monkeypatch.setattr(rpc_router, "get_redis", _async_redis(fake), raising=False)
+    monkeypatch.setattr(rpc_router, "_kill_switch_armed", _async_false, raising=False)
+    monkeypatch.setattr(rpc_queue, "get_redis", _async_redis(fake), raising=False)
     monkeypatch.setattr(idempotency, "get_redis", _async_redis(fake), raising=False)
 
     first = client.post(
@@ -465,7 +588,8 @@ def test_rate_limit_429_with_retry_after(monkeypatch: pytest.MonkeyPatch) -> Non
     """Write endpoints honor the per-key limit: 429 RATE_LIMITED + Retry-After."""
     fake = FakeRedis()
     monkeypatch.setattr(rate_limit, "get_redis", _async_redis(fake), raising=False)
-    monkeypatch.setattr(rpc_router, "get_redis", _async_redis(fake), raising=False)
+    monkeypatch.setattr(rpc_router, "_kill_switch_armed", _async_false, raising=False)
+    monkeypatch.setattr(rpc_queue, "get_redis", _async_redis(fake), raising=False)
 
     limited_app = create_app(
         Settings(hmac_secret_key=_TEST_HMAC_SECRET, api_rate_limit_per_minute=2)
@@ -490,7 +614,8 @@ def test_rate_limit_disabled_when_limit_is_zero(monkeypatch: pytest.MonkeyPatch)
     """api_rate_limit_per_minute <= 0 disables enforcement (rate_limit.py:32)."""
     fake = FakeRedis()
     monkeypatch.setattr(rate_limit, "get_redis", _async_redis(fake), raising=False)
-    monkeypatch.setattr(rpc_router, "get_redis", _async_redis(fake), raising=False)
+    monkeypatch.setattr(rpc_router, "_kill_switch_armed", _async_false, raising=False)
+    monkeypatch.setattr(rpc_queue, "get_redis", _async_redis(fake), raising=False)
 
     unlimited_app = create_app(
         Settings(hmac_secret_key=_TEST_HMAC_SECRET, api_rate_limit_per_minute=0)
