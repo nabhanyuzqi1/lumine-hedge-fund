@@ -1,0 +1,27 @@
+#!/bin/bash
+# Script to display deploy key content for GitHub Secrets upload
+# Run this and copy the ENTIRE output including BEGIN/END lines
+
+echo "=========================================="
+echo "COPY THE PRIVATE KEY CONTENT BELOW"
+echo "=========================================="
+echo ""
+echo "1. First, run this command in terminal:"
+echo "   cat /Users/nabhan/Dev/lumine-hedge-fund/id_lumine_deploy"
+echo ""
+echo "2. Copy ALL the output (from -----BEGIN to -----END)"
+echo ""
+echo "3. Paste into GitHub Secret named: DEPLOY_SSH_KEY"
+echo ""
+echo "Example of what you should copy:"
+echo "-----BEGIN OPENSSH PRIVATE KEY-----"
+echo "...base64-encoded-data..."
+echo "-----END OPENSSH PRIVATE KEY-----"
+echo ""
+echo "=========================================="
+echo "TO VERIFY KEY EXISTS:"
+ls -lh id_lumine_deploy 2>/dev/null || echo "Key not found! Run: ssh-keygen -t ed25519 -f id_lumine_deploy"
+echo ""
+echo "=========================================="
+echo "TO GET PUBLIC KEY FOR VPS:"
+cat id_lumine_deploy.pub 2>/dev/null || echo "Run ssh-keygen first"

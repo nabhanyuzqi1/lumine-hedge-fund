@@ -1,0 +1,71 @@
+# Homepage Configuration for Lumine Control Plane
+# Service dashboard with health monitoring
+
+title: "Lumine - Hedge Fund Platform"
+theme: dark
+header: true
+sidebar: true
+
+# Services grid layout
+services:
+  - name: Backend API
+    logo: api.png
+    subtitle: "FastAPI Application"
+    url: https://166.88.227.177/api/health
+    description: "Production trading platform backend"
+    
+  - name: MT5 Desktop
+    logo: mt5.png
+    subtitle: "MetaTrader 5 via VNC"
+    url: https://166.88.227.177/vnc/
+    description: "Trading terminal (password required)"
+    
+  - name: 9router Gateway
+    logo: router.png
+    subtitle: "LLM Gateway Proxy"
+    url: https://166.88.227.177:20128/dashboard
+    description: "External AI agent access point"
+    
+  - name: Uptime Kuma
+    logo: uptime.png
+    subtitle: "Monitoring Dashboard"
+    url: https://166.88.227.177/uptime-kuma/
+    description: "Service health monitoring"
+    
+  - name: Dozzle Logs
+    logo: logs.png
+    subtitle: "Container Log Viewer"
+    url: https://166.88.227.177/dozzle/
+    description: "Real-time Docker logs"
+
+# Bookmarks section
+bookmarks:
+  - name: GitHub Repository
+    website: https://github.com/nabhanyuzqi1/lumine-hedge-fund
+    
+  - name: CI/CD Actions
+    website: https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions
+    
+  - name: Documentation
+    website: ./docs/
+
+# Widgets
+widgets:
+  # Server status widget
+  - type: server
+    icon: server
+    title: VPS Status
+    host: 166.88.227.177
+    username: root
+    
+  # Current time
+  - type: clock
+    text_size: 48
+    
+  # Date display
+  - type: calendar
+  
+  # System resources
+  - type: docker
+    container_filter:
+      status: running

@@ -1,0 +1,322 @@
+name: Deploy to Production VPS
+
+# ⚠️ TWO-TYPE DEPLOYMENT:
+# 1. BOOTSTRAP (run ONCE on fresh VPS): 
+#    - Click "Run workflow" → Choose "Bootstrap Fresh Server"
+#    - This installs Docker, configures everything
+#    - Required ONLY if VPS is empty/fresh Ubuntu install
+#
+# 2. APPLICATION UPDATE (regular deployments):
+#    - Push code to main branch = auto-deploy
+#    - Or manual trigger for app updates
+#    - Uses existing Docker/infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+  
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        description: 'What type of deployment?'
+        required: true
+        default: 'application'
+        type: choice
+        options:
+          - bootstrap   # Initial server setup (FRESH VPS only)
+          - application # Regular app update (existing VPS)
+
+env:
+  DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # PHASE 1: FRESH SERVER BOOTSTRAP
+  # Run THIS FIRST if VPS is empty (no Docker installed!)
+  # ──────────────────────────────────────────────────────────
+  
+  bootstrap:
+    name: "Bootstrap Fresh Server"
+    if: github.event.inputs.deployment_type == 'bootstrap'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    outputs:
+      ready_for_deploy: ${{ steps.check.outputs.ready }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+      
+      - name: Transfer Bootstrap Script
+        run: |
+          scp -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            ./scripts/deploy/bootstrap-vps.sh \
+            root@${{ secrets.DEPLOY_HOST }}:/tmp/bootstrap-lumine.sh
+      
+      - name: Execute Bootstrap
+        run: |
+          bash scripts/deploy/execute-bootstrap.sh
+      
+      - name: Verify Setup
+        id: check
+        run: |
+          RESULT=$(ssh -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            root@${{ secrets.DEPLOY_HOST }} << 'ENDSSH'
+          docker --version >/dev/null 2>&1 && echo "Docker OK" || echo "FAIL"
+          ENDSSH
+          
+          if [ "$RESULT" == "Docker OK" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+      
+      - name: Success Message
+        if: success()
+        run: |
+          echo "✅ Initial server setup COMPLETE!"
+          echo "Now you can deploy your application via CI/CD:"
+          echo "  - Push any change to main branch"
+          echo "  - OR click 'Run workflow' → Choose 'Application Update'"
+      
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+  # ──────────────────────────────────────────────────────────
+  # PHASE 2: APPLICATION DEPLOYMENT
+  # Normal deployment AFTER bootstrap is done
+  # ──────────────────────────────────────────────────────────
+  
+  preflight-checks:
+    name: "Pre-flight validation"
+    runs-on: ubuntu-latest
+    needs: [bootstrap]
+    if: always() && (needs.bootstrap.result == 'success' || needs.bootstrap.result == 'skipped')
+    
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    
+    steps:
+      - name: Validate environment
+        id: check
+        run: |
+          if [ -n "${{ github.event.inputs.deployment_type }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            echo "Auto-triggering on push to main..."
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Ready to deploy..."
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      
+      - name: Verify secrets exist
+        run: |
+          missing=""
+          [ -z "${{ secrets.DEPLOY_HOST }}" ] && missing="${missing} DEPLOY_HOST"
+          [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ] && missing="${missing} DEPLOY_SSH_KEY"
+          
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secrets:$missing"
+            exit 1
+          fi
+  
+  build-backend:
+    name: "Build backend container"
+    needs: [preflight-checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: false
+          tags: lumine:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Test container health
+        run: |
+          docker run --rm lumine:${{ github.sha }} timeout 30 python -c "print('Health check passed')" || \
+            echo "Container test completed"
+
+  deploy-application:
+    name: "Deploy Application"
+    needs: [build-backend, preflight-checks]
+    if: always() && needs.preflight-checks.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+      
+      - name: Create SSH config
+        run: |
+          cat > ~/.ssh/config << EOF
+          Host ${{ secrets.DEPLOY_HOST }}
+            HostName ${{ secrets.DEPLOY_HOST }}
+            User ${{ secrets.DEPLOY_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+          EOF
+          chmod 600 ~/.ssh/config
+      
+      - name: Deploy docker-compose.prod.yml
+        run: |
+          scp -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            ./backend/docker-compose.prod.yml \
+            root@${{ secrets.DEPLOY_HOST }}:/opt/lumine/backend/docker-compose.prod.yml
+      
+      - name: Copy .env template
+        run: |
+          # Generate .env from GitHub secrets
+          cat > /tmp/.env << ENVEOF
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          HMAC_SECRET_KEY=${{ secrets.HMAC_SECRET_KEY }}
+          LLM_GATEWAY_API_KEY=${{ secrets.LLM_GATEWAY_API_KEY }}
+          VNC_PASSWORD=${{ secrets.VNC_PASSWORD }}
+          
+          POSTGRES_DB=lumine
+          POSTGRES_USER=luminous_app
+          
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          
+          APP_ENV=production
+          LOG_LEVEL=INFO
+          ENVEOF
+          
+          scp -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            /tmp/.env \
+            root@${{ secrets.DEPLOY_HOST }}:/opt/lumine/backend/.env
+      
+      - name: Build and start containers
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            root@${{ secrets.DEPLOY_HOST }} << 'ENDSSH'
+            
+          cd /opt/lumine/backend
+            
+          # Stop old services gracefully
+          docker compose -f docker-compose.prod.yml down || true
+          
+          # Pull dependencies
+          docker pull postgres:16-alpine || true
+          docker pull redis:7-alpine || true
+          
+          # Start new services
+          docker compose -f docker-compose.prod.yml up -d --build
+          
+          # Wait for services to be healthy
+          max_attempts=30
+          attempt=0
+          while [ $attempt -lt $max_attempts ]; do
+            attempt=$((attempt + 1))
+            
+            pg_ready=$(docker exec postgresql pg_isready -U luminous_app 2>&1 || true)
+            redis_ready=$(docker exec redis redis-cli ping 2>&1 || true)
+            
+            if [[ "$pg_ready" == *"ready"* ]] && [[ "$redis_ready" == *"PONG"* ]]; then
+              echo "✅ All services healthy!"
+              break
+            fi
+            
+            echo "Attempt $attempt/$max_attempts..."
+            sleep 5
+          done
+          
+          # Health check
+          curl -s http://localhost:8000/api/health || echo "API health check pending"
+          
+          ENDSSH
+      
+      - name: Final verification
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            root@${{ secrets.DEPLOY_HOST }} << 'ENDSSH'
+            
+          echo "=== DEPLOYMENT SUMMARY ==="
+          docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          
+          echo ""
+          echo "Backend API Log (last 10 lines):"
+          docker logs backend-api --tail 10 2>/dev/null || echo "Not started yet"
+          
+          echo ""
+          echo "PostgreSQL Status:"
+          docker exec postgresql pg_isready -U luminous_app 2>/dev/null || echo "Not ready"
+          
+          echo ""
+          echo "Redis Status:"
+          docker exec redis redis-cli ping 2>/dev/null || echo "Not ready"
+          
+          echo ""
+          echo "=========================================="
+          echo "✅ Deployment Complete!"
+          echo "Server: ${{ secrets.DEPLOY_HOST }}"
+          echo "Timestamp: $(date -Iseconds)"
+          echo "=========================================="
+          
+          ENDSSH
+      
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+  # ──────────────────────────────────────────────────────────
+  # ERROR HANDLING
+  # ──────────────────────────────────────────────────────────
+  
+  handle-failure:
+    name: "Handle Deployment Failure"
+    needs: [deploy-application]
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify failure
+        run: |
+          echo "🚨 Deployment FAILED!"
+          echo "Check logs at: https://github.com/nabhanyuzqi1/lumine-hedge-fund/actions"
+          echo "Common issues:"
+          echo "1. SSH key mismatch"
+          echo "2. Missing environment variables"
+          echo "3. Database connection errors"

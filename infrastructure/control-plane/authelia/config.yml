@@ -1,0 +1,50 @@
+# Authelia Configuration for Lumine Control Plane
+# Authentication provider for protected services
+# Deploy: docker compose -f infrastructure/control-plane/docker-compose.yml up -d
+
+server:
+  address: tcp://0.0.0.0:9091
+  endpoint_disabling:
+    disabled_routes:
+      - "/api/toggle"
+
+log:
+  level: info
+  format: text
+
+notifier:
+  filesystem:
+    filename: /etc/authelia/secrets/notifier.txt
+
+access_control:
+  rules:
+    - domain_regex: "^.*\\.166\\.88\\.227\\.177$"
+      policy: two_factor
+      resources:
+        - "^/homepage/.+"
+        - "^/uptime-kuma/.+"
+        - "^/dozzle/.+"
+
+session:
+  secret_file: /run/secrets/session_secret
+  redis:
+    address: control-database:5432
+    
+recovery:
+  token_duration: 1h
+
+authentication_backend:
+  password_provider:
+    hash:
+      algorithm: argon2
+      parameters:
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        salt_length: 16
+    file: /var/lib/authelia/users.db
+
+totp:
+  disable: false
+
+default_redirection_url: https://166.88.227.177/homepage/

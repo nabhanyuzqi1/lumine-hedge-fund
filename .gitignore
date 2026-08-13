@@ -16,6 +16,7 @@ id_ed25519*
 id_ecdsa*
 authorized_keys.pub  # Only public keys OK
 id_rsa.priv
+id_lumine_deploy  # Deploy key for CI/CD automation - NEVER commit this!
 *.enc
 !*.yml.enc
 !scripts/deploy/secrets.env
