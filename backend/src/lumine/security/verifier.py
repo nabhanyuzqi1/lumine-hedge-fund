@@ -131,7 +131,7 @@ async def _read_table(session: AsyncSession, table_name: str) -> list[dict[str, 
     order_column = CHAIN_ORDER_COLUMN[table_name]
     pk_column = CHAIN_PK_COLUMN[table_name]
     query = text(
-        f"SELECT * FROM {table_name} ORDER BY {order_column} ASC, {pk_column} ASC"  # noqa: S608 — identifiers come from module-level allowlists
+        f"SELECT * FROM {table_name} ORDER BY {order_column} ASC, {pk_column} ASC"  # noqa: S608  # nosec B608 — identifiers from module-level allowlists only
     )
     result = await session.execute(query)
     return [_row_mapping(row) for row in result]

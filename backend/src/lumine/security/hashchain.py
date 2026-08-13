@@ -240,7 +240,7 @@ async def read_last_hash(session: AsyncSession, table_name: str) -> str:
     pk_col = CHAIN_PK_COLUMN[table_name]
     # Identifiers are resolved only from the module-level allowlists
     # (CHAIN_ORDER_COLUMN / CHAIN_PK_COLUMN) — never from caller input.
-    sql = f"SELECT self_hash FROM {table_name} ORDER BY {order_col} DESC, {pk_col} DESC LIMIT 1"  # noqa: S608
+    sql = f"SELECT self_hash FROM {table_name} ORDER BY {order_col} DESC, {pk_col} DESC LIMIT 1"  # noqa: S608  # nosec B608 — identifiers from module-level allowlists only
     stmt = text(sql)
     result = await session.execute(stmt)
     row = result.first()
@@ -263,7 +263,7 @@ async def read_chain_head(session: AsyncSession, table_name: str) -> tuple[str, 
     pk_col = CHAIN_PK_COLUMN[table_name]
     # Identifiers come only from the module-level allowlists (S608-safe).
     sql = (
-        f"SELECT self_hash, {pk_col} FROM {table_name} "  # noqa: S608 — identifiers resolved from module-level allowlists
+        f"SELECT self_hash, {pk_col} FROM {table_name} "  # noqa: S608  # nosec B608 — identifiers from module-level allowlists only
         f"ORDER BY {order_col} DESC, {pk_col} DESC LIMIT 1"
     )
     result = await session.execute(text(sql))
