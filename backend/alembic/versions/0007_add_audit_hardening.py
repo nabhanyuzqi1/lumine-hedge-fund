@@ -119,13 +119,16 @@ def upgrade() -> None:
     )
 
     # ── 4. D12-8 grant hardening (audit_writer role + REVOKEs) ────────────
+    # Split commands — asyncpg doesn't allow multi-statement prepared queries
+    op.execute("CREATE ROLE audit_writer NOLOGIN;")
     op.execute(
-        """
-        CREATE ROLE audit_writer NOLOGIN;
-        GRANT INSERT ON lineage_records, workflow_journal, reasoning_traces, audit_anchors TO audit_writer;
-        REVOKE UPDATE, DELETE ON lineage_records, workflow_journal, reasoning_traces, audit_anchors FROM audit_writer;
-        REVOKE TRUNCATE ON lineage_records, workflow_journal, reasoning_traces, audit_anchors FROM audit_writer;
-        """
+        "GRANT INSERT ON lineage_records, workflow_journal, reasoning_traces, audit_anchors TO audit_writer;"
+    )
+    op.execute(
+        "REVOKE UPDATE, DELETE ON lineage_records, workflow_journal, reasoning_traces, audit_anchors FROM audit_writer;"
+    )
+    op.execute(
+        "REVOKE TRUNCATE ON lineage_records, workflow_journal, reasoning_traces, audit_anchors FROM audit_writer;"
     )
 
 

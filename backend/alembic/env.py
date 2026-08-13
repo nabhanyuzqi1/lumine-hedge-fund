@@ -41,7 +41,11 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection):
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        render_batch_mode=True,  # Enable batch mode for safer DDL in asyncpg
+    )
     with context.begin_transaction():
         context.run_migrations()
 
