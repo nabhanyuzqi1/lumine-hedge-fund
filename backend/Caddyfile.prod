@@ -1,0 +1,23 @@
+# Lumine production Caddyfile (VPS).
+# - /api/* (+ SSE) → backend api container
+# - /health → api (loopback healthcheck through caddy)
+# - lainnya → frontend (nginx SPA)
+# HTTPS: tambahkan domain + auto-TLS di sini saat domain tersedia;
+# dengan bare IP Caddy melayani HTTP (sesuai BLOCK-006 catatan VPS).
+http://166.88.227.177 {
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+    handle /health {
+        reverse_proxy api:8000
+    }
+    handle {
+        reverse_proxy frontend:80
+    }
+    encode zstd gzip
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy same-origin
+    }
+}

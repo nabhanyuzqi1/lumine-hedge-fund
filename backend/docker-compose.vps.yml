@@ -1,0 +1,122 @@
+# Lumine production stack — VPS deployment (166.88.227.177)
+#
+# Usage:
+#   cp .env.prod.example .env   # lalu isi DB_PASSWORD, HMAC_SECRET_KEY, dll
+#   docker compose -f docker-compose.vps.yml up -d
+#
+# v1 scope: postgres / redis / api / migrate / mt5-bridge / frontend / caddy.
+# Deferred: mt5-wine (scripts/deploy/mt5), 9router (LLM gateway) — lihat
+# docs/15-implementation/COMPLETION-WORKFLOW.md W4.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lumine
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: lumine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lumine:${DB_PASSWORD}@postgres:5432/lumine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lumine:${DB_PASSWORD}@postgres:5432/lumine
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
+      - LLM_GATEWAY_URL=${LLM_GATEWAY_URL:-}
+      - LLM_GATEWAY_API_KEY=${LLM_GATEWAY_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mt5-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "scripts.run_bridge"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; redis.Redis.from_url('redis://redis:6379/0').ping()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://166.88.227.177}
+        VITE_LUMINE_API_KEY: ${VITE_LUMINE_API_KEY:-}
+        VITE_LUMINE_API_SECRET: ${VITE_LUMINE_API_SECRET:-}
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
