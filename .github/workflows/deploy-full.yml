@@ -225,6 +225,16 @@ jobs:
             ./scripts/deploy/mt5/entrypoint.sh \
             root@${{ secrets.DEPLOY_HOST }}:/opt/lumine/backend/scripts/deploy/mt5/
 
+      - name: Pull latest repo on VPS before deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -i ~/.ssh/deploy_key \
+            root@${{ secrets.DEPLOY_HOST }} << 'ENDSSH'
+cd /opt/lumine
+git checkout main --force || true
+git pull origin main --force
+ENDSSH
+
       - name: Copy .env template
         run: |
           # Generate .env from GitHub secrets
