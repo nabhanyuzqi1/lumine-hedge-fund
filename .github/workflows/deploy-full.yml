@@ -203,11 +203,11 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
-      - name: Deploy docker-compose.prod.yml
+      - name: Deploy docker-compose.prod.yml and MT5 context
         run: |
           ssh -o StrictHostKeyChecking=no \
             -i ~/.ssh/deploy_key \
-            "mkdir -p /opt/lumine/backend/scripts/deploy/mt5"
+            root@${{ secrets.DEPLOY_HOST }} "mkdir -p /opt/lumine/backend/scripts/deploy/mt5"
 
           scp -o StrictHostKeyChecking=no \
             -i ~/.ssh/deploy_key \
