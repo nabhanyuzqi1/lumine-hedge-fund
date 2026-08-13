@@ -43,7 +43,7 @@ echo "==> Target: ${SSH_DEST} (port ${VPS_SSH_PORT})"
 REMOTE_DIR=/opt/lumine
 echo "==> Membuat direktori remote + mengirim file..."
 ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
-  "mkdir -p ${REMOTE_DIR}/backend ${REMOTE_DIR}/scripts/deploy/mt5"
+  "mkdir -p ${REMOTE_DIR}/backend ${REMOTE_DIR}/backend/scripts/deploy/mt5"
 scp -P "${VPS_SSH_PORT}" \
   bootstrap-vps.sh \
   "${SSH_DEST}:${REMOTE_DIR}/bootstrap-vps.sh"
@@ -58,9 +58,9 @@ scp -P "${VPS_SSH_PORT}" \
 scp -P "${VPS_SSH_PORT}" \
   "${SCRIPT_DIR}/mt5/Dockerfile" \
   "${SCRIPT_DIR}/mt5/entrypoint.sh" \
-  "${SSH_DEST}:${REMOTE_DIR}/scripts/deploy/mt5/"
+  "${SSH_DEST}:${REMOTE_DIR}/backend/scripts/deploy/mt5/"
 ssh -p "${VPS_SSH_PORT}" "${SSH_DEST}" \
-  "chmod +x ${REMOTE_DIR}/scripts/deploy/mt5/entrypoint.sh"
+  "chmod +x ${REMOTE_DIR}/backend/scripts/deploy/mt5/entrypoint.sh"
 
 # ── 2. Bootstrap (idempotent) ────────────────────────────────────────────────
 echo "==> Menjalankan bootstrap-vps.sh di remote (idempotent)..."

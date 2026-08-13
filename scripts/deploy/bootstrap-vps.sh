@@ -88,7 +88,7 @@ echo "[3/6] ✅ Security configured!"
 echo "[4/6] Creating directory structure..."
 
 mkdir -p /opt/lumine/backend
-mkdir -p /opt/lumine/scripts
+mkdir -p /opt/lumine/backend/scripts/deploy
 mkdir -p /srv/control-plane/caddy
 mkdir -p /srv/control-plane/authelia
 mkdir -p /srv/control-plane/homepage
