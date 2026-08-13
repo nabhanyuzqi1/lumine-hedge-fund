@@ -65,3 +65,4 @@ Folder names are fixed after Phase 14 approval. Any rename requires:
 All ideation phases (0-14) are complete. **Phase 15 — Implementation** is in progress.
 Sprint 1 (Foundation) is partially complete. Sprint 2 (Data Pipeline) is pending.
 See `docs/15-implementation/README.md` for live status and `docs/15-implementation/spec-reconciliation.md` for the spec↔code gap tracker.
+\n|| Phase 16 — Production Deployment & Operations | `docs/16-implementation/` | Pending | Deployment, automation, compliance certification |
