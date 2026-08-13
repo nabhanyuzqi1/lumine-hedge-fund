@@ -39,6 +39,14 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+      - name: Upload Gitleaks Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report-${{ github.run_number }}-${{ github.run_id }}
+          path: results.sarif
+          retention-days: 7
 
       # Note: Container scanning moved to Backend CI workflow
       # This supply chain job focuses on dependency vulnerability scans only
