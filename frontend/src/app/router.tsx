@@ -37,6 +37,9 @@ const LazyJournal = React.lazy(() =>
 const LazyAdminKeys = React.lazy(() =>
   import("./pages/admin-keys").then((m) => ({ default: m.AdminKeysPage }))
 );
+const LazyWorkflowRunList = React.lazy(() =>
+  import("./pages/workflow-run-list").then((m) => ({ default: m.WorkflowRunListPage }))
+);
 
 export const router = createBrowserRouter([
   {
@@ -51,6 +54,7 @@ export const router = createBrowserRouter([
         element: <SuspenseOutlet />,
         children: [
           { path: "/orders/:orderId", element: <OrderDetailPage /> },
+          { path: "/workflows", element: <LazyWorkflowRunList /> },
           { path: "/workflows/:workflowId/runs/:runId", element: <LazyWorkflowRunDetail /> },
           { path: "/lineage/:lineageId", element: <LazyLineageDetail /> },
           { path: "/journal", element: <LazyJournal /> },

@@ -2,6 +2,7 @@
 
 - **Date:** 2026-08-14 (sesi lanjutan; diverifikasi terhadap source code, bukan klaim docs)
 - **Status:** Active — living document; perbarui setiap kali gap ditutup
+- **Progress 2026-08-14 (lanjutan):** B-07 CLOSED (661 backend tests pass — registry API, migrasi 0001–0009, anchoring upsert); W3 docker CLOSED (6/6 healthy + E2E 16/16 containerized); W4 v1 CLOSED — LIVE di http://166.88.227.177/ (8/8 smoke); F-01/F-02/F-03/F-10 frontend CLOSED (161 tests). Sisa: B-04/B-05/B-06/B-01/B-02/B-03, F-04..F-09/F-11/F-12, W4 lanjutan (mt5-wine, 9router, HTTPS, DR, security audit).
 - **Scope:** Phase 15/16 — backend (`backend/src/lumine/`), frontend (`frontend/src/`), general (infra/ops/CI)
 - **Urutan eksekusi:** [`COMPLETION-WORKFLOW.md`](../COMPLETION-WORKFLOW.md) — backend → frontend → docker+bridge → VPS live, dengan gate per workstream
 

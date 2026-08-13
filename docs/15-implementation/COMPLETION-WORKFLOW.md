@@ -2,6 +2,7 @@
 
 - **Date:** 2026-08-14
 - **Status:** Active — rencana eksekusi terurut; setiap workstream punya gate verifikasi wajib
+- **Progress 2026-08-14 (lanjutan):** W1.1 ✅ (B-07, suite 661 pass) · W2 partial ✅ (F-01 WorkflowRunList, F-02 StreamStatusDot/GapBanner, F-03 WhatIf, F-10 correlation; 161 tests) · W3 ✅ (stack docker 6/6 healthy, E2E 16/16) · W4 v1 ✅ **LIVE http://166.88.227.177/** (Docker 29.7.2, 6 service, key web-frontend, 8/8 smoke; sisa: mt5-wine, 9router, HTTPS, DR, security audit)
 - **Source of truth gap:** `docs/15-implementation/IMPLEMENTATION-GAP-INVENTORY.md` (B-01..B-08, F-01..F-12, G-01..G-08)
 - **Skills pendukung:** 14 skill kategori `claude-skills` (installed 2026-08-14) — dipetakan per workstream
 

@@ -18,6 +18,7 @@ import { ActivityLog } from "@/components/terminal/activity-log";
 import { CommitteeFeed } from "@/components/terminal/committee-feed";
 import { QuotePanel } from "@/components/terminal/quote-panel";
 import { RiskGauges } from "@/components/terminal/risk-gauges";
+import { WhatIfPanel } from "@/components/terminal/what-if-panel";
 import { ModifyOrderDialog } from "@/components/orders/modify-order-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -191,6 +192,7 @@ function TradingWorkspace() {
         <ChartCard title="Risk" description="Session limits">
           <RiskGauges />
         </ChartCard>
+        <WhatIfPanel />
         <Card>
           <CardHeader>
             <CardTitle>Committee</CardTitle>
