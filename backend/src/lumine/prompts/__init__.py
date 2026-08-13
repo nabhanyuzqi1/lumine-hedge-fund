@@ -1,3 +1,6 @@
 # Copyright (c) 2026 Lumine. All rights reserved.
+"""Prompt registry package."""
 
-"""Prompt templates (LLM system/user prompts)."""
+from .registry import LoadedPrompt, PromptRef, Registry
+
+__all__ = ["LoadedPrompt", "PromptRef", "Registry"]
