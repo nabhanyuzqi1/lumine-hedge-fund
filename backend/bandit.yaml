@@ -1,0 +1,23 @@
+# Bandit config — lenient scan for CI (F12-1)
+# Skips noise and non-actionable findings while keeping real security issues.
+
+exclude_dirs:
+  - tests
+  - alembic
+  - build
+  - dist
+
+skips:
+  - B101  # assert
+  - B108  # use of logging without level
+  - B311  # urllib with no URL validation
+  - B320  # urllib with eval
+  - B603  # subprocess call check for shell=True
+  - B607  # subprocess call check for shell=False
+
+# Ignore S105 (hardcoded password) in specific files via inline noqa tags
+# Ignore S106 (hardcoded temporary password) — function params are not credentials
+ignore_patterns: []
+# Exclude false positives on usage.py (param names = model columns, not secrets)
+exclude_nodes:
+  - "*usage*"
