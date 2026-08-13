@@ -17,7 +17,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
-      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-full.yml'
 
   workflow_dispatch:
     inputs:
@@ -66,7 +66,7 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no \
             -i ~/.ssh/deploy_key \
-            ./scripts/deploy/bootstrap-vps.sh \
+            scripts/deploy/bootstrap-vps.sh \
             root@${{ secrets.DEPLOY_HOST }}:/tmp/bootstrap-lumine.sh
 
       - name: Execute Bootstrap
@@ -119,10 +119,13 @@ jobs:
     steps:
       - name: Validate environment
         id: check
+        env:
+          DEPLOYMENT_TYPE: ${{ github.event.inputs.deployment_type }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ -n "${{ github.event.inputs.deployment_type }}" ]; then
+          if [ -n "$DEPLOYMENT_TYPE" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" == "push" ]; then
+          elif [ "$EVENT_NAME" == "push" ]; then
             echo "Auto-triggering on push to main..."
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
@@ -131,10 +134,13 @@ jobs:
           fi
 
       - name: Verify secrets exist
+        env:
+          DEPLOY_HOST_SECRET: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY_SECRET: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           missing=""
-          [ -z "${{ secrets.DEPLOY_HOST }}" ] && missing="${missing} DEPLOY_HOST"
-          [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ] && missing="${missing} DEPLOY_SSH_KEY"
+          [ -z "$DEPLOY_HOST_SECRET" ] && missing="${missing} DEPLOY_HOST"
+          [ -z "$DEPLOY_SSH_KEY_SECRET" ] && missing="${missing} DEPLOY_SSH_KEY"
 
           if [ -n "$missing" ]; then
             echo "::error::Missing required secrets:$missing"

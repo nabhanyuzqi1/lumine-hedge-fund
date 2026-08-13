@@ -3,7 +3,6 @@ name: 🔒 Supply Chain Audit - FINAL FIX
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
