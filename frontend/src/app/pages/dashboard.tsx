@@ -1,12 +1,10 @@
 import { Suspense, lazy, useState } from "react";
 
-import {
-  useCorrelation,
-  useEquityCurve,
-  useExposure,
-  useMarketBars,
-  useSignals,
-} from "@/api/hooks";
+import { useCorrelation, useEquityCurve, useExposure, useMarketBars, useSignals } from "@/api/hooks";
+import { MarketIndicatorsPanel } from "@/components/dashboard/market-indicators-panel";
+import { SignalPanel } from "@/components/dashboard/signal-panel";
+import { ExposureSummaryCard } from "@/components/dashboard/exposure-summary-card";
+import { DecisionCard } from "@/components/dashboard/decision-card";
 import { CandlestickChart, type Timeframe } from "@/components/charts/candlestick-chart";
 import { ChartCard } from "@/components/charts/chart-card";
 import { DrawdownChart } from "@/components/charts/drawdown-chart";
@@ -82,6 +80,19 @@ export function DashboardPage() {
         <Suspense fallback={<PaneFallback title="AI Committee Confidence" />}>
           <LazyConfidence points={signals.data ?? []} />
         </Suspense>
+
+        <MarketIndicatorsPanel symbol="XAUUSD" />
+        <SignalPanel symbol="XAUUSD" />
+        <ExposureSummaryCard />
+
+        <DecisionCard
+          decision={{
+            action: (signals.data?.[0]?.direction as "buy" | "sell" | "hold") ?? "hold",
+            confidence: signals.data?.[0]?.confidence ?? 0.5,
+            timestamp: new Date().toISOString(),
+            rationale: "Deterministic demo decision — live IC stream pending.",
+          }}
+        />
       </div>
     </div>
   );

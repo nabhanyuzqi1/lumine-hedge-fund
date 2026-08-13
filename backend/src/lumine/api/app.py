@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import time
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import Response, StreamingResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 if TYPE_CHECKING:
@@ -160,5 +161,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health", include_in_schema=False)
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/metrics", include_in_schema=False)
+    async def metrics() -> Response:
+        """Prometheus text exposition (B-02). Scrape via loopback/caddy ACL."""
+        from lumine.monitoring.metrics import default_registry
+
+        registry = default_registry
+        registry.set_gauge("lumine_process_uptime_seconds", time.monotonic())
+        return Response(content=registry.render_prometheus(), media_type="text/plain; version=0.0.4")
 
     return app

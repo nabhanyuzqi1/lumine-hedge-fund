@@ -1,3 +1,2 @@
 # Copyright (c) 2026 Lumine. All rights reserved.
-
-"""Monitoring — healthcheck endpoints, Prometheus metrics."""
+"""Observability (B-02): process metrics registry + Prometheus exposition."""

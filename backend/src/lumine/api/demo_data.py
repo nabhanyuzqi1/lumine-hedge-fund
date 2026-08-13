@@ -136,3 +136,35 @@ def features_for(symbol: str, at: datetime | None = None) -> dict[str, float]:
         "bb_lower": round(mid * (1 - jitter * 0.002), 2),
         "macd": round(jitter * mid * 0.0008, 3),
     }
+
+
+def bars(symbol: str, timeframe: str = "1h", limit: int = 100) -> list[dict[str, object]]:
+    """Deterministic OHLCV bars for a symbol (same series family as /ohlcv).
+
+    Uses the symbol seed + sin drift so every call reproduces the same
+    series for the same (symbol, timeframe, limit) — backtests replayable.
+    """
+    seed = _symbol_seed(symbol)
+    step = TIMEFRAME_SECONDS.get(timeframe, 3_600)
+    now = datetime.now(UTC)
+    price = base_price(symbol)
+    out: list[dict[str, object]] = []
+    for i in range(limit):
+        ts = now - timedelta(seconds=step * (limit - i))
+        drift = math.sin(seed * (i + 1)) * 0.002
+        close = round_price(price * (1 + drift), symbol)
+        high = round_price(max(price, close) * 1.001, symbol)
+        low = round_price(min(price, close) * 0.999, symbol)
+        volume = 100 + int(abs(math.sin(seed * i)) * 400)
+        out.append(
+            {
+                "ts": ts.isoformat(),
+                "open": price,
+                "high": high,
+                "low": low,
+                "close": close,
+                "volume": volume,
+            }
+        )
+        price = close
+    return out

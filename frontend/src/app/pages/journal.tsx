@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { type JournalFilters, useJournal, useJournalPage } from "@/api/hooks";
+import { downloadCsv, toCsv } from "@/lib/csv";
 import { JournalTable } from "@/components/journal/journal-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +107,24 @@ export function JournalPage() {
     setFilters({ symbol: ALL, portfolioId: ALL, kind: ALL });
   };
 
+  const handleExportCsv = () => {
+    const entries = loadedPages.flatMap((page) => page.entries);
+    downloadCsv(
+      `lumine-journal-${new Date().toISOString().slice(0, 10)}.csv`,
+      toCsv(
+        entries.map((entry) => ({
+          id: entry.id,
+          timestamp: entry.timestamp,
+          portfolio_id: entry.portfolio_id,
+          kind: entry.kind,
+          actor: entry.actor,
+          summary: entry.summary,
+          linked_lineage_id: entry.linked_lineage_id ?? "",
+        }))
+      )
+    );
+  };
+
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4">
       <header className="flex items-baseline justify-between">
@@ -115,6 +134,15 @@ export function JournalPage() {
             Audit trail of decisions, trades, risk checks, and notes.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={loadedPages.every((page) => page.entries.length === 0)}
+          className="rounded-chip border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary hover:bg-bg-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40"
+          data-testid="journal-export-csv"
+        >
+          Export CSV
+        </button>
       </header>
 
       <Card>

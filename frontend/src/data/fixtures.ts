@@ -33,6 +33,8 @@ export interface SignalPoint {
   time: number;
   analyst: string;
   confidence: number;
+  direction?: "bullish" | "bearish" | "neutral";
+  rationale?: string;
 }
 
 export type CorrelationMatrix = number[][];

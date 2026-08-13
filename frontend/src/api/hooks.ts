@@ -63,6 +63,13 @@ interface RestWorkflowRun {
   finished_at: string | null;
 }
 
+interface RestEquityPoint {
+  ts: string;
+  nav: string;
+  equity: string;
+  drawdown: string;
+}
+
 interface RestJournalEntry {
   entry_id: string;
   trade_id: string;
@@ -266,8 +273,18 @@ export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryKey: ["equity-curve", portfolioId],
     queryFn: async (): Promise<EquityPoint[]> => {
       try {
-        const points = await get<EquityPoint[]>(`/portfolio/${portfolioId}/equity`);
-        if (points.length > 0 && typeof points[0]?.value === "number") return points;
+        // Backend: GET /api/v1/portfolio/{id}/equity → PaginatedList of
+        // {ts, nav, equity, drawdown} (B-06). Mapped to the chart shape.
+        const res = await get<{ items: RestEquityPoint[] }>(`/portfolio/${portfolioId}/equity`, {
+          limit: "240",
+          offset: "0",
+        });
+        if (Array.isArray(res?.items) && res.items.length > 0 && typeof res.items[0]?.nav === "string") {
+          return res.items.map((p) => ({
+            time: new Date(p.ts).getTime() / 1000,
+            value: num(p.nav, 0),
+          }));
+        }
       } catch {
         // fall through to fixture
       }
@@ -306,12 +323,29 @@ export function useSignals(symbol: string) {
     queryKey: ["signals", symbol],
     queryFn: async (): Promise<SignalPoint[]> => {
       try {
+        // B-06: per-symbol endpoint is live; fall back to the global one.
+        const page = await get<{ items: RestSignal[] }>(`/market/signals/${symbol}`);
+        if (Array.isArray(page?.items) && page.items.length > 0) {
+          return page.items.map((signal) => ({
+            time: epochSec(signal.generated_at),
+            analyst: signal.analyst,
+            confidence: num(signal.confidence),
+            direction: signal.direction,
+            rationale: signal.rationale,
+          }));
+        }
+      } catch {
+        // fall through
+      }
+      try {
         const page = await get<{ items: RestSignal[] }>(`/market/signals`);
         if (Array.isArray(page?.items) && page.items.length > 0) {
           return page.items.map((signal) => ({
             time: epochSec(signal.generated_at),
             analyst: signal.analyst,
             confidence: num(signal.confidence),
+            direction: signal.direction,
+            rationale: signal.rationale,
           }));
         }
       } catch {
@@ -320,6 +354,39 @@ export function useSignals(symbol: string) {
       return generateSignals();
     },
     staleTime: 30_000,
+  });
+}
+
+export interface MarketIndicators {
+  volatility: number;
+  spread: number;
+  session: string;
+  features: Record<string, number>;
+}
+
+/**
+ * F-06: volatility/spread/session/features indicators — all endpoints live
+ * (market/volatility/{s}, spread/{s}, session/{s}, features/{s}).
+ */
+export function useMarketIndicators(symbol: string) {
+  return useQuery({
+    queryKey: ["market-indicators", symbol],
+    queryFn: async (): Promise<MarketIndicators> => {
+      const [vol, spread, session, features] = await Promise.all([
+        get<{ volatility: string | number }>(`/market/volatility/${symbol}`),
+        get<{ spread: string | number }>(`/market/spread/${symbol}`),
+        get<{ session: string }>(`/market/session/${symbol}`),
+        get<Record<string, number>>(`/market/features/${symbol}`),
+      ]);
+      return {
+        volatility: num(vol?.volatility, 0),
+        spread: num(spread?.spread, 0),
+        session: String(session?.session ?? "unknown"),
+        features: features ?? {},
+      };
+    },
+    staleTime: 60_000,
+    retry: false,
   });
 }
 

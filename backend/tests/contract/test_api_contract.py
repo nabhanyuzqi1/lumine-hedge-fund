@@ -458,6 +458,14 @@ def test_b06_portfolio_and_orders_endpoints(client: TestClient) -> None:
     assert response.status_code == 409
 
 
+def test_metrics_endpoint_exposes_prometheus_text(client: TestClient) -> None:
+    """B-02: /metrics serves Prometheus text format (not enveloped)."""
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "lumine_process_uptime_seconds" in response.text
+
+
 def test_sse_stream_is_not_enveloped(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     async def _single_event(
         request: object, channel: str, interval_s: float = 2.0

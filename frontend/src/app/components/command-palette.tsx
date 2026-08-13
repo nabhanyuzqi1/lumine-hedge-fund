@@ -192,6 +192,13 @@ export function CommandPalette() {
             placeholder="Type a command or search..."
             className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             aria-label="Command palette search"
+            role="combobox"
+            aria-expanded={open && filtered.length > 0}
+            aria-controls="command-palette-listbox"
+            aria-activedescendant={
+              activeIndex >= 0 && filtered[activeIndex] ? `command-option-${filtered[activeIndex]!.id}` : undefined
+            }
+            aria-autocomplete="list"
           />
         </div>
         <div className="max-h-[60vh] overflow-y-auto p-2">
@@ -200,17 +207,23 @@ export function CommandPalette() {
               No commands found.
             </div>
           ) : (
-            Array.from(grouped.entries()).map(([group, groupItems]) => (
+            <div id="command-palette-listbox" role="listbox" aria-label="Commands">
+              {Array.from(grouped.entries()).map(([group, groupItems]) => (
               <div key={group} role="group" aria-label={group}>
                 <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
                   {group}
                 </div>
-                <ul role="listbox" aria-label={group}>
+                <ul>
                   {groupItems.map((item) => {
                     const index = globalIndex++;
                     const isActive = index === activeIndex;
                     return (
-                      <li key={item.id} role="option" aria-selected={isActive}>
+                      <li
+                        key={item.id}
+                        id={`command-option-${item.id}`}
+                        role="option"
+                        aria-selected={isActive}
+                      >
                         <button
                           type="button"
                           onClick={item.action}
@@ -235,7 +248,8 @@ export function CommandPalette() {
                   })}
                 </ul>
               </div>
-            ))
+            ))}
+            </div>
           )}
         </div>
       </DialogContent>
