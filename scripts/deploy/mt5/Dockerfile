@@ -36,6 +36,7 @@ RUN dpkg --add-architecture i386 && \
       xvfb x11vnc \
       xfce4 xfce4-terminal dbus-x11 \
       novnc websockify \
+      xdotool wmctrl \
       wget unzip ca-certificates fonts-liberation && \
     rm -rf /var/lib/apt/lists/*
 

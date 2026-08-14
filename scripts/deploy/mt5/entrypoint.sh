@@ -15,12 +15,23 @@ set -euo pipefail
 
 # ── Graceful shutdown: simpan workspace MT5 (EA attach persist) ─────────
 # Docker stop/restart kirim SIGTERM ke PID 1 (entrypoint). Trap ini
-# menjalankan `wineserver -k` GRACEFUL (WM_QUIT, bukan SIGKILL) sehingga
-# MT5 sempat SAVE workspace (chart + EA attachment) sebelum exit.
+# menjalankan shutdown GRACEFUL sehingga MT5 SAVE workspace (chart + EA
+# attachment) sebelum exit:
+#   1. xdotool WM_CLOSE (windowclose) → MT5 tampilkan dialog "save?"
+#   2. xdotool key Return → klik tombol default (Save) pada dialog
+#   3. wineserver -k → fallback cleanup
 # Tanpa ini, MT5 di-kill paksa → workspace tidak tersimpan → restart
 # berikutnya restore profile lama (EA attach hilang).
 graceful_shutdown() {
-  echo "==> Graceful shutdown: wineserver -k (save MT5 workspace)..." >&2
+  echo "==> Graceful shutdown: WM_CLOSE ke MT5 + save workspace..." >&2
+  # Cari window MetaTrader (nama window mengandung "MetaTrader" atau
+  # "MT5" — broker HFM pakai "MetaTrader"). windowclose = WM_CLOSE proper.
+  xdotool search --name "MetaTrader" windowclose 2>/dev/null || true
+  sleep 4
+  # Dialog "Do you want to save..." muncul → tekan default button (Save).
+  # Search lagi: window baru (dialog) juga punya nama MetaTrader.
+  xdotool search --name "MetaTrader" key Return 2>/dev/null || true
+  sleep 6
   wineserver -k >/dev/null 2>&1 || true
   sleep 8
   echo "==> Shutdown selesai. Exit." >&2
