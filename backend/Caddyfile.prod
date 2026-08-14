@@ -1,27 +1,35 @@
 http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
 
-    # Authelia portal
-    @auth_path {
-        path /auth*
-    }
-    handle @auth_path {
-        reverse_proxy authelia:9091
-    }
-
-    # API — HMAC auth, no Authelia
     handle /api/* {
         reverse_proxy api:8000
     }
-
     handle /health {
         reverse_proxy api:8000
     }
-
     handle /metrics {
         reverse_proxy api:8000
     }
 
-    # MT5 noVNC — Authelia protected
+    # Authelia portal + assets
+    # strip_prefix /auth agar Authelia terima /static/... bukan /auth/static/...
+    # server.address di Authelia config: tcp://0.0.0.0:9091/auth
+    # sehingga <base href="/auth/"> di-generate dan assets resolve dengan benar
+    handle /auth/* {
+        uri strip_prefix /auth
+        reverse_proxy authelia:9091
+    }
+
+    @superadmin {
+        path /superadmin*
+    }
+    handle @superadmin {
+        forward_auth authelia:9091 {
+            uri /api/verify?rd=https://lumine.biz.id/superadmin
+            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        }
+        reverse_proxy frontend:80
+    }
+
     @novnc {
         path /novnc*
     }
@@ -34,7 +42,6 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy lumine-mt5:6901
     }
 
-    # Dozzle — Authelia protected
     @dozzle {
         path /dozzle*
     }
@@ -47,7 +54,6 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy dozzle:8080
     }
 
-    # 9router — Authelia protected
     @ninerouter {
         path /9router*
     }
@@ -60,19 +66,6 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy 9router:20128
     }
 
-    # Superadmin SPA — Authelia protected
-    @superadmin {
-        path /superadmin*
-    }
-    handle @superadmin {
-        forward_auth authelia:9091 {
-            uri /api/verify?rd=https://lumine.biz.id/superadmin
-            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
-        }
-        reverse_proxy frontend:80
-    }
-
-    # Frontend SPA — public
     handle {
         reverse_proxy frontend:80
     }
@@ -84,5 +77,14 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         X-Frame-Options SAMEORIGIN
         Referrer-Policy same-origin
         -Server
+    }
+
+    handle_errors {
+        @unauth {
+            expression {http.error.status_code} == 401
+        }
+        handle @unauth {
+            redir https://lumine.biz.id/auth/?rd={http.request.uri} 302
+        }
     }
 }
