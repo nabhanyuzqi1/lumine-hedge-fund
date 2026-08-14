@@ -72,6 +72,31 @@ if [[ ! -f "${MT5_BIN}" ]]; then
 fi
 
 if [[ -f "${MT5_BIN}" ]]; then
+  # ── Install + compile LumineEA (Redis bridge agent) ──────────────────────
+  # Data folder MT5: <WINEPREFIX>/drive_c/AppData/Roaming/MetaQuotes/Terminal/<hash>/
+  MT5_DATA_DIR=$(find "${WINEPREFIX}/drive_c" -type d -path "*MetaQuotes/Terminal/*/MQL5" 2>/dev/null | head -1)
+  if [[ -n "${MT5_DATA_DIR}" ]]; then
+    echo "==> MT5 data dir: ${MT5_DATA_DIR}"
+    mkdir -p "${MT5_DATA_DIR}/Experts"
+    cp -f /opt/lumine-ea/LumineEA.mq5 "${MT5_DATA_DIR}/Experts/LumineEA.mq5"
+    METAEDITOR="${MT5_BIN%/terminal64.exe}/metaeditor64.exe"
+    if [[ -f "${METAEDITOR}" ]]; then
+      echo "==> Compile LumineEA via MetaEditor (headless)..."
+      timeout 60 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log"
+      sleep 2
+      if [[ -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
+        echo "==> LumineEA.ex5 COMPILED OK"
+      else
+        echo "==> WARNING: LumineEA compile gagal — cek ${MT5_DATA_DIR}/Experts/lumineea_compile.log" >&2
+        tail -5 "${MT5_DATA_DIR}/Experts/lumineea_compile.log" 2>/dev/null
+      fi
+    else
+      echo "==> WARNING: metaeditor64.exe tidak ditemukan — attach manual dari VNC"
+    fi
+  else
+    echo "==> WARNING: MQL5 data dir belum ada (terminal belum pernah jalan) — install EA setelah login"
+  fi
+
   echo "==> Jalankan MT5: ${MT5_BIN}"
   wine "${MT5_BIN}" &
   MT_PID=$!

@@ -135,7 +135,7 @@ async def create_order(
     settings: Annotated[Settings, Depends(get_settings)],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:orders")],
 ) -> Order:
-    """Submit a new order (persisted when DEMO_DATA=0)."""
+    """Submit a new order (persisted when DEMO_DATA=0, diteruskan ke MT5 via bridge)."""
     order_id = uuid4()
     if not settings.demo_data:
         async with get_sessionmaker()() as session:
@@ -149,6 +149,28 @@ async def create_order(
                 volume=request.volume,
                 price=request.price,
             )
+            # MT5 bridge: kirim OPEN ke EA (fire-and-forget — hasil datang
+            # async via mt5:results → SSE + journal). Gagal kirim tidak
+            # mem-blok order: status tetap PENDING, SSE akan laporkan ERROR.
+            from lumine.api.app import _app_state
+
+            bridge = _app_state.get("mt5_bridge")
+            if bridge is not None and request.order_type == "MARKET":
+                try:
+                    from lumine.trading.mt5_bridge import CommandMessage
+
+                    await bridge.send_command(
+                        CommandMessage(
+                            command_id=str(uuid4()),
+                            order_id=str(order_id),
+                            action="OPEN",
+                            symbol=request.symbol,
+                            volume=float(request.volume),
+                            order_type=request.side,
+                        )
+                    )
+                except Exception:  # pragma: no cover — bridge offline
+                    pass
             return _to_schema(order)
     return _demo_order(
         order_id=order_id,

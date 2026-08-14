@@ -44,5 +44,10 @@ WORKDIR /opt/mt5
 COPY entrypoint.sh /opt/mt5/entrypoint.sh
 RUN chmod +x /opt/mt5/entrypoint.sh
 
+# LumineEA (Redis bridge agent) — di-copy ke data folder MT5 oleh entrypoint
+# dan di-compile via MetaEditor64.exe (headless) saat container start.
+RUN mkdir -p /opt/lumine-ea
+COPY LumineEA.mq5 /opt/lumine-ea/LumineEA.mq5
+
 EXPOSE 5900 6901
 CMD ["/opt/mt5/entrypoint.sh"]

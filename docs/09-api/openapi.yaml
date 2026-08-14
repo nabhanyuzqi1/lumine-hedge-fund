@@ -674,7 +674,8 @@ paths:
       tags:
       - orders
       summary: Create Order
-      description: Submit a new order (persisted when DEMO_DATA=0).
+      description: Submit a new order (persisted when DEMO_DATA=0, diteruskan ke MT5
+        via bridge).
       operationId: create_order_api_v1_orders_post
       parameters:
       - name: X-Lumine-API-Key
