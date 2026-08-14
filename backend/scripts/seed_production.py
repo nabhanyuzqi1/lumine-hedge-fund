@@ -180,7 +180,6 @@ async def _seed_registry(session) -> dict[str, uuid.UUID]:
             status="production",
             name="forex_24x5",
             sessions={"sessions": ["asia", "london", "newyork"]},
-            code_hash=hashlib.sha256(b"lumine:calendar:v1").hexdigest(),
             description="Forex 24x5 calendar (weekend closed)",
         )
         session.add(row)
