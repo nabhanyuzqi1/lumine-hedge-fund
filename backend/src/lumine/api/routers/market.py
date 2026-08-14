@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 import math
-
-from sqlalchemy import select
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 
 from lumine.api.demo_data import (
     INSTRUMENTS,
@@ -101,7 +100,9 @@ async def list_symbol_signals(
         for i in range(3)
     ]
     visible = items[pagination.offset : pagination.offset + pagination.limit]
-    return PaginatedList(items=visible, total=len(items), limit=pagination.limit, offset=pagination.offset)
+    return PaginatedList(
+        items=visible, total=len(items), limit=pagination.limit, offset=pagination.offset
+    )
 
 
 @router.get("/signals", response_model=PaginatedList[Signal])
@@ -164,7 +165,7 @@ async def get_ohlcv(
     Fallback: demo deterministic random walk HANYA kalau tabel kosong
     (agar UI tetap hidup sebelum seed pertama).
     """
-    from lumine.data.models import Bars1M, Bars1H, Bars1D
+    from lumine.data.models import Bars1D, Bars1H, Bars1M
     from lumine.data.session import get_sessionmaker
 
     bar_models = {"1m": Bars1M, "1h": Bars1H, "1d": Bars1D}
@@ -316,8 +317,7 @@ async def get_correlation(
                 row[b] = matrix[b][a]
             else:
                 raw = math.sin(
-                    (sum(ord(c) for c in a) + sum(ord(c) for c in b)) / 40.0
-                    + window / 30.0 * 0.1
+                    (sum(ord(c) for c in a) + sum(ord(c) for c in b)) / 40.0 + window / 30.0 * 0.1
                 )
                 row[b] = round(max(-0.85, min(0.95, raw)), 4)
         matrix[a] = row

@@ -10,9 +10,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from decimal import Decimal
+from functools import partial
 
 import redis.asyncio as redis  # async client — await redis.from_url() valid
-
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
@@ -51,6 +51,87 @@ from lumine.trading.position_sync import PositionSyncWorker
 _app_state: dict[str, object] = {}
 
 
+async def _handle_order_fill(result: ResultMessage, sse_publisher: object) -> None:
+    """MT5 result → SSE order-fill + sync status ke DB (FILLED/REJECTED)."""
+    await sse_publisher.publish_order_fill(
+        order_id=result.order_id,
+        status=result.status,
+        fill_price=result.fill_price or 0.0,
+        fill_volume=result.fill_volume or 0.0,
+        mt5_ticket=result.ticket,
+    )
+    try:
+        from lumine.data.repositories import OrderRepository
+        from lumine.data.session import get_sessionmaker
+
+        async with get_sessionmaker()() as session:
+            repo = OrderRepository(session)
+            if result.status == "FILLED":
+                await repo.update_status(
+                    result.order_id,
+                    status="filled",
+                    filled_volume=Decimal(str(result.fill_volume or 0)),
+                    mt5_ticket=result.ticket,
+                    fill_price=Decimal(str(result.fill_price or 0)),
+                )
+            elif result.status == "REJECTED":
+                await repo.update_status(
+                    result.order_id,
+                    status="rejected",
+                    rejected_reason=result.error or "rejected by MT5",
+                )
+    except Exception:  # pragma: no cover — DB transient
+        pass
+
+
+async def _seed_worker() -> None:
+    """Seed history worker: consume mt5:seed_bars (EA CopyRates)
+    → insert ke tabel bars_* (B-08 fondasi: TCA backfill butuh history).
+    """
+    from lumine.data.models import Bars1D, Bars1H, Bars1M
+    from lumine.data.session import get_sessionmaker
+    from lumine.shared.config import get_settings as _gs
+
+    bar_models = {"1m": Bars1M, "5m": None, "1h": Bars1H, "4h": None, "1d": Bars1D}
+    try:
+        r = await redis.from_url(_gs().redis_url)
+    except Exception:
+        return
+    while True:
+        try:
+            item = await r.brpop("mt5:seed_bars", timeout=5)
+            if not item:
+                continue
+            _, payload = item
+            data = json.loads(payload)
+            model = bar_models.get(data.get("timeframe", ""))
+            if model is None:
+                continue
+            async with get_sessionmaker()() as session:
+                rows = [
+                    model(
+                        ts=datetime.fromtimestamp(int(b["ts"]), UTC),
+                        symbol=str(data["symbol"]).upper(),
+                        open=Decimal(str(b["open"])),
+                        high=Decimal(str(b["high"])),
+                        low=Decimal(str(b["low"])),
+                        close=Decimal(str(b["close"])),
+                        volume=Decimal(str(b["volume"])),
+                        source="mt5",
+                    )
+                    for b in data.get("bars", [])
+                ]
+                if rows:
+                    session.add_all(rows)
+                    await session.commit()
+                    print(
+                        f"[SEED] {data.get('symbol')} {data.get('timeframe')} +{len(rows)} bars",
+                        flush=True,
+                    )
+        except Exception:
+            pass  # duplicate PK / transient — skip, tetap jalan
+
+
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: initialize trading infrastructure."""
@@ -76,87 +157,11 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         mt5_bridge = await MT5Bridge.from_url(settings.redis_url)
         _app_state["mt5_bridge"] = mt5_bridge
 
-        # Wire MT5Bridge results to SSEPublisher
-        async def on_order_fill(result: ResultMessage) -> None:
-            await sse_publisher.publish_order_fill(
-                order_id=result.order_id,
-                status=result.status,
-                fill_price=result.fill_price or 0.0,
-                fill_volume=result.fill_volume or 0.0,
-                mt5_ticket=result.ticket,
-            )
-            # Sync status balik ke DB (FILLED/REJECTED + filled_volume + ticket)
-            # — tanpa ini order tetap pending di /api/v1/orders.
-            try:
-                from lumine.data.session import get_sessionmaker
-                from lumine.data.repositories import OrderRepository
-
-                async with get_sessionmaker()() as session:
-                    repo = OrderRepository(session)
-                    if result.status == "FILLED":
-                        await repo.update_status(
-                            result.order_id,
-                            status="filled",
-                            filled_volume=Decimal(str(result.fill_volume or 0)),
-                            mt5_ticket=result.ticket,
-                            fill_price=Decimal(str(result.fill_price or 0)),
-                        )
-                    elif result.status == "REJECTED":
-                        await repo.update_status(
-                            result.order_id,
-                            status="rejected",
-                            rejected_reason=result.error or "rejected by MT5",
-                        )
-            except Exception:  # pragma: no cover — DB transient
-                pass
-
-        mt5_bridge.on_result(on_order_fill)  # type: ignore[arg-type]
+        # Wire MT5Bridge results to SSEPublisher + DB sync
+        mt5_bridge.on_result(partial(_handle_order_fill, sse_publisher=sse_publisher))  # type: ignore[arg-type]
         await mt5_bridge.start()
 
-        # Seed history worker: consume mt5:seed_bars (dari EA CopyRates)
-        # → insert ke tabel bars_* (B-08 fondasi: TCA backfill butuh history).
-        async def seed_worker() -> None:
-            from lumine.data.models import Bars1M, Bars1H, Bars1D
-            from lumine.data.session import get_sessionmaker
-            from lumine.shared.config import get_settings as _gs
-
-            bar_models = {"1m": Bars1M, "5m": None, "1h": Bars1H, "4h": None, "1d": Bars1D}
-            try:
-                r = await redis.from_url(_gs().redis_url)
-            except Exception:
-                return
-            while True:
-                try:
-                    item = await r.brpop("mt5:seed_bars", timeout=5)
-                    if not item:
-                        continue
-                    _, payload = item
-                    data = json.loads(payload)
-                    model = bar_models.get(data.get("timeframe", ""))
-                    if model is None:
-                        continue
-                    async with get_sessionmaker()() as session:
-                        rows = [
-                            model(
-                                ts=datetime.fromtimestamp(int(b["ts"]), UTC),
-                                symbol=str(data["symbol"]).upper(),
-                                open=Decimal(str(b["open"])),
-                                high=Decimal(str(b["high"])),
-                                low=Decimal(str(b["low"])),
-                                close=Decimal(str(b["close"])),
-                                volume=Decimal(str(b["volume"])),
-                                source="mt5",
-                            )
-                            for b in data.get("bars", [])
-                        ]
-                        if rows:
-                            session.add_all(rows)
-                            await session.commit()
-                            print(f"[SEED] {data.get('symbol')} {data.get('timeframe')} +{len(rows)} bars", flush=True)
-                except Exception:
-                    pass  # duplicate PK / transient — skip, tetap jalan
-
-        _app_state["seed_worker"] = asyncio.create_task(seed_worker())
+        _app_state["seed_worker"] = asyncio.create_task(_seed_worker())
 
     # Initialize PositionSyncWorker if database pool available
     pool = getattr(settings, "database_url", None)
@@ -243,6 +248,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """Prometheus text exposition (B-02). Scrape via loopback/caddy ACL."""
         registry = default_registry
         registry.set_gauge("lumine_process_uptime_seconds", time.monotonic())
-        return Response(content=registry.render_prometheus(), media_type="text/plain; version=0.0.4")
+        return Response(
+            content=registry.render_prometheus(), media_type="text/plain; version=0.0.4"
+        )
 
     return app

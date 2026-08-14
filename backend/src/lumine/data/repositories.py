@@ -120,7 +120,9 @@ class OrderRepository:
         if order is None:
             return None
         if order.status != "pending":
-            raise ValueError(f"order {order_id} is {order.status}, only pending orders are modifiable")
+            raise ValueError(
+                f"order {order_id} is {order.status}, only pending orders are modifiable"
+            )
         if price is not None:
             order.price = price
         if volume is not None:
@@ -133,9 +135,7 @@ class OrderRepository:
     async def cancel_all_pending(self) -> int:
         """Cancel every pending order; returns the number cancelled."""
         items = list(
-            (
-                await self._session.execute(select(Order).where(Order.status == "pending"))
-            ).scalars()
+            (await self._session.execute(select(Order).where(Order.status == "pending"))).scalars()
         )
         now = datetime.now(UTC)
         for order in items:
@@ -164,7 +164,9 @@ class PositionRepository:
         items = list(
             (
                 await self._session.execute(
-                    select(Position).where(Position.status == "open").order_by(Position.opened_at.desc())
+                    select(Position)
+                    .where(Position.status == "open")
+                    .order_by(Position.opened_at.desc())
                 )
             ).scalars()
         )

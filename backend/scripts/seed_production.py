@@ -10,6 +10,7 @@ Idempotent (skip kalau versi/record sudah ada). Bagian:
    (benchmark = arrival mid dari bars_1m di decision_ts; slippage_bps;
     TCA evidence ADR-0040)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -68,9 +69,7 @@ async def _seed_registry(session) -> dict[str, uuid.UUID]:
     for sub_role in ("technical_analyst", "macro_analyst", "risk_officer"):
         ver = f"prompt-{sub_role}-v1"
         row = (
-            await session.execute(
-                select(PromptVersion).where(PromptVersion.version == ver)
-            )
+            await session.execute(select(PromptVersion).where(PromptVersion.version == ver))
         ).scalar_one_or_none()
         if row is None:
             row = PromptVersion(
@@ -110,9 +109,7 @@ async def _seed_registry(session) -> dict[str, uuid.UUID]:
 
     # ── Policy ───────────────────────────────────────────────────────────
     row = (
-        await session.execute(
-            select(PolicyVersion).where(PolicyVersion.version == "policy-v1")
-        )
+        await session.execute(select(PolicyVersion).where(PolicyVersion.version == "policy-v1"))
     ).scalar_one_or_none()
     if row is None:
         row = PolicyVersion(
@@ -151,9 +148,7 @@ async def _seed_registry(session) -> dict[str, uuid.UUID]:
 
     # ── Regime ───────────────────────────────────────────────────────────
     row = (
-        await session.execute(
-            select(RegimeVersion).where(RegimeVersion.version == "regime-v1")
-        )
+        await session.execute(select(RegimeVersion).where(RegimeVersion.version == "regime-v1"))
     ).scalar_one_or_none()
     if row is None:
         row = RegimeVersion(
@@ -207,15 +202,9 @@ async def _arrival_mid(session, symbol: str, ts: datetime) -> Decimal | None:
 
 async def _backfill_fills(session, ids: dict[str, uuid.UUID]) -> int:
     """Orders status=filled tanpa Fill → Lineage + Fill + TcaRecord."""
-    orders = (
-        await session.execute(
-            select(Order).where(Order.status == "filled")
-        )
-    ).scalars().all()
+    orders = (await session.execute(select(Order).where(Order.status == "filled"))).scalars().all()
 
-    existing = set(
-        (await session.execute(select(Fill.lineage_id))).scalars().all()
-    )
+    existing = set((await session.execute(select(Fill.lineage_id))).scalars().all())
     done = 0
     for order in orders:
         # order_id bukan lineage_id — buat lineage baru per order (dedupe via fill.order_id? tidak ada kolom)
@@ -231,9 +220,7 @@ async def _backfill_fills(session, ids: dict[str, uuid.UUID]) -> int:
 
         fill_price = order.price or benchmark
         slippage_bps = (
-            (fill_price - benchmark) / benchmark * Decimal("10000")
-            if benchmark
-            else Decimal("0")
+            (fill_price - benchmark) / benchmark * Decimal("10000") if benchmark else Decimal("0")
         )
 
         lineage = LineageRecord(
@@ -319,7 +306,9 @@ async def main() -> None:
         await session.commit()
         print("[SEED] brokers/accounts OK (hfm / 235158357)")
         ids = await _seed_registry(session)
-        print(f"[SEED] registry OK: model={ids['model']} strategy={ids['strategy']} policy={ids['policy']}")
+        print(
+            f"[SEED] registry OK: model={ids['model']} strategy={ids['strategy']} policy={ids['policy']}"
+        )
         n = await _backfill_fills(session, ids)
         print(f"[SEED] TCA backfill: {n} fills + tca_records dibuat")
     print("[SEED] selesai")
