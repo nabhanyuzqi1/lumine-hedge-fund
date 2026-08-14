@@ -84,7 +84,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
             # Sync status balik ke DB (FILLED/REJECTED + filled_volume + ticket)
             # — tanpa ini order tetap pending di /api/v1/orders.
             try:
-                from lumine.api.deps import get_sessionmaker
+                from lumine.data.session import get_sessionmaker
                 from lumine.data.repositories import OrderRepository
 
                 async with get_sessionmaker()() as session:
