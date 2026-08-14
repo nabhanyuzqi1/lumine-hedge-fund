@@ -1177,7 +1177,7 @@ paths:
       tags:
       - lineage
       summary: List Lineage
-      description: List decision lineage records.
+      description: List decision lineage records (DB-backed).
       operationId: list_lineage_api_v1_lineage_get
       parameters:
       - name: limit
@@ -1239,7 +1239,7 @@ paths:
       tags:
       - lineage
       summary: Get Lineage Record
-      description: Return a single lineage record.
+      description: Return a single lineage record (DB-backed).
       operationId: get_lineage_record_api_v1_lineage__lineage_id__get
       parameters:
       - name: lineage_id
@@ -2092,7 +2092,7 @@ paths:
       tags:
       - journal
       summary: List Journal Entries
-      description: List trade journal entries.
+      description: 'List trade journal entries (DB-backed: orders + workflow_journal).'
       operationId: list_journal_entries_api_v1_journal_get
       parameters:
       - name: limit
