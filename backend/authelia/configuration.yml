@@ -1,32 +1,35 @@
 ---
-# Authelia configuration untuk Lumine Superadmin Control Center
-# Docs: https://www.authelia.com/configuration/prologue/introduction/
+# Authelia 4.38 configuration untuk Lumine Superadmin Control Center
+# Referensi: https://www.authelia.com/configuration/
 
 server:
-  host: 0.0.0.0
-  port: 9091
+  address: tcp://0.0.0.0:9091
 
 log:
   level: info
 
 theme: dark
 
-jwt_secret: ${AUTHELIA_JWT_SECRET}
+# identity_validation replaces jwt_secret di 4.38
+identity_validation:
+  reset_password:
+    jwt_secret: ${AUTHELIA_JWT_SECRET}
 
 default_redirection_url: http://166.88.227.177/superadmin
 
 totp:
   issuer: lumine-hedge-fund
+  disable: false
 
 authentication_backend:
   file:
     path: /config/users_database.yml
     password:
       algorithm: argon2id
-      iterations: 1
+      iterations: 3
       salt_length: 16
-      parallelism: 8
-      memory: 64
+      parallelism: 4
+      memory: 65536
 
 access_control:
   default_policy: deny
@@ -34,34 +37,40 @@ access_control:
     # Superadmin: semua route /superadmin/* dan embed routes
     - domain: "166.88.227.177"
       resources:
-        - "^/superadmin.*$"
-        - "^/novnc.*$"
-        - "^/9router.*$"
+        - "^/superadmin"
+        - "^/superadmin/.*$"
+        - "^/novnc"
+        - "^/novnc/.*$"
+        - "^/9router"
+        - "^/9router/.*$"
+        - "^/dozzle"
+        - "^/dozzle/.*$"
       policy: one_factor
 
-    # API admin endpoints juga dilindungi via Authelia
-    - domain: "166.88.227.177"
-      resources:
-        - "^/api/v1/admin/system-config.*$"
-        - "^/api/v1/admin/system-info.*$"
-      policy: one_factor
-
-    # Route publik (trading terminal, API biasa)
+    # Public bypass (tidak perlu auth)
     - domain: "166.88.227.177"
       resources:
         - "^/$"
-        - "^/terminal.*$"
-        - "^/dashboard.*$"
-        - "^/health.*$"
-        - "^/api/v1/(?!admin/system).*$"
+        - "^/terminal"
+        - "^/terminal/.*$"
+        - "^/dashboard"
+        - "^/dashboard/.*$"
+        - "^/health$"
+        - "^/api/v1/.*$"
+        - "^/auth"
+        - "^/auth/.*$"
       policy: bypass
 
 session:
-  name: lumine_session
   secret: ${AUTHELIA_SESSION_SECRET}
-  expiration: 3600  # 1 jam
-  inactivity: 300   # 5 menit
-  domain: 166.88.227.177
+  name: lumine_session
+  expiration: 3600    # 1 jam
+  inactivity: 300     # 5 menit
+
+  cookies:
+    - domain: "166.88.227.177"
+      authelia_url: http://166.88.227.177/auth/
+      default_redirection_url: http://166.88.227.177/superadmin
 
   redis:
     host: redis
@@ -74,6 +83,7 @@ regulation:
   ban_time: 300
 
 storage:
+  encryption_key: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
   local:
     path: /config/db.sqlite3
 
