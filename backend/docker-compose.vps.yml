@@ -91,18 +91,21 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: lumine-keycloak
-    command: start-dev
+    command: start
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_URL: https://lumine.biz.id/auth
+      KC_HOSTNAME_ADMIN_URL: https://lumine.biz.id/auth
       KC_HTTP_RELATIVE_PATH: /auth
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: lumine
       KC_DB_PASSWORD: ${DB_PASSWORD}
       KC_HEALTH_ENABLED: true
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
       KC_METRICS_ENABLED: false
     expose:
       - "8080"
