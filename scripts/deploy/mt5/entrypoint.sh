@@ -158,6 +158,19 @@ PYEOF
     fi
 
     METAEDITOR="${MT5_BIN%/terminal64.exe}/MetaEditor64.exe"
+
+    # ── Restore workspace Default (EA attach persist) ──────────────────────
+    # Backup dibuat dari profile valid (chart XAUUSD + LumineEA) yang user
+    # simpan via File → Save As Profile. PITFALL: MT5 di wine TIDAK auto-save
+    # workspace saat exit (WM_CLOSE langsung tutup tanpa save) → restore
+    # manual setiap boot agar EA auto-attach tanpa setup ulang.
+    WORKSPACE_BACKUP="${WINEPREFIX}/lumine-workspace-backup"
+    if [[ -d "${WORKSPACE_BACKUP}" ]]; then
+      echo "==> Restore workspace Default (EA attach)"
+      mkdir -p "${MT5_DATA_DIR}/Profiles/Charts/Default"
+      cp -f "${WORKSPACE_BACKUP}/"*.chr "${MT5_DATA_DIR}/Profiles/Charts/Default/" 2>/dev/null || true
+    fi
+
     if [[ -f "${METAEDITOR}" ]]; then
       echo "==> Compile LumineEA via MetaEditor (headless)..."
       # Retry ×3 dengan wineserver reset: compile pertama bisa hang karena
