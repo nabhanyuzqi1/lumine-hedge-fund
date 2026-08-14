@@ -99,6 +99,10 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         X-Content-Type-Options nosniff
         X-Frame-Options SAMEORIGIN
         Referrer-Policy same-origin
+        # HSTS: 6 bulan, include subdomains (browser force HTTPS via CF)
+        Strict-Transport-Security "max-age=15768000; includeSubDomains"
+        # Batasi API browser (camera/mic/geolocation tidak dipakai)
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
         -Server
     }
 }
