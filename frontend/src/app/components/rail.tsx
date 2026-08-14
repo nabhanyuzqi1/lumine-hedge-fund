@@ -5,14 +5,18 @@ import type { Workspace } from "@/stores/uiStore";
 import { WORKSPACES, useUiStore } from "@/stores/uiStore";
 
 const WORKSPACE_PATHS: Record<string, string> = {
-  trading: "/terminal",
-  research: "/dashboard",
-  risk: "/health",
-  ops: "/journal",
+  trading: "/app/terminal",
+  research: "/app/dashboard",
+  risk: "/app/health",
+  ops: "/app/journal",
   superadmin: "/superadmin",
 };
 
 const PATH_WORKSPACE: Record<string, string> = {
+  "/app/terminal": "trading",
+  "/app/dashboard": "research",
+  "/app/health": "risk",
+  "/app/journal": "ops",
   "/terminal": "trading",
   "/dashboard": "research",
   "/health": "risk",

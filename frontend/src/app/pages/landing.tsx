@@ -1,12 +1,6 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-
-export function LandingPage() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    navigate("/terminal");
-  }, [navigate]);
-
-  return null;
-}
+/**
+ * Landing page entry point — re-exports the public landing page.
+ * Route "/" sekarang menampilkan halaman publik Lumine Hedge Fund,
+ * bukan redirect ke /terminal.
+ */
+export { LandingPublicPage as LandingPage } from "./landing-public";
