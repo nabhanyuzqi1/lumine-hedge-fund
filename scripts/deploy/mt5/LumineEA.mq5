@@ -1,421 +1,412 @@
 //+------------------------------------------------------------------+
-//| LumineEA.mq5 — Redis bridge agent untuk Lumine Hedge Fund        |
-//|                                                                  |
-//| Transport: Redis (raw TCP via MQL5 Socket*)                      |
-//|   - BRPOP  mt5:commands  → eksekusi order (OPEN/CLOSE/MODIFY)    |
-//|   - PUBLISH mt5:results  → hasil eksekusi (ResultMessage JSON)    |
-//|   - LPUSH  mt5:ticks     → feed harga real (bid/ask/last)         |
-//|                                                                  |
-//| Protokol sinkron dengan backend/src/lumine/trading/mt5_bridge.py |
-//| (CommandMessage / ResultMessage).                                |
+//| LumineEA.mq5 — HTTP bridge agent untuk Lumine Hedge Fund (v2)    |
+//| Transport: HTTP polling (bypass demo account socket block)       |
+//| Redis HTTP Proxy: GET /commands?timeout=30 → BRPOP mt5:commands  |
+//|                   POST /results → PUBLISH mt5:results             |
+//|                   POST /ticks → LPUSH mt5:ticks                   |
 //+------------------------------------------------------------------+
+#property copyright "Lumine"
+#property version   "2.00"
 #property strict
-#property description "Lumine Redis bridge: execute orders from mt5:commands, publish results + ticks"
 
-input string  InpRedisHost = "172.18.0.3";     // Redis host (IP hardcoded bypass DNS)
-input int     InpRedisPort = 6379;              // Redis port
-input bool    InpPublishTicks = true;        // Publish ticks ke mt5:ticks
-input int     InpCommandTimeoutMs = 60000;   // BRPOP timeout per loop
+input string  InpProxyURL = "http://redis-http-proxy:8765";  // Redis HTTP proxy URL
 
-// Redis channels (harus match mt5_bridge.py)
-#define CMD_QUEUE   "mt5:commands"
-#define RES_CHANNEL "mt5:results"
-#define TICK_QUEUE  "mt5:ticks"
-
-int    g_socket   = INVALID_HANDLE;
-bool   g_connected = false;
-double g_lastBid  = 0.0;
-double g_lastAsk  = 0.0;
-ulong  g_lastTickMs = 0;
+// ── Global State ──────────────────────────────────────────────────────────
+string g_proxyURL;
+datetime g_lastTickTime = 0;
 
 //+------------------------------------------------------------------+
-//| JSON field extraction (minimal, cukup untuk CommandMessage)      |
+//| Expert initialization                                             |
 //+------------------------------------------------------------------+
-string JsonGetString(const string json, const string key)
+int OnInit()
   {
-   string pattern = "\"" + key + "\"";
-   int pos = StringFind(json, pattern);
-   if(pos < 0)
-      return "";
-   int colon = StringFind(json, ":", pos + StringLen(pattern));
-   if(colon < 0)
-      return "";
-   int start = StringFind(json, "\"", colon + 1);
-   if(start < 0)
-      return "";
-   int end = StringFind(json, "\"", start + 1);
-   if(end < 0)
-      return "";
-   return StringSubstr(json, start + 1, end - start - 1);
-  }
-
-double JsonGetDouble(const string json, const string key)
-  {
-   string pattern = "\"" + key + "\"";
-   int pos = StringFind(json, pattern);
-   if(pos < 0)
-      return 0.0;
-   int colon = StringFind(json, ":", pos + StringLen(pattern));
-   if(colon < 0)
-      return 0.0;
-   int start = colon + 1;
-   while(start < StringLen(json) && (StringGetCharacter(json, start) == ' ' ||
-         StringGetCharacter(json, start) == '\t'))
-      start++;
-   if(start >= StringLen(json))
-      return 0.0;
-   if(StringGetCharacter(json, start) == 'n')   // null
-      return 0.0;
-   int end = start;
-   while(end < StringLen(json))
+   g_proxyURL = InpProxyURL;
+   Print("LumineEA starting (HTTP transport): proxy=", g_proxyURL);
+   
+   // WebRequest whitelist check (MT5 security policy)
+   string allowed[];
+   if(!TerminalInfoString(TERMINAL_MQID, allowed))
      {
-      ushort c = StringGetCharacter(json, end);
-      if(c == ',' || c == '}' || c == ' ')
-         break;
-      end++;
+      Print("WARNING: WebRequest may be restricted. Add ", g_proxyURL, " to Tools → Options → Expert Advisors → Allow WebRequest for listed URL");
      }
-   string num = StringSubstr(json, start, end - start);
-   if(num == "")
-      return 0.0;
-   return StringToDouble(num);
+   
+   Print("LumineEA ready (HTTP polling mode)");
+   return(INIT_SUCCEEDED);
   }
 
 //+------------------------------------------------------------------+
-//| Redis protocol helpers                                           |
+//| Expert deinitialization                                           |
 //+------------------------------------------------------------------+
-bool RedisSend(const string cmd)
+void OnDeinit(const int reason)
   {
-   if(g_socket == INVALID_HANDLE)
-      return false;
-   uchar data[];
-   StringToCharArray(cmd, data, 0, StringLen(cmd), CP_UTF8);
-   int sent = SocketSend(g_socket, data, ArraySize(data));
-   return sent > 0;
+   Print("LumineEA stopping: reason=", reason);
   }
 
-// Baca sampai CRLF. Return false jika timeout/error.
-bool RedisReadLine(string &out, const int timeoutMs)
+//+------------------------------------------------------------------+
+//| Expert tick function                                              |
+//+------------------------------------------------------------------+
+void OnTick()
   {
-   out = "";
-   ulong start = GetTickCount64();
-   while(GetTickCount64() - start < (ulong)timeoutMs)
+   // Send tick to Redis (throttle: 1 per second)
+   datetime now = TimeCurrent();
+   if(now > g_lastTickTime)
      {
-      uchar buf[1];
-      uint available = SocketIsReadable(g_socket);
-      if(available > 0)
+      g_lastTickTime = now;
+      SendTick();
+     }
+   
+   // Poll for commands (non-blocking with timeout=1)
+   PollCommands();
+  }
+
+//+------------------------------------------------------------------+
+//| Poll Redis for commands via HTTP                                  |
+//+------------------------------------------------------------------+
+void PollCommands()
+  {
+   string url = g_proxyURL + "/commands?timeout=1";
+   char   data[];
+   char   result[];
+   string headers = "Content-Type: application/json\r\n";
+   
+   int res = WebRequest("GET", url, headers, 2000, data, result, headers);
+   
+   if(res == 200)
+     {
+      string json = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+      if(StringLen(json) > 2)  // Not empty JSON
         {
-         uint n = SocketRead(g_socket, buf, 1, 500);
-         if(n == 1)
-           {
-            out += CharToString(buf[0]);
-            if(StringLen(out) >= 2 && StringSubstr(out, StringLen(out) - 2) == "\r\n")
-               return true;
-           }
-        }
-      Sleep(5);
-     }
-   return false;
-  }
-
-// Baca N byte (untuk bulk string Redis $<len>\r\n<payload>\r\n)
-bool RedisReadBytes(const int n, string &out)
-  {
-   out = "";
-   ulong start = GetTickCount64();
-   while(StringLen(out) < n && GetTickCount64() - start < 5000)
-     {
-      uchar buf[256];
-      uint available = SocketIsReadable(g_socket);
-      if(available > 0)
-        {
-         int want = MathMin(256, n - StringLen(out));
-         uint got = SocketRead(g_socket, buf, want, 500);
-         if(got > 0)
-            out += CharArrayToString(buf, 0, (int)got, CP_UTF8);
-        }
-      Sleep(5);
-     }
-   return StringLen(out) >= n;
-  }
-
-bool RedisConnect()
-  {
-   if(g_socket != INVALID_HANDLE)
-      SocketClose(g_socket);
-   g_socket = SocketCreate();
-   if(g_socket == INVALID_HANDLE)
-      return false;
-   if(!SocketConnect(g_socket, InpRedisHost, InpRedisPort, 5000))
-     {
-      SocketClose(g_socket);
-      g_socket = INVALID_HANDLE;
-      return false;
-     }
-   g_connected = true;
-   return true;
-  }
-
-// BRPOP mt5:commands 0 → payload atau empty string jika error/timeout.
-string RedisBRPop(const int timeoutMs)
-  {
-   string cmd = "BRPOP " + CMD_QUEUE + " 0\r\n";
-   if(!RedisSend(cmd))
-      return "";
-   string line;
-   if(!RedisReadLine(line, timeoutMs))
-      return "";
-   // Response: *2\r\n$13\r\nmt5:commands\r\n$<len>\r\n<payload>\r\n
-   if(StringGetCharacter(line, 0) == '*')
-     {
-      // skip array header line (sudah dibaca), baca $13 + key
-      string l2;
-      if(!RedisReadLine(l2, timeoutMs)) return "";
-      if(StringGetCharacter(l2, 0) == '$')
-        {
-         int keyLen = (int)StringToInteger(StringSubstr(l2, 1));
-         string key;
-         if(!RedisReadBytes(keyLen + 2, key)) return "";
-         string l3;
-         if(!RedisReadLine(l3, timeoutMs)) return "";
-         if(StringGetCharacter(l3, 0) == '$')
-           {
-            int payloadLen = (int)StringToInteger(StringSubstr(l3, 1));
-            string payload;
-            if(!RedisReadBytes(payloadLen + 2, payload)) return "";
-            return StringSubstr(payload, 0, payloadLen);
-           }
+         ProcessCommand(json);
         }
      }
-   return "";
-  }
-
-bool RedisPublish(const string channel, const string message)
-  {
-   string cmd = "PUBLISH " + channel + " " + IntegerToString(StringLen(message)) + "\r\n" + message + "\r\n";
-   return RedisSend(cmd);
-  }
-
-bool RedisLPush(const string queue, const string message)
-  {
-   string cmd = "LPUSH " + queue + " " + IntegerToString(StringLen(message)) + "\r\n" + message + "\r\n";
-   return RedisSend(cmd);
+   else if(res == 204)
+     {
+      // No command available (timeout expired) — normal, not an error
+     }
+   else if(res == -1)
+     {
+      int err = GetLastError();
+      if(err != 0)  // Suppress repeat errors
+        {
+         Print("PollCommands WebRequest failed: error=", err, " (Add proxy URL to WebRequest whitelist)");
+        }
+     }
   }
 
 //+------------------------------------------------------------------+
-//| Order execution                                                  |
+//| Send tick data to Redis via HTTP                                 |
 //+------------------------------------------------------------------+
-string ExecuteCommand(const string payload)
+void SendTick()
   {
-   string commandId  = JsonGetString(payload, "command_id");
-   string orderId    = JsonGetString(payload, "order_id");
-   string action     = JsonGetString(payload, "action");
-   string symbol     = JsonGetString(payload, "symbol");
-   string orderType  = JsonGetString(payload, "order_type");
-   double volume     = JsonGetDouble(payload, "volume");
-   double stopLoss   = JsonGetDouble(payload, "stop_loss");
-   double takeProfit = JsonGetDouble(payload, "take_profit");
+   string symbol = Symbol();
+   double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
+   double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
+   datetime timestamp = TimeCurrent();
+   
+   string json = StringFormat("{\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,\"timestamp\":%d}",
+                              symbol, bid, ask, timestamp);
+   
+   char data[];
+   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
+   ArrayResize(data, ArraySize(data) - 1);  // Remove null terminator
+   
+   char result[];
+   string headers = "Content-Type: application/json\r\n";
+   string url = g_proxyURL + "/ticks";
+   
+   int res = WebRequest("POST", url, headers, 2000, data, result, headers);
+   
+   if(res != 200 && res != -1)
+     {
+      Print("SendTick failed: http_code=", res);
+     }
+  }
 
-   MqlTradeRequest req;
-   MqlTradeResult  res;
-   ZeroMemory(req);
-   ZeroMemory(res);
-
-   req.symbol   = symbol;
-   req.volume   = volume;
-   req.sl       = stopLoss  > 0.0 ? stopLoss : 0.0;
-   req.tp       = takeProfit > 0.0 ? takeProfit : 0.0;
-   req.comment  = "LUMINE:" + orderId;
-   req.deviation = 20;
-
-   int status = "REJECTED";
-   long ticket = 0;
-   double fillPrice = 0.0;
-   double fillVolume = 0.0;
-   int errCode = 0;
-   string errMsg = "";
-
+//+------------------------------------------------------------------+
+//| Process command JSON from Redis                                   |
+//+------------------------------------------------------------------+
+void ProcessCommand(const string json)
+  {
+   // Parse JSON manually (MQL5 tidak punya JSON parser built-in)
+   string id = ExtractJsonString(json, "id");
+   string action = ExtractJsonString(json, "action");
+   
+   Print("Command received: id=", id, " action=", action);
+   
    if(action == "OPEN")
      {
-      req.action = TRADE_ACTION_DEAL;
-      req.type   = (orderType == "SELL") ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
-      req.price  = (req.type == ORDER_TYPE_BUY)
-                   ? SymbolInfoDouble(symbol, SYMBOL_ASK)
-                   : SymbolInfoDouble(symbol, SYMBOL_BID);
+      string symbol = ExtractJsonString(json, "symbol");
+      string side = ExtractJsonString(json, "side");
+      double lots = ExtractJsonDouble(json, "lots");
+      double sl = ExtractJsonDouble(json, "sl");
+      double tp = ExtractJsonDouble(json, "tp");
+      
+      ExecuteOpen(id, symbol, side, lots, sl, tp);
      }
    else if(action == "CLOSE")
      {
-      // order_id = posisi yang ditutup; cari posisi dengan komentar LUMINE:orderId
-      req.action = TRADE_ACTION_DEAL;
-      req.position = FindPositionTicket(orderId);
-      req.type = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
-                 ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
-      req.price = (req.type == ORDER_TYPE_SELL)
-                  ? SymbolInfoDouble(symbol, SYMBOL_BID)
-                  : SymbolInfoDouble(symbol, SYMBOL_ASK);
+      string ticket_str = ExtractJsonString(json, "ticket");
+      ulong ticket = (ulong)StringToInteger(ticket_str);
+      
+      ExecuteClose(id, ticket);
      }
    else if(action == "MODIFY")
      {
-      req.action = TRADE_ACTION_SLTP;
-      req.position = FindPositionTicket(orderId);
+      string ticket_str = ExtractJsonString(json, "ticket");
+      ulong ticket = (ulong)StringToInteger(ticket_str);
+      double sl = ExtractJsonDouble(json, "sl");
+      double tp = ExtractJsonDouble(json, "tp");
+      
+      ExecuteModify(id, ticket, sl, tp);
      }
    else
      {
-      errMsg = "unknown action: " + action;
-      errCode = -1;
+      SendResult(id, "ERROR", 0, "Unknown action: " + action, 0);
      }
+  }
 
-   if(errCode == 0 && OrderSend(req, res))
+//+------------------------------------------------------------------+
+//| Execute OPEN order                                                |
+//+------------------------------------------------------------------+
+void ExecuteOpen(const string id, const string symbol, const string side, 
+                 double lots, double sl, double tp)
+  {
+   ENUM_ORDER_TYPE orderType = (side == "BUY") ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+   double price = (side == "BUY") ? SymbolInfoDouble(symbol, SYMBOL_ASK) : SymbolInfoDouble(symbol, SYMBOL_BID);
+   
+   MqlTradeRequest req = {};
+   MqlTradeResult res = {};
+   
+   req.action = TRADE_ACTION_DEAL;
+   req.symbol = symbol;
+   req.volume = lots;
+   req.type = orderType;
+   req.price = price;
+   req.sl = sl;
+   req.tp = tp;
+   req.deviation = 20;
+   req.magic = 20260814;
+   req.comment = "Lumine:" + id;
+   req.type_filling = ORDER_FILLING_FOK;
+   
+   if(OrderSend(req, res))
      {
-      if(res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_PLACED)
+      if(res.retcode == TRADE_RETCODE_DONE)
         {
-         status = "FILLED";
-         ticket = res.order;
-         fillPrice = res.price;
-         fillVolume = res.volume;
+         SendResult(id, "FILLED", (long)res.order, "", res.price);
         }
       else
         {
-         status = "REJECTED";
-         errCode = (int)res.retcode;
-         errMsg = RetcodeStr(res.retcode);
+         SendResult(id, "REJECTED", 0, RetcodeStr(res.retcode), 0);
         }
      }
    else
      {
-      status = "ERROR";
-      errCode = (int)res.retcode;
-      errMsg = res.retcode == 0 ? "OrderSend failed" : RetcodeStr(res.retcode);
+      SendResult(id, "ERROR", 0, "OrderSend failed: retcode=" + IntegerToString(res.retcode), 0);
      }
-
-   string result = StringFormat(
-      "{\"command_id\":\"%s\",\"order_id\":\"%s\",\"ticket\":%I64d,\"status\":\"%s\","
-      "\"fill_price\":%.5f,\"fill_volume\":%.2f,\"error_code\":%d,\"error_message\":\"%s\","
-      "\"timestamp\":\"%s\"}",
-      commandId, orderId, ticket, status, fillPrice, fillVolume, errCode,
-      EscapeJson(errMsg), TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS));
-
-   RedisPublish(RES_CHANNEL, result);
-   return result;
   }
 
-long FindPositionTicket(const string orderId)
+//+------------------------------------------------------------------+
+//| Execute CLOSE order                                               |
+//+------------------------------------------------------------------+
+void ExecuteClose(const string id, ulong ticket)
   {
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   if(!PositionSelectByTicket(ticket))
      {
-      ulong ticket = PositionGetTicket(i);
-      if(ticket == 0)
-         continue;
-      if(PositionSelectByTicket(ticket))
+      SendResult(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0);
+      return;
+     }
+   
+   MqlTradeRequest req = {};
+   MqlTradeResult res = {};
+   
+   req.action = TRADE_ACTION_DEAL;
+   req.position = ticket;
+   req.symbol = PositionGetString(POSITION_SYMBOL);
+   req.volume = PositionGetDouble(POSITION_VOLUME);
+   req.type = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+   req.price = (req.type == ORDER_TYPE_SELL) ? SymbolInfoDouble(req.symbol, SYMBOL_BID) : SymbolInfoDouble(req.symbol, SYMBOL_ASK);
+   req.deviation = 20;
+   req.magic = 20260814;
+   req.comment = "Lumine:CLOSE:" + id;
+   req.type_filling = ORDER_FILLING_FOK;
+   
+   if(OrderSend(req, res))
+     {
+      if(res.retcode == TRADE_RETCODE_DONE)
         {
-         string comment = PositionGetString(POSITION_COMMENT);
-         if(StringFind(comment, "LUMINE:" + orderId) >= 0)
-            return (long)ticket;
+         SendResult(id, "CLOSED", (long)res.order, "", res.price);
+        }
+      else
+        {
+         SendResult(id, "REJECTED", 0, RetcodeStr(res.retcode), 0);
         }
      }
-   return 0;
+   else
+     {
+      SendResult(id, "ERROR", 0, "OrderSend CLOSE failed: retcode=" + IntegerToString(res.retcode), 0);
+     }
   }
 
+//+------------------------------------------------------------------+
+//| Execute MODIFY order                                              |
+//+------------------------------------------------------------------+
+void ExecuteModify(const string id, ulong ticket, double sl, double tp)
+  {
+   if(!PositionSelectByTicket(ticket))
+     {
+      SendResult(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0);
+      return;
+     }
+   
+   MqlTradeRequest req = {};
+   MqlTradeResult res = {};
+   
+   req.action = TRADE_ACTION_SLTP;
+   req.position = ticket;
+   req.symbol = PositionGetString(POSITION_SYMBOL);
+   req.sl = sl;
+   req.tp = tp;
+   
+   if(OrderSend(req, res))
+     {
+      if(res.retcode == TRADE_RETCODE_DONE)
+        {
+         SendResult(id, "MODIFIED", (long)ticket, "", 0);
+        }
+      else
+        {
+         SendResult(id, "REJECTED", 0, RetcodeStr(res.retcode), 0);
+        }
+     }
+   else
+     {
+      SendResult(id, "ERROR", 0, "OrderSend MODIFY failed: retcode=" + IntegerToString(res.retcode), 0);
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Send result to Redis via HTTP                                     |
+//+------------------------------------------------------------------+
+void SendResult(const string id, const string status, long ticket, 
+                const string error, double fillPrice)
+  {
+   string json = StringFormat("{\"id\":\"%s\",\"status\":\"%s\",\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f}",
+                              id, status, ticket, EscapeJson(error), fillPrice);
+   
+   char data[];
+   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
+   ArrayResize(data, ArraySize(data) - 1);
+   
+   char result[];
+   string headers = "Content-Type: application/json\r\n";
+   string url = g_proxyURL + "/results";
+   
+   int res = WebRequest("POST", url, headers, 2000, data, result, headers);
+   
+   if(res != 200)
+     {
+      Print("SendResult failed: http_code=", res, " json=", json);
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Helper: Extract string from JSON (simple parser)                 |
+//+------------------------------------------------------------------+
+string ExtractJsonString(const string json, const string key)
+  {
+   string pattern = "\"" + key + "\":\"";
+   int start = StringFind(json, pattern);
+   if(start == -1) return "";
+   
+   start += StringLen(pattern);
+   int end = StringFind(json, "\"", start);
+   if(end == -1) return "";
+   
+   return StringSubstr(json, start, end - start);
+  }
+
+//+------------------------------------------------------------------+
+//| Helper: Extract double from JSON                                 |
+//+------------------------------------------------------------------+
+double ExtractJsonDouble(const string json, const string key)
+  {
+   string pattern = "\"" + key + "\":";
+   int start = StringFind(json, pattern);
+   if(start == -1) return 0;
+   
+   start += StringLen(pattern);
+   int end = StringFind(json, ",", start);
+   if(end == -1) end = StringFind(json, "}", start);
+   if(end == -1) return 0;
+   
+   string value = StringSubstr(json, start, end - start);
+   StringTrimLeft(value);
+   StringTrimRight(value);
+   
+   return StringToDouble(value);
+  }
+
+//+------------------------------------------------------------------+
+//| Helper: Escape JSON string                                       |
+//+------------------------------------------------------------------+
 string EscapeJson(const string s)
   {
    string r = s;
    StringReplace(r, "\\", "\\\\");
    StringReplace(r, "\"", "\\\"");
+   StringReplace(r, "\n", "\\n");
+   StringReplace(r, "\r", "\\r");
    return r;
   }
 
-// MQL5 tidak punya retcode-to-string built-in — map sebagian, sisanya numerik.
-string RetcodeStr(const uint retcode)
+//+------------------------------------------------------------------+
+//| Helper: Retcode to string (simple map)                           |
+//+------------------------------------------------------------------+
+string RetcodeStr(uint retcode)
   {
    switch(retcode)
      {
-      case TRADE_RETCODE_DONE:        return "DONE";
-      case TRADE_RETCODE_REJECT:      return "REJECT";
-      case TRADE_RETCODE_INVALID_PRICE: return "INVALID_PRICE";
-      case TRADE_RETCODE_INVALID_STOPS: return "INVALID_STOPS";
-      case TRADE_RETCODE_NO_MONEY:    return "NO_MONEY";
-      case TRADE_RETCODE_MARKET_CLOSED: return "MARKET_CLOSED";
-      case TRADE_RETCODE_TIMEOUT:     return "TIMEOUT";
-      default:                        return "RETCODE_" + IntegerToString(retcode);
+      case 10004: return "REQUOTE";
+      case 10006: return "REJECT";
+      case 10007: return "CANCEL";
+      case 10008: return "PLACED";
+      case 10009: return "DONE";
+      case 10010: return "DONE_PARTIAL";
+      case 10011: return "ERROR";
+      case 10012: return "TIMEOUT";
+      case 10013: return "INVALID";
+      case 10014: return "INVALID_VOLUME";
+      case 10015: return "INVALID_PRICE";
+      case 10016: return "INVALID_STOPS";
+      case 10017: return "TRADE_DISABLED";
+      case 10018: return "MARKET_CLOSED";
+      case 10019: return "NO_MONEY";
+      case 10020: return "PRICE_CHANGED";
+      case 10021: return "PRICE_OFF";
+      case 10022: return "INVALID_EXPIRATION";
+      case 10023: return "ORDER_CHANGED";
+      case 10024: return "TOO_MANY_REQUESTS";
+      case 10025: return "NO_CHANGES";
+      case 10026: return "SERVER_DISABLES_AT";
+      case 10027: return "CLIENT_DISABLES_AT";
+      case 10028: return "LOCKED";
+      case 10029: return "FROZEN";
+      case 10030: return "INVALID_FILL";
+      case 10031: return "CONNECTION";
+      case 10032: return "ONLY_REAL";
+      case 10033: return "LIMIT_ORDERS";
+      case 10034: return "LIMIT_VOLUME";
+      case 10035: return "INVALID_ORDER";
+      case 10036: return "POSITION_CLOSED";
+      case 10038: return "INVALID_CLOSE_VOLUME";
+      case 10039: return "CLOSE_ORDER_EXIST";
+      case 10040: return "LIMIT_POSITIONS";
+      case 10041: return "REJECT_CANCEL";
+      case 10042: return "LONG_ONLY";
+      case 10043: return "SHORT_ONLY";
+      case 10044: return "CLOSE_ONLY";
+      default: return "UNKNOWN_" + IntegerToString(retcode);
      }
-  }
-
-//+------------------------------------------------------------------+
-//| Publish tick ke mt5:ticks (throttle 200ms)                       |
-//+------------------------------------------------------------------+
-void PublishTick()
-  {
-   if(!InpPublishTicks)
-      return;
-   ulong now = GetTickCount64();
-   if(now - g_lastTickMs < 200)
-      return;
-   g_lastTickMs = now;
-
-   string symbol = _Symbol;
-   double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
-   double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
-   if(bid == 0.0 || ask == 0.0)
-      return;
-   double last = SymbolInfoDouble(symbol, SYMBOL_LAST);
-   if(last == 0.0)
-      last = (bid + ask) / 2.0;
-
-   string tick = StringFormat(
-      "{\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,\"last\":%.5f,\"ts\":\"%s\"}",
-      symbol, bid, ask, last, TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS));
-   RedisLPush(TICK_QUEUE, tick);
-  }
-
-//+------------------------------------------------------------------+
-//| Expert initialization / deinit                                   |
-//+------------------------------------------------------------------+
-int OnInit()
-  {
-   Print("LumineEA starting: redis=", InpRedisHost, ":", InpRedisPort);
-   g_connected = RedisConnect();
-   if(g_connected)
-      Print("LumineEA connected to Redis");
-   else
-      Print("LumineEA Redis connect FAILED — retry in OnTick");
-   EventSetTimer(1);
-   return INIT_SUCCEEDED;
-  }
-
-void OnDeinit(const int reason)
-  {
-   EventKillTimer();
-   if(g_socket != INVALID_HANDLE)
-     {
-      SocketClose(g_socket);
-      g_socket = INVALID_HANDLE;
-     }
-  }
-
-//+------------------------------------------------------------------+
-//| Timer: heartbeat / reconnect + command processing                |
-//+------------------------------------------------------------------+
-void OnTimer()
-  {
-   if(!g_connected && !RedisConnect())
-      return;
-
-   // AutoTrading harus ON — kalau off, order ditolak MT5.
-   if(!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED))
-      return;
-
-   string payload = RedisBRPop(InpCommandTimeoutMs);
-   if(payload != "")
-     {
-      Print("LumineEA command: ", payload);
-      ExecuteCommand(payload);
-     }
-  }
-
-//+------------------------------------------------------------------+
-//| OnTick: publish real market data                                 |
-//+------------------------------------------------------------------+
-void OnTick()
-  {
-   PublishTick();
   }
 //+------------------------------------------------------------------+

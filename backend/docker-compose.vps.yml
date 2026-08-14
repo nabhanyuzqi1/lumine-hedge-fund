@@ -91,6 +91,27 @@ services:
       timeout: 5s
       retries: 3
 
+  # ── Redis HTTP Proxy — bypass MQL5 socket limitation (demo account block) ──
+  # EA polling GET /commands?timeout=30 → BRPOP mt5:commands
+  # EA POST /results → PUBLISH mt5:results
+  # EA POST /ticks → LPUSH mt5:ticks
+  redis-http-proxy:
+    image: python:3.12-slim
+    restart: unless-stopped
+    command: >
+      sh -c "pip install --quiet flask redis &&
+             python /app/redis_http_proxy.py"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - PROXY_PORT=8765
+    volumes:
+      - ./scripts:/app:ro
+    expose:
+      - "8765"
+    depends_on:
+      redis:
+        condition: service_healthy
+
   # ── Dozzle — container log monitoring (superadmin side) ──────────────────
   # Loopback-only: akses via Caddy /dozzle (dilindungi forward_auth internal).
   dozzle:
