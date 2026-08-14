@@ -45,7 +45,9 @@ describe("TerminalPage", () => {
   it("renders the trading grid with fixture-fallback data", async () => {
     renderPage();
 
-    expect(screen.getByRole("heading", { name: /Terminal/i })).toBeDefined();
+    // Command bar menggantikan h1 "Terminal" (Bloomberg-style, tanpa judul duplikat).
+    expect(screen.getByLabelText(/Symbol command line/i)).toBeDefined();
+    expect(screen.getByTestId("ticker-tape")).toBeDefined();
     expect(screen.getByTestId("quote-panel")).toBeDefined();
     expect(screen.getByTestId("risk-gauges")).toBeDefined();
     expect(document.querySelector(".data-testid-positions-table")).toBeDefined();

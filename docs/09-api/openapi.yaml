@@ -9,7 +9,7 @@ paths:
       tags:
       - portfolio
       summary: Get Portfolio Summary
-      description: Return the current portfolio summary.
+      description: 'Return the current portfolio summary (B-05: live from PostgreSQL).'
       operationId: get_portfolio_summary_api_v1_portfolio_summary_get
       parameters:
       - name: X-Lumine-API-Key
@@ -256,13 +256,12 @@ paths:
       tags:
       - portfolio
       summary: Get Equity Curve
-      description: 'Equity curve (B-06) — deterministic demo series until storage
-        wiring.
+      description: 'Equity curve (B-05/B-06) — derived dari live positions (opened_at
+        +
 
+        mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
 
-        Points: nav/equity with a mild upward drift and a drawdown dip at the
-
-        2/3 mark, 1h spacing, newest first.'
+        atau belum ada posisi (bukan demo — lihat _real_equity_series).'
       operationId: get_equity_curve_api_v1_portfolio__portfolio_id__equity_get
       parameters:
       - name: portfolio_id
@@ -3143,46 +3142,21 @@ paths:
       summary: Login
       description: Authenticate and set the ``lumine_session`` HttpOnly cookie.
       operationId: login_api_auth_login_post
-      parameters:
-      - name: X-Lumine-API-Key
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Lumine-Api-Key
-      - name: X-Lumine-Timestamp
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Lumine-Timestamp
-      - name: X-Lumine-Signature
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Lumine-Signature
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
+        required: true
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                type: object
                 additionalProperties:
                   type: string
+                type: object
                 title: Response Login Api Auth Login Post
         '422':
           description: Validation Error

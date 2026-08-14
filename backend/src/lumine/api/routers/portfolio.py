@@ -30,6 +30,9 @@ router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 _DEMO_NAV = Decimal("100000.00")
 
+# Margin rate: 2% of notional (v1 single-portfolio convention).
+_MARGIN_RATE = Decimal("0.02")
+
 
 def _demo_summary(*, portfolio_id: str = "default", nav: Decimal = _DEMO_NAV) -> PortfolioSummary:
     """Deterministic portfolio snapshot (single-portfolio v1)."""
@@ -44,12 +47,127 @@ def _demo_summary(*, portfolio_id: str = "default", nav: Decimal = _DEMO_NAV) ->
     )
 
 
+async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary | None:
+    """Portfolio summary computed from live PostgreSQL state (B-05).
+
+    - open_pnl  : mark-to-market dari posisi terbuka (mid price live)
+    - margin    : 2% notional per posisi
+    - nav       : 100_000 (modal awal v1) + open_pnl
+    - closed_pnl: 0 — atribusi realized memerlukan B-08 backfill fills
+    Returns None saat DB tidak tersedia (caller fallback ke _demo_summary).
+    """
+    try:
+        from sqlalchemy import select
+
+        from lumine.data.models import Position
+        from lumine.data.repositories import PositionRepository
+        from lumine.data.session import get_sessionmaker
+
+        async with get_sessionmaker()() as session:
+            repo = PositionRepository(session)
+            positions = await repo.list_open()
+            if not positions:
+                return _demo_summary(portfolio_id=portfolio_id, nav=_DEMO_NAV)
+
+            open_pnl = Decimal("0")
+            margin_used = Decimal("0")
+            for pos in positions:
+                mid = mid_price(pos.symbol)
+                pnl = (mid - pos.avg_entry) * pos.size
+                if pos.side == "SHORT":
+                    pnl = -pnl
+                open_pnl += pnl
+                margin_used += mid * abs(pos.size) * _MARGIN_RATE
+
+            nav = (_DEMO_NAV + open_pnl).quantize(Decimal("0.01"))
+            cash = (nav - margin_used).quantize(Decimal("0.01"))
+            return PortfolioSummary(
+                portfolio_id=portfolio_id,
+                nav=nav,
+                cash=cash,
+                margin_used=margin_used.quantize(Decimal("0.01")),
+                open_pnl=open_pnl.quantize(Decimal("0.01")),
+                closed_pnl=Decimal("0.00"),
+                timestamp=datetime.now(UTC),
+            )
+    except Exception:  # noqa: BLE001 — DB down: fallback demo, jangan 500
+        return None
+
+
+async def _real_equity_series(total: int, offset: int, limit: int) -> list[EquityPoint] | None:
+    """Equity curve derived from live positions (B-05).
+
+    Poin NAV dibangun dari waktu buka posisi (opened_at) dengan mark-to-market
+    kumulatif posisi yang sudah terbuka saat itu (mid price live). Tanpa
+    posisi: satu titik NAV=100_000. None saat DB tidak tersedia.
+    """
+    try:
+        from lumine.data.models import Position
+        from lumine.data.session import get_sessionmaker
+
+        async with get_sessionmaker()() as session:
+            rows = (
+                await session.execute(
+                    select(Position).where(Position.status == "open").order_by(Position.opened_at)
+                )
+            ).scalars().all()
+
+            if not rows:
+                return [
+                    EquityPoint(
+                        ts=datetime.now(UTC),
+                        nav=_DEMO_NAV,
+                        equity=_DEMO_NAV,
+                        drawdown=Decimal("0"),
+                    )
+                ]
+
+            now = datetime.now(UTC)
+            points: list[EquityPoint] = []
+            running_pnl = Decimal("0")
+            peak = _DEMO_NAV
+            for pos in rows:
+                mid = mid_price(pos.symbol)
+                pnl = (mid - pos.avg_entry) * pos.size
+                if pos.side == "SHORT":
+                    pnl = -pnl
+                running_pnl += pnl
+                nav = _DEMO_NAV + running_pnl
+                peak = max(peak, nav)
+                drawdown = (nav / peak - Decimal("1")) if peak else Decimal("0")
+                points.append(
+                    EquityPoint(
+                        ts=pos.opened_at,
+                        nav=nav.quantize(Decimal("0.01")),
+                        equity=nav.quantize(Decimal("0.01")),
+                        drawdown=drawdown.quantize(Decimal("0.0001")),
+                    )
+                )
+            # Titik akhir: posisi terkini (sekali saja).
+            nav_now = (_DEMO_NAV + running_pnl).quantize(Decimal("0.01"))
+            points.append(
+                EquityPoint(
+                    ts=now,
+                    nav=nav_now,
+                    equity=nav_now,
+                    drawdown=(nav_now / peak - Decimal("1")).quantize(Decimal("0.0001")),
+                )
+            )
+            # Pagination (newest first, sesuai kontrak B-06).
+            points.reverse()
+            visible = points[offset : offset + limit]
+            return visible
+    except Exception:  # noqa: BLE001
+        return None
+
+
 @router.get("/summary", response_model=PortfolioSummary)
 async def get_portfolio_summary(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
 ) -> PortfolioSummary:
-    """Return the current portfolio summary."""
-    return _demo_summary()
+    """Return the current portfolio summary (B-05: live from PostgreSQL)."""
+    real = await _real_summary()
+    return real if real is not None else _demo_summary()
 
 
 @router.get("", response_model=PortfolioSummary)
@@ -57,7 +175,8 @@ async def get_portfolio(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
 ) -> PortfolioSummary:
     """Return the single (default) portfolio (B-06 portfolio CRUD)."""
-    return _demo_summary()
+    real = await _real_summary()
+    return real if real is not None else _demo_summary()
 
 
 @router.post(
@@ -107,13 +226,22 @@ async def get_equity_curve(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
     pagination: Annotated[Pagination, Depends()],
 ) -> PaginatedList[EquityPoint]:
-    """Equity curve (B-06) — deterministic demo series until storage wiring.
+    """Equity curve (B-05/B-06) — derived dari live positions (opened_at +
+    mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
+    atau belum ada posisi (bukan demo — lihat _real_equity_series)."""
 
-    Points: nav/equity with a mild upward drift and a drawdown dip at the
-    2/3 mark, 1h spacing, newest first.
-    """
     now = datetime.now(UTC)
     total = 240
+    real_items = await _real_equity_series(total, pagination.offset, pagination.limit)
+    if real_items is not None:
+        return PaginatedList(
+            items=real_items,
+            total=max(len(real_items), 1),
+            limit=pagination.limit,
+            offset=pagination.offset,
+        )
+
+    # Fallback: series deterministik (DB down / tests tanpa DB).
     visible = min(pagination.limit, max(total - pagination.offset, 0))
     items: list[EquityPoint] = []
     for i in range(visible):

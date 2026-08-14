@@ -15,7 +15,7 @@ export function SignalPanel({ symbol }: { symbol: string }) {
         <CardTitle>Analyst Signals</CardTitle>
         <CardDescription>{symbol} — committee inputs</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="max-h-[420px] space-y-2 overflow-y-auto">
         {isPending && <p className="py-2 text-center text-xs text-text-tertiary">Loading signals…</p>}
         {data && data.length === 0 && (
           <p className="py-2 text-center text-xs text-text-tertiary">No signals yet.</p>

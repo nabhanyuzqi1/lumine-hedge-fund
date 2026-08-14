@@ -126,19 +126,23 @@ export function JournalPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary">Journal</h1>
-          <p className="text-sm text-text-secondary">
-            Audit trail of decisions, trades, risk checks, and notes.
-          </p>
+    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 md:p-4">
+      {/* Bloomberg-style section header */}
+      <header className="flex items-center justify-between border-b border-line pb-2">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">LUMINE</span>
+          <span className="h-3 w-px bg-line" aria-hidden="true" />
+          <span className="font-mono text-[11px] uppercase tracking-widest text-ink-dim">JOURNAL</span>
+          <span className="hidden h-3 w-px bg-line sm:block" aria-hidden="true" />
+          <span className="hidden font-mono text-[10px] uppercase tracking-wider text-ink-faint sm:block">
+            decisions · trades · risk · notes
+          </span>
         </div>
         <button
           type="button"
           onClick={handleExportCsv}
           disabled={loadedPages.every((page) => page.entries.length === 0)}
-          className="rounded-chip border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary hover:bg-bg-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40"
+          className="rounded-chip border border-line bg-bg px-3 py-1 text-xs text-ink-dim hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40"
           data-testid="journal-export-csv"
         >
           Export CSV
@@ -265,11 +269,14 @@ export function JournalPage() {
         </CardContent>
       </Card>
 
-      <JournalTable
-        entries={filteredEntries}
-        expandedId={expandedId}
-        onRowClick={(entry) => setExpandedId((id) => (id === entry.id ? null : entry.id))}
-      />
+      {/* Tabel bounded: scroll internal saat data banyak (max-h + overflow) */}
+      <div className="max-h-[60vh] overflow-auto rounded-panel border border-line">
+        <JournalTable
+          entries={filteredEntries}
+          expandedId={expandedId}
+          onRowClick={(entry) => setExpandedId((id) => (id === entry.id ? null : entry.id))}
+        />
+      </div>
 
       {hasMore && (
         <div className="flex justify-center">

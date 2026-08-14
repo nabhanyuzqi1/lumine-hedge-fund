@@ -4,15 +4,22 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { useUiStore } from "@/stores/uiStore";
+import { AuthProvider } from "@/lib/auth/role-context";
 import { Rail } from "./rail";
 
 describe("Rail", () => {
-  it("renders workspace buttons and marks the active one", () => {
-    render(
+  function renderRail() {
+    return render(
       <MemoryRouter>
-        <Rail />
+        <AuthProvider>
+          <Rail />
+        </AuthProvider>
       </MemoryRouter>
     );
+  }
+
+  it("renders workspace buttons and marks the active one", () => {
+    renderRail();
 
     for (const ws of ["trading", "research", "risk", "ops"]) {
       expect(screen.getByTestId(`rail-${ws}`)).toBeDefined();
@@ -24,11 +31,7 @@ describe("Rail", () => {
 
   it("updates the workspace store when a button is clicked", async () => {
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <Rail />
-      </MemoryRouter>
-    );
+    renderRail();
 
     await user.click(screen.getByTestId("rail-risk"));
     expect(useUiStore.getState().workspace).toBe("risk");
@@ -39,11 +42,7 @@ describe("Rail", () => {
 
   it("is keyboard navigable between workspace buttons", async () => {
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <Rail />
-      </MemoryRouter>
-    );
+    renderRail();
 
     const first = screen.getByTestId("rail-trading");
     first.focus();

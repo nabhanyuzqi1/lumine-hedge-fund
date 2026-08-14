@@ -297,6 +297,7 @@ function TradingWorkspace() {
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
   const [modifyTarget, setModifyTarget] = useState<OrderFixture | null>(null);
+  const lastTick = useMarketStore((s) => s.ticks[selectedSymbol] ?? null);
 
   const bars = useMarketBars(selectedSymbol, timeframe);
   const positions = usePositions();
@@ -405,7 +406,7 @@ function TradingWorkspace() {
         >
           <LazyCandlestickChart
             bars={bars.data ?? []}
-            lastTick={useMarketStore((s) => s.ticks[selectedSymbol] ?? null)}
+            lastTick={lastTick}
             timeframe={timeframe}
             onTimeframeChange={setTimeframe}
           />
@@ -462,16 +463,10 @@ export function TerminalPage() {
   return (
     <>
       <TopBar />
-      <div className="mx-auto w-full max-w-[1600px] space-y-2 p-4">
+      <div className="mx-auto w-full max-w-[1600px] space-y-2 p-3 md:p-4">
         <CommandBar symbol={selectedSymbol} onSymbolChange={setSelectedSymbol} sseStatus={sseStatus} />
         <TickerTape />
-        <div className="flex items-baseline justify-between pt-1">
-          <div>
-            <h1 className="text-lg font-semibold text-ink">Terminal</h1>
-            <p className="text-sm text-ink-dim">
-              {selectedSymbol} · live REST + SSE — backend Phase 9
-            </p>
-          </div>
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             <PerformanceIndicator fps={fps} memoryMB={memMB} />
           </div>
