@@ -155,13 +155,12 @@ async def create_order(
             from lumine.api.app import _app_state
 
             bridge = _app_state.get("mt5_bridge")
-            print(f"[BRIDGE-DEBUG] bridge={bridge is not None} order_type={request.order_type!r} is_market={request.order_type.upper() == 'MARKET'}", flush=True)
             # PITFALL: schema Literal lowercase ("market") — compare case-insensitive
             if bridge is not None and request.order_type.upper() == "MARKET":
                 try:
                     from lumine.trading.mt5_bridge import CommandMessage
 
-                    cid = await bridge.send_command(
+                    await bridge.send_command(
                         CommandMessage(
                             command_id=str(uuid4()),
                             order_id=str(order_id),
@@ -171,9 +170,8 @@ async def create_order(
                             order_type=request.side,
                         )
                     )
-                    print(f"[BRIDGE-DEBUG] sent command {cid}", flush=True)
-                except Exception as exc:  # pragma: no cover — bridge offline
-                    print(f"[BRIDGE-DEBUG] send_command ERROR {exc!r}", flush=True)
+                except Exception:  # pragma: no cover — bridge offline
+                    pass
             return _to_schema(order)
     return _demo_order(
         order_id=order_id,

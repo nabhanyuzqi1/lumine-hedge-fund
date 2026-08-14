@@ -80,7 +80,15 @@ class OrderRepository:
         await self._session.refresh(order)
         return order
 
-    async def update_status(self, order_id: UUID, *, status: str, rejected_reason: str | None = None) -> Order | None:
+    async def update_status(
+        self,
+        order_id: UUID,
+        *,
+        status: str,
+        rejected_reason: str | None = None,
+        filled_volume: Decimal | None = None,
+        mt5_ticket: int | None = None,
+    ) -> Order | None:
         """Transition an order to a new status (cancel/modify core)."""
         order = await self._session.get(Order, order_id)
         if order is None:
@@ -88,6 +96,10 @@ class OrderRepository:
         order.status = status
         if rejected_reason is not None:
             order.rejected_reason = rejected_reason
+        if filled_volume is not None:
+            order.filled_volume = filled_volume
+        if mt5_ticket is not None:
+            order.mt5_ticket = mt5_ticket
         order.updated_at = datetime.now(UTC)
         await self._session.commit()
         await self._session.refresh(order)

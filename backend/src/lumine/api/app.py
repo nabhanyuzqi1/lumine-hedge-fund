@@ -7,6 +7,7 @@ import asyncio
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
+from decimal import Decimal
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -80,6 +81,29 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
                 fill_volume=result.fill_volume or 0.0,
                 mt5_ticket=result.ticket,
             )
+            # Sync status balik ke DB (FILLED/REJECTED + filled_volume + ticket)
+            # — tanpa ini order tetap pending di /api/v1/orders.
+            try:
+                from lumine.api.deps import get_sessionmaker
+                from lumine.data.repositories import OrderRepository
+
+                async with get_sessionmaker()() as session:
+                    repo = OrderRepository(session)
+                    if result.status == "FILLED":
+                        await repo.update_status(
+                            result.order_id,
+                            status="filled",
+                            filled_volume=Decimal(str(result.fill_volume or 0)),
+                            mt5_ticket=result.ticket,
+                        )
+                    elif result.status == "REJECTED":
+                        await repo.update_status(
+                            result.order_id,
+                            status="rejected",
+                            rejected_reason=result.error or "rejected by MT5",
+                        )
+            except Exception:  # pragma: no cover — DB transient
+                pass
 
         mt5_bridge.on_result(on_order_fill)  # type: ignore[arg-type]
         await mt5_bridge.start()
