@@ -104,7 +104,7 @@ bool RedisReadLine(string &out, const int timeoutMs)
       uint available = SocketIsReadable(g_socket);
       if(available > 0)
         {
-         uint n = SocketReceive(g_socket, buf, 1, 500);
+         uint n = SocketRead(g_socket, buf, 1, 500);
          if(n == 1)
            {
             out += CharToString(buf[0]);
@@ -129,7 +129,7 @@ bool RedisReadBytes(const int n, string &out)
       if(available > 0)
         {
          int want = MathMin(256, n - StringLen(out));
-         uint got = SocketReceive(g_socket, buf, want, 500);
+         uint got = SocketRead(g_socket, buf, want, 500);
          if(got > 0)
             out += CharArrayToString(buf, 0, (int)got, CP_UTF8);
         }
