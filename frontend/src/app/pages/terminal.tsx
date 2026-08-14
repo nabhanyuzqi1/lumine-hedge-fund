@@ -6,6 +6,7 @@ import { usePerformanceMetrics } from "@/hooks/usePerformanceMetrics";
 import { PerformanceIndicator } from "@/components/monitoring/performance-indicator";
 import type { Timeframe } from "@/components/charts/candlestick-chart";
 import { ChartCard } from "@/components/charts/chart-card";
+import { TopBar } from "@/app/components/top-bar";
 
 // lightweight-charts (~500 kB) stays out of the entry eval window: the chart
 // only mounts after market bars resolve, so its chunk loads during idle.
@@ -276,20 +277,23 @@ export function TerminalPage() {
   const { fps, memoryMB: memMB } = usePerformanceMetrics();
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary">Terminal</h1>
-          <p className="text-sm text-text-secondary">
-            XAUUSD · live demo streams — backend Phase 9 pending
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <PerformanceIndicator fps={fps} memoryMB={memMB} />
-        </div>
-      </header>
+    <>
+      <TopBar />
+      <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4">
+        <header className="flex items-baseline justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-text-primary">Terminal</h1>
+            <p className="text-sm text-text-secondary">
+              XAUUSD · live demo streams — backend Phase 9 pending
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <PerformanceIndicator fps={fps} memoryMB={memMB} />
+          </div>
+        </header>
 
-      <TradingWorkspace />
-    </div>
+        <TradingWorkspace />
+      </div>
+    </>
   );
 }
