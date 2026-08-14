@@ -27,6 +27,15 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy frontend:80
     }
 
+    # ── MT5 Redis HTTP Proxy (bypass internal hostname WebRequest limitation) ──
+    # EA polling: GET /mt5-proxy/commands?timeout=1 → redis-http-proxy:8765
+    # POST /mt5-proxy/results, /mt5-proxy/ticks
+    # Tanpa forward_auth (EA tidak punya cookie session).
+    handle /mt5-proxy/* {
+        uri strip_prefix /mt5-proxy
+        reverse_proxy redis-http-proxy:8765
+    }
+
     # ── noVNC (MT5 desktop) — single-login: /novnc → vnc.html dengan
     # autoconnect + password dari env (tanpa login VNC kedua).
     # PITFALL: `redir` di dalam `handle {}` pecah di Caddy 2.11 (target jadi

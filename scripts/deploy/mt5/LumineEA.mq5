@@ -9,7 +9,7 @@
 #property version   "2.00"
 #property strict
 
-input string  InpProxyURL = "http://redis-http-proxy:8765";  // Redis HTTP proxy URL
+input string  InpProxyURL = "http://lumine.biz.id/mt5-proxy";  // Redis HTTP proxy URL (via Caddy)
 
 // ── Global State ──────────────────────────────────────────────────────────
 string g_proxyURL;
