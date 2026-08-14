@@ -99,6 +99,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
                             status="filled",
                             filled_volume=Decimal(str(result.fill_volume or 0)),
                             mt5_ticket=result.ticket,
+                            fill_price=Decimal(str(result.fill_price or 0)),
                         )
                     elif result.status == "REJECTED":
                         await repo.update_status(

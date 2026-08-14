@@ -88,6 +88,7 @@ class OrderRepository:
         rejected_reason: str | None = None,
         filled_volume: Decimal | None = None,
         mt5_ticket: int | None = None,
+        fill_price: Decimal | None = None,
     ) -> Order | None:
         """Transition an order to a new status (cancel/modify core)."""
         order = await self._session.get(Order, order_id)
@@ -100,6 +101,8 @@ class OrderRepository:
             order.filled_volume = filled_volume
         if mt5_ticket is not None:
             order.mt5_ticket = mt5_ticket
+        if fill_price is not None:
+            order.price = fill_price
         order.updated_at = datetime.now(UTC)
         await self._session.commit()
         await self._session.refresh(order)
