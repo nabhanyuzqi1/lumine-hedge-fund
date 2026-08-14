@@ -151,7 +151,8 @@ export const router = createBrowserRouter([
       },
       { path: "/admin", element: <Navigate to="/admin/keys" replace /> },
 
-      // Superadmin route — superadmin role required (AutheliaGuard di dalam SuperadminPage)
+      // Superadmin route — superadmin role required (Caddy forward_auth +
+      // SPA RequireRole, session cookie dari backend /api/auth/*)
       {
         path: "/superadmin",
         element: (
