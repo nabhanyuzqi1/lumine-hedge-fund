@@ -12,8 +12,8 @@
 #property strict
 #property description "Lumine Redis bridge: execute orders from mt5:commands, publish results + ticks"
 
-input string  InpRedisHost = "redis";        // Redis host
-input int     InpRedisPort = 6379;           // Redis port
+input string  InpRedisHost = "172.18.0.3";     // Redis host (IP hardcoded bypass DNS)
+input int     InpRedisPort = 6379;              // Redis port
 input bool    InpPublishTicks = true;        // Publish ticks ke mt5:ticks
 input int     InpCommandTimeoutMs = 60000;   // BRPOP timeout per loop
 
