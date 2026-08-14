@@ -173,6 +173,10 @@ PYEOF
 
     if [[ -f "${METAEDITOR}" ]]; then
       echo "==> Compile LumineEA via MetaEditor (headless)..."
+      # Hapus ex5 lama DULU: check -f ex5 jadi false-positive kalau ex5
+      # lama masih ada padahal compile baru gagal → ex5 basi tidak pernah
+      # diganti. Dengan rm, retry ×3 benar-benar menghasilkan ex5 baru.
+      rm -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5"
       # Retry ×3 dengan wineserver reset: compile pertama bisa hang karena
       # state wineserver dari proses yang di-kill (SIGKILL → lock stale).
       for attempt in 1 2 3; do
