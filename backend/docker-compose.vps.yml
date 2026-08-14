@@ -99,6 +99,9 @@ services:
       - DOZZLE_USERNAME=${DOZZLE_USERNAME:-lumine}
       - DOZZLE_PASSWORD=${DOZZLE_PASSWORD:-change-me-superadmin}
       - DOZZLE_LEVEL=info
+      # Served di /dozzle via Caddy strip_prefix → base path wajib diketahui
+      # dozzle agar asset (JS/CSS) ikut ber-prefix (fix dozzle blank).
+      - DOZZLE_BASE=/dozzle
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     expose:
@@ -110,6 +113,9 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       args:
+        # Client membaca VITE_API_BASE_URL (lib/api/core.ts buildUrl); VITE_API_URL
+        # dipertahankan untuk backward-compat arg lama.
+        VITE_API_BASE_URL: ${VITE_API_URL:-http://166.88.227.177}
         VITE_API_URL: ${VITE_API_URL:-http://166.88.227.177}
         VITE_LUMINE_API_KEY: ${VITE_LUMINE_API_KEY:-}
         VITE_LUMINE_API_SECRET: ${VITE_LUMINE_API_SECRET:-}

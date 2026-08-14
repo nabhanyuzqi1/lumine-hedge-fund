@@ -55,7 +55,9 @@ export function DashboardPage() {
         <span className="font-mono text-[11px] text-text-secondary">XAUUSD · MULTI-FRAME</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:max-h-[calc(100vh-9.5rem)] xl:grid-cols-3 xl:overflow-y-auto xl:pb-4 xl:pr-1">
+      {/* Grid scroll alami halaman (bukan bounded per group — user request);
+          hanya tabel individu yang dibatasi (signal panel max-h). */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="md:col-span-2 xl:col-span-3">
           <CandlestickChart
             bars={bars.data ?? []}
