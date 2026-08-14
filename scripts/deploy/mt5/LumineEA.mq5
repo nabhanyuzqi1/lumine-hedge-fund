@@ -28,6 +28,11 @@ int OnInit()
    // WebRequest whitelist: add proxy URL to Tools → Options → Expert Advisors
    // (MT5 tidak punya API untuk cek whitelist programmatically)
    
+   // PITFALL: polling di OnTick bergantung feed tick MT5 — kalau feed
+   // terputus (server push pause), OnTick tidak dipanggil → EA mati
+   // total. OnTimer 1s = polling mandiri, tidak butuh tick.
+   EventSetTimer(1);
+   
    Print("LumineEA ready (HTTP polling mode)");
    
    // Seed history bars (sekali; CopyRates → POST /seed/bars per chunk)
@@ -42,7 +47,25 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   EventKillTimer();
    Print("LumineEA stopping: reason=", reason);
+  }
+
+//+------------------------------------------------------------------+
+//| Expert timer — polling mandiri (tidak bergantung tick feed)      |
+//+------------------------------------------------------------------+
+void OnTimer()
+  {
+   // Send tick (throttle 1s; harga dari SymbolInfoTick — cache server)
+   datetime now = TimeCurrent();
+   if(now > g_lastTickTime)
+     {
+      g_lastTickTime = now;
+      SendTick();
+     }
+   
+   // Poll for commands (non-blocking with timeout=1)
+   PollCommands();
   }
 
 //+------------------------------------------------------------------+
@@ -108,16 +131,8 @@ void SeedHistory()
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Send tick to Redis (throttle: 1 per second)
-   datetime now = TimeCurrent();
-   if(now > g_lastTickTime)
-     {
-      g_lastTickTime = now;
-      SendTick();
-     }
-   
-   // Poll for commands (non-blocking with timeout=1)
-   PollCommands();
+   // Feed tick — polling utama di OnTimer (1s), OnTick tidak wajib.
+   // (Feed MT5 bisa pause tanpa mematikan EA.)
   }
 
 //+------------------------------------------------------------------+
