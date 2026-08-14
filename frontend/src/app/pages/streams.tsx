@@ -12,7 +12,12 @@ interface MarketDataEvent {
   tick: MarketTick;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+// VITE_API_BASE_URL mengandung /api/v1 (client.ts convention) — strip suffix
+// agar SSE url = origin + /api/v1/streams/...
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1").replace(
+  /\/api\/v1\/?$/,
+  ""
+);
 
 /** SSE stream monitor page — live Phase 9 streams → Zustand → table. */
 export function StreamsPage() {

@@ -113,9 +113,9 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       args:
-        # Client membaca VITE_API_BASE_URL (lib/api/core.ts buildUrl); VITE_API_URL
-        # dipertahankan untuk backward-compat arg lama.
-        VITE_API_BASE_URL: ${VITE_API_URL:-http://166.88.227.177}
+        # Client membaca VITE_API_BASE_URL (lib/api/core.ts buildUrl) — base
+        # HARUS mengandung /api/v1 (buildUrl append path router langsung).
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://166.88.227.177/api/v1}
         VITE_API_URL: ${VITE_API_URL:-http://166.88.227.177}
         VITE_LUMINE_API_KEY: ${VITE_LUMINE_API_KEY:-}
         VITE_LUMINE_API_SECRET: ${VITE_LUMINE_API_SECRET:-}

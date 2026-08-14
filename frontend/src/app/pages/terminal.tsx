@@ -308,8 +308,10 @@ function TradingWorkspace() {
   const streamKey = `market-data/${selectedSymbol}`;
 
   // Live market stream via Phase 9 SSE (HMAC-signed, fetch-based).
-  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
-  const streamUrl = `${apiBase}/api/v1/streams/market-data?symbol=${selectedSymbol}`;
+  // VITE_API_BASE_URL mengandung /api/v1 (client.ts convention) — strip
+  // suffix agar SSE url = origin + /api/v1/streams/...
+  const apiOrigin = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/api\/v1\/?$/, "");
+  const streamUrl = `${apiOrigin}/api/v1/streams/market-data?symbol=${selectedSymbol}`;
   const [sseHeaders, setSseHeaders] = useState<Record<string, string>>({});
 
   useEffect(() => {

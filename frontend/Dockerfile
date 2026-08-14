@@ -6,7 +6,11 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-# VITE_API_URL must be reachable from the BROWSER (core.ts base URL).
+# VITE_API_BASE_URL harus reachable dari BROWSER (client.ts base URL).
+# Konvensi: base MENGANDUNG /api/v1 (client.ts buildUrl meng-append path
+# router langsung). Terminal/streams SSE men-strip suffix ini.
+ARG VITE_API_BASE_URL=http://localhost:8000/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ARG VITE_API_URL=http://localhost:8000
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
