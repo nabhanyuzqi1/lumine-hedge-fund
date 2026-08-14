@@ -94,33 +94,56 @@ if [[ -f "${MT5_BIN}" ]]; then
     echo "==> MT5 data dir: ${MT5_DATA_DIR}"
     mkdir -p "${MT5_DATA_DIR}/Experts"
     cp -f /opt/lumine-ea/LumineEA.mq5 "${MT5_DATA_DIR}/Experts/LumineEA.mq5"
-    
+
     # ── Patch terminal.ini: auto-whitelist WebRequest URL ─────────────────
     # MT5 menyimpan whitelist di terminal.ini [Experts]\AllowWebRequest=...
-    # Tanpa ini, whitelist hilang setiap container restart → manual setup lagi.
+    # PITFALL: sed/echo menulis ASCII ke file UTF-16LE → mojibake (key tidak
+    # terbaca MT5). WAJIB decode → modify → encode ulang UTF-16LE via python.
     MT5_INI="${MT5_DATA_DIR}/../Config/terminal.ini"
     if [[ -f "${MT5_INI}" ]]; then
-      echo "==> Patch terminal.ini: auto-whitelist http://lumine.biz.id"
-      # Remove old entry if exists, add new one
-      sed -i '/^AllowWebRequest=/d' "${MT5_INI}" 2>/dev/null || true
-      # Add to [Experts] section (create if not exists)
-      if grep -q '^\[Experts\]' "${MT5_INI}"; then
-        sed -i '/^\[Experts\]/a AllowWebRequest=http://lumine.biz.id' "${MT5_INI}"
-      else
-        echo -e "\n[Experts]\nAllowWebRequest=http://lumine.biz.id" >> "${MT5_INI}"
-      fi
-      # Pastikan restore workspace aktif → chart + EA attach persist
-      # antar restart (MT5 default bisa off di portable mode).
-      sed -i '/^RestoreLast=/d' "${MT5_INI}" 2>/dev/null || true
-      if grep -q '^\[Common\]' "${MT5_INI}"; then
-        sed -i '/^\[Common\]/a RestoreLast=1' "${MT5_INI}"
-      else
-        echo -e "\n[Common]\nRestoreLast=1" >> "${MT5_INI}"
-      fi
+      echo "==> Patch terminal.ini: auto-whitelist http://lumine.biz.id + RestoreLast=1"
+      python3 - "${MT5_INI}" <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path, "rb") as f:
+    raw = f.read()
+# Normalisasi: hapus BOM jika ada, decode UTF-16LE
+if raw[:2] == b"\xff\xfe" or raw[:2] == b"\xfe\xff":
+    raw = raw[2:]
+text = raw.decode("utf-16-le")
+# CRLF explicit (hindari literal newline dalam heredoc)
+CRLF = chr(13) + chr(10)
+lines = text.split(CRLF)
+# Hapus entry lama (idempotent)
+lines = [l for l in lines if not l.strip().startswith(("AllowWebRequest=", "RestoreLast="))]
+# Pastikan section [Experts] dengan AllowWebRequest
+def ensure_section(lines, section, keyvals):
+    sec_idx = None
+    for i, l in enumerate(lines):
+        if l.strip() == section:
+            sec_idx = i
+            break
+    if sec_idx is None:
+        lines.append("")
+        lines.append(section)
+        sec_idx = len(lines) - 1
+    insert_at = sec_idx + 1
+    for kv in reversed(keyvals):
+        lines.insert(insert_at, kv)
+    return lines
+
+lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id"])
+lines = ensure_section(lines, "[Common]", ["RestoreLast=1"])
+new_text = CRLF.join(lines)
+# Tulis ulang dengan BOM + CRLF (format Windows)
+with open(path, "wb") as f:
+    f.write(b"\xff\xfe" + new_text.encode("utf-16-le"))
+print("    -> terminal.ini patched OK")
+PYEOF
     else
       echo "==> terminal.ini tidak ditemukan (first boot?) — whitelist persist setelah manual setup pertama kali"
     fi
-    
+
     METAEDITOR="${MT5_BIN%/terminal64.exe}/MetaEditor64.exe"
     if [[ -f "${METAEDITOR}" ]]; then
       echo "==> Compile LumineEA via MetaEditor (headless)..."
