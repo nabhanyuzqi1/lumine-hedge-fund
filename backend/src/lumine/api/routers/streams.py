@@ -62,6 +62,7 @@ _HEARTBEAT_DEFAULT_S = 15
 def get_market_service() -> MarketService:
     """Dependency to access market service from app state."""
     from lumine.api.app import _app_state
+
     return _app_state.get("market_service")
 
 
@@ -70,6 +71,7 @@ def get_sse_publisher(request: Request) -> SSEPublisher:
     if hasattr(request.state, "sse_publisher"):
         return request.state.sse_publisher
     from lumine.api.app import _app_state
+
     return _app_state.get("sse_publisher")
 
 
@@ -233,7 +235,9 @@ async def stream_market_data(
     async def market_event_stream():
         """Emit tick updates from MarketService cache."""
         host = "unknown" if request.client is None else request.client.host
-        key_id = request.state.principal.key_id if hasattr(request.state, "principal") else "anonymous"
+        key_id = (
+            request.state.principal.key_id if hasattr(request.state, "principal") else "anonymous"
+        )
         _acquire_slot(key_id, host)
 
         stream_id = uuid.uuid4().hex[:12]
@@ -262,18 +266,24 @@ async def stream_market_data(
                             stream_id,
                             "tick_update",
                             {
-                                "symbol": symbol,
-                                "bid": tick.bid,
-                                "ask": tick.ask,
-                                "volume": tick.volume,
-                                "timestamp": _iso_utc_ms(tick.timestamp),
+                                # Contract frontend: MarketDataEvent { tick: MarketTick }
+                                # (symbol, bid, ask, last, timestamp) — jangan field langsung.
+                                "tick": {
+                                    "symbol": symbol,
+                                    "bid": tick.bid,
+                                    "ask": tick.ask,
+                                    "last": tick.bid,
+                                    "timestamp": _iso_utc_ms(tick.timestamp),
+                                },
                             },
                         )
                         yield frame
                         last_tick_time = time.time()
 
                     with contextlib.suppress(TimeoutError):
-                        await asyncio.wait_for(request.is_disconnected(), timeout=_HEARTBEAT_MARKET_S)
+                        await asyncio.wait_for(
+                            request.is_disconnected(), timeout=_HEARTBEAT_MARKET_S
+                        )
                 except Exception:
                     break
 

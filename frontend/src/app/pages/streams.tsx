@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { NumericText } from "@/components/ui/numeric-text";
+import { buildAuthHeaders, getHmacCredentials } from "@/lib/api/auth";
 import { useSSE } from "@/hooks/useSSE";
 import { useMarketStore, usePortfolioStore, useStreamStore } from "@/stores";
 import type { MarketTick } from "@/stores";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 interface MarketDataEvent {
@@ -27,9 +28,30 @@ export function StreamsPage() {
   const positions = useMemo(() => Object.values(positionsById), [positionsById]);
   const setStreamState = useStreamStore((state) => state.setStreamState);
 
+  const streamPath = "/api/v1/streams/market-data?symbol=XAUUSD";
+  const [sseHeaders, setSseHeaders] = useState<Record<string, string>>({});
+
+  // PITFALL: backend require_scope("read:market") → SSE butuh HMAC headers,
+  // sama seperti terminal.tsx. Tanpa ini stream selalu 401 MISSING_AUTH.
+  useEffect(() => {
+    let active = true;
+    const creds = getHmacCredentials();
+    if (!creds) {
+      setSseHeaders({});
+      return;
+    }
+    buildAuthHeaders("GET", streamPath, "", creds.apiKey, creds.apiSecret).then((headers) => {
+      if (active) setSseHeaders(headers);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const { status, stale, error } = useSSE<MarketDataEvent>({
-    url: `${API_BASE_URL}/api/v1/streams/market-data?symbol=XAUUSD`,
-    enabled: true,
+    url: `${API_BASE_URL}${streamPath}`,
+    enabled: Object.keys(sseHeaders).length > 0 || !getHmacCredentials(),
+    headers: sseHeaders,
     onEvent: (envelope) => {
       if (envelope.data?.tick) {
         upsertTick(envelope.data.tick);
