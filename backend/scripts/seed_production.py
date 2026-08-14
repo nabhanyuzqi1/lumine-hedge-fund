@@ -240,7 +240,7 @@ async def _backfill_fills(session, ids: dict[str, uuid.UUID]) -> int:
             lineage_id=lin_id,
             decision_ts=ts,
             book=BOOK,
-            strategy_id=ids["strategy"],
+            strategy_version_id=ids["strategy"],
             symbol=order.symbol,
             side=order.side,
             verdict="BUY" if order.side == "buy" else "SELL",
@@ -256,6 +256,11 @@ async def _backfill_fills(session, ids: dict[str, uuid.UUID]) -> int:
             feature_version_id=ids["feature"],
             regime_version_id=ids["regime"],
             calendar_version_id=ids["calendar"],
+            trigger={"source": "seed_backfill", "order_id": str(order.order_id)},
+            proposal={"action": "BUY" if order.side == "buy" else "SELL", "symbol": order.symbol},
+            risk_context={"limit_checks": "bypassed_seed"},
+            prev_hash=hashlib.sha256(b"genesis").hexdigest(),
+            self_hash=hashlib.sha256(f"{lin_id}:{ts.isoformat()}".encode()).hexdigest(),
         )
         session.add(lineage)
         await session.flush()
