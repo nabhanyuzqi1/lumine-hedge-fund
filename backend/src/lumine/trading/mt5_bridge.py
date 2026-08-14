@@ -138,7 +138,10 @@ class MT5Bridge:
         """Process incoming result and notify callbacks."""
         for callback in self._result_callbacks:
             try:
-                callback(result)
+                res = callback(result)
+                # PITFALL: callback bisa coroutine (async def) — WAJIB await
+                if asyncio.iscoroutine(res):
+                    await res
             except Exception:
                 pass  # Individual callback errors should not block others
 
