@@ -119,7 +119,7 @@ async def get_command_status(
         raise HTTPException(status_code=404, detail="unknown command id")
     return RpcCommandResult(
         command_id=command_id,
-        command=result.get("command", "unknown"),
+        command=result.get("command") or "unknown",
         status=result["status"],
         result=result.get("result"),
         error=result.get("error"),

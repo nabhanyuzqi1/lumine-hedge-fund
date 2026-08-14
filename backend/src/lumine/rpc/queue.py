@@ -45,12 +45,12 @@ async def enqueue_command(command: str, payload: dict[str, Any] | None = None) -
     return command_id
 
 
-async def set_result(command_id: str, status: str, result: Any = None, error: str | None = None) -> None:
+async def set_result(command_id: str, status: str, result: Any = None, error: str | None = None, command: str | None = None) -> None:
     """Store the worker outcome for a command id."""
     r = await get_redis()
     record = {
         "command_id": command_id,
-        "command": None,  # backfilled by the worker when known
+        "command": command,
         "status": status,
         "result": result,  # nested JSON serializes fine via json.dumps(record)
         "error": error,

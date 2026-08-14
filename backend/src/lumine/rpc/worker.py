@@ -108,11 +108,11 @@ async def _process(
             result = await handler(payload, settings)  # type: ignore[arg-type]
         else:
             result = await handler(payload, publisher)  # type: ignore[arg-type]
-        await set_result(command_id, "completed", result=result)
+        await set_result(command_id, "completed", result=result, command=command)
         logger.info("rpc %s %s completed", command, command_id)
     except Exception as exc:  # noqa: BLE001 — worker must not die on one bad command
         logger.exception("rpc %s %s failed", command, command_id)
-        await set_result(command_id, "failed", error=str(exc))
+        await set_result(command_id, "failed", error=str(exc), command=command)
 
 
 def _decode_fields(fields: dict[bytes | str, bytes | str]) -> dict[str, str]:
