@@ -79,6 +79,25 @@ if [[ -f "${MT5_BIN}" ]]; then
     echo "==> MT5 data dir: ${MT5_DATA_DIR}"
     mkdir -p "${MT5_DATA_DIR}/Experts"
     cp -f /opt/lumine-ea/LumineEA.mq5 "${MT5_DATA_DIR}/Experts/LumineEA.mq5"
+    
+    # ── Patch terminal.ini: auto-whitelist WebRequest URL ─────────────────
+    # MT5 menyimpan whitelist di terminal.ini [Experts]\AllowWebRequest=...
+    # Tanpa ini, whitelist hilang setiap container restart → manual setup lagi.
+    MT5_INI="${MT5_DATA_DIR}/../config/terminal.ini"
+    if [[ -f "${MT5_INI}" ]]; then
+      echo "==> Patch terminal.ini: auto-whitelist http://lumine.biz.id"
+      # Remove old entry if exists, add new one
+      sed -i '/^AllowWebRequest=/d' "${MT5_INI}" 2>/dev/null || true
+      # Add to [Experts] section (create if not exists)
+      if grep -q '^\[Experts\]' "${MT5_INI}"; then
+        sed -i '/^\[Experts\]/a AllowWebRequest=http://lumine.biz.id' "${MT5_INI}"
+      else
+        echo -e "\n[Experts]\nAllowWebRequest=http://lumine.biz.id" >> "${MT5_INI}"
+      fi
+    else
+      echo "==> terminal.ini tidak ditemukan (first boot?) — whitelist persist setelah manual setup pertama kali"
+    fi
+    
     METAEDITOR="${MT5_BIN%/terminal64.exe}/MetaEditor64.exe"
     if [[ -f "${METAEDITOR}" ]]; then
       echo "==> Compile LumineEA via MetaEditor (headless)..."
