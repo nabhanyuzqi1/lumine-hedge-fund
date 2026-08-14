@@ -11,16 +11,22 @@ vi.mock("echarts/renderers");
 vi.mock("@/hooks/useDemoStreams", () => ({
   useDemoStreams: () => ({ lastTick: null, pnlSeries: [] }),
 }));
+vi.mock("@/app/components/top-bar", () => ({
+  TopBar: () => null,
+}));
 
 import { TerminalPage } from "@/app/pages/terminal";
 import { useUiStore } from "@/stores/uiStore";
+import { AuthProvider } from "@/lib/auth/role-context";
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <TerminalPage />
+        <AuthProvider>
+          <TerminalPage />
+        </AuthProvider>
       </QueryClientProvider>
     </MemoryRouter>
   );
