@@ -4,7 +4,8 @@ redis_http_proxy.py — HTTP REST gateway untuk Redis (bypass MQL5 socket limita
 
 EA polling:
   GET /commands?timeout=30 → BRPOP mt5:commands 30 → {id, action, ...}
-  POST /results → PUBLISH mt5:results + LPUSH mt5:ticks
+  POST /results → PUBLISH mt5:results
+  POST /ticks → LPUSH mt5:ticks
 
 Bridge tetap pakai Redis raw (tidak berubah).
 """
@@ -51,26 +52,23 @@ def commands():
 @app.route("/results", methods=["POST"])
 def results():
     """
-    PUBLISH mt5:results + LPUSH mt5:ticks (order result dari EA).
-    Body: {id, status, ticket, ...}
+    PUBLISH mt5:results (order result dari EA).
+    Body: {id, status, ticket, error, fill_price}
     """
     try:
         data = request.get_json(force=True)
         payload = json.dumps(data)
         # PUBLISH ke SSE subscribers
         r.publish("mt5:results", payload)
-        # LPUSH ke journal (batas 1000)
-        r.lpush("mt5:ticks", payload)
-        r.ltrim("mt5:ticks", 0, 999)
-        return jsonify({{"status": "ok"}}), 200
+        return jsonify({"status": "ok"}), 200
     except Exception as e:
-        return jsonify({{"error": str(e)}}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/ticks", methods=["POST"])
 def ticks():
     """
     LPUSH mt5:ticks (tick data dari EA: bid, ask, timestamp).
-    Body: {{symbol, bid, ask, timestamp}}
+    Body: {symbol, bid, ask, timestamp}
     """
     try:
         data = request.get_json(force=True)
@@ -78,9 +76,9 @@ def ticks():
         # LPUSH ke journal (batas 1000)
         r.lpush("mt5:ticks", payload)
         r.ltrim("mt5:ticks", 0, 999)
-        return jsonify({{"status": "ok"}}), 200
+        return jsonify({"status": "ok"}), 200
     except Exception as e:
-        return jsonify({{"error": str(e)}}), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))
