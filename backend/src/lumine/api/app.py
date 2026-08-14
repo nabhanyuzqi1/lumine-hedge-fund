@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from decimal import Decimal
 
-import redis
+import redis.asyncio as redis  # async client — await redis.from_url() valid
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
