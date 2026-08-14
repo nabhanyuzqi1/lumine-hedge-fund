@@ -88,6 +88,34 @@ services:
   # Proteksi semua route /superadmin/* via Caddy forward-auth.
   # Config di ./authelia/; user database di ./authelia/users_database.yml.
   # Env wajib: AUTHELIA_JWT_SECRET, AUTHELIA_SESSION_SECRET (di .env)
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: lumine-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME_URL: https://lumine.biz.id/auth
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: lumine
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: false
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   authelia:
     image: authelia/authelia:4.38
     container_name: lumine-authelia
@@ -162,3 +190,4 @@ volumes:
   caddy_data:
   caddy_config:
   authelia_data:
+
