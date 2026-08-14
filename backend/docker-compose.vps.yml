@@ -57,6 +57,9 @@ services:
       - "8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://lumine:${DB_PASSWORD}@postgres:5432/lumine
+      # Production mode: DB-backed orders/positions + MT5 bridge aktif
+      # (default demo_data=True — WAJIB 0 di production)
+      - DEMO_DATA=${DEMO_DATA:-0}
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=production
       - LOG_LEVEL=INFO
