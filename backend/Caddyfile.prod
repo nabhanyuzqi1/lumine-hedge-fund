@@ -40,9 +40,10 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         path /novnc/websockify*
     }
     handle @novnc_ws {
-        forward_auth api:8000 {
-            uri /api/auth/verify?role=admin
-        }
+        # PITFALL: forward_auth memecah WebSocket upgrade di Caddy 2.11
+        # (header Connection/Upgrade hilang → websockify lihat plain GET →
+        # 404). WS endpoint dibuka tanpa auth: VNC tetap dilindungi password
+        # (autoconnect URL), halaman vnc.html + asset tetap di-auth.
         uri strip_prefix /novnc
         reverse_proxy lumine-mt5:6901
     }
