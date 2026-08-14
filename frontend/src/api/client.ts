@@ -12,7 +12,7 @@
 
 import { buildAuthHeaders, getHmacCredentials } from "../lib/api/auth";
 
-const DEFAULT_BASE_URL = "http://localhost:8000/api/v1";
+const DEFAULT_BASE_URL = "/api/v1";
 
 export interface ApiEnvelope<T> {
   meta: {
@@ -59,7 +59,9 @@ function getBaseUrl(): string {
 function buildUrl(path: string, params?: Record<string, string | string[]>): string {
   const base = getBaseUrl().replace(/\/$/, "");
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  const url = new URL(`${base}${normalized}`);
+  // Base relatif ("/api/v1") → resolve terhadap origin halaman (same-origin,
+  // tanpa hardcode domain/IP — origin server tidak terekspos).
+  const url = new URL(`${base}${normalized}`, window.location.origin);
 
   if (params) {
     for (const [key, value] of Object.entries(params)) {

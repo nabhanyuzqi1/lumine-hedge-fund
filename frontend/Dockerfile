@@ -6,13 +6,19 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-# VITE_API_BASE_URL harus reachable dari BROWSER (client.ts base URL).
-# Konvensi: base MENGANDUNG /api/v1 (client.ts buildUrl meng-append path
-# router langsung). Terminal/streams SSE men-strip suffix ini.
-ARG VITE_API_BASE_URL=http://localhost:8000/api/v1
+# VITE_API_BASE_URL relatif ("/api/v1") — resolve ke origin halaman
+# (https://lumine.biz.id/api/v1 di prod). Tanpa IP/domain hardcode:
+# origin server tidak terekspos, zero CORS.
+ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ARG VITE_API_URL=http://localhost:8000
 ENV VITE_API_URL=$VITE_API_URL
+# HMAC credentials (getHmacCredentials) — wajib di-declare + ENV agar Vite
+# meng-inline import.meta.env.VITE_LUMINE_* saat build.
+ARG VITE_LUMINE_API_KEY=
+ENV VITE_LUMINE_API_KEY=$VITE_LUMINE_API_KEY
+ARG VITE_LUMINE_API_SECRET=
+ENV VITE_LUMINE_API_SECRET=$VITE_LUMINE_API_SECRET
 RUN npm run build
 
 # ── Stage 2: Static serve ─────────────────────────────────────────────────────
