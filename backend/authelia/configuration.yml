@@ -1,0 +1,83 @@
+---
+# Authelia configuration untuk Lumine Superadmin Control Center
+# Docs: https://www.authelia.com/configuration/prologue/introduction/
+
+server:
+  host: 0.0.0.0
+  port: 9091
+
+log:
+  level: info
+
+theme: dark
+
+jwt_secret: ${AUTHELIA_JWT_SECRET}
+
+default_redirection_url: http://166.88.227.177/superadmin
+
+totp:
+  issuer: lumine-hedge-fund
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2id
+      iterations: 1
+      salt_length: 16
+      parallelism: 8
+      memory: 64
+
+access_control:
+  default_policy: deny
+  rules:
+    # Superadmin: semua route /superadmin/* dan embed routes
+    - domain: "166.88.227.177"
+      resources:
+        - "^/superadmin.*$"
+        - "^/novnc.*$"
+        - "^/9router.*$"
+      policy: one_factor
+
+    # API admin endpoints juga dilindungi via Authelia
+    - domain: "166.88.227.177"
+      resources:
+        - "^/api/v1/admin/system-config.*$"
+        - "^/api/v1/admin/system-info.*$"
+      policy: one_factor
+
+    # Route publik (trading terminal, API biasa)
+    - domain: "166.88.227.177"
+      resources:
+        - "^/$"
+        - "^/terminal.*$"
+        - "^/dashboard.*$"
+        - "^/health.*$"
+        - "^/api/v1/(?!admin/system).*$"
+      policy: bypass
+
+session:
+  name: lumine_session
+  secret: ${AUTHELIA_SESSION_SECRET}
+  expiration: 3600  # 1 jam
+  inactivity: 300   # 5 menit
+  domain: 166.88.227.177
+
+  redis:
+    host: redis
+    port: 6379
+    database_index: 1
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  disable_startup_check: true
+  filesystem:
+    filename: /config/notification.txt

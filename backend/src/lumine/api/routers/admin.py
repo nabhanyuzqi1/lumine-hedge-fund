@@ -17,6 +17,9 @@ from lumine.api.schemas.api import (
     CreateKeyRequest,
     KillSwitchRequest,
     KillSwitchStatus,
+    ServiceStatus,
+    SystemConfigUpdate,
+    SystemInfo,
 )
 from lumine.data.redis_client import get_redis
 from lumine.shared.config import Settings, get_settings
@@ -187,3 +190,92 @@ async def set_kill_switch(
         tier=request.tier,
         updated_at=now,
     )
+
+
+# ── Superadmin endpoints ───────────────────────────────────────────────────
+
+@router.get("/system-info", response_model=SystemInfo)
+async def get_system_info(
+    settings: Annotated[Settings, Depends(get_settings)],
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> SystemInfo:
+    """Snapshot status seluruh sistem — untuk superadmin control center."""
+    import subprocess  # noqa: PLC0415
+
+    services: list[ServiceStatus] = []
+    try:
+        result = subprocess.run(  # noqa: S603
+            ["docker", "ps", "-a", "--format", "{{.Names}}|{{.Status}}|{{.Image}}"],
+            capture_output=True, text=True, timeout=10,
+        )
+        for line in result.stdout.strip().splitlines():
+            parts = line.split("|")
+            if len(parts) < 3:
+                continue
+            name, status_raw, image = parts[0], parts[1], parts[2]
+            health = None
+            if "(healthy)" in status_raw:
+                health = "healthy"
+            elif "(unhealthy)" in status_raw:
+                health = "unhealthy"
+            elif "(health: starting)" in status_raw:
+                health = "starting"
+            running = "Up" in status_raw
+            services.append(ServiceStatus(
+                name=name,
+                status="running" if running else "stopped",
+                health=health,
+                image=image,
+                uptime=status_raw,
+            ))
+    except Exception:  # noqa: BLE001
+        services = [ServiceStatus(name="unknown", status="unknown")]
+
+    return SystemInfo(
+        services=services,
+        llm_gateway_url=settings.llm_gateway_url,
+        llm_gateway_configured=bool(settings.llm_gateway_api_key),
+        demo_data=settings.demo_data,
+        environment=getattr(settings, "environment", "production"),
+        version="1.0.0",
+    )
+
+
+# Runtime override store — env vars tidak bisa diubah in-process di prod,
+# tapi kita simpan di Redis agar restart bisa memuat override.
+_SYSCONFIG_KEY = "lumine:system_config"
+
+
+@router.put("/system-config", response_model=dict)
+async def update_system_config(
+    request: SystemConfigUpdate,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    """Update konfigurasi runtime (LLM key, trading params).
+
+    Nilai disimpan ke Redis. Untuk apply penuh perlu restart container api.
+    Field None = tidak diubah.
+    """
+    r = await get_redis()
+    updates: dict[str, str] = {}
+    if request.llm_gateway_api_key is not None:
+        updates["llm_gateway_api_key"] = request.llm_gateway_api_key
+    if request.llm_gateway_url is not None:
+        updates["llm_gateway_url"] = request.llm_gateway_url
+    if request.demo_data is not None:
+        updates["demo_data"] = "1" if request.demo_data else "0"
+    if request.llm_daily_budget_usd is not None:
+        updates["llm_daily_budget_usd"] = str(request.llm_daily_budget_usd)
+    if request.llm_default_model is not None:
+        updates["llm_default_model"] = request.llm_default_model
+    if request.max_exposure_per_trade is not None:
+        updates["max_exposure_per_trade"] = str(request.max_exposure_per_trade)
+    if request.risk_per_trade is not None:
+        updates["risk_per_trade"] = str(request.risk_per_trade)
+    if request.max_daily_loss_pct is not None:
+        updates["max_daily_loss_pct"] = str(request.max_daily_loss_pct)
+
+    if updates:
+        await r.hset(_SYSCONFIG_KEY, mapping=updates)
+
+    return {"updated": list(updates.keys()), "note": "restart api container to apply all changes"}

@@ -40,6 +40,9 @@ const LazyAdminKeys = React.lazy(() =>
 const LazyWorkflowRunList = React.lazy(() =>
   import("./pages/workflow-run-list").then((m) => ({ default: m.WorkflowRunListPage }))
 );
+const LazySuperadmin = React.lazy(() =>
+  import("./pages/superadmin").then((m) => ({ default: m.SuperadminPage }))
+);
 
 export const router = createBrowserRouter([
   {
@@ -59,6 +62,7 @@ export const router = createBrowserRouter([
           { path: "/lineage/:lineageId", element: <LazyLineageDetail /> },
           { path: "/journal", element: <LazyJournal /> },
           { path: "/admin/keys", element: <LazyAdminKeys /> },
+          { path: "/superadmin", element: <LazySuperadmin /> },
         ],
       },
     ],

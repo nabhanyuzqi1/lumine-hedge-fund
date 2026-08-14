@@ -360,3 +360,39 @@ class CancelAllResult(BaseModel):
 
     cancelled: int
     portfolio_id: str
+
+
+# ── Superadmin / System ─────────────────────────────────────────────────────
+
+class ServiceStatus(BaseModel):
+    """Status satu container/service di stack."""
+
+    name: str
+    status: str  # running / stopped / unhealthy / unknown
+    health: str | None = None  # healthy / unhealthy / starting / None
+    image: str | None = None
+    uptime: str | None = None
+
+
+class SystemInfo(BaseModel):
+    """Snapshot status seluruh sistem untuk superadmin control center."""
+
+    services: list[ServiceStatus]
+    llm_gateway_url: str
+    llm_gateway_configured: bool  # True jika API key terisi
+    demo_data: bool
+    environment: str
+    version: str
+
+
+class SystemConfigUpdate(BaseModel):
+    """Payload untuk memperbarui konfigurasi runtime via superadmin."""
+
+    llm_gateway_api_key: str | None = None
+    llm_gateway_url: str | None = None
+    demo_data: bool | None = None
+    llm_daily_budget_usd: float | None = None
+    llm_default_model: str | None = None
+    max_exposure_per_trade: float | None = None
+    risk_per_trade: float | None = None
+    max_daily_loss_pct: float | None = None

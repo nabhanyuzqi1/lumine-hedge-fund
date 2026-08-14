@@ -84,8 +84,31 @@ services:
       timeout: 5s
       retries: 3
 
+  # ── Authelia — SSO/MFA untuk superadmin routes ───────────────────────────
+  # Proteksi semua route /superadmin/* via Caddy forward-auth.
+  # Config di ./authelia/; user database di ./authelia/users_database.yml.
+  # Env wajib: AUTHELIA_JWT_SECRET, AUTHELIA_SESSION_SECRET (di .env)
+  authelia:
+    image: authelia/authelia:4.38
+    container_name: lumine-authelia
+    environment:
+      - AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET:?AUTHELIA_JWT_SECRET wajib di .env}
+      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET:?AUTHELIA_SESSION_SECRET wajib di .env}
+    volumes:
+      - ./authelia:/config
+    expose:
+      - "9091"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9091/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Dozzle — container log monitoring (superadmin side) ──────────────────
-  # Loopback-only: akses via Caddy /dozzle (basic auth DOZZLE_USERNAME/PASSWORD).
+  # Loopback-only: akses via Caddy /dozzle (dilindungi Authelia forward-auth).
   dozzle:
     image: amir20/dozzle:latest
     environment:
@@ -134,3 +157,4 @@ volumes:
   redis_data:
   caddy_data:
   caddy_config:
+  authelia_data:

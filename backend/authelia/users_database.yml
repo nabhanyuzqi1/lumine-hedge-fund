@@ -1,0 +1,12 @@
+---
+# Lumine Superadmin users database
+# Password di-hash dengan argon2id — ganti dengan hash nyata sebelum deploy
+# Generate: docker run authelia/authelia:latest authelia crypto hash generate argon2 --password "yourpassword"
+users:
+  superadmin:
+    displayname: "Lumine Superadmin"
+    # Default password: change-me-superadmin (GANTI SEBELUM PRODUCTION)
+    password: "$argon2id$v=19$m=65536,t=3,p=4$BpLnfgDsc2WD8F2qNfHK5A$o4MpAFv6I4K3L9V6Bw7VR4Jq5V7SnWtCN9C5V1D1Z5A"
+    email: admin@lumine.local
+    groups:
+      - admins

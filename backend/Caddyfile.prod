@@ -1,26 +1,99 @@
-# Lumine production Caddyfile (VPS).
-# - /api/* (+ SSE) → backend api container
-# - /health → api (loopback healthcheck through caddy)
-# - lainnya → frontend (nginx SPA)
-# HTTPS: tambahkan domain + auto-TLS di sini saat domain tersedia;
-# dengan bare IP Caddy melayani HTTP (sesuai BLOCK-006 catatan VPS).
+# Lumine production Caddyfile (VPS) — dengan Authelia SSO untuk superadmin.
+#
+# Routes:
+#   /api/*          → backend api (publik, auth via HMAC)
+#   /health         → api (probe)
+#   /superadmin*    → frontend (SPA) + Authelia forward-auth guard
+#   /novnc*         → MT5 noVNC embed (Authelia protected)
+#   /dozzle*        → dozzle log viewer (Authelia protected)
+#   /9router*       → 9router LLM gateway dashboard (Authelia protected)
+#   /auth*          → Authelia portal (login page)
+#   lainnya         → frontend (SPA, publik)
+#
+# HTTPS: tambahkan domain untuk auto-TLS. Dengan bare IP, Caddy melayani HTTP.
+
 http://166.88.227.177 {
+    # ── Authelia helper snippets ─────────────────────────────────────────────
+    @authelia_auth {
+        path /auth*
+    }
+    handle @authelia_auth {
+        reverse_proxy authelia:9091
+    }
+
+    # Forward-auth subrequest ke Authelia (untuk route yang dilindungi)
+    # Caddy forward_auth directive — berlaku untuk block yang memanggil ini.
+
+    # ── API (HMAC auth, tidak perlu Authelia) ─────────────────────────────────
     handle /api/* {
         reverse_proxy api:8000
     }
+
     handle /health {
         reverse_proxy api:8000
     }
-    handle /dozzle/* {
+
+    # ── MT5 noVNC — protected by Authelia ────────────────────────────────────
+    @novnc {
+        path /novnc*
+    }
+    handle @novnc {
+        forward_auth authelia:9091 {
+            uri /api/verify?rd=http://166.88.227.177/novnc/
+            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        }
+        uri strip_prefix /novnc
+        reverse_proxy lumine-mt5:6901
+    }
+
+    # ── Dozzle log viewer — protected by Authelia ────────────────────────────
+    @dozzle {
+        path /dozzle*
+    }
+    handle @dozzle {
+        forward_auth authelia:9091 {
+            uri /api/verify?rd=http://166.88.227.177/dozzle/
+            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        }
+        uri strip_prefix /dozzle
         reverse_proxy dozzle:8080
     }
+
+    # ── 9router dashboard — protected by Authelia ────────────────────────────
+    @ninerouter {
+        path /9router*
+    }
+    handle @ninerouter {
+        forward_auth authelia:9091 {
+            uri /api/verify?rd=http://166.88.227.177/9router/
+            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        }
+        uri strip_prefix /9router
+        reverse_proxy 9router:20128
+    }
+
+    # ── Superadmin SPA routes — protected by Authelia ────────────────────────
+    @superadmin {
+        path /superadmin*
+    }
+    handle @superadmin {
+        forward_auth authelia:9091 {
+            uri /api/verify?rd=http://166.88.227.177/superadmin
+            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        }
+        reverse_proxy frontend:80
+    }
+
+    # ── Frontend SPA (publik) ─────────────────────────────────────────────────
     handle {
         reverse_proxy frontend:80
     }
+
     encode zstd gzip
     header {
         X-Content-Type-Options nosniff
-        X-Frame-Options DENY
+        X-Frame-Options SAMEORIGIN
         Referrer-Policy same-origin
+        -Server
     }
 }

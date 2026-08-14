@@ -9,6 +9,7 @@ const WORKSPACE_PATHS: Record<string, string> = {
   research: "/dashboard",
   risk: "/health",
   ops: "/journal",
+  superadmin: "/superadmin",
 };
 
 const PATH_WORKSPACE: Record<string, string> = {
@@ -16,6 +17,7 @@ const PATH_WORKSPACE: Record<string, string> = {
   "/dashboard": "research",
   "/health": "risk",
   "/journal": "ops",
+  "/superadmin": "superadmin",
 };
 
 export function Rail() {

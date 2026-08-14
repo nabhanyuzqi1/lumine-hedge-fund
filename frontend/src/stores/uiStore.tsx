@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { ReactNode } from "react";
 
-export type Workspace = "trading" | "research" | "risk" | "ops";
+export type Workspace = "trading" | "research" | "risk" | "ops" | "superadmin";
 
 type WorkspaceConfig = {
   id: Workspace;
@@ -40,11 +40,20 @@ const OpsIcon = () => (
   </svg>
 );
 
+const SuperadminIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
+    <path d="M12 2L2 7l10 5 10-5-10-5z" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 17l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 export const WORKSPACES: WorkspaceConfig[] = [
   { id: "trading", icon: <TradingIcon />, tooltip: "Trading Terminal" },
   { id: "research", icon: <ResearchIcon />, tooltip: "Research & Analytics" },
   { id: "risk", icon: <RiskIcon />, tooltip: "Risk Management" },
   { id: "ops", icon: <OpsIcon />, tooltip: "Operations" },
+  { id: "superadmin", icon: <SuperadminIcon />, tooltip: "Superadmin Control Center" },
 ];
 
 interface UiState {
