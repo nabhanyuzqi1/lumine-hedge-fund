@@ -18,7 +18,7 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from lumine.data.models import (
     CalendarVersion,
@@ -302,6 +302,22 @@ async def _backfill_fills(session, ids: dict[str, uuid.UUID]) -> int:
 
 async def main() -> None:
     async with get_sessionmaker()() as session:
+        # Seed brokers + accounts (raw SQL — tabel tanpa model, migrasi 0009)
+        await session.execute(
+            text(
+                "INSERT INTO brokers (broker_id, name, config) VALUES ('hfm', 'HF Markets', '{}') "
+                "ON CONFLICT (broker_id) DO NOTHING"
+            )
+        )
+        await session.execute(
+            text(
+                "INSERT INTO accounts (account_id, broker_id, account_number, currency, config) "
+                "VALUES ('235158357', 'hfm', '235158357', 'USD', '{}') "
+                "ON CONFLICT (account_id) DO NOTHING"
+            )
+        )
+        await session.commit()
+        print("[SEED] brokers/accounts OK (hfm / 235158357)")
         ids = await _seed_registry(session)
         print(f"[SEED] registry OK: model={ids['model']} strategy={ids['strategy']} policy={ids['policy']}")
         n = await _backfill_fills(session, ids)
