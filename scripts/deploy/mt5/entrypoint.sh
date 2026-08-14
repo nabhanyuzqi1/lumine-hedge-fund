@@ -79,7 +79,7 @@ if [[ -f "${MT5_BIN}" ]]; then
     echo "==> MT5 data dir: ${MT5_DATA_DIR}"
     mkdir -p "${MT5_DATA_DIR}/Experts"
     cp -f /opt/lumine-ea/LumineEA.mq5 "${MT5_DATA_DIR}/Experts/LumineEA.mq5"
-    METAEDITOR="${MT5_BIN%/terminal64.exe}/metaeditor64.exe"
+    METAEDITOR="${MT5_BIN%/terminal64.exe}/MetaEditor64.exe"
     if [[ -f "${METAEDITOR}" ]]; then
       echo "==> Compile LumineEA via MetaEditor (headless)..."
       timeout 60 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log"
