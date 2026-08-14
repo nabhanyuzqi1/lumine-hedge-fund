@@ -86,6 +86,10 @@ class Settings(BaseSettings):
     # HMAC_SECRET_KEY). Defaults preserve the pre-migration demo logins so
     # existing operators can authenticate after the upgrade.
     session_ttl_seconds: int = 43_200  # 12h
+    # True di production (HTTPS via Cloudflare): browser drop cookie non-Secure
+    # di beberapa konfigurasi (extension/privacy). Origin tetap HTTP, tapi
+    # browser menerima cookie Secure karena koneksi browser→CF adalah HTTPS.
+    session_cookie_secure: bool = False
     superadmin_password: str = "Lumine@2026!"  # noqa: S105 — bootstrap seed
     admin_password: str = "lumine-admin"  # noqa: S105 — bootstrap seed
     trader_password: str = "lumine2026"  # noqa: S105 — bootstrap seed

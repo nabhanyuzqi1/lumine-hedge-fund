@@ -60,6 +60,7 @@ services:
       - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
       - LLM_GATEWAY_URL=${LLM_GATEWAY_URL:-}
       - LLM_GATEWAY_API_KEY=${LLM_GATEWAY_API_KEY:-}
+      - SESSION_COOKIE_SECURE=true
     depends_on:
       postgres:
         condition: service_healthy

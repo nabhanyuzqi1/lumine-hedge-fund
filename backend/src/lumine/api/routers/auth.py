@@ -241,7 +241,7 @@ async def login(
         httponly=True,
         samesite="lax",
         path="/",
-        secure=False,  # Cloudflare terminates TLS; origin is plain HTTP.
+        secure=settings.session_cookie_secure,  # True di production (HTTPS via CF)
     )
     return {"username": user["username"], "role": user["role"]}
 
