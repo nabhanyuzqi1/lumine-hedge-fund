@@ -23,12 +23,8 @@ int OnInit()
    g_proxyURL = InpProxyURL;
    Print("LumineEA starting (HTTP transport): proxy=", g_proxyURL);
    
-   // WebRequest whitelist check (MT5 security policy)
-   string allowed[];
-   if(!TerminalInfoString(TERMINAL_MQID, allowed))
-     {
-      Print("WARNING: WebRequest may be restricted. Add ", g_proxyURL, " to Tools → Options → Expert Advisors → Allow WebRequest for listed URL");
-     }
+   // WebRequest whitelist: add proxy URL to Tools → Options → Expert Advisors
+   // (MT5 tidak punya API untuk cek whitelist programmatically)
    
    Print("LumineEA ready (HTTP polling mode)");
    return(INIT_SUCCEEDED);
