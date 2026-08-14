@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import asyncio
-
 import pytest
 
 from lumine.api.sse.publisher import SSEEvent
@@ -72,6 +70,30 @@ async def test_run_worker_decodes_bytes_fields() -> None:
 
     decoded = _decode_fields({b"command_id": b"decoded-1", b"command": b"halt_trading", b"payload": b"{}"})
     assert decoded == {"command_id": "decoded-1", "command": "halt_trading", "payload": "{}"}
+
+
+@pytest.mark.asyncio
+async def test_get_result_decodes_bytes_receipt(monkeypatch: pytest.MonkeyPatch) -> None:
+    """hgetall returns bytes keys — get_result must decode before reading."""
+
+    class _StubRedis:
+        async def get(self, key: str) -> None:
+            return None  # no result yet → receipt fallback
+
+        async def hgetall(self, key: str) -> dict[bytes, bytes]:
+            return {b"command": b"halt_trading", b"status": b"queued", b"enqueued_at": b"2026-08-14T00:00:00Z"}
+
+    async def _fake_get_redis() -> _StubRedis:
+        return _StubRedis()
+
+    from lumine.rpc import queue as queue_module
+
+    monkeypatch.setattr(queue_module, "get_redis", _fake_get_redis, raising=False)
+    result = await queue_module.get_result("cmd-1")
+    assert result is not None
+    assert result["status"] == "queued"
+    assert result["command"] == "halt_trading"
+    assert result["enqueued_at"] == "2026-08-14T00:00:00Z"
 
 
 @pytest.mark.asyncio

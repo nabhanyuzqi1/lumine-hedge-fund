@@ -65,14 +65,21 @@ async def get_result(command_id: str) -> dict[str, Any] | None:
     raw = await r.get(_RESULT_PREFIX + command_id)
     if raw is None:
         # No result yet — fall back to the receipt (queued/processing).
-        receipt = await r.hgetall(_RECEIPT_PREFIX + command_id)
-        if not receipt:
+        # redis-py returns hash fields as bytes — decode keys/values.
+        receipt_raw = await r.hgetall(_RECEIPT_PREFIX + command_id)
+        if not receipt_raw:
             return None
+        receipt = {
+            (k.decode() if isinstance(k, bytes) else k): (v.decode() if isinstance(v, bytes) else v)
+            for k, v in receipt_raw.items()
+        }
         return {
             "command_id": command_id,
+            "command": receipt.get("command", "unknown"),
             "status": receipt.get("status", "queued"),
             "result": None,
             "error": None,
+            "enqueued_at": receipt.get("enqueued_at"),
             "processed_at": None,
         }
     return json.loads(raw)
