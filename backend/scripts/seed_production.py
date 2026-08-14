@@ -240,6 +240,7 @@ async def _backfill_fills(session, ids: dict[str, uuid.UUID]) -> int:
             lineage_id=lin_id,
             decision_ts=ts,
             book=BOOK,
+            strategy_id=ids["strategy"],
             strategy_version_id=ids["strategy"],
             symbol=order.symbol,
             side=order.side,
