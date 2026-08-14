@@ -42,19 +42,30 @@ async def list_bars(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     pagination: Annotated[Pagination, Depends()],
 ) -> PaginatedList[MarketBar]:
-    """Return recent market bars."""
-    now = datetime.now(UTC)
-    items: list[MarketBar] = [
+    """Return recent market bars (H1, DB-backed via bars_1h; seed dari MT5)."""
+    from lumine.data.models import Bars1H
+    from lumine.data.session import get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            result = await session.execute(
+                select(Bars1H).order_by(Bars1H.ts.desc()).limit(pagination.limit)
+            )
+            rows = result.scalars().all()
+    except Exception:
+        rows = []
+    items = [
         MarketBar(
-            symbol="XAUUSD",
-            timeframe="H1",
-            timestamp=now,
-            open=Decimal("2420.00"),
-            high=Decimal("2430.50"),
-            low=Decimal("2418.00"),
-            close=Decimal("2435.80"),
-            volume=1200,
-        ),
+            symbol=row.symbol,
+            timeframe="1h",
+            timestamp=row.ts,
+            open=row.open,
+            high=row.high,
+            low=row.low,
+            close=row.close,
+            volume=row.volume,
+        )
+        for row in rows
     ]
     return PaginatedList(
         items=items,
@@ -146,7 +157,43 @@ async def get_ohlcv(
     limit: Annotated[int, Query(ge=1, le=10_000)] = 100,
     since: datetime | None = None,
 ) -> list[MarketBar]:
-    """Return OHLCV bars for a symbol (deterministic demo random walk)."""
+    """Return OHLCV bars for a symbol (DB-backed via bars_*; seed dari MT5).
+
+    Fallback: demo deterministic random walk HANYA kalau tabel kosong
+    (agar UI tetap hidup sebelum seed pertama).
+    """
+    from lumine.data.models import Bars1M, Bars1H, Bars1D
+    from lumine.data.session import get_sessionmaker
+
+    bar_models = {"1m": Bars1M, "1h": Bars1H, "1d": Bars1D}
+    model = bar_models.get(timeframe)
+    if model is not None:
+        try:
+            async with get_sessionmaker()() as session:
+                stmt = select(model).order_by(model.ts.desc()).limit(limit)
+                if since is not None:
+                    stmt = stmt.where(model.ts >= since)
+                result = await session.execute(stmt)
+                rows = list(result.scalars().all())
+            if rows:
+                rows.reverse()
+                return [
+                    MarketBar(
+                        symbol=row.symbol,
+                        timeframe=timeframe,
+                        timestamp=row.ts,
+                        open=row.open,
+                        high=row.high,
+                        low=row.low,
+                        close=row.close,
+                        volume=row.volume,
+                    )
+                    for row in rows
+                ]
+        except Exception:
+            pass  # DB transient → fallback demo
+
+    # ── Fallback: deterministic demo random walk (sebelum seed) ──────────
     step = TIMEFRAME_SECONDS[timeframe]
     now = datetime.now(UTC)
     end = now if since is None else min(now, since + timedelta(seconds=step * limit))

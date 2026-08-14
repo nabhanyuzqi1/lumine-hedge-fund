@@ -10,6 +10,7 @@
 #property strict
 
 input string  InpProxyURL = "http://lumine.biz.id/mt5-proxy";  // Redis HTTP proxy URL (via Caddy)
+input bool    InpSeedHistory = false;   // Seed history bars (CopyRates) sekali saat OnInit
 
 // ── Global State ──────────────────────────────────────────────────────────
 string g_proxyURL;
@@ -28,6 +29,11 @@ int OnInit()
    // (MT5 tidak punya API untuk cek whitelist programmatically)
    
    Print("LumineEA ready (HTTP polling mode)");
+   
+   // Seed history bars (sekali; CopyRates → POST /seed/bars per chunk)
+   if(InpSeedHistory)
+      SeedHistory();
+   
    return(INIT_SUCCEEDED);
   }
 
@@ -37,6 +43,64 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    Print("LumineEA stopping: reason=", reason);
+  }
+
+//+------------------------------------------------------------------+
+//| Seed history bars: CopyRates → POST /seed/bars (chunk 1000)      |
+//+------------------------------------------------------------------+
+void SeedHistory()
+  {
+   string symbols[] = {"XAUUSD"};
+   ENUM_TIMEFRAMES tfs[] = {PERIOD_M1, PERIOD_H1, PERIOD_D1};
+   string tfNames[] = {"1m", "1h", "1d"};
+   
+   for(int s = 0; s < ArraySize(symbols); s++)
+     {
+      for(int t = 0; t < ArraySize(tfs); t++)
+        {
+         MqlRates rates[];
+         int got = CopyRates(symbols[s], tfs[t], 0, 5000, rates);
+         if(got <= 0)
+           {
+            Print("SeedHistory: CopyRates ", symbols[s], " ", tfNames[t], " gagal err=", GetLastError());
+            continue;
+           }
+         ArraySetAsSeries(rates, false);
+         for(int start = 0; start < got; start += 1000)
+           {
+            int n = MathMin(1000, got - start);
+            string json = "{\"symbol\":\"" + symbols[s] + "\",\"timeframe\":\"" + tfNames[t] + "\",\"bars\":[";
+            for(int i = 0; i < n; i++)
+              {
+               MqlRates r = rates[start + i];
+               if(i > 0) json += ",";
+               json += StringFormat("{\"ts\":%d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
+                                    (long)r.time, r.open, r.high, r.low, r.close, r.volume);
+              }
+            json += "]}";
+            HttpPostJson("/seed/bars", json);
+           }
+         Print("SeedHistory: ", symbols[s], " ", tfNames[t], " -> ", got, " bars");
+        }
+     }
+   Print("SeedHistory selesai");
+  }
+
+//+------------------------------------------------------------------+
+//| HTTP POST JSON helper (WebRequest)                                |
+//+------------------------------------------------------------------+
+int HttpPostJson(const string path, const string json)
+  {
+   char data[];
+   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
+   ArrayResize(data, ArraySize(data) - 1);  // tanpa null terminator
+   char result[];
+   string headers = "Content-Type: application/json\r\n";
+   string url = g_proxyURL + path;
+   int res = WebRequest("POST", url, headers, 5000, data, result, headers);
+   if(res != 200)
+      Print("HttpPostJson ", path, " gagal http=", res, " err=", GetLastError());
+   return res;
   }
 
 //+------------------------------------------------------------------+

@@ -80,6 +80,21 @@ def ticks():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/seed/bars", methods=["POST"])
+def seed_bars():
+    """
+    LPUSH mt5:seed_bars (history bars dari EA: CopyRates chunk).
+    Body: {symbol, timeframe, bars: [{ts, open, high, low, close, volume}]}
+    Worker di API backend consume → insert bars_* table.
+    """
+    try:
+        data = request.get_json(force=True)
+        payload = json.dumps(data)
+        r.lpush("mt5:seed_bars", payload)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))
     app.run(host="0.0.0.0", port=port, debug=False)

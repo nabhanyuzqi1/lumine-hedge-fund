@@ -108,6 +108,51 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         mt5_bridge.on_result(on_order_fill)  # type: ignore[arg-type]
         await mt5_bridge.start()
 
+        # Seed history worker: consume mt5:seed_bars (dari EA CopyRates)
+        # → insert ke tabel bars_* (B-08 fondasi: TCA backfill butuh history).
+        async def seed_worker() -> None:
+            from lumine.data.models import Bars1M, Bars1H, Bars1D
+            from lumine.data.session import get_sessionmaker
+            from lumine.shared.config import get_settings as _gs
+
+            bar_models = {"1m": Bars1M, "5m": None, "1h": Bars1H, "4h": None, "1d": Bars1D}
+            try:
+                r = await redis.from_url(_gs().redis_url)
+            except Exception:
+                return
+            while True:
+                try:
+                    item = await r.brpop("mt5:seed_bars", timeout=5)
+                    if not item:
+                        continue
+                    _, payload = item
+                    data = json.loads(payload)
+                    model = bar_models.get(data.get("timeframe", ""))
+                    if model is None:
+                        continue
+                    async with get_sessionmaker()() as session:
+                        rows = [
+                            model(
+                                ts=datetime.fromtimestamp(int(b["ts"]), UTC),
+                                symbol=str(data["symbol"]).upper(),
+                                open=Decimal(str(b["open"])),
+                                high=Decimal(str(b["high"])),
+                                low=Decimal(str(b["low"])),
+                                close=Decimal(str(b["close"])),
+                                volume=Decimal(str(b["volume"])),
+                                source="mt5",
+                            )
+                            for b in data.get("bars", [])
+                        ]
+                        if rows:
+                            session.add_all(rows)
+                            await session.commit()
+                            print(f"[SEED] {data.get('symbol')} {data.get('timeframe')} +{len(rows)} bars", flush=True)
+                except Exception:
+                    pass  # duplicate PK / transient — skip, tetap jalan
+
+        _app_state["seed_worker"] = asyncio.create_task(seed_worker())
+
     # Initialize PositionSyncWorker if database pool available
     pool = getattr(settings, "database_url", None)
     if pool:
