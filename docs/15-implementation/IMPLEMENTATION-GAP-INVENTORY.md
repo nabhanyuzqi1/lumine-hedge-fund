@@ -2,7 +2,7 @@
 
 - **Date:** 2026-08-14 (sesi lanjutan; diverifikasi terhadap source code, bukan klaim docs)
 - **Status:** Active — living document; perbarui setiap kali gap ditutup
-- **Progress 2026-08-14 (lanjutan):** B-01..B-07 CLOSED (679 backend tests) · W2 F-01..F-12 CLOSED (169 frontend tests) · W3 docker CLOSED · W4 v1 LIVE http://166.88.227.177/ (8/8 smoke) + DR test PASS + bandit 0 High/Medium + mt5-wine build in progress. Sisa: W4 (HTTPS butuh domain, 9router butuh API key, login MT5 via noVNC operasional), seed script produksi, historical backfill TCA (B-08), CI/CD pipeline (G-08).
+- **Progress 2026-08-14 (lanjutan):** B-01..B-07 CLOSED (679 backend tests) · W2 F-01..F-12 CLOSED (169 frontend tests) · W3 docker CLOSED · W4 LIVE http://166.88.227.177/ — 9 service: api/caddy/frontend/postgres/redis/bridge (healthy) + 9router/headroom (live, API 401 menunggu key provider) + dozzle (/dozzle, basic auth) + MT5 HFM (wine, noVNC :6901, terminal64 running) · RPC decision cycle LIVE (enqueue→worker→completed) · DR test PASS · bandit 0 High/Medium. Sisa: HTTPS (butuh domain), LLM_GATEWAY_API_KEY (provider mengisi), login akun HFM via noVNC (operasional), CI/CD pipeline (G-08), runbook darurat (G-01), backup otomatis (G-06), seed produksi, B-08 backfill.
 - **Scope:** Phase 15/16 — backend (`backend/src/lumine/`), frontend (`frontend/src/`), general (infra/ops/CI)
 - **Urutan eksekusi:** [`COMPLETION-WORKFLOW.md`](../COMPLETION-WORKFLOW.md) — backend → frontend → docker+bridge → VPS live, dengan gate per workstream
 
