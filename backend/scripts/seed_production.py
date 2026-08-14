@@ -179,6 +179,7 @@ async def _seed_registry(session) -> dict[str, uuid.UUID]:
             version="calendar-v1",
             status="production",
             name="forex_24x5",
+            holidays={},
             sessions={"sessions": ["asia", "london", "newyork"]},
         )
         session.add(row)
