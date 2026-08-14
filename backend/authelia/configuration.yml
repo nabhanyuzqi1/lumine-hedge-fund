@@ -1,7 +1,4 @@
 ---
-# Authelia 4.38 — HTTPS via lumine.biz.id (Cloudflare Flexible SSL)
-# Base path /auth agar assets resolve ke https://lumine.biz.id/auth/static/...
-
 server:
   address: tcp://0.0.0.0:9091/auth
 
@@ -31,16 +28,17 @@ authentication_backend:
 access_control:
   default_policy: deny
   rules:
-    - domain: "lumine.biz.id"
-      resources:
-        - "^/superadmin(/.*)?$"
-        - "^/novnc(/.*)?$"
-        - "^/dozzle(/.*)?$"
-        - "^/9router(/.*)?$"
+    - domain: 'router.lumine.biz.id'
       policy: one_factor
-    - domain: "lumine.biz.id"
+    - domain: 'lumine.biz.id'
+      resources:
+        - '^/superadmin(/.*)?$'
+        - '^/novnc(/.*)?$'
+        - '^/dozzle(/.*)?$'
+      policy: one_factor
+    - domain: 'lumine.biz.id'
       policy: bypass
-    - domain: "166.88.227.177"
+    - domain: '166.88.227.177'
       policy: bypass
 
 session:
@@ -49,9 +47,9 @@ session:
   expiration: 3600
   inactivity: 300
   cookies:
-    - domain: "lumine.biz.id"
-      authelia_url: https://lumine.biz.id/auth/
-      default_redirection_url: https://lumine.biz.id/superadmin
+    - domain: 'lumine.biz.id'
+      authelia_url: 'https://lumine.biz.id/auth/'
+      default_redirection_url: 'https://lumine.biz.id/superadmin'
   redis:
     host: redis
     port: 6379

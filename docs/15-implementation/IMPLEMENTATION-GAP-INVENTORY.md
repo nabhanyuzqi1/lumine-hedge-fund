@@ -2,7 +2,7 @@
 
 - **Date:** 2026-08-14 (sesi lanjutan; diverifikasi terhadap source code, bukan klaim docs)
 - **Status:** Active — living document; perbarui setiap kali gap ditutup
-- **Progress 2026-08-14 (lanjutan):** B-01..B-07 CLOSED (679 backend tests) · W2 F-01..F-12 CLOSED (169 frontend tests) · W3 docker CLOSED · W4 LIVE http://166.88.227.177/ — 9 service: api/caddy/frontend/postgres/redis/bridge (healthy) + 9router/headroom (live, API 401 menunggu key provider) + dozzle (/dozzle, basic auth) + MT5 HFM (wine, noVNC :6901, terminal64 running) · RPC decision cycle LIVE (enqueue→worker→completed) · DR test PASS · bandit 0 High/Medium. Sisa: HTTPS (butuh domain), LLM_GATEWAY_API_KEY (provider mengisi), login akun HFM via noVNC (operasional), CI/CD pipeline (G-08), runbook darurat (G-01), backup otomatis (G-06), seed produksi, B-08 backfill.
+- **Progress 2026-08-14 (lanjutan):** B-01..B-07 CLOSED (679 backend tests) · W2 F-01..F-12 CLOSED (172 frontend tests) · W3 docker CLOSED · W4 LIVE https://lumine.biz.id (Cloudflare Flexible SSL, domain aktif) · Authelia v4.38.19 LIVE (SSO /auth/, AutheliaGuard client-side redirect) · G-01 CLOSED (EMERGENCY-RUNBOOK.md 11 seksi) · G-06 CLOSED (backup-postgres+health-check+resource-watchdog cron, all-checks-passed) · G-08 CLOSED (.github/workflows/ci.yml — backend-test/lint + frontend-test/build + deploy SSH) · B-05 PARTIAL CLOSED (DEMO_DATA=false di VPS, orders+positions DB-backed) · Landing page publik (Linear design, /login, role-based routing user/admin/superadmin) · Bloomberg Terminal UI (superadmin live clock + compact mono tabs, health, dashboard, rail) · Sisa: LLM_GATEWAY_API_KEY (provider mengisi), login akun HFM via noVNC, seed produksi, B-08 backfill, GitHub secrets setup (VPS_HOST+VPS_SSH_KEY), runner CI Ubuntu.
 - **Scope:** Phase 15/16 — backend (`backend/src/lumine/`), frontend (`frontend/src/`), general (infra/ops/CI)
 - **Urutan eksekusi:** [`COMPLETION-WORKFLOW.md`](../COMPLETION-WORKFLOW.md) — backend → frontend → docker+bridge → VPS live, dengan gate per workstream
 
@@ -66,14 +66,14 @@ Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (se
 
 | ID | Item | Evidence | Severity |
 |----|------|----------|----------|
-| G-01 | BLOCK-002 Emergency access procedures — runbook belum ditulis | `phases-15-completion-checklist.md` | 🔴 CRITICAL (Phase 16) |
+| G-01 | BLOCK-002 Emergency access procedures — **CLOSED 2026-08-14** | `docs/15-implementation/EMERGENCY-RUNBOOK.md` (11 seksi: SSH, kill-switch, rollback, DR, secrets recovery) | ✅ |
 | G-02 | BLOCK-003 DR restore test — **CLOSED 2026-08-14** (dump→restore 32 tabel PASS di VPS) | verifikasi sesi ini | ✅ |
 | G-03 | BLOCK-005 Security audit — **sebagian**: bandit 0 High/0 Medium (2026-08-14); audit penuh (gitleaks, dependensi, config) belum | verifikasi sesi ini | 🟡 |
-| G-04 | BLOCK-001 Untracked services: 9router (butuh API key), headroom, dozzle — compose belum | `phases-15-completion-checklist.md` Gap 1 | 🟠 HIGH |
-| G-05 | BLOCK-004 Secrets management partial (Authelia session/storage keys tidak terdokumentasi) | `phases-15-completion-checklist.md` Gap 2 | 🟠 HIGH |
-| G-06 | BLOCK-006 Landing page sync belum automated; BLOCK-007 backup manual only; BLOCK-008 health monitoring none | `phases-15-completion-checklist.md` | 🟠 HIGH |
-| G-07 | VPS↔repo alignment 75% (env template, emergency docs, CI/CD partial) | `phase-16-readiness-roadmap.md` | 🟠 HIGH |
-| G-08 | CI partial — docs.yml, supply-chain.yml ada; deployment pipeline belum terverifikasi end-to-end | `docs/15-implementation/README.md:19` | 🟡 MEDIUM |
+| G-04 | BLOCK-001 Untracked services — **CLOSED**: 9router+headroom di docker-compose.prod.yml; dozzle di vps.yml; semua terdokumentasi | compose files + EMERGENCY-RUNBOOK.md | ✅ |
+| G-05 | BLOCK-004 Secrets management — **PARTIAL**: Authelia JWT/session/storage keys di .env VPS; `docs/15-implementation/GITHUB-SECRETS-SETUP.md` ditulis; perlu rotate ke production values | `GITHUB-SECRETS-SETUP.md` | 🟡 |
+| G-06 | BLOCK-006/007/008 Backup+health monitoring — **CLOSED 2026-08-14** | `backend/scripts/`: backup-postgres.sh (pg_dump daily retensi 7h), health-check.sh (9 container+4 HTTP, throttled alerts), resource-watchdog.sh (disk/mem/backup freshness), cron aktif VPS all-checks-passed | ✅ |
+| G-07 | VPS↔repo alignment — **PARTIAL**: env template ada (.env.prod.example), CI/CD pipeline ada (.github/workflows/ci.yml), emergency docs ada; sisa: GitHub secrets VPS_HOST+VPS_SSH_KEY perlu di-set di repo, runner CI belum verified | `GITHUB-SECRETS-SETUP.md` | 🟡 |
+| G-08 | CI/CD pipeline — **CLOSED 2026-08-14** | `.github/workflows/ci.yml` (backend-test+lint, frontend-test+build, deploy SSH ke VPS on push dev); perlu GitHub secrets VPS_HOST+VPS_SSH_KEY untuk deploy step | ✅ |
 
 ## 4. Knowledge sync — item yang sudah dikoreksi (2026-08-14)
 

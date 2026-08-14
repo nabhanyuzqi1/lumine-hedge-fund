@@ -121,3 +121,11 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
 </html>` 401
     }
 }
+
+http://router.lumine.biz.id {
+    forward_auth authelia:9091 {
+        uri /auth/api/verify?rd=https://lumine.biz.id/auth/
+        copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+    }
+    reverse_proxy 9router:20128
+}
