@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { AutheliaGuard } from "@/components/auth/authelia-guard";
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/api/hooks";
 import { get } from "@/api/client";
 import { ApiKeyTable } from "@/components/admin/api-key-table";
@@ -340,7 +341,7 @@ function EmbedTab({ url, title }: { url: string; title: string }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export function SuperadminPage() {
+export function SuperadminContent() {
   const [tab, setTab] = React.useState<Tab>("overview");
   const systemInfo = useSystemInfo();
   const apiKeys = useApiKeys();
@@ -496,5 +497,18 @@ export function SuperadminPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * SuperadminPage — auth-guarded wrapper untuk SuperadminContent.
+ * AutheliaGuard fetch /auth/api/verify sebelum render; jika 401
+ * langsung redirect ke /auth/?rd=... tanpa menunggu Caddy.
+ */
+export function SuperadminPage() {
+  return (
+    <AutheliaGuard>
+      <SuperadminContent />
+    </AutheliaGuard>
   );
 }
