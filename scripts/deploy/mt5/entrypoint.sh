@@ -85,11 +85,14 @@ if [[ -f "${MT5_BIN}" ]]; then
       # Retry ×3 dengan wineserver reset: compile pertama bisa hang karena
       # state wineserver dari proses yang di-kill (SIGKILL → lock stale).
       for attempt in 1 2 3; do
-        pkill -9 wineserver 2>/dev/null; pkill -9 wine64-preloader 2>/dev/null
+        # || true: pkill tanpa match return 1 → set -e langsung exit!
+        pkill -9 wineserver 2>/dev/null || true
+        pkill -9 wine64-preloader 2>/dev/null || true
         sleep 1
         # -k 10: wine bisa abaikan SIGTERM → paksa SIGKILL setelah 10s grace.
-        timeout -k 10 90 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log" >/dev/null 2>&1
-        pkill -9 wineserver 2>/dev/null; pkill -9 wine64-preloader 2>/dev/null
+        timeout -k 10 90 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log" >/dev/null 2>&1 || true
+        pkill -9 wineserver 2>/dev/null || true
+        pkill -9 wine64-preloader 2>/dev/null || true
         sleep 2
         if [[ -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
           echo "==> LumineEA.ex5 COMPILED OK (attempt ${attempt})"
