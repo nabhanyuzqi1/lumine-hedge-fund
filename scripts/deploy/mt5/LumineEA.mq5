@@ -127,6 +127,10 @@ void ProcessCommand(const string json)
    string id = ExtractJsonString(json, "id");
    string action = ExtractJsonString(json, "action");
    
+   // Suppress log saat command kosong (queue timeout)
+   if(StringLen(id) == 0 || StringLen(action) == 0)
+      return;  // Skip empty command, tidak perlu log
+   
    Print("Command received: id=", id, " action=", action);
    
    if(action == "OPEN")
