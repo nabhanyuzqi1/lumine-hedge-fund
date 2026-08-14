@@ -45,7 +45,8 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         forward_auth api:8000 {
             uri /api/auth/verify?role=admin
         }
-        uri strip_prefix /dozzle
+        # DOZZLE_BASE=/dozzle → dozzle serve di /dozzle/* (asset ber-prefix).
+        # JANGAN strip prefix — dozzle butuh path lengkap.
         reverse_proxy dozzle:8080
     }
 
