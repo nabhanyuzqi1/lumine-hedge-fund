@@ -344,6 +344,22 @@ function EmbedTab({ url, title }: { url: string; title: string }) {
 export function SuperadminContent() {
   const [tab, setTab] = React.useState<Tab>("overview");
   const systemInfo = useSystemInfo();
+  const [utc, setUtc] = React.useState(() =>
+    new Date().toISOString().replace("T", " ").slice(0, 19)
+  );
+
+  React.useEffect(() => {
+    const id = setInterval(
+      () => setUtc(new Date().toISOString().replace("T", " ").slice(0, 19)),
+      1000
+    );
+    return () => clearInterval(id);
+  }, []);
+
+  const healthyCount = systemInfo.data?.services.filter(
+    (s) => s.health === "healthy" || (s.status === "running" && !s.health)
+  ).length ?? 0;
+  const totalCount = systemInfo.data?.services.length ?? 0;
   const apiKeys = useApiKeys();
   const create = useCreateApiKey();
   const revoke = useRevokeApiKey();
@@ -373,39 +389,41 @@ export function SuperadminContent() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4">
-      {/* Header */}
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary">Superadmin Control Center</h1>
-          <p className="text-sm text-text-secondary">
-            Lumine stack monitoring, configuration, dan MT5 desktop access.
-          </p>
+    <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4">
+      {/* Bloomberg-style control center header */}
+      <header className="flex items-center justify-between border-b border-border-subtle pb-2">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">LUMINE</span>
+          <span className="h-3 w-px bg-border-subtle" aria-hidden="true" />
+          <span className="font-mono text-[11px] uppercase tracking-widest text-text-secondary">CONTROL CENTER</span>
+          <span className="h-3 w-px bg-border-subtle" aria-hidden="true" />
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${healthyCount >= totalCount && totalCount > 0 ? "bg-up" : healthyCount > 0 ? "bg-warn" : "bg-down"}`}
+              aria-hidden="true"
+            />
+            <span className="font-mono text-[11px] text-text-secondary tabular-nums">
+              {healthyCount}/{totalCount} SVC
+            </span>
+          </div>
         </div>
-        {systemInfo.data && (
-          <Badge
-            tone={systemInfo.data.services.filter((s) => s.health === "healthy").length >= 6 ? "ok" : "warn"}
-            label={`${systemInfo.data.services.filter((s) => s.health === "healthy").length}/${systemInfo.data.services.length} healthy`}
-          />
-        )}
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] text-text-muted tabular-nums">{utc} UTC</span>
+        </div>
       </header>
 
-      {/* Tabs */}
-      <nav
-        role="tablist"
-        aria-label="Superadmin sections"
-        className="flex gap-1 border-b border-border-subtle"
-      >
+      {/* Tabs — Bloomberg uppercase monospace */}
+      <nav role="tablist" aria-label="Superadmin sections" className="flex items-center gap-0 border-b border-border-subtle">
         {TABS.map((t) => (
           <button
             key={t.id}
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-xs font-medium transition-colors ${
+            className={`border-r border-border-subtle px-4 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors first:border-l ${
               tab === t.id
-                ? "border-b-2 border-accent text-text-primary"
-                : "text-text-tertiary hover:text-text-secondary"
+                ? "bg-bg-overlay text-accent"
+                : "text-text-muted hover:bg-bg-raised hover:text-text-primary"
             }`}
           >
             {t.label}

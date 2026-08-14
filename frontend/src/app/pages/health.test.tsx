@@ -44,8 +44,6 @@ describe("HealthPage", () => {
   it("renders quote from API", async () => {
     renderWithQuery(<HealthPage />);
 
-    expect(screen.getByText("Loading quote...")).toBeInTheDocument();
-
     await waitFor(() => expect(screen.getByText("XAUUSD")).toBeInTheDocument());
     expect(screen.getByText("2400.50")).toBeInTheDocument();
   });

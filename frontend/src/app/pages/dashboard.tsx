@@ -48,7 +48,14 @@ export function DashboardPage() {
   const demo = useDemoStreams(true, "XAUUSD");
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4">
+    <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4">
+      {/* Bloomberg-style section header */}
+      <div className="flex items-center gap-3 border-b border-border-subtle pb-2">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">RESEARCH</span>
+        <span className="h-px flex-1 bg-border-subtle/40" aria-hidden="true" />
+        <span className="font-mono text-[11px] text-text-secondary">XAUUSD · MULTI-FRAME</span>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="md:col-span-2 xl:col-span-3">
           <CandlestickChart

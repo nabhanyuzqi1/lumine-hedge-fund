@@ -52,16 +52,13 @@ export function Rail() {
             aria-current={active ? "page" : undefined}
             data-testid={`rail-${ws.id}`}
             className={cn(
-              "group flex flex-col items-center justify-center gap-1.5 rounded-lg p-2 transition-all duration-150",
-              active
-                ? "bg-blue-600/20 text-blue-400 shadow-inner ring-1 ring-blue-500/30"
-                : "text-text-secondary hover:bg-bg-base/50 hover:text-text-primary",
-              "min-w-[3rem]"
-            )}
-          >
-            <div className={`transition-transform duration-200 ${active ? "scale-110" : "group-hover:scale-105"}`}>
-              {ws.icon}
-            </div>
+                    "flex w-full items-center justify-center rounded-chip p-2 transition-all duration-100",
+                    active
+                      ? "bg-accent/15 text-accent shadow-[inset_2px_0_0_0_var(--color-accent)]"
+                      : "text-text-muted hover:bg-bg-overlay hover:text-text-secondary"
+                  )}
+                >
+                  <div className="h-4 w-4">{ws.icon}</div>
             <span className="sr-only">{ws.tooltip}</span>
           </button>
         );
