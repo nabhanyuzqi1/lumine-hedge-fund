@@ -326,9 +326,13 @@ def test_orders_endpoint_envelope(client: TestClient) -> None:
 
 
 def test_market_endpoint_envelope(client: TestClient) -> None:
+    # DB-backed: items boleh kosong sebelum seed MT5; kalau ada, symbol XAUUSD.
     response = client.get("/api/v1/market/bars")
     assert response.status_code == 200
-    assert response.json()["data"]["items"][0]["symbol"] == "XAUUSD"
+    items = response.json()["data"]["items"]
+    assert isinstance(items, list)
+    if items:
+        assert items[0]["symbol"] == "XAUUSD"
 
 
 def test_workflows_endpoint_envelope(client: TestClient) -> None:

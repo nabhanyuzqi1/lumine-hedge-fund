@@ -46,6 +46,23 @@ void OnDeinit(const int reason)
   }
 
 //+------------------------------------------------------------------+
+//| HTTP POST JSON helper (WebRequest)                                |
+//+------------------------------------------------------------------+
+int HttpPostJson(const string path, const string json)
+  {
+   char data[];
+   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
+   ArrayResize(data, ArraySize(data) - 1);  // tanpa null terminator
+   char result[];
+   string headers = "Content-Type: application/json\r\n";
+   string url = g_proxyURL + path;
+   int res = WebRequest("POST", url, headers, 5000, data, result, headers);
+   if(res != 200)
+      Print("HttpPostJson ", path, " gagal http=", res, " err=", GetLastError());
+   return res;
+  }
+
+//+------------------------------------------------------------------+
 //| Seed history bars: CopyRates → POST /seed/bars (chunk 1000)      |
 //+------------------------------------------------------------------+
 void SeedHistory()

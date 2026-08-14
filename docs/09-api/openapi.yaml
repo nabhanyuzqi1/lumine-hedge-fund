@@ -1291,7 +1291,8 @@ paths:
       tags:
       - market
       summary: List Bars
-      description: Return recent market bars.
+      description: Return recent market bars (H1, DB-backed via bars_1h; seed dari
+        MT5).
       operationId: list_bars_api_v1_market_bars_get
       parameters:
       - name: limit
@@ -1592,7 +1593,13 @@ paths:
       tags:
       - market
       summary: Get Ohlcv
-      description: Return OHLCV bars for a symbol (deterministic demo random walk).
+      description: 'Return OHLCV bars for a symbol (DB-backed via bars_*; seed dari
+        MT5).
+
+
+        Fallback: demo deterministic random walk HANYA kalau tabel kosong
+
+        (agar UI tetap hidup sebelum seed pertama).'
       operationId: get_ohlcv_api_v1_market_ohlcv__symbol__get
       parameters:
       - name: symbol
