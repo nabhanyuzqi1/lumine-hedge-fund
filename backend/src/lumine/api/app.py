@@ -51,6 +51,39 @@ from lumine.trading.position_sync import PositionSyncWorker
 _app_state: dict[str, object] = {}
 
 
+async def _tick_worker() -> None:
+    """Consume mt5:ticks (EA LPUSH via proxy) → MarketService.update_tick.
+
+    TANPA worker ini MarketService._ticks selalu kosong → SSE
+    /streams/market-data dapat stream_open tapi TIDAK PERNAH emit
+    tick_update (get_quote → None) → chart frontend tidak update.
+    """
+    from lumine.shared.config import get_settings as _gs
+
+    try:
+        r = await redis.from_url(_gs().redis_url)
+    except Exception:
+        return
+    market_service = _app_state.get("market_service")
+    if market_service is None:
+        return
+    while True:
+        try:
+            item = await r.brpop("mt5:ticks", timeout=5)
+            if not item:
+                continue
+            _, payload = item
+            data = json.loads(payload)
+            await market_service.update_tick(
+                str(data["symbol"]).upper(),
+                float(data["bid"]),
+                float(data["ask"]),
+                volume=float(data.get("volume", 0.0)),
+            )
+        except Exception:
+            pass  # transient / malformed tick — skip
+
+
 async def _handle_order_fill(result: ResultMessage, sse_publisher: object) -> None:
     """MT5 result → SSE order-fill + sync status ke DB (FILLED/REJECTED)."""
     await sse_publisher.publish_order_fill(
@@ -162,6 +195,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         await mt5_bridge.start()
 
         _app_state["seed_worker"] = asyncio.create_task(_seed_worker())
+        _app_state["tick_worker"] = asyncio.create_task(_tick_worker())
 
     # Initialize PositionSyncWorker if database pool available
     pool = getattr(settings, "database_url", None)
