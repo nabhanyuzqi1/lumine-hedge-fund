@@ -1,5 +1,5 @@
 import * as React from "react";
-
+import { useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 
 import { useQuote } from "@/api/hooks";
@@ -8,6 +8,7 @@ import { NumericText } from "@/components/ui/numeric-text";
 import { useStreamStore } from "@/stores/streamStore";
 import { useUiStore } from "@/stores/uiStore";
 import { StreamStatusList } from "@/components/streams/stream-status-list";
+import { useAuth } from "@/lib/auth/role-context";
 
 const TOTAL_STREAMS = 6;
 
@@ -22,12 +23,19 @@ function ShortcutLabel() {
 }
 
 export function TopBar() {
+  const navigate = useNavigate();
+  const { logout, username, isAuthenticated } = useAuth();
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);
   const toggleCommandPalette = useUiStore((s) => s.toggleCommandPalette);
   const quote = useQuote(selectedSymbol);
   const streams = useStreamStore(useShallow((s) => s.getAllStreams()));
   const [utc, setUtc] = React.useState(() => formatUTC(new Date()));
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   React.useEffect(() => {
     const id = setInterval(() => setUtc(formatUTC(new Date())), 1000);
@@ -61,6 +69,11 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        {isAuthenticated && username && (
+          <span className="text-text-secondary text-xs">
+            {username}
+          </span>
+        )}
         {killSwitchActive ? (
           <Badge tone="danger" label="KILL SWITCH ACTIVE" />
         ) : (
@@ -87,6 +100,16 @@ export function TopBar() {
         <span className="hidden lg:inline-flex" data-testid="stream-status-dots">
           <StreamStatusList />
         </span>
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="text-text-secondary hover:text-text-primary text-xs underline"
+            aria-label="Logout"
+          >
+            Logout
+          </button>
+        )}
       </div>
     </header>
   );
