@@ -1,325 +1,349 @@
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 /**
- * Lumine Hedge Fund — Public Landing Page
+ * `/` — Public landing page (Lumine Hedge Fund).
  *
- * Design: Linear-inspired dark system (institutional, not retail)
- * - Deep navy abyss background
- * - Inter Variable typography, IBM Plex Mono for data
- * - Restrained accent (#4d8dff), emerald positive, crimson risk
- * - No generic SaaS patterns, no glassmorphism decoration
+ * Design: Linear-app principles (dark luminance-stacked canvas, translucent
+ * borders, compressed display tracking, reserved accent) applied on Lumine's
+ * institutional tokens (abyss/ink/accent from index.css). Built on the
+ * shadcn-style ui kit (Button/Badge/Card) — no external CSS.
  */
 
-const FEATURES = [
-  {
-    icon: "◈",
-    title: "AI Investment Committee",
-    desc: "Multi-agent consensus driven by GPT-5.5, DeepSeek V4, and Kimi K3. Every decision is auditable.",
-  },
-  {
-    icon: "◎",
-    title: "Institutional Risk Engine",
-    desc: "Real-time exposure monitoring, drawdown controls, and kill-switch at every tier.",
-  },
-  {
-    icon: "⟐",
-    title: "Quantitative Execution",
-    desc: "MetaTrader 5 integration with sub-second order routing, slippage tracking, and fill audit.",
-  },
-  {
-    icon: "⊞",
-    title: "Research Infrastructure",
-    desc: "Backtesting, regime detection, and strategy versioning with full lineage tracing.",
-  },
-  {
-    icon: "⊕",
-    title: "Observability Stack",
-    desc: "Prometheus metrics, structured logs, and real-time portfolio equity curve streaming.",
-  },
-  {
-    icon: "◉",
-    title: "Multi-Portfolio Architecture",
-    desc: "Isolated portfolios, capital allocation buckets, and per-strategy performance attribution.",
-  },
+const NAV_LINKS = [
+  { label: "Platform", href: "#platform" },
+  { label: "Security", href: "#security" },
+  { label: "Docs", href: "#docs" },
 ];
 
 const STATS = [
-  { label: "Markets", value: "XAUUSD" },
-  { label: "Latency", value: "<50ms" },
-  { label: "Audit trail", value: "100%" },
-  { label: "Uptime SLO", value: "99.9%" },
+  { value: "XAUUSD", label: "First market" },
+  { value: "8", label: "Instruments on tape" },
+  { value: "100%", label: "Auditable decisions" },
+  { value: "<120ms", label: "API p95 latency" },
 ];
+
+const FEATURES = [
+  {
+    title: "AI Investment Committee",
+    body: "Technical, macro, news and SMC analysts debate every position; CIO arbitrates. Full deliberation transcript on-chain of record.",
+  },
+  {
+    title: "Risk Engine",
+    body: "Exposure, correlation, daily-loss and kill-switch gates execute deterministically — before any order reaches the broker.",
+  },
+  {
+    title: "Institutional Execution",
+    body: "MT5 bridge with order state machines, TCA benchmarking and replay protection. Every fill reconciles to a decision.",
+  },
+  {
+    title: "Decision Lineage",
+    body: "Every trade links back to the models, prompts, data and committee vote that produced it. Reproducible by design.",
+  },
+  {
+    title: "Realtime Terminal",
+    body: "Bloomberg-class workspace: live SSE streams, candlesticks, risk gauges and keyboard-first workflows at 60fps.",
+  },
+  {
+    title: "Observability",
+    body: "Prometheus metrics, structured logs, container-level monitoring and a control center for the whole stack.",
+  },
+];
+
+function NavBar() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-abyss/80 backdrop-blur">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-chip bg-accent">
+            <span className="font-display text-xs font-bold text-white">L</span>
+          </div>
+          <span className="font-display text-sm font-semibold tracking-tight text-ink">LUMINE</span>
+        </div>
+        <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="text-[13px] font-medium text-ink-dim transition-colors hover:text-ink"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+        <div className="flex items-center gap-2">
+          <Link to="/login">
+            <Button variant="ghost" size="sm">
+              Sign in
+            </Button>
+          </Link>
+          <Link to="/login">
+            <Button variant="primary" size="sm">
+              Get access
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** Terminal mock — static preview using live design tokens (no data calls). */
+function TerminalMock() {
+  const rows = [
+    { symbol: "XAUUSD", last: "2,420.30", change: "+0.42%", tone: "text-up" },
+    { symbol: "XAGUSD", last: "28.421", change: "+0.18%", tone: "text-up" },
+    { symbol: "EURUSD", last: "1.08500", change: "-0.07%", tone: "text-down" },
+    { symbol: "BTCUSD", last: "64,120.0", change: "+1.24%", tone: "text-up" },
+  ] as const;
+  return (
+    <div className="overflow-hidden rounded-panel border border-line bg-raised shadow-panel">
+      <div className="flex items-center justify-between border-b border-line px-4 py-2">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          LUMINE TERMINAL
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-up" aria-hidden="true" />
+          <span className="font-mono text-[10px] text-ink-faint">SSE LIVE</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 divide-x divide-line md:grid-cols-4">
+        {rows.map((row) => (
+          <div key={row.symbol} className="px-4 py-3">
+            <div className="font-mono text-[10px] uppercase text-ink-faint">{row.symbol}</div>
+            <div className="font-mono text-sm font-medium tabular-nums text-ink">{row.last}</div>
+            <div className={`font-mono text-[10px] tabular-nums ${row.tone}`}>{row.change}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 divide-y divide-line border-t border-line md:grid-cols-2 md:divide-x md:divide-y-0">
+        <div className="px-4 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">Positions</span>
+            <Badge tone="ok" label="2 OPEN" />
+          </div>
+          <div className="space-y-1 font-mono text-[11px]">
+            <div className="flex justify-between">
+              <span className="text-ink-dim">XAUUSD LONG</span>
+              <span className="tabular-nums text-up">+$1,284.50</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-ink-dim">EURUSD SHORT</span>
+              <span className="tabular-nums text-up">+$312.08</span>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 py-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">Committee</span>
+            <Badge tone="info" label="DELIBERATING" />
+          </div>
+          <div className="space-y-1 font-mono text-[11px] text-ink-dim">
+            <div>Technical · momentum bullish</div>
+            <div>Macro · USD real yield easing</div>
+            <div>Risk · exposure within limits</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function LandingPublicPage() {
   return (
-    <div
-      className="min-h-screen bg-abyss text-ink"
-      style={{ fontFeatureSettings: '"cv01", "ss03"' }}
-    >
-      {/* Nav */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-abyss/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-accent/20 ring-1 ring-accent/30">
-              <span className="font-display text-xs font-bold text-accent">L</span>
-            </div>
-            <span className="font-display text-sm font-semibold tracking-tight text-ink">
-              LUMINE
-            </span>
-            <span className="hidden rounded-chip bg-bg-raised px-1.5 py-0.5 font-mono text-[10px] text-text-muted sm:inline">
-              HEDGE FUND
-            </span>
-          </div>
-
-          <nav className="hidden items-center gap-6 text-sm text-text-secondary sm:flex">
-            <a href="#platform" className="transition-colors hover:text-ink">Platform</a>
-            <a href="#features" className="transition-colors hover:text-ink">Features</a>
-            <a href="#tech" className="transition-colors hover:text-ink">Technology</a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="rounded-chip border border-border-subtle bg-bg-raised px-4 py-1.5 text-sm text-text-secondary transition-colors hover:border-accent/40 hover:text-ink"
-            >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-abyss text-ink">
+      <NavBar />
 
       {/* Hero */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-14">
-        {/* Background grid */}
+      <section className="relative overflow-hidden">
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0"
+          aria-hidden="true"
           style={{
-            backgroundImage:
-              "linear-gradient(rgba(77,141,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(77,141,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "80px 80px",
+            background:
+              "radial-gradient(600px 300px at 50% -10%, rgba(77,141,255,0.14), transparent 70%)",
           }}
         />
-        {/* Radial glow */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div
-            className="h-[600px] w-[600px] rounded-full opacity-10"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(77,141,255,0.4) 0%, transparent 70%)",
-            }}
-          />
-        </div>
-
-        <div className="relative mx-auto max-w-4xl space-y-6 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-3 py-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-up" />
-            <span className="font-mono text-[11px] uppercase tracking-widest text-text-secondary">
-              AI-Native Quantitative Platform
-            </span>
+        <div className="relative mx-auto w-full max-w-6xl px-6 pb-20 pt-24 text-center md:pt-32">
+          <div className="mx-auto mb-6 flex justify-center">
+            <Badge tone="info" label="AI-NATIVE QUANTITATIVE PLATFORM" />
           </div>
-
-          <h1
-            className="font-display text-5xl font-semibold leading-none tracking-tight text-ink md:text-6xl lg:text-7xl"
-            style={{ letterSpacing: "-0.04em" }}
-          >
-            Institutional-grade
+          <h1 className="mx-auto max-w-3xl font-display text-4xl font-medium leading-[1.05] tracking-[-0.03em] text-ink md:text-6xl">
+            An autonomous hedge fund,
             <br />
-            <span className="text-accent">algorithmic trading</span>
-            <br />
-            infrastructure
+            engineered like infrastructure.
           </h1>
-
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-text-secondary">
-            Lumine combines multi-agent AI, quantitative research, and institutional
-            risk controls into a single platform. Built for systematic strategies,
-            not retail speculation.
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-ink-dim md:text-lg">
+            Lumine runs a hierarchical team of AI agents — analysts, risk
+            officers, portfolio managers — that deliberate, decide and execute
+            with institutional discipline. Every decision is auditable,
+            replayable and reversible.
           </p>
-
-          {/* Stats */}
-          <div className="flex flex-wrap items-center justify-center gap-8 pt-4">
-            {STATS.map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="font-mono text-2xl font-semibold tabular-nums text-ink">
-                  {s.value}
-                </div>
-                <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
-                  {s.label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link
-              to="/login"
-              className="rounded-chip bg-accent px-6 py-2.5 font-medium text-white transition-opacity hover:opacity-90"
-            >
-              Access Platform →
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link to="/login">
+              <Button variant="primary" size="lg">
+                Open Terminal
+              </Button>
             </Link>
-            <a
-              href="#features"
-              className="rounded-chip border border-border-subtle px-6 py-2.5 font-medium text-text-secondary transition-colors hover:border-accent/40 hover:text-ink"
-            >
-              Learn more
+            <a href="#platform">
+              <Button variant="secondary" size="lg">
+                Explore the platform
+              </Button>
             </a>
           </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 flex flex-col items-center gap-2">
-          <div className="h-8 w-px bg-gradient-to-b from-transparent to-border-subtle" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">scroll</span>
+          <div className="mt-14 text-left">
+            <TerminalMock />
+          </div>
         </div>
       </section>
 
-      {/* Platform overview */}
-      <section id="platform" className="border-t border-border-subtle px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 flex items-center gap-4">
-            <span className="font-mono text-[11px] uppercase tracking-widest text-accent">
-              Platform
-            </span>
-            <div className="h-px flex-1 bg-border-subtle/40" />
-          </div>
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <div className="space-y-4">
-              <h2
-                className="font-display text-3xl font-semibold tracking-tight text-ink"
-                style={{ letterSpacing: "-0.02em" }}
-              >
-                Built like a real hedge fund,
-                not a retail trading app
-              </h2>
-              <p className="text-text-secondary">
-                Lumine implements the full institutional workflow: data collection, feature
-                engineering, AI committee consensus, risk committee review, execution
-                control, journal, and learning loops — each as an independent, auditable
-                agent.
-              </p>
-              <p className="text-text-secondary">
-                Every trade decision carries a complete evidence chain from raw signal to
-                fill receipt. No black boxes. Full replayability.
-              </p>
-            </div>
-            <div className="rounded-panel border border-border-subtle bg-bg-raised p-6 font-mono text-sm">
-              <div className="mb-3 font-mono text-[10px] uppercase tracking-widest text-text-muted">
-                Agent Hierarchy
+      {/* Stats strip */}
+      <section className="border-y border-line-soft bg-bg">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 divide-x divide-line-soft md:grid-cols-4">
+          {STATS.map((stat) => (
+            <div key={stat.label} className="px-6 py-8 text-center">
+              <div className="font-display text-2xl font-semibold tracking-tight text-ink tabular-nums">
+                {stat.value}
               </div>
-              {[
-                { depth: 0, label: "CEO" },
-                { depth: 1, label: "Chief Investment Officer" },
-                { depth: 2, label: "Investment Committee" },
-                { depth: 3, label: "Technical Analyst" },
-                { depth: 3, label: "Macro Analyst" },
-                { depth: 3, label: "News Analyst" },
-                { depth: 3, label: "SMC Analyst" },
-                { depth: 2, label: "Risk Officer" },
-                { depth: 2, label: "Portfolio Manager" },
-                { depth: 3, label: "Execution Controller" },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 py-0.5 text-xs"
-                  style={{ paddingLeft: item.depth * 16 }}
-                >
-                  <span className="text-accent/50">{item.depth > 0 ? "└" : ""}</span>
-                  <span className={item.depth === 0 ? "text-ink" : "text-text-secondary"}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+              <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                {stat.label}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="border-t border-border-subtle px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 flex items-center gap-4">
-            <span className="font-mono text-[11px] uppercase tracking-widest text-accent">
-              Capabilities
-            </span>
-            <div className="h-px flex-1 bg-border-subtle/40" />
+      <section id="platform" className="mx-auto w-full max-w-6xl px-6 py-24">
+        <div className="mb-14 max-w-2xl">
+          <h2 className="font-display text-3xl font-medium tracking-[-0.02em] text-ink md:text-4xl">
+            Built like a real fund.
+            <br />
+            Run like software.
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-ink-dim">
+            Not a signal bot. A hierarchy of specialized AI agents collaborating
+            under a strict risk framework — with the audit trail to prove it.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((feature) => (
+            <Card key={feature.title} className="transition-colors hover:bg-raised">
+              <CardContent className="p-6">
+                <h3 className="text-[15px] font-semibold tracking-tight text-ink">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-dim">{feature.body}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Agent hierarchy */}
+      <section id="docs" className="border-y border-line-soft bg-bg">
+        <div className="mx-auto w-full max-w-6xl px-6 py-24">
+          <div className="mb-10 max-w-2xl">
+            <h2 className="font-display text-3xl font-medium tracking-[-0.02em] text-ink">
+              A hierarchy, not a swarm.
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-ink-dim">
+              Autonomy is bounded by design. Analysts propose, the committee
+              debates, the risk officer vetoes, the portfolio manager executes.
+            </p>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-panel border border-border-subtle bg-bg-raised p-6 transition-colors hover:border-accent/20"
-              >
-                <div className="mb-3 font-mono text-xl text-accent">{f.icon}</div>
-                <h3 className="mb-2 font-semibold text-ink">{f.title}</h3>
-                <p className="text-sm leading-relaxed text-text-secondary">{f.desc}</p>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-panel border border-line bg-abyss p-6">
+            <pre className="font-mono text-xs leading-6 text-ink-dim">{`CEO
+└── Chief Investment Officer (CIO)
+    └── Investment Committee
+        ├── Technical Analyst
+        ├── Macro Analyst
+        ├── News Analyst
+        └── SMC Analyst
+    ├── Risk Officer
+    └── Portfolio Manager
+        └── Execution Controller
+            └── Trade Journal
+                └── Performance Reviewer`}</pre>
           </div>
         </div>
       </section>
 
-      {/* Technology */}
-      <section id="tech" className="border-t border-border-subtle px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 flex items-center gap-4">
-            <span className="font-mono text-[11px] uppercase tracking-widest text-accent">
-              Technology Stack
-            </span>
-            <div className="h-px flex-1 bg-border-subtle/40" />
+      {/* Security */}
+      <section id="security" className="mx-auto w-full max-w-6xl px-6 py-24">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
+          <div>
+            <Badge tone="ok" label="SECURITY" />
+            <h2 className="mt-4 font-display text-3xl font-medium tracking-[-0.02em] text-ink">
+              Institutional guardrails.
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-ink-dim">
+              First-party session auth with PBKDF2-HMAC-SHA256 credentials,
+              HMAC-signed API contracts with replay protection, and
+              role-scoped access from analyst to superadmin.
+            </p>
+            <ul className="mt-6 space-y-3 text-sm text-ink-dim">
+              <li className="flex gap-3">
+                <span className="text-accent">→</span> HttpOnly session cookies, constant-time verification
+              </li>
+              <li className="flex gap-3">
+                <span className="text-accent">→</span> HMAC-SHA256 signed requests, ±300s window, replay cache
+              </li>
+              <li className="flex gap-3">
+                <span className="text-accent">→</span> Role hierarchy: user → admin → superadmin at proxy + SPA
+              </li>
+            </ul>
           </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {[
-              { category: "LLM", items: ["GPT-5.5", "DeepSeek V4", "Kimi K3"] },
-              { category: "Backend", items: ["FastAPI", "Python 3.12", "AutoGen"] },
-              { category: "Data", items: ["PostgreSQL", "Redis", "TimescaleDB"] },
-              { category: "Trading", items: ["MetaTrader 5", "EA Bridge"] },
-              { category: "Frontend", items: ["React", "Vite", "TanStack"] },
-            ].map((g) => (
-              <div key={g.category} className="space-y-2">
-                <div className="font-mono text-[11px] uppercase tracking-widest text-accent">
-                  {g.category}
-                </div>
-                {g.items.map((item) => (
-                  <div key={item} className="text-sm text-text-secondary">
-                    {item}
-                  </div>
-                ))}
-              </div>
-            ))}
+          <div className="rounded-panel border border-line bg-raised p-6 font-mono text-xs leading-6">
+            <div className="text-ink-faint"># session verify — Caddy forward_auth</div>
+            <div className="text-ink-dim">
+              <span className="text-up">200</span> GET /api/auth/verify?role=superadmin
+            </div>
+            <div className="text-ink-dim">
+              <span className="text-down">401</span> GET /api/auth/verify?role=superadmin
+            </div>
+            <div className="mt-3 text-ink-faint"># HMAC request contract</div>
+            <div className="text-ink-dim">X-Lumine-Signature: hmac_sha256(…)</div>
+            <div className="text-ink-dim">X-Lumine-Timestamp: ±300s window</div>
+            <div className="text-ink-dim">Replay cache: (key, ts, body) unique</div>
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="border-t border-border-subtle px-6 py-24">
-        <div className="mx-auto max-w-2xl space-y-6 text-center">
-          <h2
-            className="font-display text-3xl font-semibold tracking-tight text-ink"
-            style={{ letterSpacing: "-0.02em" }}
-          >
-            Ready to trade systematically?
+      <section className="border-t border-line-soft">
+        <div className="mx-auto w-full max-w-6xl px-6 py-24 text-center">
+          <h2 className="mx-auto max-w-2xl font-display text-3xl font-medium tracking-[-0.02em] text-ink md:text-4xl">
+            Operate with the discipline of an institution.
           </h2>
-          <p className="text-text-secondary">
-            Lumine is a private platform. Access requires authorization.
-            Contact your administrator to request access.
+          <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-ink-dim">
+            Request access to the Lumine terminal and control center.
           </p>
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 rounded-chip bg-accent px-8 py-3 font-medium text-white transition-opacity hover:opacity-90"
-          >
-            Sign In to Platform →
-          </Link>
+          <div className="mt-8 flex justify-center">
+            <Link to="/login">
+              <Button variant="primary" size="lg">
+                Sign in to Lumine
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border-subtle px-6 py-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between text-xs text-text-muted">
+      <footer className="border-t border-line-soft bg-bg">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 md:flex-row">
           <div className="flex items-center gap-2">
-            <span className="font-display font-semibold text-text-secondary">LUMINE</span>
-            <span>·</span>
-            <span>Institutional Hedge Fund Platform</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-chip bg-accent">
+              <span className="font-display text-[10px] font-bold text-white">L</span>
+            </div>
+            <span className="font-display text-xs font-semibold text-ink">LUMINE</span>
+            <span className="font-mono text-[10px] text-ink-faint">© 2026</span>
           </div>
-          <span className="font-mono">lumine.biz.id</span>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            Institutional AI-native quantitative platform
+          </div>
         </div>
       </footer>
     </div>

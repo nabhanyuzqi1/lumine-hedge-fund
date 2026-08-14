@@ -450,11 +450,11 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryFn: async (): Promise<PositionFixture[]> => {
       try {
         const page = await get<{ items: RestPosition[] }>(`/portfolio/positions`);
-        if (Array.isArray(page?.items) && page.items.length > 0) {
+        if (Array.isArray(page?.items)) {
           return page.items.map(toPositionFixture);
         }
       } catch {
-        // fall through to fixture
+        // fall through to fixture (offline resilience)
       }
       return generatePositions();
     },
@@ -468,11 +468,11 @@ export function useOrders(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryFn: async (): Promise<OrderFixture[]> => {
       try {
         const page = await get<{ items: RestOrder[] }>(`/orders`);
-        if (Array.isArray(page?.items) && page.items.length > 0) {
+        if (Array.isArray(page?.items)) {
           return page.items.map(toOrderFixture);
         }
       } catch {
-        // fall through to fixture
+        // fall through to fixture (offline resilience)
       }
       return generateOrders();
     },

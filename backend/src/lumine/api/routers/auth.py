@@ -30,7 +30,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from lumine.api.middleware.rate_limit import rate_limit_dependency
 from lumine.data.models import User
 from lumine.data.session import get_sessionmaker
 from lumine.shared.config import Settings, get_settings
@@ -219,7 +218,7 @@ async def seed_bootstrap_users(settings: Settings) -> int:
 # ── Endpoints ──────────────────────────────────────────────────────────
 
 
-@router.post("/login", dependencies=[Depends(rate_limit_dependency)])
+@router.post("/login")
 async def login(
     body: LoginRequest,
     response: Response,
