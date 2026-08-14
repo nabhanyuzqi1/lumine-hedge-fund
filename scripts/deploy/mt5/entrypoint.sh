@@ -24,13 +24,15 @@ set -euo pipefail
 # berikutnya restore profile lama (EA attach hilang).
 graceful_shutdown() {
   echo "==> Graceful shutdown: WM_CLOSE ke MT5 + save workspace..." >&2
-  # Cari window MetaTrader (nama window mengandung "MetaTrader" atau
-  # "MT5" — broker HFM pakai "MetaTrader"). windowclose = WM_CLOSE proper.
-  xdotool search --name "MetaTrader" windowclose 2>/dev/null || true
+  # PITFALL: window title MT5 = "<acc> - <broker>..." (contoh "235158357 -
+  # HFMarketsGlobal-Demo4: ...") — TIDAK mengandung "MetaTrader"! Pattern
+  # yang stabil: nama broker (HFMarkets) atau WM_CLASS terminal64.
+  xdotool search --name "HFMarkets" windowclose 2>/dev/null || true
+  xdotool search --class "terminal64" windowclose 2>/dev/null || true
   sleep 4
-  # Dialog "Do you want to save..." muncul → tekan default button (Save).
-  # Search lagi: window baru (dialog) juga punya nama MetaTrader.
-  xdotool search --name "MetaTrader" key Return 2>/dev/null || true
+  # Dialog "Do you want to save..." (jika muncul) menjadi window aktif →
+  # Enter menekan tombol default (Save). Tanpa --window = kirim ke fokus.
+  xdotool key Return 2>/dev/null || true
   sleep 6
   wineserver -k >/dev/null 2>&1 || true
   sleep 8
