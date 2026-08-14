@@ -83,7 +83,7 @@ if [[ -f "${MT5_BIN}" ]]; then
     # ── Patch terminal.ini: auto-whitelist WebRequest URL ─────────────────
     # MT5 menyimpan whitelist di terminal.ini [Experts]\AllowWebRequest=...
     # Tanpa ini, whitelist hilang setiap container restart → manual setup lagi.
-    MT5_INI="${MT5_DATA_DIR}/../config/terminal.ini"
+    MT5_INI="${MT5_DATA_DIR}/../Config/terminal.ini"
     if [[ -f "${MT5_INI}" ]]; then
       echo "==> Patch terminal.ini: auto-whitelist http://lumine.biz.id"
       # Remove old entry if exists, add new one
