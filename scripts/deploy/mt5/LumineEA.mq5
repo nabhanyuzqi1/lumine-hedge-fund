@@ -92,7 +92,7 @@ void SeedHistory()
                MqlRates r = rates[start + i];
                if(i > 0) json += ",";
                json += StringFormat("{\"ts\":%d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
-                                    (long)r.time, r.open, r.high, r.low, r.close, r.volume);
+                                    (long)r.time, r.open, r.high, r.low, r.close, r.tick_volume);
               }
             json += "]}";
             HttpPostJson("/seed/bars", json);
