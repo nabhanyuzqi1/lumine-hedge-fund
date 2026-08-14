@@ -415,6 +415,7 @@ class Order(Base):
     status: Mapped[str] = mapped_column(Text, nullable=False)
     filled_volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False, default=Decimal(0))
     rejected_reason: Mapped[str | None] = mapped_column(Text)
+    mt5_ticket: Mapped[int | None] = mapped_column(BigInteger)  # ticket MT5 hasil FILLED (migrasi 0013)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
