@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from decimal import Decimal  # noqa: TC003 — used at runtime in Tick.__post_init__
+from decimal import Decimal
 from typing import Any
 
 from lumine.shared.errors import ValidationError

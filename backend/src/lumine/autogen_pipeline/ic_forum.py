@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from lumine.prompts.registry import Registry
 
 
-async def run_ic_forum(  # noqa: PLR0913 — stage contract is fixed
+async def run_ic_forum(
     *,
     gateway: Gateway,
     registry: Registry,

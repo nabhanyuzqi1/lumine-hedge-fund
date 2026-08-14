@@ -51,8 +51,8 @@ def _command(order_id: str) -> BridgeCommand:
 class TestExecutionRouter:
     async def test_fresh_dispatch_calls_bridge_and_records(
         self,
-        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
-        redis_client,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        db_session,  # type: ignore[no-untyped-def]
+        redis_client,  # type: ignore[no-untyped-def]
     ) -> None:
         bridge = FakeBridge()
         router = ExecutionRouter(redis=redis_client, bridge=bridge)
@@ -72,8 +72,8 @@ class TestExecutionRouter:
 
     async def test_replay_short_circuits_without_bridge(
         self,
-        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
-        redis_client,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        db_session,  # type: ignore[no-untyped-def]
+        redis_client,  # type: ignore[no-untyped-def]
     ) -> None:
         bridge = FakeBridge()
         router = ExecutionRouter(redis=redis_client, bridge=bridge)
@@ -89,8 +89,8 @@ class TestExecutionRouter:
 
     async def test_order_idempotency_rejects_second_attempt(
         self,
-        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
-        redis_client,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        db_session,  # type: ignore[no-untyped-def]
+        redis_client,  # type: ignore[no-untyped-def]
     ) -> None:
         bridge = FakeBridge()
         router = ExecutionRouter(redis=redis_client, bridge=bridge)
@@ -110,8 +110,8 @@ class TestExecutionRouter:
 
     async def test_different_attempt_is_a_distinct_dispatch(
         self,
-        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
-        redis_client,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        db_session,  # type: ignore[no-untyped-def]
+        redis_client,  # type: ignore[no-untyped-def]
     ) -> None:
         bridge = FakeBridge()
         router = ExecutionRouter(redis=redis_client, bridge=bridge)

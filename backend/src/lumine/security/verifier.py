@@ -46,8 +46,8 @@ class VerificationResult:
         return not self.failures
 
 
-def _row_mapping(row: Any) -> dict[str, Any]:  # noqa: ANN401
-    mapping = row._mapping  # noqa: SLF001
+def _row_mapping(row: Any) -> dict[str, Any]:
+    mapping = row._mapping
     return dict(mapping)
 
 
@@ -171,7 +171,7 @@ async def _run(database_url: str) -> int:
             f"{status} {result.table_name}: rows={result.row_count} head={result.head_hash or '-'}"
         )
         output.extend(f"  {failure}" for failure in result.failures)
-    print("\n".join(output))  # noqa: T201 — CLI result output
+    print("\n".join(output))
     return 0 if all(result.valid for result in results) else 1
 
 
@@ -179,8 +179,8 @@ def main() -> int:
     args = _build_parser().parse_args()
     try:
         return asyncio.run(_run(args.database_url))
-    except Exception as exc:  # noqa: BLE001 — CLI must return a failing exit code
-        print(f"FAIL verifier: {exc}")  # noqa: T201 — CLI error output
+    except Exception as exc:
+        print(f"FAIL verifier: {exc}")
         return 1
 
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 import pytest
 
 from lumine.api.sse.publisher import SSEEvent
-from lumine.rpc.queue import set_result
 from lumine.rpc.worker import _handle_cancel_order, _handle_halt_trading, _process
 from lumine.shared.config import Settings
 
@@ -74,7 +73,7 @@ async def test_run_worker_decodes_bytes_fields() -> None:
 
 @pytest.mark.asyncio
 async def test_get_result_decodes_bytes_receipt(monkeypatch: pytest.MonkeyPatch) -> None:
-    """hgetall returns bytes keys — get_result must decode before reading."""
+    """Hgetall returns bytes keys — get_result must decode before reading."""
 
     class _StubRedis:
         async def get(self, key: str) -> None:

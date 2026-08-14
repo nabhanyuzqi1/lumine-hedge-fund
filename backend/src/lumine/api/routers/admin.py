@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import secrets
 from datetime import UTC, datetime
 from typing import Annotated
@@ -200,13 +201,19 @@ async def get_system_info(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> SystemInfo:
     """Snapshot status seluruh sistem — untuk superadmin control center."""
-    import subprocess  # noqa: PLC0415
+    import subprocess
 
     services: list[ServiceStatus] = []
     try:
-        result = subprocess.run(  # noqa: S603
+        # Subprocess blocking di async route → jalankan di threadpool
+        # (ASYNC221/PLW1510): cek exit code eksplisit agar error tidak ditelan.
+        result = await asyncio.to_thread(
+            subprocess.run,
             ["docker", "ps", "-a", "--format", "{{.Names}}|{{.Status}}|{{.Image}}"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
         )
         for line in result.stdout.strip().splitlines():
             parts = line.split("|")
@@ -228,7 +235,7 @@ async def get_system_info(
                 image=image,
                 uptime=status_raw,
             ))
-    except Exception:  # noqa: BLE001
+    except Exception:
         services = [ServiceStatus(name="unknown", status="unknown")]
 
     return SystemInfo(

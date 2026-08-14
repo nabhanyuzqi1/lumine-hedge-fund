@@ -4,7 +4,7 @@
 import asyncio
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -20,7 +20,7 @@ def market_service():
 @pytest.fixture
 async def mt5_bridge(mock_redis_client):
     """Create MT5Bridge with mocked Redis."""
-    from lumine.trading.mt5_bridge import MT5Bridge, CommandMessage
+    from lumine.trading.mt5_bridge import MT5Bridge
 
     bridge = MT5Bridge(mock_redis_client)
     yield bridge
@@ -55,7 +55,6 @@ class TestMT5Bridge:
     async def test_create_open_order_command(self):
         """Test creating OPEN command message."""
         from lumine.trading.mt5_bridge import (
-            CommandMessage,
             create_open_order_command,
         )
 
@@ -155,7 +154,7 @@ class TestPositionSyncWorker:
     @pytest.mark.asyncio
     async def test_pnl_calculation_long_position(self, market_service):
         """Test unrealized P&L calculation for long position."""
-        from lumine.trading.position_sync import PositionSyncWorker, PositionData
+        from lumine.trading.position_sync import PositionData, PositionSyncWorker
 
         worker = PositionSyncWorker(None, market_service)
 
@@ -176,7 +175,7 @@ class TestPositionSyncWorker:
     @pytest.mark.asyncio
     async def test_pnl_calculation_short_position(self, market_service):
         """Test unrealized P&L calculation for short position."""
-        from lumine.trading.position_sync import PositionSyncWorker, PositionData
+        from lumine.trading.position_sync import PositionData, PositionSyncWorker
 
         worker = PositionSyncWorker(None, market_service)
 
@@ -201,7 +200,7 @@ class TestSSEPublisher:
     @pytest.mark.asyncio
     async def test_publish_position_update(self, market_service):
         """Test publishing position update event."""
-        from lumine.api.sse.publisher import SSEPublisher, SSEEvent
+        from lumine.api.sse.publisher import SSEEvent, SSEPublisher
 
         publisher = SSEPublisher(market_service)
 

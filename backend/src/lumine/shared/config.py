@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # ── LLM Gateway (9router) ─────────────────────────────────────────────
     llm_gateway_url: str = "http://localhost:8080"
-    llm_gateway_api_key: str = ""  # noqa: S105
+    llm_gateway_api_key: str = ""
     llm_daily_budget_usd: float = 50.0
     llm_request_timeout_s: int = 120
     llm_default_model: str = "deepseek-v4"

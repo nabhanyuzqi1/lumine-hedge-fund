@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from lumine.prompts.registry import Registry
 
 
-async def run_analyst(  # noqa: PLR0913 — analyst stage contract is fixed
+async def run_analyst(
     sub_role: str,
     *,
     gateway: Gateway,

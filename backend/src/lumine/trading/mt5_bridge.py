@@ -6,9 +6,9 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
-from typing import Callable
 from uuid import UUID
 
 import redis.asyncio as redis
@@ -54,8 +54,7 @@ class ResultMessage:
 
 
 class MT5Bridge:
-    """
-    Redis bridge for MT5 Expert Advisor communication.
+    """Redis bridge for MT5 Expert Advisor communication.
 
     Pattern per docs/08-trading/mt5-integration.md:
     - Commands: LPUSH to queue, BRPOP from EA side
@@ -76,8 +75,7 @@ class MT5Bridge:
         self._running = False
 
     async def send_command(self, message: CommandMessage) -> str:
-        """
-        Send execution command to MT5 EA via Redis queue.
+        """Send execution command to MT5 EA via Redis queue.
 
         Returns command_id for tracking response.
         Checks idempotency before sending.
@@ -97,8 +95,7 @@ class MT5Bridge:
         return message.command_id
 
     async def subscribe_results(self, timeout: int | None = None) -> None:
-        """
-        Subscribe to result messages from MT5 EA.
+        """Subscribe to result messages from MT5 EA.
 
         Blocks until subscribed or timeout reached.
         Call handle_result callback when messages arrive.

@@ -52,7 +52,7 @@ def _handler(
     action: str = "BUY",
     analyst_confidence: float = 0.8,
     veto: bool = False,
-) -> Any:  # noqa: ANN401 — scripted fixture returns raw model text
+) -> Any:
     """Scripted per-role LLM output handler."""
 
     def handle(req: RouterRequest) -> str:
@@ -121,7 +121,7 @@ _ROLES = ("technical_analyst", "macro_analyst", "news_analyst", "smc_analyst")
 _ANALYST_VARS = {r: _vars(r) for r in _ROLES}
 
 
-def _ctx(**overrides: Any) -> CycleContext:  # noqa: ANN401
+def _ctx(**overrides: Any) -> CycleContext:
     pins = {r: str(uuid.uuid4()) for r in (*_ROLES, "ic_forum", "cio_proposer", "risk_officer")}
     base = {
         "symbol": "XAUUSD",
@@ -150,7 +150,7 @@ def _ctx(**overrides: Any) -> CycleContext:  # noqa: ANN401
     return CycleContext(**base)  # type: ignore[arg-type]
 
 
-def _portfolio(**overrides: Any) -> PortfolioState:  # noqa: ANN401
+def _portfolio(**overrides: Any) -> PortfolioState:
     base = {
         "equity": Decimal(100000),
         "total_notional": Decimal(0),
@@ -173,12 +173,12 @@ class StubExecutionRouter:
 
     async def dispatch(
         self,
-        _session: Any,  # noqa: ANN401 — interface parity with ExecutionRouter
+        _session: Any,
         *,
-        lineage_id: Any,  # noqa: ANN401
-        command: Any,  # noqa: ANN401
+        lineage_id: Any,
+        command: Any,
         attempt: int = 1,
-        tca_context: Any = None,  # noqa: ANN401
+        tca_context: Any = None,
     ) -> DispatchResult:
         """Record the dispatch and return a scripted fill."""
         self.calls.append((lineage_id, command, attempt, tca_context))

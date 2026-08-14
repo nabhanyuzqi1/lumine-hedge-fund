@@ -9,6 +9,7 @@ from typing import Annotated
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 
 from lumine.api.demo_data import mid_price
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
@@ -57,9 +58,7 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary | 
     Returns None saat DB tidak tersedia (caller fallback ke _demo_summary).
     """
     try:
-        from sqlalchemy import select
 
-        from lumine.data.models import Position
         from lumine.data.repositories import PositionRepository
         from lumine.data.session import get_sessionmaker
 
@@ -69,8 +68,8 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary | 
             if not positions:
                 return _demo_summary(portfolio_id=portfolio_id, nav=_DEMO_NAV)
 
-            open_pnl = Decimal("0")
-            margin_used = Decimal("0")
+            open_pnl = Decimal(0)
+            margin_used = Decimal(0)
             for pos in positions:
                 mid = mid_price(pos.symbol)
                 pnl = (mid - pos.avg_entry) * pos.size
@@ -90,7 +89,7 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary | 
                 closed_pnl=Decimal("0.00"),
                 timestamp=datetime.now(UTC),
             )
-    except Exception:  # noqa: BLE001 — DB down: fallback demo, jangan 500
+    except Exception:
         return None
 
 
@@ -118,13 +117,13 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                         ts=datetime.now(UTC),
                         nav=_DEMO_NAV,
                         equity=_DEMO_NAV,
-                        drawdown=Decimal("0"),
+                        drawdown=Decimal(0),
                     )
                 ]
 
             now = datetime.now(UTC)
             points: list[EquityPoint] = []
-            running_pnl = Decimal("0")
+            running_pnl = Decimal(0)
             peak = _DEMO_NAV
             for pos in rows:
                 mid = mid_price(pos.symbol)
@@ -134,7 +133,7 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                 running_pnl += pnl
                 nav = _DEMO_NAV + running_pnl
                 peak = max(peak, nav)
-                drawdown = (nav / peak - Decimal("1")) if peak else Decimal("0")
+                drawdown = (nav / peak - Decimal(1)) if peak else Decimal(0)
                 points.append(
                     EquityPoint(
                         ts=pos.opened_at,
@@ -150,14 +149,14 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                     ts=now,
                     nav=nav_now,
                     equity=nav_now,
-                    drawdown=(nav_now / peak - Decimal("1")).quantize(Decimal("0.0001")),
+                    drawdown=(nav_now / peak - Decimal(1)).quantize(Decimal("0.0001")),
                 )
             )
             # Pagination (newest first, sesuai kontrak B-06).
             points.reverse()
             visible = points[offset : offset + limit]
             return visible
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
 
 
@@ -228,8 +227,8 @@ async def get_equity_curve(
 ) -> PaginatedList[EquityPoint]:
     """Equity curve (B-05/B-06) — derived dari live positions (opened_at +
     mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
-    atau belum ada posisi (bukan demo — lihat _real_equity_series)."""
-
+    atau belum ada posisi (bukan demo — lihat _real_equity_series).
+    """
     now = datetime.now(UTC)
     total = 240
     real_items = await _real_equity_series(total, pagination.offset, pagination.limit)
@@ -247,8 +246,8 @@ async def get_equity_curve(
     for i in range(visible):
         idx = pagination.offset + i
         frac = idx / total
-        drift = Decimal("1") + Decimal(str(round(frac * 0.06, 6)))
-        drawdown = Decimal("0")
+        drift = Decimal(1) + Decimal(str(round(frac * 0.06, 6)))
+        drawdown = Decimal(0)
         if 0.55 < frac < 0.75:
             drawdown = Decimal("-0.038")
         nav = (_DEMO_NAV * drift).quantize(Decimal("0.01"))

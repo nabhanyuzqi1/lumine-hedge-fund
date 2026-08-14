@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import threading
 from collections import defaultdict
-from typing import DefaultDict
 
 
 class MetricsRegistry:
@@ -18,8 +17,8 @@ class MetricsRegistry:
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._counters: DefaultDict[str, float] = defaultdict(float)
-        self._gauges: DefaultDict[str, float] = defaultdict(float)
+        self._counters: defaultdict[str, float] = defaultdict(float)
+        self._gauges: defaultdict[str, float] = defaultdict(float)
 
     def inc(self, name: str, amount: float = 1.0) -> None:
         with self._lock:

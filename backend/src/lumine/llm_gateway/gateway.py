@@ -28,7 +28,7 @@ callers inject a session + spend aggregation; unit tests inject fakes.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
@@ -69,7 +69,7 @@ class GatewayResult:
 class Gateway:
     """Wire up budget gate → resolution → fallback chain → usage row."""
 
-    def __init__(  # noqa: PLR0913 — injected dependencies are the DB-free contract
+    def __init__(
         self,
         *,
         registry: ModelRegistry,

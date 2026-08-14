@@ -32,7 +32,7 @@ class JournalWriteError(RuntimeError):
     """Journal write failed — treated as a cycle failure (safe state)."""
 
 
-async def log_step(  # noqa: PLR0913 — journal row contract is fixed
+async def log_step(
     session: AsyncSession,
     *,
     workflow_id: str,

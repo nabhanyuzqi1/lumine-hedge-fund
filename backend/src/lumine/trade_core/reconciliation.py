@@ -50,7 +50,7 @@ def _deviation(actual: Decimal, expected: Decimal) -> Decimal:
     return abs(actual - expected) / expected
 
 
-def compare_fill(  # noqa: PLR0913 — comparison inputs are a fixed contract
+def compare_fill(
     *,
     expected_price: Decimal,
     fill_price: Decimal,

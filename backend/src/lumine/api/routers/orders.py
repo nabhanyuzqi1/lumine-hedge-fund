@@ -33,7 +33,8 @@ def _to_schema(order: object) -> Order:
     """Map the DB Order model to the API Order schema."""
     from lumine.data.models import Order as OrderModel
 
-    assert isinstance(order, OrderModel)
+    if not isinstance(order, OrderModel):
+        raise TypeError(f"expected Order model, got {type(order).__name__}")
     return Order(
         order_id=order.order_id,
         portfolio_id=order.portfolio_id,
@@ -184,7 +185,8 @@ async def modify_order(
                 updated = await repo.modify(order_id, price=request.price, volume=request.volume)
             except ValueError as exc:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
-            assert updated is not None
+            if updated is None:
+                raise RecordNotFoundError(f"order {order_id} not found after modify")
             return _to_schema(updated)
     return _demo_order(
         order_id=order_id,
@@ -268,6 +270,7 @@ async def cancel_order(
             if order is None:
                 raise RecordNotFoundError(f"order {order_id} not found")
             cancelled = await repo.update_status(order_id, status="cancelled")
-            assert cancelled is not None
+            if cancelled is None:
+                raise RecordNotFoundError(f"order {order_id} not found for cancel")
             return _to_schema(cancelled)
     return _demo_order(order_id=order_id, status="cancelled", filled_volume=Decimal(0))

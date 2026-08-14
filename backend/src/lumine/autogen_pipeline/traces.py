@@ -42,7 +42,7 @@ def _sha256_hex(data: str) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
-async def write_trace(  # noqa: PLR0913 — trace contract is fixed
+async def write_trace(
     session: AsyncSession,
     *,
     workflow_run_id: str,

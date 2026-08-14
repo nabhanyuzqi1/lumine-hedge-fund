@@ -77,7 +77,7 @@ class CommonEnvelopeMiddleware(BaseHTTPMiddleware):
 
         try:
             parsed = json.loads(body)
-        except Exception:  # noqa: BLE001
+        except Exception:
             parsed = None
 
         if isinstance(parsed, dict) and "meta" in parsed:
@@ -109,7 +109,7 @@ class CommonEnvelopeMiddleware(BaseHTTPMiddleware):
         )
 
 
-def _make_error_response(  # noqa: PLR0913, PLR0917 — internal error-builder helper
+def _make_error_response(
     request: Request,
     status_code: int,
     code: str,

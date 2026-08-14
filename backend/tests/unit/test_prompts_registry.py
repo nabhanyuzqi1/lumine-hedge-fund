@@ -1,10 +1,11 @@
 # Copyright (c) 2026 Lumine. All rights reserved.
 """Unit tests for prompt registry."""
 
-import pytest
 from pathlib import Path
 
-from lumine.prompts.registry import Registry, PromptRef
+import pytest
+
+from lumine.prompts.registry import Registry
 
 
 @pytest.fixture
@@ -40,14 +41,14 @@ prompts:
   - us_10y
   output_schema_ref: schemas/analyst_output.json
 """
-    
+
     registry_file = tmp_path / "registry.yaml"
     registry_file.write_text(registry_content, encoding="utf-8")
-    
+
     # Create dummy prompt files
     prompts_dir = tmp_path / "prompts"
     prompts_dir.mkdir()
-    
+
     (prompts_dir / "technical_analyst@v1.prompt").write_text(
         tech_prompt, encoding="utf-8"
     )
@@ -73,25 +74,25 @@ class TestRegistryInitialization:
     def test_load_registry_from_path(self, sample_registry_path: Path):
         """Registry loads successfully from provided path."""
         registry = Registry(base_path=sample_registry_path)
-        
+
         assert "technical_analyst" in registry.list_subroles()
         assert "macro_analyst" in registry.list_subroles()
 
     def test_list_subroles(self, sample_registry_path: Path):
         """List all registered sub-roles."""
         registry = Registry(base_path=sample_registry_path)
-        
+
         subroles = registry.list_subroles()
-        
+
         assert len(subroles) == 2
         assert set(subroles) == {"technical_analyst", "macro_analyst"}
 
     def test_list_versions(self, sample_registry_path: Path):
         """List all versions for a sub-role."""
         registry = Registry(base_path=sample_registry_path)
-        
+
         versions = registry.list_versions("technical_analyst")
-        
+
         assert versions == ["v1"]
 
 
@@ -101,9 +102,9 @@ class TestGetPrompt:
     def test_get_latest(self, sample_registry_path: Path):
         """Get latest version of a prompt."""
         registry = Registry(base_path=sample_registry_path)
-        
+
         ref = registry.get_latest("technical_analyst")
-        
+
         assert ref is not None
         assert ref.sub_role == "technical_analyst"
         assert ref.version == "v1"
@@ -112,18 +113,18 @@ class TestGetPrompt:
     def test_get_specific_version(self, sample_registry_path: Path):
         """Get specific version of a prompt."""
         registry = Registry(base_path=sample_registry_path)
-        
+
         ref = registry.get("technical_analyst", "v1")
-        
+
         assert ref is not None
         assert ref.prompt_ref == "prompts/technical_analyst@v1.prompt"
 
     def test_get_nonexistent_subrole(self, sample_registry_path: Path):
         """Get returns None for non-existent sub-role."""
         registry = Registry(base_path=sample_registry_path)
-        
+
         ref = registry.get("nonexistent", "v1")
-        
+
         assert ref is None
 
 
@@ -133,9 +134,9 @@ class TestPromptVariables:
     def test_get_variables(self, sample_registry_path: Path):
         """Get expected template variables."""
         registry = Registry(base_path=sample_registry_path)
-        
+
         variables = registry.get_variables("technical_analyst")
-        
+
         assert "symbol" in variables
         assert "atr_14" in variables
 

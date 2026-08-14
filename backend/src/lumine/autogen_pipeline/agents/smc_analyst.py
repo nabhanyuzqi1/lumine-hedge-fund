@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 _SUB_ROLE = "smc_analyst"
 
 
-async def run_smc_analyst(  # noqa: PLR0913 — analyst stage contract is fixed
+async def run_smc_analyst(
     *,
     gateway: Gateway,
     registry: Registry,

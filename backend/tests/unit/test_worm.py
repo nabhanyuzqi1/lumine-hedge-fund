@@ -56,7 +56,7 @@ class TestWormSinkContract:
 
 
 class TestLocalWorm:
-    async def test_store_then_read_roundtrip(self, tmp_path) -> None:  # noqa: ANN001
+    async def test_store_then_read_roundtrip(self, tmp_path) -> None:
         sink = LocalWorm(tmp_path)
         payload = _payload()
         await sink.store(payload)
@@ -65,14 +65,14 @@ class TestLocalWorm:
         assert json.loads(raw)["anchored_hash"] == "a" * 64
         assert json.loads(raw)["backend"] == "local_append_only"
 
-    async def test_store_is_write_once(self, tmp_path) -> None:  # noqa: ANN001
+    async def test_store_is_write_once(self, tmp_path) -> None:
         sink = LocalWorm(tmp_path)
         payload = _payload()
         await sink.store(payload)
         with pytest.raises(RuntimeError, match="already exists"):
             await sink.store(payload)
 
-    async def test_key_is_hashed_not_readable_table_name(self, tmp_path) -> None:  # noqa: ANN001
+    async def test_key_is_hashed_not_readable_table_name(self, tmp_path) -> None:
         sink = LocalWorm(tmp_path)
         await sink.store(_payload(table_name="lineage_records", anchor_seq=1))
         # Object key is a hash prefix, not "lineage_records".
@@ -80,7 +80,7 @@ class TestLocalWorm:
         assert len(files) == 1
         assert "lineage_records" not in files[0].name
 
-    async def test_read_missing_key_raises(self, tmp_path) -> None:  # noqa: ANN001
+    async def test_read_missing_key_raises(self, tmp_path) -> None:
         sink = LocalWorm(tmp_path)
         with pytest.raises(FileNotFoundError):
             await sink.read("nope.anchor.json")

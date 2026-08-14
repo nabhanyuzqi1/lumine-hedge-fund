@@ -3,11 +3,10 @@
 """Usage recording for LLM Gateway — cost tracking per D6-7."""
 
 import logging
-from datetime import datetime
-from dataclasses import dataclass
-from decimal import Decimal
-from typing import Optional
 import uuid
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
 
 from lumine.data.models import LLMUsage
 from lumine.data.session import get_db_session
@@ -22,14 +21,14 @@ class UsageRecord:
     model_version_id: uuid.UUID
     role: str
     tier: str
-    prompt_version_id: Optional[uuid.UUID] = None
+    prompt_version_id: uuid.UUID | None = None
     tokens_in: int = 0
     tokens_out: int = 0
     cost_usd: Decimal = Decimal("0.0")
     fallback_hops: int = 0
     degraded: bool = False
-    lane: Optional[str] = None
-    lineage_id: Optional[uuid.UUID] = None
+    lane: str | None = None
+    lineage_id: uuid.UUID | None = None
 
 
 class UsageRecorder:
@@ -57,7 +56,7 @@ class UsageRecorder:
         print(f"[DEBUG Recorder] session id={id(db_session) if db_session else None}, has_records_attr={hasattr(db_session, 'records') if db_session else False}")
 
         # Check if this is a fake/test session with .records list
-        if hasattr(db_session, 'records'):
+        if hasattr(db_session, "records"):
             print(f"[DEBUG FakeSession] Appending to records list on session id={id(db_session)}")
             record = LLMUsage(
                 role=usage_record.role,
@@ -99,12 +98,12 @@ class UsageRecorder:
             logger.debug(f"Usage record inserted: {usage_record.model_version_id}")
 
         except Exception as e:
-            if hasattr(db_session, 'rollback'):
+            if hasattr(db_session, "rollback"):
                 await db_session.rollback()
             logger.error(f"Failed to insert usage record: {e}")
             raise
         finally:
-            if close_on_exit and hasattr(db_session, 'close'):
+            if close_on_exit and hasattr(db_session, "close"):
                 await db_session.close()
 
     async def get_daily_total(self, date: str) -> float:

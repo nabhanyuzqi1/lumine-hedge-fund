@@ -2,8 +2,8 @@
 
 """Tests for LLM Gateway — model routing, fallback chains, budget tracking."""
 
-import asyncio
 from datetime import datetime, timedelta
+
 import pytest
 
 from lumine.llm_gateway.__init__ import (

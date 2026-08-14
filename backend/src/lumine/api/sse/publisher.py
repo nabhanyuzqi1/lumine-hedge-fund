@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from collections import deque
 
 from lumine.trading.market_service import MarketService
 
@@ -41,8 +41,7 @@ def to_json(data: Any) -> str:
 
 
 class SSEPublisher:
-    """
-    SSE event publisher with ring buffer support.
+    """SSE event publisher with ring buffer support.
 
     Per docs/09-api/sse-api.md:
     - Event ring buffers bounded by count (100) and time (5 min retention)
@@ -62,8 +61,7 @@ class SSEPublisher:
         self._running = False
 
     async def subscribe(self) -> asyncio.Queue:
-        """
-        Subscribe to all SSE events.
+        """Subscribe to all SSE events.
 
         Returns a queue that receives SSEEvent objects.
         """
@@ -76,8 +74,7 @@ class SSEPublisher:
         self._subscribers.discard(queue)
 
     async def publish(self, event: SSEEvent) -> None:
-        """
-        Publish event to all subscribers and store in ring buffer.
+        """Publish event to all subscribers and store in ring buffer.
 
         Event is stored per-channel with bounded ring buffer.
         """

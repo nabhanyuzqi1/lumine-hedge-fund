@@ -43,7 +43,7 @@ async def rate_limit_dependency(
 
     try:
         r = await get_redis()
-    except Exception:  # noqa: BLE001 — Redis down must not 500 write endpoints
+    except Exception:
         return principal
 
     cutoff = now - window_seconds

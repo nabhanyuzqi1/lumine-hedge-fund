@@ -6,7 +6,6 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
 
 import asyncpg
 
@@ -28,8 +27,7 @@ class PositionData:
 
 
 class PositionSyncWorker:
-    """
-    Background worker that syncs MT5 positions to PostgreSQL.
+    """Background worker that syncs MT5 positions to PostgreSQL.
 
     Operations:
     1. Fetch open positions from MT5 via direct API (if available)
@@ -89,8 +87,7 @@ class PositionSyncWorker:
         await self._update_database(positions)
 
     async def _fetch_positions(self) -> list[PositionData]:
-        """
-        Fetch open positions from MT5.
+        """Fetch open positions from MT5.
 
         In production, this would use MetaTrader5 package directly
         or extract from Redis bridge. For now, return empty list.
@@ -150,7 +147,6 @@ class PositionSyncWorker:
             return 0.0
 
         contract_size = 100000  # Standard forex lot
-        leverage = 100  # Assume standard leverage
 
         if pos.direction == "BUY":
             diff = pos.current_price - pos.entry_price
@@ -161,9 +157,8 @@ class PositionSyncWorker:
         if pos.symbol.startswith(("XAU", "XAG")):
             # Gold/Silver: price difference * volume
             return diff * pos.volume
-        else:
-            # Forex: price difference * volume * contract_size
-            return diff * pos.volume * contract_size / 100000
+        # Forex: price difference * volume * contract_size
+        return diff * pos.volume * contract_size / 100000
 
     @classmethod
     async def create(

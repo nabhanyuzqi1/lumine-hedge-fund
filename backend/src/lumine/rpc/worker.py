@@ -19,7 +19,9 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from lumine.api.middleware.auth import AuthenticatedPrincipal  # noqa: F401  (re-exported for handlers)
+from lumine.api.middleware.auth import (
+    AuthenticatedPrincipal,  # noqa: F401  (re-exported for handlers)
+)
 from lumine.api.sse.publisher import SSEEvent, SSEPublisher
 from lumine.data.redis_client import get_redis
 from lumine.rpc.queue import GROUP, STREAM, get_result, set_result
@@ -110,7 +112,7 @@ async def _process(
             result = await handler(payload, publisher)  # type: ignore[arg-type]
         await set_result(command_id, "completed", result=result, command=command)
         logger.info("rpc %s %s completed", command, command_id)
-    except Exception as exc:  # noqa: BLE001 — worker must not die on one bad command
+    except Exception as exc:
         logger.exception("rpc %s %s failed", command, command_id)
         await set_result(command_id, "failed", error=str(exc), command=command)
 
@@ -134,13 +136,13 @@ async def run_worker(
     r = await get_redis()
     try:
         await r.xgroup_create(STREAM, GROUP, id="0", mkstream=True)
-    except Exception:  # noqa: BLE001 — group already exists
+    except Exception:
         pass
     logger.info("rpc worker %s listening on %s", consumer, STREAM)
     while True:
         try:
             response = await r.xreadgroup(GROUP, consumer, {STREAM: ">"}, count=8, block=block_ms)
-        except Exception:  # noqa: BLE001 — redis blips must not kill the worker
+        except Exception:
             await asyncio.sleep(1)
             continue
         for _stream, messages in response or []:

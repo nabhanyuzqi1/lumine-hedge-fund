@@ -9,7 +9,7 @@ agent hierarchy and role metadata used by autogen pipeline wiring.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

@@ -21,7 +21,7 @@ Design Decisions:
 from __future__ import annotations
 
 import json
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -30,25 +30,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from autogen import ConversableAgent, GroupChat, GroupChatManager
-    from autogen.cache import Cache
 
 
 class AutoGenConfig(BaseModel):
     """Configuration for AutoGen orchestration."""
-    
+
     # Model routing
     model_name: str = "gpt-5.5"
     max_tokens: int = 8192
     temperature: float = 0.7
-    
+
     # Budget control (per conversation)
     max_budget_per_task: float = 10.0
     budget_reset_time: int = 3600  # seconds
-    
+
     # Concurrency limits
     max_concurrent_chats: int = 5
     chat_timeout: int = 300  # seconds
-    
+
     # Recovery settings
     checkpoint_dir: str = "checkpoints"
     enable_replay: bool = True
@@ -57,7 +56,7 @@ class AutoGenConfig(BaseModel):
 
 class AgentSpec(BaseModel):
     """Specification for an AutoGen agent."""
-    
+
     name: str
     role: str
     description: str
@@ -71,7 +70,7 @@ class AgentSpec(BaseModel):
 
 class AutoGenOrchestrator:
     """Deterministic orchestrator wrapping Microsoft AutoGen."""
-    
+
     def __init__(self, config: AutoGenConfig):
         self.config = config
         self.agents: dict[str, ConversableAgent] = {}
@@ -79,14 +78,14 @@ class AutoGenOrchestrator:
         self.chat_manager: GroupChatManager | None = None
         self.conversation_history: list[dict] = []
         self.current_run_id: str | None = None
-        
+
     async def register_agent(self, spec: AgentSpec) -> ConversableAgent:
         """Register an agent with AutoGen, ensuring deterministic behavior."""
         from autogen import ConversableAgent
-        
+
         if spec.name in self.agents:
             return self.agents[spec.name]
-        
+
         agent = ConversableAgent(
             name=spec.name,
             system_message=spec.system_message,
@@ -94,7 +93,7 @@ class AutoGenOrchestrator:
             max_consecutive_auto_reply=spec.max_consecutive_auto_reply,
             human_input_mode=spec.human_input_mode,
         )
-        
+
         # Register functions if provided
         if spec.function_map:
             for func_name, func in spec.function_map.items():
@@ -103,42 +102,42 @@ class AutoGenOrchestrator:
                     "function_description": f"{func.__doc__ or ''}",
                     "function": func,
                 })
-        
+
         self.agents[spec.name] = agent
         return agent
-    
+
     def create_group_chat(
-        self, 
+        self,
         agents: list[ConversableAgent],
         speaker_selection_method: str = "auto",
         max_round: int = 20,
     ) -> GroupChat:
         """Create a managed group chat for agent collaboration."""
         from autogen import GroupChat
-        
+
         self.group_chat = GroupChat(
             agents=agents,
             messages=[],
             max_round=max_round,
             speaker_selection_method=speaker_selection_method,
         )
-        
+
         return self.group_chat
-    
+
     def create_chat_manager(self) -> GroupChatManager:
         """Create the chat manager that coordinates agent conversations."""
         from autogen import GroupChatManager
-        
+
         if not self.group_chat:
             raise ValueError("Must create group chat first")
-        
+
         self.chat_manager = GroupChatManager(
             groupchat=self.group_chat,
             llm_config={"model": self.config.model_name},
         )
-        
+
         return self.chat_manager
-    
+
     async def run_conversation(
         self,
         starter_message: str,
@@ -147,32 +146,31 @@ class AutoGenOrchestrator:
         lineage_id: str,
     ) -> dict[str, Any]:
         """Execute a deterministic multi-agent conversation with full audit trail."""
-        
         if not self.chat_manager:
             raise ValueError("Chat manager not configured")
-        
+
         self.current_run_id = str(uuid4())
         self.conversation_history = []
-        
+
         # Initialize conversation
-        result = await self.chat_manager.a_send(
+        await self.chat_manager.a_send(
             msg=starter_message,
             recipient=self.group_chat.agents[0],
             request_reply=True,
             sender=None,
         )
-        
+
         # Collect conversation turns
         turn_count = 0
         while turn_count < self.group_chat.max_round:
             # Get current message
             messages = self.group_chat.messages
-            
+
             if not messages:
                 break
-            
+
             last_msg = messages[-1]
-            
+
             # Record to conversation history
             conversation_turn = {
                 "run_id": self.current_run_id,
@@ -184,54 +182,54 @@ class AutoGenOrchestrator:
                 "content": last_msg.get("content", ""),
                 "role": last_msg.get("role", "user"),
             }
-            
+
             self.conversation_history.append(conversation_turn)
-            
+
             # Validate against schema if agent has schema requirement
             # This is where we enforce Lumine's strict validation
-            
+
             # Check budget
             if self._exceeds_budget():
                 break
-            
+
             # Send to next agent
             next_agent = self._select_next_agent()
-            
+
             reply = await self.chat_manager.a_initiate_chat(
                 recipient=next_agent,
                 message=last_msg["content"],
                 max_turns=1,
                 clear_history=False,
             )
-            
+
             if reply is None:
                 break
-                
+
             turn_count += 1
-        
+
         # Save to database for audit/replay
         await self._persist_conversation_history(session, workflow_id, lineage_id)
-        
+
         return {
             "run_id": self.current_run_id,
             "turns": len(self.conversation_history),
             "final_message": self.conversation_history[-1]["content"] if self.conversation_history else "",
             "conversation_history": self.conversation_history,
         }
-    
+
     def _exceeds_budget(self) -> bool:
         """Check if current conversation exceeds budget constraints."""
         # Implementation would query cost tracking
         return False
-    
+
     def _select_next_agent(self) -> ConversableAgent:
         """Select next agent in round-robin or based on group chat logic."""
         if not self.group_chat:
             raise ValueError("No group chat configured")
-        
+
         # Let AutoGen handle speaker selection
         return self.group_chat.agents[self.group_chat.speaker_selection_queue.pop(0)]
-    
+
     async def _persist_conversation_history(
         self,
         session: AsyncSession,
@@ -240,10 +238,10 @@ class AutoGenOrchestrator:
     ) -> None:
         """Persist conversation to database for audit and replay."""
         from lumine.data.models import ReasoningTrace
-        
+
         # Create a single ReasoningTrace record containing full conversation
         trace_content = json.dumps(self.conversation_history, indent=2)
-        
+
         trace = ReasoningTrace(
             id=lineage_id,  # Use workflow ID as trace ID
             workflow_id=workflow_id,
@@ -252,9 +250,9 @@ class AutoGenOrchestrator:
             response=trace_content,
             created_at=datetime.now(UTC),
         )
-        
+
         session.add(trace)
-        
+
         # Also persist individual turns as separate records for easier querying
         for turn in self.conversation_history:
             turn_record = ReasoningTrace(
@@ -271,7 +269,7 @@ class AutoGenOrchestrator:
                 created_at=datetime.fromisoformat(turn["timestamp"]),
             )
             session.add(turn_record)
-    
+
     def reset(self) -> None:
         """Reset orchestrator state."""
         self.agents.clear()

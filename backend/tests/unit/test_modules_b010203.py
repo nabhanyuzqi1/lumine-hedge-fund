@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
-
 from lumine.backtest.engine import run_backtest
 from lumine.monitoring.metrics import MetricsRegistry
 from lumine.registry.agents import get_agent, list_agents
@@ -28,7 +26,7 @@ class TestBacktestEngine:
 
     def test_equity_starts_at_100k(self) -> None:
         result = run_backtest("XAUUSD", "4h")
-        assert result.equity[0] == Decimal("100000")
+        assert result.equity[0] == Decimal(100000)
 
 
 class TestMetricsRegistry:

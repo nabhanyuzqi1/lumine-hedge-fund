@@ -69,13 +69,13 @@ class NullWorm(WormSink):
 
     backend = "object_lock_stub"
 
-    async def store(self, payload: AnchorPayload) -> None:  # noqa: D102
+    async def store(self, payload: AnchorPayload) -> None:
         raise NotImplementedError(_STUB_MSG)
 
-    async def read(self, object_key: str) -> bytes:  # noqa: D102
+    async def read(self, object_key: str) -> bytes:
         raise NotImplementedError(_STUB_MSG)
 
-    async def exists(self, object_key: str) -> bool:  # noqa: D102
+    async def exists(self, object_key: str) -> bool:
         raise NotImplementedError(_STUB_MSG)
 
 

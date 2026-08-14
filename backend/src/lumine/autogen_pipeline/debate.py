@@ -69,7 +69,7 @@ def should_debate(
     return predicted < ic_confidence_threshold or disagreement > disagreement_threshold
 
 
-async def run_debate(  # noqa: PLR0913 — stage contract is fixed
+async def run_debate(
     *,
     gateway: Gateway,
     registry: Registry,

@@ -17,37 +17,37 @@ from typing import Any
 
 import yaml
 
-
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
 
 class RegistryError(Exception):
     """Base exception for registry operations."""
-    pass
+
 
 
 class MissingRegistryFileError(RegistryError):
     """registry.yaml is absent or unreadable."""
-    pass
+
 
 
 class MissingPromptFileError(RegistryError):
     """A prompt file referenced in registry.yaml is absent."""
-    pass
+
 
 
 class HashMismatchError(RegistryError):
     """Expected SHA-256 does not match computed hash of the prompt file."""
-    pass
+
 
 
 class PromptNotFoundError(RegistryError):
     """No prompt bundle exists for the given (sub_role, version)."""
-    pass
+
 
 
 class MissingVariableError(RegistryError):
     """render() was called without a declared template variable."""
+
     def __init__(self, variable: str) -> None:
         super().__init__(f"missing declared variable: {variable}")
         self.variable = variable
@@ -112,6 +112,7 @@ class Registry:
         Args:
             base_path: Path to directory containing registry.yaml.
                        If not provided, defaults to docs/prompts/ at cwd.
+
         """
         if base_path is None:
             self._base_path = Path.cwd() / "docs" / "prompts"
@@ -130,7 +131,7 @@ class Registry:
             msg = f"Registry file not found: {registry_path}"
             raise FileNotFoundError(msg)
 
-        with open(registry_path, "r", encoding="utf-8") as f:
+        with open(registry_path, encoding="utf-8") as f:
             registry_data = yaml.safe_load(f)
 
         prompts_by_subrole: dict[str, dict[str, PromptRef]] = {}
@@ -190,6 +191,7 @@ class Registry:
 
         Returns:
             Latest PromptRef or None if not found
+
         """
         versions = self._prompts.get(sub_role, {})
         if not versions:
@@ -208,6 +210,7 @@ class Registry:
 
         Returns:
             PromptRef or None if not found
+
         """
         versions = self._prompts.get(sub_role, {})
         return versions.get(version)
@@ -216,7 +219,7 @@ class Registry:
         """Return list of (sub_role, version) tuples."""
         result: list[tuple[str, str]] = []
         for sub_role, versions in self._prompts.items():
-            for version in versions.keys():
+            for version in versions:
                 result.append((sub_role, version))
         return result
 
@@ -238,6 +241,7 @@ class Registry:
         Returns:
             Declared variable names, or [] when the sub-role is unknown
             or the latest version declares none.
+
         """
         ref = self.get_latest(sub_role)
         if ref is None:
@@ -251,7 +255,7 @@ class Registry:
     def __iter__(self):
         """Iterate over all bundles."""
         for sub_role, versions in self._prompts.items():
-            for version in versions.keys():
+            for version in versions:
                 yield self.get_prompt(sub_role, version)
 
     def get_prompt(self, sub_role: str, version: str) -> PromptBundle:
@@ -267,6 +271,7 @@ class Registry:
         Raises:
             PromptNotFoundError: If prompt doesn't exist
             HashMismatchError: If hash validation fails
+
         """
         cache_key = (sub_role, version)
         if cache_key in self._bundle_cache:
@@ -318,7 +323,7 @@ class Registry:
             schema_path = self._base_path / ref.output_schema_ref
             if not schema_path.exists():
                 raise FileNotFoundError(f"Output schema not found: {schema_path}")
-            with open(schema_path, "r", encoding="utf-8") as f:
+            with open(schema_path, encoding="utf-8") as f:
                 output_schema = json.load(f)
 
         pins = PromptPins(
@@ -354,6 +359,7 @@ class Registry:
         Raises:
             MissingVariableError: If declared variable is missing from context
             or if template contains undeclared variables
+
         """
         result = bundle.text
 
@@ -366,8 +372,9 @@ class Registry:
             # Match {{var}}, {{var }}, {{ var}}, {{ var }}, {{  var  }} (whitespace tolerant)
             # Pattern: literal {{ with optional whitespace around variable name, literal }}
             pattern = rf"\{{{{\s*{re.escape(var)}\s*}}}}"
-            # Use lambda to avoid backreference issues in replacement
-            result = re.sub(pattern, lambda m: value, result)
+            # Use lambda to avoid backreference issues in replacement; bind loop
+            # var via default arg (B023 — late-binding fix).
+            result = re.sub(pattern, lambda m, v=value: v, result)
 
         # Check for remaining unrendered placeholders (undeclared variables)
         remaining = re.findall(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", result)
@@ -392,6 +399,7 @@ def load_registry(prompts_path: Path | None = None) -> Registry:
 
     Raises:
         MissingRegistryFileError: If registry.yaml is missing
+
     """
     try:
         return Registry(base_path=prompts_path)
@@ -403,19 +411,19 @@ def load_registry(prompts_path: Path | None = None) -> Registry:
 
 
 __all__ = [
-    "PromptRef",
-    "PromptBundle",
-    "PromptPins",
+    "HashMismatchError",
     "LoadedPrompt",
+    "MissingPromptFileError",
+    "MissingRegistryFileError",
+    "MissingVariableError",
+    "PromptBundle",
+    "PromptNotFoundError",
+    "PromptPins",
+    "PromptRef",
     "Registry",
+    "RegistryError",
     "load_registry",
     "render",
-    "RegistryError",
-    "MissingRegistryFileError",
-    "MissingPromptFileError",
-    "HashMismatchError",
-    "PromptNotFoundError",
-    "MissingVariableError",
 ]
 
 
@@ -434,6 +442,7 @@ def render(bundle: PromptBundle, ctx: dict[str, Any]) -> str:
     Raises:
         MissingVariableError: If declared variable is missing from context
         or if template contains undeclared variables
+
     """
     result = bundle.text
 
@@ -446,8 +455,9 @@ def render(bundle: PromptBundle, ctx: dict[str, Any]) -> str:
         # Match {{var}}, {{var }}, {{ var}}, {{ var }}, {{  var  }} (whitespace tolerant)
         # Pattern: literal {{ with optional whitespace around variable name, literal }}
         pattern = rf"\{{{{\s*{re.escape(var)}\s*}}}}"
-        # Use lambda to avoid backreference issues in replacement
-        result = re.sub(pattern, lambda m: value, result)
+        # Use lambda to avoid backreference issues in replacement; bind loop
+        # var via default arg (B023 — late-binding fix).
+        result = re.sub(pattern, lambda m, v=value: v, result)
 
     # Check for remaining unrendered placeholders (undeclared variables)
     remaining = re.findall(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", result)

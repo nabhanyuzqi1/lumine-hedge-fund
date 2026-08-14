@@ -173,7 +173,7 @@ async def authenticate_request(
     return AuthenticatedPrincipal(key_id=api_key, scopes=scopes)
 
 
-def require_scope(scope: str) -> Any:  # noqa: ANN401
+def require_scope(scope: str) -> Any:
     """Return a dependency that enforces a scope on the authenticated principal."""
 
     def _enforce(

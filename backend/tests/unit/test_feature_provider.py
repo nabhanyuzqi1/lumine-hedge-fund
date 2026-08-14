@@ -57,7 +57,7 @@ class TestFeatureProviderBasics:
     def test_unknown_timeframe_raises(self, redis_mock: AsyncMock) -> None:
         provider = FeatureProvider(redis=redis_mock)
         with pytest.raises(ValueError):  # noqa: PT011
-            provider._table_for_timeframe(Timeframe.H4)  # noqa: SLF001
+            provider._table_for_timeframe(Timeframe.H4)
 
 
 def _mock_orm_row(ts_minute: int, close: str) -> MagicMock:

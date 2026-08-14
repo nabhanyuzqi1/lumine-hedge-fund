@@ -28,7 +28,7 @@ _API_KEY = "test-key-123"
 
 
 def _make_client(
-    handler: Any,  # noqa: ANN401 — any httpx.MockTransport callable
+    handler: Any,
     *,
     url: str = _GATEWAY_URL,
     api_key: str = _API_KEY,

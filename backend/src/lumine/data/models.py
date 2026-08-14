@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from decimal import Decimal  # noqa: TC003 — SQLAlchemy de-stringifies annotations at runtime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
@@ -413,7 +413,7 @@ class Order(Base):
     volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False)
     price: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     status: Mapped[str] = mapped_column(Text, nullable=False)
-    filled_volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False, default=Decimal("0"))
+    filled_volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False, default=Decimal(0))
     rejected_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)

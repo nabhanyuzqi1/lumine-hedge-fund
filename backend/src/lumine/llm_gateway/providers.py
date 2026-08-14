@@ -3,10 +3,11 @@
 """Model registry implementations."""
 
 import logging
-from typing import Optional
 
-from lumine.llm_gateway.__init__ import ModelSpec, ModelStatus, ModelTier
+from lumine.data.models import LLMUsage
 from lumine.data.session import get_db_session
+from lumine.llm_gateway.__init__ import ModelSpec, ModelStatus, ModelTier
+from lumine.llm_gateway.recorder import UsageRecord
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +27,14 @@ class SimpleModelRegistry:
             if spec.tier not in self._default_tier_models:
                 self._default_tier_models[spec.tier] = spec.model_version_id
 
-    def get_model(self, model_version_id: str) -> Optional[ModelSpec]:
+    def get_model(self, model_version_id: str) -> ModelSpec | None:
         """Resolve model version ID to full spec."""
         return self._models.get(model_version_id)
 
     def list_models(
         self,
-        tier: Optional[ModelTier] = None,
-        status: Optional[ModelStatus] = None,
+        tier: ModelTier | None = None,
+        status: ModelStatus | None = None,
     ) -> list[ModelSpec]:
         """List models filtered by tier/status."""
         results = []
@@ -45,7 +46,7 @@ class SimpleModelRegistry:
             results.append(model)
         return results
 
-    def resolve_model_for_tier(self, preferred_tier: ModelTier) -> Optional[ModelSpec]:
+    def resolve_model_for_tier(self, preferred_tier: ModelTier) -> ModelSpec | None:
         """Get best available production model for given tier."""
         model_id = self._default_tier_models.get(preferred_tier)
         if model_id:
@@ -104,7 +105,7 @@ class DatabaseModelRegistry(SimpleModelRegistry):
 
         return count
 
-    async def get_model(self, model_version_id: str) -> Optional[ModelSpec]:
+    async def get_model(self, model_version_id: str) -> ModelSpec | None:
         """Override to ensure fresh load from database."""
         if model_version_id in self._models:
             return self._models[model_version_id]

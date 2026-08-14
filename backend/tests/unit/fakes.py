@@ -41,7 +41,7 @@ class FakeGateway:
     def complete(
         self,
         request: RouterRequest,
-        spend: dict[str, float] | None = None,  # noqa: ARG002 — interface parity
+        spend: dict[str, float] | None = None,
     ) -> GatewayResult:
         """Record ``request`` and return a scripted GatewayResponse."""
         self.calls.append(request)
@@ -119,7 +119,7 @@ class FakeSession:
         self.executed: list[Any] = []
         self._flushed_lineage = False
 
-    def add(self, obj: Any) -> None:  # noqa: ANN401
+    def add(self, obj: Any) -> None:
         self.added.append(obj)
 
     def _stamp_ids(self) -> None:
@@ -172,10 +172,10 @@ class FakeSession:
                 o for o in self.added if not (hasattr(o, "book") and hasattr(o, "verdict"))
             ]
 
-    async def refresh(self, _obj: Any) -> None:  # noqa: ANN401
+    async def refresh(self, _obj: Any) -> None:
         return None
 
-    async def execute(self, stmt: Any, _params: Any = None) -> Any:  # noqa: ANN401
+    async def execute(self, stmt: Any, _params: Any = None) -> Any:
         """Record SQLAlchemy statements and return an empty result.
 
         The production anchoring and backfill paths pass bound parameters as a

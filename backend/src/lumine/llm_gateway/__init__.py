@@ -2,19 +2,22 @@
 
 """LLM Gateway — 9router HTTP client, model routing, admission control."""
 
+import asyncio
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import Enum, StrEnum
-import hashlib
+from typing import Any
+
 import httpx
-import json
-import logging
-from typing import Any, Optional
-import uuid
 
 from lumine.llm_gateway.recorder import UsageRecord, UsageRecorder
+
+# Referensi task background (usage recording) agar tidak di-GC sebelum
+# selesai (RUF006 — dangling task).
+_bg_tasks: set[asyncio.Task[object]] = set()
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +68,11 @@ class GatewayRequest:
 
     model_version_id: str
     prompt_ref: str
-    prompt_hash: Optional[str] = None
-    lineage_id: Optional[str] = None
+    prompt_hash: str | None = None
+    lineage_id: str | None = None
     role: str = "unknown"      # e.g., technical_analyst, macro_analyst, cio
     tier: ModelTier = ModelTier.CONTEXT_RICH
-    idempotency_key: Optional[str] = None
+    idempotency_key: str | None = None
     payload: dict[str, Any] = field(default_factory=dict)
 
     def with_model(self, model_version_id: str):
@@ -89,7 +92,7 @@ class GatewayResponse:
     cost_estimate: float
     latency_seconds: float
     fallback_hops: int = 0     # number of fallback hops attempted
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 @dataclass
@@ -97,9 +100,9 @@ class CircuitBreaker:
     """Per-provider circuit breaker."""
 
     state: CircuitState = CircuitState.CLOSED
-    opened_at: Optional[datetime] = None
+    opened_at: datetime | None = None
     failure_count: int = 0
-    last_success: Optional[datetime] = None
+    last_success: datetime | None = None
     threshold: int = 5          # failures before opening
     recovery_timeout: timedelta = timedelta(minutes=1)  # time before half-open
 
@@ -108,19 +111,16 @@ class ModelRegistry(ABC):
     """Abstract registry interface for model resolution."""
 
     @abstractmethod
-    def get_model(self, model_version_id: str) -> Optional[ModelSpec]:
+    def get_model(self, model_version_id: str) -> ModelSpec | None:
         """Resolve model version ID to full spec."""
-        pass
 
     @abstractmethod
-    def list_models(self, tier: Optional[ModelTier] = None, status: Optional[ModelStatus] = None) -> list[ModelSpec]:
+    def list_models(self, tier: ModelTier | None = None, status: ModelStatus | None = None) -> list[ModelSpec]:
         """List models filtered by tier/status."""
-        pass
 
     @abstractmethod
-    def resolve_model_for_tier(self, preferred_tier: ModelTier) -> Optional[ModelSpec]:
+    def resolve_model_for_tier(self, preferred_tier: ModelTier) -> ModelSpec | None:
         """Get best available model for given tier."""
-        pass
 
 
 class BudgetTracker:
@@ -170,14 +170,14 @@ class TierFallbackChain:
             ModelTier.COST_EFFICIENT: [],
         }
 
-    def get_next_tier(self, current_tier: ModelTier) -> Optional[ModelTier]:
+    def get_next_tier(self, current_tier: ModelTier) -> ModelTier | None:
         """Get next tier down for degradation."""
         for tier, next_tiers in self.fallback_map.items():
             if tier == current_tier and next_tiers:
                 return ModelTier(next_tiers[0])
         return None
 
-    def resolve_fallback(self, primary: ModelSpec, reason: str) -> Optional[ModelSpec]:
+    def resolve_fallback(self, primary: ModelSpec, reason: str) -> ModelSpec | None:
         """Resolve fallback model within same tier first, then degrade."""
         # Try same-tier alternates
         for alt_id in primary.fallback_order:
@@ -336,10 +336,10 @@ class LLMGateway:
         self,
         registry: ModelRegistry,
         nine_router_client: NineRouterClient,
-        budget_tracker: Optional[BudgetTracker] = None,
-        admission_control: Optional[AdmissionControl] = None,
-        circuit_breakers: Optional[dict[str, CircuitBreaker]] = None,
-        usage_recorder: Optional[UsageRecorder] = None,
+        budget_tracker: BudgetTracker | None = None,
+        admission_control: AdmissionControl | None = None,
+        circuit_breakers: dict[str, CircuitBreaker] | None = None,
+        usage_recorder: UsageRecorder | None = None,
     ):
         self.registry = registry
         self.client = nine_router_client
@@ -417,7 +417,7 @@ class LLMGateway:
             # Record usage on success
             logger.debug(f"[DEBUG] Checking response.success={response.success}")
             if response.success:
-                logger.debug(f"[DEBUG] About to call _record_usage")
+                logger.debug("[DEBUG] About to call _record_usage")
                 self._record_usage(request, response, model)
             else:
                 # Track failure for circuit breaker
@@ -507,7 +507,6 @@ class LLMGateway:
         self, request: GatewayRequest, response: GatewayResponse, model: ModelSpec
     ) -> None:
         """Schedule usage recording to database (async in production)."""
-
         tokens_total = sum(response.tokens_used.values())
         estimated_cost = (tokens_total / 1_000_000) * model.base_cost_per_million_tokens
 
@@ -531,18 +530,19 @@ class LLMGateway:
         logger.debug(f"Recording usage: session={self.usage_recorder._session}, has_records={hasattr(self.usage_recorder._session, 'records') if self.usage_recorder._session else False}")
 
         # Check for fake session - just schedule task for test completion
-        if self.usage_recorder._session is not None and hasattr(self.usage_recorder._session, 'records'):
+        if self.usage_recorder._session is not None and hasattr(self.usage_recorder._session, "records"):
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self.usage_recorder.record(record))
+                _bg_tasks.add(loop.create_task(self.usage_recorder.record(record)))
                 return
             except RuntimeError:
                 pass
 
         try:
-            # Production: fire-and-forget in background
+            # Production: fire-and-forget in background (simpan ref anti-GC,
+            # RUF006 — dangling task bisa di-reclaim sebelum selesai).
             loop = asyncio.get_running_loop()
-            loop.create_task(self.usage_recorder.record(record))
+            _bg_tasks.add(loop.create_task(self.usage_recorder.record(record)))
         except RuntimeError:
             # No event loop running (e.g., synchronous context)
             _asyncio = asyncio

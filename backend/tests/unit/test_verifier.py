@@ -7,7 +7,7 @@ import json
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
-from pathlib import Path  # noqa: TC003
+from pathlib import Path
 from typing import Any
 
 import pytest

@@ -73,7 +73,7 @@ class OrderRepository:
             volume=volume,
             price=price,
             status=status,
-            filled_volume=Decimal("0"),
+            filled_volume=Decimal(0),
         )
         self._session.add(order)
         await self._session.commit()
@@ -163,10 +163,10 @@ class PositionRepository:
         positions = await self.list_open()
         by_symbol: dict[str, Decimal] = {}
         for pos in positions:
-            price = mid_prices.get(pos.symbol, Decimal("0"))
+            price = mid_prices.get(pos.symbol, Decimal(0))
             notional = price * abs(pos.size)
-            by_symbol[pos.symbol] = by_symbol.get(pos.symbol, Decimal("0")) + notional
-        gross = sum(by_symbol.values(), Decimal("0"))
+            by_symbol[pos.symbol] = by_symbol.get(pos.symbol, Decimal(0)) + notional
+        gross = sum(by_symbol.values(), Decimal(0))
         return {
             "symbols": sorted(by_symbol),
             "notionals": {s: str(v) for s, v in by_symbol.items()},

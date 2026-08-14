@@ -9,7 +9,7 @@ under `feat:{symbol}:{name}`.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable  # noqa: TC003
+from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any

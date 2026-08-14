@@ -80,11 +80,11 @@ def _canonicalize_ts(value: datetime) -> str:
     if value.tzinfo is None:
         # Hard error: a naive timestamp would serialize with a local offset
         # depending on the host, making the hash non-replayable.
-        raise ValueError("naive datetime in chained row — must be timezone-aware")  # noqa: EM101 — pattern used across bridge/types.py
+        raise ValueError("naive datetime in chained row — must be timezone-aware")
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
-def _canonicalize_value(value: Any) -> Any:  # noqa: ANN401 — JSONB payloads are arbitrary JSON
+def _canonicalize_value(value: Any) -> Any:
     """Recursively canonicalize a single value per ADR-0017.
 
     - JSONB values are recursively sorted by key (via ``json.dumps``
@@ -137,7 +137,7 @@ def compute_self_hash(prev_hash: str, row_without_self_hash: Mapping[str, Any]) 
     return sha256_hex(prev_hash.encode("utf-8") + canonical_json(row_without_self_hash))
 
 
-def orm_payload(record: Any) -> dict[str, Any]:  # noqa: ANN401 — SQLAlchemy mapped classes are not structurally typed
+def orm_payload(record: Any) -> dict[str, Any]:
     """Serialize an ORM row to the canonical hash payload.
 
     Every persisted column except ``self_hash``/``prev_hash`` (which the

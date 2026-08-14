@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import uuid4
 
-from lumine.data.models import LineageRecord, Order, PolicyVersion, Position, StrategyVersion
+from lumine.data.models import LineageRecord, PolicyVersion, Position, StrategyVersion
 from lumine.data.repositories import OrderRepository, PositionRepository
 
 
@@ -26,7 +26,7 @@ async def test_order_crud_roundtrip(db_session) -> None:  # type: ignore[no-unty
         price=Decimal("2450.00"),
     )
     assert created.status == "pending"
-    assert created.filled_volume == Decimal("0")
+    assert created.filled_volume == Decimal(0)
 
     items, total = await repo.list()
     assert total >= 1
@@ -119,7 +119,7 @@ async def test_position_repository_exposure(db_session) -> None:  # type: ignore
         )
     )
     await db_session.flush()
-    for symbol, size in (("XAUUSD", Decimal("2")), ("EURUSD", Decimal("-100000"))):
+    for symbol, size in (("XAUUSD", Decimal(2)), ("EURUSD", Decimal(-100000))):
         db_session.add(
             Position(
                 position_id=uuid4(),
@@ -128,7 +128,7 @@ async def test_position_repository_exposure(db_session) -> None:  # type: ignore
                 strategy_id=uuid4(),
                 side="LONG" if size > 0 else "SHORT",
                 size=size,
-                avg_entry=Decimal("2450"),
+                avg_entry=Decimal(2450),
                 opened_at=now,
                 opened_lineage=lineage_id,
                 status="open",
@@ -138,8 +138,8 @@ async def test_position_repository_exposure(db_session) -> None:  # type: ignore
 
     repo = PositionRepository(db_session)
     summary = await repo.exposure_summary(
-        mid_prices={"XAUUSD": Decimal("2500"), "EURUSD": Decimal("1.10")}
+        mid_prices={"XAUUSD": Decimal(2500), "EURUSD": Decimal("1.10")}
     )
     assert summary["position_count"] == 2
     assert summary["symbols"] == ["EURUSD", "XAUUSD"]
-    assert Decimal(summary["gross_exposure"]) == Decimal("115000")
+    assert Decimal(summary["gross_exposure"]) == Decimal(115000)

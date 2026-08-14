@@ -38,12 +38,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
+from lumine.api.sse.publisher import SSEPublisher
 from lumine.trading.market_service import MarketService
-from lumine.api.sse.publisher import SSEPublisher, SSEEvent
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator

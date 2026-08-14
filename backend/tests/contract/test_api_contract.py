@@ -29,7 +29,7 @@ from lumine.shared.config import Settings
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
 
-_TEST_HMAC_SECRET = "bootstrap-secret-for-tests"  # noqa: S105
+_TEST_HMAC_SECRET = "bootstrap-secret-for-tests"
 
 
 class FakeRedis:
@@ -82,7 +82,7 @@ class FakeRedis:
     async def get(self, key: str) -> str | None:
         return self.strings.get(key)
 
-    async def set(self, name: str, value: object, ex: int | None = None) -> bool:  # noqa: ARG002 — TTL not enforced in fake
+    async def set(self, name: str, value: object, ex: int | None = None) -> bool:
         self.strings[name] = str(value)
         return True
 
@@ -381,7 +381,6 @@ def test_rpc_halt_trading_enqueues(client: TestClient, monkeypatch: pytest.Monke
 
 def test_rpc_command_status_endpoint(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     command_id = "11111111-2222-3333-4444-555555555555"
-    from lumine.rpc import queue as rpc_queue
 
     async def _fake_result(cid: str) -> dict | None:
         if cid != command_id:
@@ -409,7 +408,6 @@ def test_rpc_command_status_endpoint(client: TestClient, monkeypatch: pytest.Mon
 
 def test_b06_portfolio_and_orders_endpoints(client: TestClient) -> None:
     """B-06 additions: equity curve, cancel-all, history, bulk, signals/symbol."""
-
     # Equity curve (paginated)
     response = client.get("/api/v1/portfolio/default/equity?limit=5")
     assert response.status_code == 200
@@ -718,7 +716,7 @@ def test_pagination_limit_parameter(client: TestClient) -> None:
 def test_sse_stream_open_and_heartbeat_frames() -> None:
     """Live SSE frames: stream_open first, then a heartbeat comment line."""
     request = _FakeStreamRequest()
-    stream = streams._event_stream(  # noqa: SLF001 — test drives the private generator directly
+    stream = streams._event_stream(
         request, "unit-test-channel", 0.05
     )
 
@@ -736,7 +734,7 @@ def test_sse_stream_open_and_heartbeat_frames() -> None:
 
 def test_sse_frame_timestamp_has_utc_z_suffix() -> None:
     """SSE envelope timestamps carry ISO 8601 ms + Z (sse-api.md Freshness)."""
-    frame = streams._emit(  # noqa: SLF001 — test drives the private emitter directly
+    frame = streams._emit(
         "unit-test-z", "s1", "market_data", {"symbol": "XAUUSD"}
     )
     assert frame.startswith("id: 1\n")
@@ -756,19 +754,19 @@ def test_sse_replay_resumes_with_gap_detected() -> None:
     req = _FakeStreamRequest()
     # The client last saw event 3, but the 1000-event / 5-min buffer has
     # already rolled over to event 7 — simulasi disconnect yang lama.
-    buffers = streams._buffers  # noqa: SLF001 — direct state setup for the test
-    the_channel = buffers.setdefault(channel, deque(maxlen=streams._BUFFER_MAX_EVENTS))  # noqa: SLF001
+    buffers = streams._buffers
+    the_channel = buffers.setdefault(channel, deque(maxlen=streams._BUFFER_MAX_EVENTS))
     the_channel.clear()
     the_channel.append(
-        streams._BufferedEvent(  # noqa: SLF001
+        streams._BufferedEvent(
             event_id=7,
             ts=time.time(),
             frame='id: 7\nevent: test_event\ndata: {"n": 7}\n\n',
         )
     )
-    streams._next_ids[channel] = 7  # noqa: SLF001
+    streams._next_ids[channel] = 7
     req.headers = {"Last-Event-ID": "3"}
-    stream = streams._event_stream(  # noqa: SLF001 — test drives the private generator directly
+    stream = streams._event_stream(
         req, channel, 0.1
     )
 

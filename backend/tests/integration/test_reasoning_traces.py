@@ -39,8 +39,8 @@ class TestReasoningTraceWriter:
 
     async def test_write_trace_persists_hashes(
         self,
-        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
-        _model,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        db_session,  # type: ignore[no-untyped-def]
+        _model,  # type: ignore[no-untyped-def]
     ) -> None:
         args = self._trace_args(_model.id)
         trace_id = await write_trace(db_session, **args)  # type: ignore[arg-type]
@@ -61,8 +61,8 @@ class TestReasoningTraceWriter:
 
     async def test_invalid_fk_fails_closed(
         self,
-        db_session,  # type: ignore[no-untyped-def]  # noqa: ANN001
-        _model,  # type: ignore[no-untyped-def]  # noqa: ANN001
+        db_session,  # type: ignore[no-untyped-def]
+        _model,  # type: ignore[no-untyped-def]
     ) -> None:
         args = self._trace_args(uuid.uuid4())  # bogus model FK
         with pytest.raises(ReasoningTraceError):

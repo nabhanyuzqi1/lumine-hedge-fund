@@ -24,7 +24,7 @@ import json
 import logging
 import secrets
 import time
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
@@ -150,7 +150,7 @@ def _bootstrap_user(username: str, settings: Settings) -> dict[str, str] | None:
             # repeated logins compare against the same hash, but unique per
             # (deployment, user) and never stored as plaintext.
             salt = hashlib.sha256(
-                f"{settings.hmac_secret_key}:{name}".encode("utf-8")
+                f"{settings.hmac_secret_key}:{name}".encode()
             ).hexdigest()[:32]
             return {
                 "username": name,
@@ -174,7 +174,7 @@ async def _db_user(username: str) -> dict[str, str] | None:
                     "password_hash": user.password_hash,
                     "password_salt": user.password_salt,
                 }
-    except Exception:  # noqa: BLE001 — DB down must never lock out operators
+    except Exception:
         logger.warning("auth: DB lookup failed for %r — falling back to bootstrap", username)
     return None
 
@@ -188,7 +188,8 @@ async def _find_user(username: str, settings: Settings) -> dict[str, str] | None
 
 async def seed_bootstrap_users(settings: Settings) -> int:
     """Idempotent upsert of bootstrap users. Returns rows created (0 when
-    the database is unavailable or all users already exist)."""
+    the database is unavailable or all users already exist).
+    """
     try:
         async with get_sessionmaker()() as session:
             created = 0
@@ -210,7 +211,7 @@ async def seed_bootstrap_users(settings: Settings) -> int:
                     created += 1
             await session.commit()
             return created
-    except Exception:  # noqa: BLE001 — seeding is best-effort at startup
+    except Exception:
         logger.warning("auth: bootstrap seed skipped (DB unavailable)", exc_info=True)
         return 0
 
@@ -301,4 +302,4 @@ async def verify(
 
 
 # Re-export for the envelope/lifespan wiring tests.
-__all__ = ["router", "seed_bootstrap_users", "issue_token", "parse_token", "hash_password", "verify_password"]
+__all__ = ["hash_password", "issue_token", "parse_token", "router", "seed_bootstrap_users", "verify_password"]

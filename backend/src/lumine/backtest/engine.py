@@ -71,14 +71,14 @@ def run_backtest(symbol: str = "XAUUSD", timeframe: str = "1h", *, stop_pct: Dec
     closes = [Decimal(str(row["close"])) for row in rows]
     volumes = [Decimal(str(row["volume"])) for row in rows]
     sma20 = _sma(closes, 20)
-    vol_avg = sum(volumes[:20]) / 20 if len(volumes) >= 20 else Decimal("0")
+    vol_avg = sum(volumes[:20]) / 20 if len(volumes) >= 20 else Decimal(0)
 
-    equity: list[Decimal] = [Decimal("100000")]
+    equity: list[Decimal] = [Decimal(100000)]
     trades: list[BacktestTrade] = []
     position: str | None = None
-    entry_price = Decimal("0")
+    entry_price = Decimal(0)
     entry_ts = ""
-    peak = Decimal("100000")
+    peak = Decimal(100000)
 
     for i in range(20, len(rows)):
         close = closes[i]
@@ -127,7 +127,7 @@ def _compute_metrics(result: BacktestResult) -> BacktestMetrics:
     end = equity[-1]
     total_return = (end - start) / start
     peak = equity[0]
-    max_dd = Decimal("0")
+    max_dd = Decimal(0)
     for value in equity:
         peak = max(peak, value)
         if peak > 0:
@@ -138,12 +138,12 @@ def _compute_metrics(result: BacktestResult) -> BacktestMetrics:
         wins = [t for t in result.trades if t.pnl_pct > 0]
         win_rate = Decimal(len(wins)) / Decimal(len(result.trades))
         returns = [t.pnl_pct for t in result.trades]
-        mean = sum(returns, Decimal("0")) / len(returns)
+        mean = sum(returns, Decimal(0)) / len(returns)
         variance = sum((r - mean) ** 2 for r in returns) / len(returns)
-        sharpe = mean / variance.sqrt() if variance > 0 else Decimal("0")
+        sharpe = mean / variance.sqrt() if variance > 0 else Decimal(0)
     else:
-        win_rate = Decimal("0")
-        sharpe = Decimal("0")
+        win_rate = Decimal(0)
+        sharpe = Decimal(0)
 
     return BacktestMetrics(
         total_return_pct=total_return.quantize(Decimal("0.0001")),

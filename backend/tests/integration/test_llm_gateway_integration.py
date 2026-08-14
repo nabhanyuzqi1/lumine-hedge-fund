@@ -2,11 +2,9 @@
 
 """Integration tests for LLM Gateway — end-to-end workflow verification."""
 
-import pytest
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
-from httpx import Response, Request
 import asyncio
+
+import pytest
 
 from lumine.llm_gateway import (
     BudgetTracker,
@@ -14,11 +12,9 @@ from lumine.llm_gateway import (
     CircuitState,
     GatewayRequest,
     GatewayResponse,
-    ModelRegistry,
     ModelSpec,
     ModelStatus,
     ModelTier,
-    TierFallbackChain,
 )
 
 
@@ -35,8 +31,8 @@ class MockNineRouterClient:
             "url": "https://api.nine-router.com/v1/chat/completions",
             "headers": {},
             "json_data": {
-                "model_version_id": getattr(request, 'model_version_id', ''),
-                "payload": getattr(request, 'payload', {}),
+                "model_version_id": getattr(request, "model_version_id", ""),
+                "payload": getattr(request, "payload", {}),
             },
         })
 
@@ -56,8 +52,8 @@ class MockNineRouterClient:
             raise Exception("Timeout")
 
         # Determine model name from model_version_id
-        model_version = getattr(request, 'model_version_id', '')
-        model_name = model_version.replace('-prod', '')
+        model_version = getattr(request, "model_version_id", "")
+        model_name = model_version.replace("-prod", "")
 
         return GatewayResponse(
             success=True,
@@ -141,12 +137,12 @@ class TestEndToEndWorkflow:
         from lumine.llm_gateway import LLMGateway
 
         budget_tracker = BudgetTracker(daily_budget_usd=100.0, weekly_budget_usd=500.0)
-        admission_control = type('AdmissionControl', (), {
-            'enabled': True,
-            'max_concurrent': 10,
-            'current_concurrent': 0,
-            'acquire': lambda s: (True, ""),
-            'release': lambda s: None,
+        admission_control = type("AdmissionControl", (), {
+            "enabled": True,
+            "max_concurrent": 10,
+            "current_concurrent": 0,
+            "acquire": lambda s: (True, ""),
+            "release": lambda s: None,
         })()
 
         gateway = LLMGateway(
@@ -179,12 +175,12 @@ class TestEndToEndWorkflow:
         from lumine.llm_gateway import LLMGateway
 
         budget_tracker = BudgetTracker(daily_budget_usd=100.0, weekly_budget_usd=500.0)
-        admission_control = type('AdmissionControl', (), {
-            'enabled': True,
-            'max_concurrent': 10,
-            'current_concurrent': 0,
-            'acquire': lambda s: (True, ""),
-            'release': lambda s: None,
+        admission_control = type("AdmissionControl", (), {
+            "enabled": True,
+            "max_concurrent": 10,
+            "current_concurrent": 0,
+            "acquire": lambda s: (True, ""),
+            "release": lambda s: None,
         })()
 
         gateway = LLMGateway(
@@ -217,12 +213,12 @@ class TestEndToEndWorkflow:
         budget_tracker = BudgetTracker(daily_budget_usd=10.0, weekly_budget_usd=50.0)
         budget_tracker.record_spending(25.0)
 
-        admission_control = type('AdmissionControl', (), {
-            'enabled': True,
-            'max_concurrent': 10,
-            'current_concurrent': 0,
-            'acquire': lambda s: (True, ""),
-            'release': lambda s: None,
+        admission_control = type("AdmissionControl", (), {
+            "enabled": True,
+            "max_concurrent": 10,
+            "current_concurrent": 0,
+            "acquire": lambda s: (True, ""),
+            "release": lambda s: None,
         })()
 
         gateway = LLMGateway(
@@ -248,19 +244,19 @@ class TestEndToEndWorkflow:
     @pytest.mark.asyncio
     async def test_circuit_breaker_prevention(self, mock_client, registry_with_models):
         """Test circuit breaker prevents calls when open."""
-        from lumine.llm_gateway import LLMGateway, CircuitBreaker
+        from lumine.llm_gateway import LLMGateway
 
         budget_tracker = BudgetTracker(daily_budget_usd=100.0, weekly_budget_usd=500.0)
         circuit = CircuitBreaker(threshold=2, recovery_timeout=300)
         circuit.state = CircuitState.OPEN
         circuit.failure_count = 2
 
-        admission_control = type('AdmissionControl', (), {
-            'enabled': True,
-            'max_concurrent': 10,
-            'current_concurrent': 0,
-            'acquire': lambda s: (True, ""),
-            'release': lambda s: None,
+        admission_control = type("AdmissionControl", (), {
+            "enabled": True,
+            "max_concurrent": 10,
+            "current_concurrent": 0,
+            "acquire": lambda s: (True, ""),
+            "release": lambda s: None,
         })()
 
         circuits = {"openai": circuit}
@@ -294,8 +290,8 @@ class TestUsageRecording:
     async def test_usage_record_inserted_on_success(self, mock_client, registry_with_models):
         """Verify usage record created on successful completion."""
         from uuid import uuid4
-        from lumine.llm_gateway import LLMGateway, UsageRecorder, UsageRecord
-        from decimal import Decimal
+
+        from lumine.llm_gateway import LLMGateway, UsageRecorder
 
         class FakeSession:
             def __init__(self):
@@ -320,12 +316,12 @@ class TestUsageRecording:
         print(f"=== DEBUG: recorder._session ID: {id(recorder._session)}, matches test: {recorder._session is fake_session}")
 
         budget_tracker = BudgetTracker(daily_budget_usd=100.0, weekly_budget_usd=500.0)
-        admission_control = type('AdmissionControl', (), {
-            'enabled': True,
-            'max_concurrent': 10,
-            'current_concurrent': 0,
-            'acquire': lambda s: (True, ""),
-            'release': lambda s: None,
+        admission_control = type("AdmissionControl", (), {
+            "enabled": True,
+            "max_concurrent": 10,
+            "current_concurrent": 0,
+            "acquire": lambda s: (True, ""),
+            "release": lambda s: None,
         })()
 
         gateway = LLMGateway(
@@ -368,7 +364,7 @@ class TestAdmissionControl:
     @pytest.mark.asyncio
     async def test_request_success(self, mock_client, registry_with_models):
         """Test that requests succeed with admission control enabled."""
-        from lumine.llm_gateway import LLMGateway, AdmissionControl
+        from lumine.llm_gateway import AdmissionControl, LLMGateway
 
         budget_tracker = BudgetTracker(daily_budget_usd=100.0, weekly_budget_usd=500.0)
 

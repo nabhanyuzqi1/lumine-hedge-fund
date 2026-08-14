@@ -6,7 +6,6 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import orjson
 
@@ -23,8 +22,7 @@ class Tick:
 
 
 class MarketService:
-    """
-    In-memory cache of latest tick prices for subscribed symbols.
+    """In-memory cache of latest tick prices for subscribed symbols.
 
     Provides:
     - get_quote(symbol): Get current bid/ask for a symbol
@@ -38,8 +36,7 @@ class MarketService:
         self._lock = asyncio.Lock()
 
     async def get_quote(self, symbol: str) -> Tick | None:
-        """
-        Get latest quote for a symbol.
+        """Get latest quote for a symbol.
 
         Returns None if no cached data available.
         """
@@ -56,8 +53,7 @@ class MarketService:
         return tick
 
     async def update_tick(self, symbol: str, bid: float, ask: float, volume: float = 0.0) -> None:
-        """
-        Update cached tick price for a symbol.
+        """Update cached tick price for a symbol.
 
         Call this when receiving new price data from MT5 feed.
         """

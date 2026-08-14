@@ -9,7 +9,7 @@ Phase 3 enum strings that land in ``model_versions.tier`` and
 
 from __future__ import annotations
 
-import uuid  # noqa: TC003 — pydantic evaluates uuid.UUID annotations at model build
+import uuid
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 def _default_model() -> str:
     """Return the configured gateway model name (avoids import cycle)."""
-    from lumine.shared.config import get_settings  # noqa: PLC0415 — lazy: avoids import cycle
+    from lumine.shared.config import get_settings
 
     return get_settings().llm_default_model
 

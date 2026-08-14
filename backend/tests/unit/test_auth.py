@@ -8,8 +8,6 @@ is unavailable (monkeypatched out of the session lookup).
 
 from __future__ import annotations
 
-from typing import Annotated
-
 import pytest
 from fastapi.testclient import TestClient
 
