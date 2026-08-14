@@ -41,6 +41,9 @@ services:
     command: ["alembic", "upgrade", "head"]
     environment:
       - DATABASE_URL=postgresql+asyncpg://lumine:${DB_PASSWORD}@postgres:5432/lumine
+      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - TRADER_PASSWORD=${TRADER_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,6 +64,9 @@ services:
       - LLM_GATEWAY_URL=${LLM_GATEWAY_URL:-}
       - LLM_GATEWAY_API_KEY=${LLM_GATEWAY_API_KEY:-}
       - SESSION_COOKIE_SECURE=true
+      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - TRADER_PASSWORD=${TRADER_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
