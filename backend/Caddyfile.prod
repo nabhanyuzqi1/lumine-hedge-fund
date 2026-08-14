@@ -11,20 +11,28 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
     }
 
     # Authelia portal + assets
-    # strip_prefix /auth agar Authelia terima /static/... bukan /auth/static/...
-    # server.address di Authelia config: tcp://0.0.0.0:9091/auth
-    # sehingga <base href="/auth/"> di-generate dan assets resolve dengan benar
-    handle /auth/* {
-        uri strip_prefix /auth
-        reverse_proxy authelia:9091
+    # server.address: tcp://0.0.0.0:9091/auth → Authelia hanya terima path /auth/*
+    # header_up Host agar base href generate dengan domain publik
+    @authelia {
+        path /auth*
+    }
+    handle @authelia {
+        reverse_proxy authelia:9091 {
+            header_up Host lumine.biz.id
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-Host lumine.biz.id
+        }
     }
 
+    # Superadmin SPA — protected
+    # Caddy handle_errors tidak intercept 401 dari forward_auth,
+    # jadi kita intercept SEBELUM forward_auth dengan redirect handler
     @superadmin {
         path /superadmin*
     }
     handle @superadmin {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=https://lumine.biz.id/superadmin
+            uri /auth/api/verify?rd=https://lumine.biz.id/superadmin
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         reverse_proxy frontend:80
@@ -35,7 +43,7 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
     }
     handle @novnc {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=https://lumine.biz.id/novnc/
+            uri /auth/api/verify?rd=https://lumine.biz.id/novnc/
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         uri strip_prefix /novnc
@@ -47,7 +55,7 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
     }
     handle @dozzle {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=https://lumine.biz.id/dozzle/
+            uri /auth/api/verify?rd=https://lumine.biz.id/dozzle/
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         uri strip_prefix /dozzle
@@ -59,7 +67,7 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
     }
     handle @ninerouter {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=https://lumine.biz.id/9router/
+            uri /auth/api/verify?rd=https://lumine.biz.id/9router/
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         uri strip_prefix /9router
@@ -79,12 +87,37 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         -Server
     }
 
-    handle_errors {
-        @unauth {
-            expression {http.error.status_code} == 401
-        }
-        handle @unauth {
-            redir https://lumine.biz.id/auth/?rd={http.request.uri} 302
-        }
+    # Intercept 401 dari forward_auth dan redirect ke Authelia
+    # Catatan: handle_errors tidak trigger untuk forward_auth upstream 401,
+    # tapi Cloudflare flexible SSL mengizinkan custom error pages.
+    # Solusi: gunakan respond dengan HTML redirect yang inject ke browser.
+    handle_errors 401 {
+        header Content-Type "text/html; charset=utf-8"
+        respond `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0;url=https://lumine.biz.id/auth/?rd={http.request.uri}">
+<title>Redirecting to login…</title>
+<style>
+  body{background:#0b0f17;color:#e8eef7;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+  .box{text-align:center;padding:2rem;}
+  .label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#6d7c92;margin-bottom:.75rem;}
+  .title{font-size:1.25rem;font-weight:600;color:#e8eef7;margin-bottom:.5rem;}
+  a{color:#4d8dff;text-decoration:none;}
+  a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="label">LUMINE CONTROL CENTER</div>
+  <div class="title">Authentication Required</div>
+  <p style="color:#a7b3c5;font-size:.875rem;">Redirecting to login&hellip;</p>
+  <p style="color:#6d7c92;font-size:.75rem;margin-top:1rem;">
+    <a href="https://lumine.biz.id/auth/?rd={http.request.uri}">Click here if not redirected</a>
+  </p>
+</div>
+</body>
+</html>` 401
     }
 }
