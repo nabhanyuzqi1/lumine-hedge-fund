@@ -1,8 +1,9 @@
 ---
 # Authelia 4.38 — HTTPS via lumine.biz.id (Cloudflare Flexible SSL)
+# Base path /auth agar assets resolve ke https://lumine.biz.id/auth/static/...
 
 server:
-  address: tcp://0.0.0.0:9091
+  address: tcp://0.0.0.0:9091/auth
 
 log:
   level: info
