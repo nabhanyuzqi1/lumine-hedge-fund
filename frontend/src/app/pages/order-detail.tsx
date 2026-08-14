@@ -59,7 +59,7 @@ export function OrderDetailPage() {
     toast({
       variant: "success",
       title: "Order cancelled",
-      description: `${orderId} has been marked CANCELLED (demo fixture).`,
+      description: `${orderId} has been marked CANCELLED.`,
     });
   };
 
@@ -195,8 +195,8 @@ export function OrderDetailPage() {
           <DialogHeader>
             <DialogTitle>Cancel order {orderId}?</DialogTitle>
             <DialogDescription>
-              This will mark the order as cancelled in the demo fixture. No real execution change
-              occurs until backend Phase 9 is live.
+              This will submit a cancel request to the backend order lifecycle
+              (POST /orders/&#123;id&#125;/cancel).
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

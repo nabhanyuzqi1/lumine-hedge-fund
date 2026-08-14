@@ -10,7 +10,6 @@ import { ChartCard } from "@/components/charts/chart-card";
 import { DrawdownChart } from "@/components/charts/drawdown-chart";
 import { EquityChart } from "@/components/charts/equity-chart";
 import { PnlSparkline } from "@/components/charts/pnl-sparkline";
-import { useDemoStreams } from "@/hooks/useDemoStreams";
 
 // ECharts panes are code-split: `echarts/core` never enters the critical
 // bundle. Each lazy pane keeps the <300KB gzip budget.
@@ -34,8 +33,9 @@ function PaneFallback({ title, height = 320 }: { title: string; height?: number 
 
 /**
  * `/dashboard` — institutional chart grid (F-Sprint 4). Lightweight-charts
- * panes are statically imported; ECharts panes load lazily. Market data flows
- * from the demo stream hook until the backend SSE endpoints are live.
+ * panes are statically imported; ECharts panes load lazily. All data flows
+ * from live REST endpoints (market bars, equity, exposure, signals,
+ * correlation) — no demo streams.
  */
 export function DashboardPage() {
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
@@ -45,7 +45,6 @@ export function DashboardPage() {
   const exposure = useExposure();
   const signals = useSignals("XAUUSD");
   const correlation = useCorrelation();
-  const demo = useDemoStreams(true, "XAUUSD");
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4">
@@ -60,7 +59,6 @@ export function DashboardPage() {
         <div className="md:col-span-2 xl:col-span-3">
           <CandlestickChart
             bars={bars.data ?? []}
-            lastTick={demo.lastTick}
             timeframe={timeframe}
             onTimeframeChange={setTimeframe}
           />
@@ -69,8 +67,8 @@ export function DashboardPage() {
         <EquityChart points={equity.data ?? []} />
         <DrawdownChart equity={equity.data ?? []} />
 
-        <ChartCard title="Live P&L" description="Unrealized · USD" height={96}>
-          <PnlSparkline points={demo.pnlSeries} />
+        <ChartCard title="Live P&L" description="Equity curve · USD" height={96}>
+          <PnlSparkline points={equity.data ?? []} />
         </ChartCard>
 
         <Suspense fallback={<PaneFallback title="Capital Allocation" />}>
@@ -97,7 +95,7 @@ export function DashboardPage() {
             action: (signals.data?.[0]?.direction as "buy" | "sell" | "hold") ?? "hold",
             confidence: signals.data?.[0]?.confidence ?? 0.5,
             timestamp: new Date().toISOString(),
-            rationale: "Deterministic demo decision — live IC stream pending.",
+            rationale: `Live /market/signals · ${signals.data?.length ?? 0} signal(s)`,
           }}
         />
       </div>

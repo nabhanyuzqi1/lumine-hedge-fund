@@ -14,7 +14,7 @@ interface MarketDataEvent {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
-/** Demo page proving SSE → Zustand → virtualized table end-to-end. */
+/** SSE stream monitor page — live Phase 9 streams → Zustand → table. */
 export function StreamsPage() {
   const upsertTick = useMarketStore((state) => state.upsertTick);
   const tick = useMarketStore(useShallow((state) => state.getTick("XAUUSD")));
