@@ -1,38 +1,62 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
 import { AutheliaGuard } from "./authelia-guard";
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  // Reset window.location.href to empty string for assertions
-  Object.defineProperty(window, "location", {
-    writable: true,
-    value: { pathname: "/superadmin", search: "", href: "" },
-  });
-});
+// Mock fetch
+global.fetch = vi.fn();
 
 describe("AutheliaGuard", () => {
-  it("shows loading spinner while checking", () => {
-    vi.stubGlobal("fetch", () => new Promise(() => {})); // never resolves
-    render(<AutheliaGuard><div data-testid="content">protected</div></AutheliaGuard>);
-    expect(screen.getByRole("status")).toBeInTheDocument();
-    expect(screen.queryByTestId("content")).not.toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (window as any).location;
+    (window as any).location = { href: "" };
   });
 
-  it("renders children when authenticated", async () => {
-    vi.stubGlobal("fetch", () =>
-      Promise.resolve({ status: 200 } as Response)
+  it("renders children when authenticated (200)", async () => {
+    (global.fetch as any).mockResolvedValueOnce({ ok: true, status: 200 });
+
+    render(
+      <BrowserRouter>
+        <AutheliaGuard>
+          <div>Protected content</div>
+        </AutheliaGuard>
+      </BrowserRouter>
     );
-    render(<AutheliaGuard><div data-testid="content">protected</div></AutheliaGuard>);
-    expect(await screen.findByTestId("content")).toBeInTheDocument();
+
+    expect(screen.getByText("Verifying session...")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Protected content")).toBeInTheDocument());
   });
 
-  it("redirects to /auth/ when unauthenticated", async () => {
-    vi.stubGlobal("fetch", () =>
-      Promise.resolve({ status: 401 } as Response)
+  it("redirects to Authelia login when unauthenticated (401)", async () => {
+    (global.fetch as any).mockResolvedValueOnce({ ok: false, status: 401 });
+
+    render(
+      <BrowserRouter>
+        <AutheliaGuard>
+          <div>Protected content</div>
+        </AutheliaGuard>
+      </BrowserRouter>
     );
-    render(<AutheliaGuard><div data-testid="content">protected</div></AutheliaGuard>);
-    await new Promise((r) => setTimeout(r, 50));
-    expect((window.location as { href: string }).href).toContain("/auth/?rd=");
+
+    await waitFor(() => {
+      expect(window.location.href).toContain("/auth/?rd=");
+    });
+  });
+
+  it("redirects to Authelia login on fetch error", async () => {
+    (global.fetch as any).mockRejectedValueOnce(new Error("Network error"));
+
+    render(
+      <BrowserRouter>
+        <AutheliaGuard>
+          <div>Protected content</div>
+        </AutheliaGuard>
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(window.location.href).toContain("/auth/?rd=");
+    });
   });
 });

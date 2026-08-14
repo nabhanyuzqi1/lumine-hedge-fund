@@ -1,116 +1,69 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
 /**
- * AutheliaGuard — client-side auth check untuk route /superadmin.
- *
- * Masalah: Caddy v2 forward_auth mengembalikan 401 mentah ke browser
- * tanpa redirect ke Authelia login page (handle_errors tidak intercept
- * upstream 401). Solusi: React guard ini fetch /auth/api/verify sebelum
- * render, dan redirect ke /auth/?rd=... jika unauthenticated.
- *
- * Note: verify endpoint terima path /auth/api/verify karena Authelia
- * server.address dikonfigurasi dengan prefix /auth.
+ * AutheliaGuard — client-side auth check untuk routes yang dilindungi Authelia.
+ * 
+ * Workflow:
+ * 1. Browser fetch GET /auth/api/verify (Authelia verify endpoint)
+ * 2. Response 200 → render children (user authenticated)
+ * 3. Response 401 → redirect ke /auth/?rd=<current-url> (Authelia login)
+ * 4. Loading state: spinner
+ * 
+ * Kenapa client-side:
+ * - Caddy forward_auth upstream 401 tidak trigger handle_errors (Caddy v2 limitation)
+ * - Cloudflare Flexible SSL → VPS terima HTTP → Authelia 4.38 reject `http://` target URL
+ * - AutheliaGuard bypass Caddy forward_auth dengan fetch langsung dari browser
  */
-import * as React from "react";
+export function AutheliaGuard({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+  const navigate = useNavigate();
+  const location = useLocation();
 
-interface Props {
-  children: React.ReactNode;
-}
-
-type AuthState = "checking" | "authenticated" | "unauthenticated";
-
-export function AutheliaGuard({ children }: Props) {
-  const [state, setState] = React.useState<AuthState>("checking");
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    async function checkAuth() {
+  useEffect(() => {
+    const verifyAuth = async () => {
       try {
-        const resp = await fetch("/auth/api/verify", {
+        const response = await fetch("/auth/api/verify", {
           method: "GET",
-          credentials: "include",
-          headers: { "Accept": "text/plain" },
+          credentials: "include", // kirim cookies
+          headers: {
+            "X-Original-URL": `https://lumine.biz.id${location.pathname}`,
+          },
         });
 
-        if (cancelled) return;
-
-        if (resp.status === 200) {
-          setState("authenticated");
+        if (response.ok) {
+          setStatus("authenticated");
+        } else if (response.status === 401) {
+          // Redirect ke Authelia login dengan return URL
+          const redirectUrl = `/auth/?rd=${encodeURIComponent(location.pathname + location.search)}`;
+          window.location.href = redirectUrl;
         } else {
-          setState("unauthenticated");
-          const rd = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.href = `/auth/?rd=${rd}`;
+          // Unexpected error, redirect ke login juga
+          window.location.href = `/auth/?rd=${encodeURIComponent(location.pathname)}`;
         }
-      } catch {
-        if (!cancelled) {
-          // Network error — redirect ke login daripada menampilkan blank
-          setState("unauthenticated");
-          const rd = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.href = `/auth/?rd=${rd}`;
-        }
+      } catch (error) {
+        console.error("AutheliaGuard verify error:", error);
+        window.location.href = `/auth/?rd=${encodeURIComponent(location.pathname)}`;
       }
-    }
+    };
 
-    void checkAuth();
-    return () => { cancelled = true; };
-  }, []);
+    verifyAuth();
+  }, [location.pathname, location.search, navigate]);
 
-  if (state === "checking") {
+  if (status === "loading") {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          background: "#070b12",
-          fontFamily: "'IBM Plex Mono', monospace",
-          color: "#e8eef7",
-          flexDirection: "column",
-          gap: "1rem",
-        }}
-        role="status"
-        aria-live="polite"
-        aria-label="Verifying authentication"
-      >
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            border: "2px solid rgba(77,141,255,0.2)",
-            borderTop: "2px solid #4d8dff",
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-          }}
-        />
-        <span style={{ fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#6d7c92" }}>
-          Verifying session…
-        </span>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="min-h-screen flex items-center justify-center bg-abyss">
+        <div className="text-center space-y-4">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+          <p className="text-ink-dim font-mono text-sm">Verifying session...</p>
+        </div>
       </div>
     );
   }
 
-  if (state === "unauthenticated") {
-    // Redirect sudah terjadi di effect — render placeholder
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          background: "#070b12",
-          fontFamily: "'IBM Plex Mono', monospace",
-          color: "#6d7c92",
-          fontSize: "11px",
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-        }}
-      >
-        Redirecting to login…
-      </div>
-    );
+  if (status === "authenticated") {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  return null;
 }
