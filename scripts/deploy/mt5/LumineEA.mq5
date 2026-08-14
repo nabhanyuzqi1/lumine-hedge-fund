@@ -123,8 +123,12 @@ void SendTick()
 //+------------------------------------------------------------------+
 void ProcessCommand(const string json)
   {
-   // Parse JSON manually (MQL5 tidak punya JSON parser built-in)
-   string id = ExtractJsonString(json, "id");
+   // Parse JSON manual (MQL5 tidak punya JSON parser built-in).
+   // Field dari bridge (mt5_bridge.CommandMessage): command_id, order_id,
+   // action, symbol, volume, order_type. Support juga format legacy
+   // (id, lots, side) agar robust terhadap kedua payload.
+   string id = ExtractJsonString(json, "command_id");
+   if(StringLen(id) == 0) id = ExtractJsonString(json, "id");
    string action = ExtractJsonString(json, "action");
    
    // Suppress log saat command kosong (queue timeout)
@@ -136,8 +140,11 @@ void ProcessCommand(const string json)
    if(action == "OPEN")
      {
       string symbol = ExtractJsonString(json, "symbol");
-      string side = ExtractJsonString(json, "side");
-      double lots = ExtractJsonDouble(json, "lots");
+      string side = ExtractJsonString(json, "order_type");
+      if(StringLen(side) == 0) side = ExtractJsonString(json, "side");
+      StringToUpper(side);
+      double lots = ExtractJsonDouble(json, "volume");
+      if(lots == 0) lots = ExtractJsonDouble(json, "lots");
       double sl = ExtractJsonDouble(json, "sl");
       double tp = ExtractJsonDouble(json, "tp");
       
