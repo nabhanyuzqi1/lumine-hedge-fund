@@ -155,7 +155,8 @@ async def create_order(
             from lumine.api.app import _app_state
 
             bridge = _app_state.get("mt5_bridge")
-            if bridge is not None and request.order_type == "MARKET":
+            # PITFALL: schema Literal lowercase ("market") — compare case-insensitive
+            if bridge is not None and request.order_type.upper() == "MARKET":
                 try:
                     from lumine.trading.mt5_bridge import CommandMessage
 
