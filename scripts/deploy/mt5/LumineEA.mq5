@@ -89,7 +89,7 @@ bool RedisSend(const string cmd)
       return false;
    uchar data[];
    StringToCharArray(cmd, data, 0, StringLen(cmd), CP_UTF8);
-   int sent = SocketSend(g_socket, data);
+   int sent = SocketSend(g_socket, data, ArraySize(data));
    return sent > 0;
   }
 
