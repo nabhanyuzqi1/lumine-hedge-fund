@@ -57,7 +57,9 @@ void OnDeinit(const int reason)
 void OnTimer()
   {
    // Send tick (throttle 1s; harga dari SymbolInfoTick — cache server)
-   datetime now = TimeCurrent();
+   // PITFALL: TimeCurrent() = server time — STAGNAN saat feed pause →
+   // throttle tidak pernah trigger. TimeLocal() selalu maju.
+   datetime now = TimeLocal();
    if(now > g_lastTickTime)
      {
       g_lastTickTime = now;
