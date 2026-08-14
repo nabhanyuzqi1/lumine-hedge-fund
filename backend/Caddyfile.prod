@@ -1,37 +1,28 @@
-# Lumine production Caddyfile (VPS) — dengan Authelia SSO untuk superadmin.
+# Lumine production Caddyfile (VPS) — Caddy basic auth untuk superadmin.
 #
-# DOMAIN: lumine.biz.id (via Cloudflare proxy, SSL Full mode)
-# VPS IP: 166.88.227.177 (tersembunyi di balik Cloudflare)
+# Auth model saat ini: Caddy basicauth (HTTP, bare IP)
+# Auth model setelah domain+HTTPS: ganti ke Authelia forward-auth
 #
 # Routes:
 #   /api/*          → backend api (publik, auth via HMAC)
 #   /health         → api (probe)
-#   /superadmin*    → frontend (SPA) + Authelia forward-auth guard
-#   /novnc*         → MT5 noVNC embed (Authelia protected)
-#   /dozzle*        → dozzle log viewer (Authelia protected)
-#   /9router*       → 9router LLM gateway dashboard (Authelia protected)
-#   /auth*          → Authelia portal (login page)
-#   lainnya         → frontend (SPA, publik)
+#   /superadmin*    → frontend SPA + Caddy basicauth
+#   /novnc*         → MT5 noVNC + Caddy basicauth
+#   /dozzle*        → dozzle log viewer + Caddy basicauth
+#   /9router*       → 9router dashboard + Caddy basicauth
+#   lainnya         → frontend SPA (publik)
 #
-# Catatan Cloudflare:
-#   - SSL mode harus "Full" (bukan Flexible) di Cloudflare dashboard
-#   - Caddy melayani HTTP di dalam VPS; Cloudflare yang terminasi TLS ke user
-#   - Jika ingin Caddy auto-TLS end-to-end, ganti ke "Full (Strict)" dan
-#     tambah Cloudflare Origin Certificate di VPS
-
-# ── HTTP: selama Cloudflare masih proxy, semua traffic masuk via HTTP ke VPS
-# ── Ganti ke https://lumine.biz.id setelah domain aktif dan SSL Full terkonfirmasi
+# Password hash: generate dengan `caddy hash-password --plaintext "your-password"`
+# atau: docker run --rm caddy:latest caddy hash-password --plaintext "your-password"
+#
+# TODO setelah lumine.biz.id + Cloudflare aktif:
+#   1. Ganti host ke https://lumine.biz.id
+#   2. Tambah Authelia service ke compose + forward_auth directive
+#   3. Hapus basicauth blocks
 
 http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
-    # ── Authelia portal ───────────────────────────────────────────────────────
-    @authelia_auth {
-        path /auth*
-    }
-    handle @authelia_auth {
-        reverse_proxy authelia:9091
-    }
 
-    # ── API (HMAC auth, tidak perlu Authelia) ─────────────────────────────────
+    # ── API (HMAC auth, tidak perlu basicauth) ────────────────────────────────
     handle /api/* {
         reverse_proxy api:8000
     }
@@ -44,53 +35,49 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy api:8000
     }
 
-    # ── MT5 noVNC — protected by Authelia ────────────────────────────────────
+    # ── MT5 noVNC — Caddy basicauth ───────────────────────────────────────────
     @novnc {
         path /novnc*
     }
     handle @novnc {
-        forward_auth authelia:9091 {
-            uri /api/verify?rd=http://lumine.biz.id/novnc/
-            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        basicauth {
+            {$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}
         }
         uri strip_prefix /novnc
         reverse_proxy lumine-mt5:6901
     }
 
-    # ── Dozzle log viewer — protected by Authelia ────────────────────────────
+    # ── Dozzle log viewer — Caddy basicauth ───────────────────────────────────
     @dozzle {
         path /dozzle*
     }
     handle @dozzle {
-        forward_auth authelia:9091 {
-            uri /api/verify?rd=http://lumine.biz.id/dozzle/
-            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        basicauth {
+            {$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}
         }
         uri strip_prefix /dozzle
         reverse_proxy dozzle:8080
     }
 
-    # ── 9router dashboard — protected by Authelia ────────────────────────────
+    # ── 9router dashboard — Caddy basicauth ───────────────────────────────────
     @ninerouter {
         path /9router*
     }
     handle @ninerouter {
-        forward_auth authelia:9091 {
-            uri /api/verify?rd=http://lumine.biz.id/9router/
-            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        basicauth {
+            {$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}
         }
         uri strip_prefix /9router
         reverse_proxy 9router:20128
     }
 
-    # ── Superadmin SPA routes — protected by Authelia ────────────────────────
+    # ── Superadmin SPA — Caddy basicauth ─────────────────────────────────────
     @superadmin {
         path /superadmin*
     }
     handle @superadmin {
-        forward_auth authelia:9091 {
-            uri /api/verify?rd=http://lumine.biz.id/superadmin
-            copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        basicauth {
+            {$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}
         }
         reverse_proxy frontend:80
     }
