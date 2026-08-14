@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from lumine.api.sse.publisher import SSEEvent
@@ -61,6 +63,15 @@ async def test_cancel_order_publishes_sse_event() -> None:
     assert publisher.events[0].event_type == "order_cancelled"
     assert publisher.events[0].channel == "orders"
     assert publisher.events[0].data["order_id"] == "ord-1"
+
+
+@pytest.mark.asyncio
+async def test_run_worker_decodes_bytes_fields() -> None:
+    """redis-py returns bytes keys/values — the consumer must decode them."""
+    from lumine.rpc.worker import _decode_fields
+
+    decoded = _decode_fields({b"command_id": b"decoded-1", b"command": b"halt_trading", b"payload": b"{}"})
+    assert decoded == {"command_id": "decoded-1", "command": "halt_trading", "payload": "{}"}
 
 
 @pytest.mark.asyncio

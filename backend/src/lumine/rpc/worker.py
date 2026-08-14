@@ -115,6 +115,14 @@ async def _process(
         await set_result(command_id, "failed", error=str(exc))
 
 
+def _decode_fields(fields: dict[bytes | str, bytes | str]) -> dict[str, str]:
+    """redis-py returns raw stream entries as bytes — decode keys/values."""
+    return {
+        (k.decode() if isinstance(k, bytes) else k): (v.decode() if isinstance(v, bytes) else v)
+        for k, v in fields.items()
+    }
+
+
 async def run_worker(
     publisher: SSEPublisher,
     settings: Settings,
@@ -137,6 +145,7 @@ async def run_worker(
             continue
         for _stream, messages in response or []:
             for message_id, fields in messages:
-                payload = json.loads(fields.get("payload", "{}"))
-                await _process(fields["command_id"], fields["command"], payload, publisher, settings)
+                decoded = _decode_fields(fields)
+                payload = json.loads(decoded.get("payload", "{}"))
+                await _process(decoded["command_id"], decoded["command"], payload, publisher, settings)
                 await r.xack(STREAM, GROUP, message_id)

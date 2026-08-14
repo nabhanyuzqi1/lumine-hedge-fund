@@ -42,7 +42,7 @@ def _signed(method: str, path: str, body: dict | None) -> dict:
 
 def main() -> None:
     print("== enqueue run-decision-cycle ==")
-    envelope = _signed("POST", "/api/v1/rpc/run-decision-cycle", {})
+    envelope = _signed("POST", "/api/v1/rpc/run-decision-cycle", None)
     receipt = envelope["data"]
     command_id = receipt["command_id"]
     print("receipt:", receipt["command"], receipt["status"], command_id)
