@@ -205,7 +205,7 @@ void ExecuteOpen(const string id, const string symbol, const string side,
      {
       if(res.retcode == TRADE_RETCODE_DONE)
         {
-         SendResult(id, "FILLED", (long)res.order, "", res.price);
+         SendResult(id, "FILLED", (long)res.order, "", res.price, lots);
         }
       else
         {
@@ -247,7 +247,7 @@ void ExecuteClose(const string id, ulong ticket)
      {
       if(res.retcode == TRADE_RETCODE_DONE)
         {
-         SendResult(id, "CLOSED", (long)res.order, "", res.price);
+         SendResult(id, "CLOSED", (long)res.order, "", res.price, PositionGetDouble(POSITION_VOLUME));
         }
       else
         {
@@ -301,10 +301,10 @@ void ExecuteModify(const string id, ulong ticket, double sl, double tp)
 //| Send result to Redis via HTTP                                     |
 //+------------------------------------------------------------------+
 void SendResult(const string id, const string status, long ticket, 
-                const string error, double fillPrice)
+                const string error, double fillPrice, double fillVolume = 0)
   {
-   string json = StringFormat("{\"id\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f}",
-                              id, g_orderId, status, ticket, EscapeJson(error), fillPrice);
+   string json = StringFormat("{\"id\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f,\"fill_volume\":%.5f}",
+                              id, g_orderId, status, ticket, EscapeJson(error), fillPrice, fillVolume);
    
    char data[];
    StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
