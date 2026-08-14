@@ -23,14 +23,14 @@ Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (se
 
 | ID | Item | Evidence | Severity |
 |----|------|----------|----------|
-| B-01 | Modul `backtest/` kosong (scaffold, 0 file selain `__init__.py`) | `backend/src/lumine/backtest/` | 🟡 MEDIUM — roadmap punya `make backtest` (Makefile:110) yang akan gagal |
-| B-02 | Modul `monitoring/` kosong — metrics aggregation (Prometheus) + distributed tracing belum ada | `backend/src/lumine/monitoring/`; README outstanding #5 | 🟡 MEDIUM (Phase 16 observability) |
-| B-03 | Modul `registry/` kosong — agent registry typed spec belum (README outstanding #3) | `backend/src/lumine/registry/` | 🟢 LOW |
-| B-04 | RPC = stub: 4 command (`run-decision-cycle`, `halt-trading`, `resume-trading`, `cancel-order`) hanya balas `accepted`, tidak dispatch ke worker/queue | `routers/rpc.py:43-90` | 🟠 HIGH — kontrol operasional tidak melakukan apa-apa di balik receipt |
-| B-05 | Semua router domain masih demo-data in-memory (kecuali admin keys/kill-switch/rate-limit yang pakai Redis) — belum baca dari PostgreSQL | `routers/orders.py:25` dst. | 🟠 HIGH — data tidak persisten; Phase 5 storage belum diwire |
-| B-06 | Endpoint yang belum ada (frontend sudah siap): portfolio CRUD (`GET/POST /portfolios`, `PUT/DELETE /portfolio/{id}`), `DELETE /portfolio/{id}/orders` (cancel-all), `GET /orders/{id}/history`, `GET /orders/bulk/status`, signals per-symbol (saat ini global), equity curve | `portfolioClient.ts`, `ordersClient.ts`, `hooks.ts:useSignals` | 🟡 MEDIUM |
-| B-07 | 52 test failure pre-existing di area llm-gateway/prompt-registry (`Registry.__init__() unexpected kwarg base_path`, `PromptBundle.model_tier_hint` hilang) — refactor in-flight belum konsisten | `tests/unit/test_prompts_registry.py`, `test_orchestrator.py`, `test_analysts.py`, `tests/system/test_decision_cycle.py` | 🔴 CRITICAL — quality gate backend tidak hijau |
-| B-08 | Historical data backfill untuk TCA belum (README outstanding #4) | — | 🟢 LOW |
+| B-01 | Modul `backtest/` — **CLOSED 2026-08-14** | `src/lumine/backtest/engine.py` (deterministic SMA20+volume engine, metrics) | ✅ |
+| B-02 | Modul `monitoring/` — **CLOSED 2026-08-14** | `src/lumine/monitoring/metrics.py` + `GET /metrics` Prometheus text | ✅ |
+| B-03 | Modul `registry/` — **CLOSED 2026-08-14** | `src/lumine/registry/agents.py` (12 AgentSpec lengkap) | ✅ |
+| B-04 | RPC dispatch — **CLOSED 2026-08-14** | Redis Streams producer+worker, 4 handler nyata, `GET /rpc/commands/{id}` | ✅ |
+| B-05 | Storage wiring — **CLOSED (sebagian) 2026-08-14** | `DEMO_DATA` flag + OrderRepository/PositionRepository + migrasi 0011; portfolio/journal/workflows/market masih demo | 🟡 |
+| B-06 | Endpoint kurang — **CLOSED 2026-08-14** | portfolio CRUD, cancel-all, history, bulk-status, signals/{symbol}, equity — contract 56/56 | ✅ |
+| B-07 | 52 test llm-gateway — **CLOSED 2026-08-14** | 679 pass (registry API, migrasi, anchoring, TCA) | ✅ |
+| B-08 | Historical data backfill TCA | — | 🟢 LOW |
 
 ### Backend — selesai & terverifikasi (sesi 2026-08-14)
 
@@ -42,18 +42,18 @@ Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (se
 
 | ID | Item | Evidence | Severity |
 |----|------|----------|----------|
-| F-01 | WorkflowRunList paginated + navigasi run detail | backend `GET /workflows` live; UI belum | 🟠 HIGH |
-| F-02 | StreamStatusDot per-stream + GapBanner (saat ini hanya agregat n/6 di TopBar) | `top-bar.tsx:36` | 🟠 HIGH |
-| F-03 | What-if simulate panel (backend `POST /portfolio/{id}/simulate` live; `useSimulateTrade` siap; UI belum) | `usePortfolio.ts:useSimulateTrade` | 🟡 MEDIUM |
-| F-04 | FeaturePanel (`features/{symbol}` live) + SignalPanel (backend masih global, bukan per-symbol) | `hooks.ts:useSignals` | 🟡 MEDIUM |
-| F-05 | AnalystCard + DecisionCard | — | 🟡 MEDIUM |
-| F-06 | Volatility badge, spread alert, session indicator (backend live semua) | `marketClient` getVolatility/getSpreadMetrics/getSessionData | 🟢 LOW |
-| F-07 | ExposureSummaryCard per-sektor (backend exposure live) | — | 🟢 LOW |
-| F-08 | CSV export transactions (backend endpoint juga belum ada) | `portfolioClient.exportTransactions` | 🟢 LOW |
-| F-09 | Bundle size analyzer + render profiler | f-sprint-6 items | 🟢 LOW |
-| F-10 | `useCorrelation` masih fixture-only — backend `GET /market/correlation` SUDAH live; hook bisa di-rewire | `hooks.ts:useCorrelation` | 🟡 MEDIUM |
-| F-11 | `useEquityCurve` fixture-only — backend equity endpoint belum ada (lihat B-06) | `hooks.ts:useEquityCurve` | 🟢 LOW |
-| F-12 | CommandPalette a11y (7 errors) + useExhaustiveDependencies | pre-existing, bukan regresi | 🟢 LOW |
+| F-01 | WorkflowRunList — **CLOSED 2026-08-14** | `/workflows` page paginated + nav detail | ✅ |
+| F-02 | StreamStatusDot + GapBanner — **CLOSED 2026-08-14** | `components/streams/*` + TopBar/PageShell wiring | ✅ |
+| F-03 | WhatIfPanel — **CLOSED 2026-08-14** | `components/terminal/what-if-panel.tsx` + hook | ✅ |
+| F-04 | MarketIndicatorsPanel (features) + SignalPanel — **CLOSED 2026-08-14** | live endpoints, fallback fixture | ✅ |
+| F-05 | AnalystCard + DecisionCard — **CLOSED 2026-08-14** | `components/dashboard/` | ✅ |
+| F-06 | Volatility/spread/session indicator — **CLOSED 2026-08-14** | `useMarketIndicators` live | ✅ |
+| F-07 | ExposureSummaryCard — **CLOSED 2026-08-14** | live exposure | ✅ |
+| F-08 | CSV export — **CLOSED 2026-08-14** | `lib/csv.ts` + tombol Export CSV di Journal | ✅ |
+| F-09 | Bundle size analyzer + render profiler | f-sprint-6 items | 🟢 LOW (tooling; build warning chunk size ada) |
+| F-10 | `useCorrelation` — **CLOSED 2026-08-14** | rewire ke `GET /market/correlation` | ✅ |
+| F-11 | `useEquityCurve` — **CLOSED 2026-08-14** | rewire ke `GET /portfolio/{id}/equity` | ✅ |
+| F-12 | CommandPalette a11y — **CLOSED 2026-08-14** | combobox pattern (aria-expanded/controls/activedescendant), eslint 0 | ✅ |
 
 ### Frontend — selesai & terverifikasi (sesi 2026-08-14)
 
@@ -66,10 +66,10 @@ Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (se
 
 | ID | Item | Evidence | Severity |
 |----|------|----------|----------|
-| G-01 | BLOCK-002 Emergency access procedures — missing | `phases-15-completion-checklist.md` | 🔴 CRITICAL (Phase 16) |
-| G-02 | BLOCK-003 DR restore test — never performed | `phases-15-completion-checklist.md` | 🔴 CRITICAL (Phase 16) |
-| G-03 | BLOCK-005 Security audit — never performed | `phases-15-completion-checklist.md` | 🔴 CRITICAL (Phase 16) |
-| G-04 | BLOCK-001 Untracked services: 9router, headroom, dozzle — tidak ada compose file di repo | `phases-15-completion-checklist.md` Gap 1 | 🟠 HIGH |
+| G-01 | BLOCK-002 Emergency access procedures — runbook belum ditulis | `phases-15-completion-checklist.md` | 🔴 CRITICAL (Phase 16) |
+| G-02 | BLOCK-003 DR restore test — **CLOSED 2026-08-14** (dump→restore 32 tabel PASS di VPS) | verifikasi sesi ini | ✅ |
+| G-03 | BLOCK-005 Security audit — **sebagian**: bandit 0 High/0 Medium (2026-08-14); audit penuh (gitleaks, dependensi, config) belum | verifikasi sesi ini | 🟡 |
+| G-04 | BLOCK-001 Untracked services: 9router (butuh API key), headroom, dozzle — compose belum | `phases-15-completion-checklist.md` Gap 1 | 🟠 HIGH |
 | G-05 | BLOCK-004 Secrets management partial (Authelia session/storage keys tidak terdokumentasi) | `phases-15-completion-checklist.md` Gap 2 | 🟠 HIGH |
 | G-06 | BLOCK-006 Landing page sync belum automated; BLOCK-007 backup manual only; BLOCK-008 health monitoring none | `phases-15-completion-checklist.md` | 🟠 HIGH |
 | G-07 | VPS↔repo alignment 75% (env template, emergency docs, CI/CD partial) | `phase-16-readiness-roadmap.md` | 🟠 HIGH |
