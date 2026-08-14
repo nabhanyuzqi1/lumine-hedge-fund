@@ -62,9 +62,25 @@ def results():
         # LPUSH ke journal (batas 1000)
         r.lpush("mt5:ticks", payload)
         r.ltrim("mt5:ticks", 0, 999)
-        return jsonify({"status": "ok"}), 200
+        return jsonify({{"status": "ok"}}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({{"error": str(e)}}), 500
+
+@app.route("/ticks", methods=["POST"])
+def ticks():
+    """
+    LPUSH mt5:ticks (tick data dari EA: bid, ask, timestamp).
+    Body: {{symbol, bid, ask, timestamp}}
+    """
+    try:
+        data = request.get_json(force=True)
+        payload = json.dumps(data)
+        # LPUSH ke journal (batas 1000)
+        r.lpush("mt5:ticks", payload)
+        r.ltrim("mt5:ticks", 0, 999)
+        return jsonify({{"status": "ok"}}), 200
+    except Exception as e:
+        return jsonify({{"error": str(e)}}), 500
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))
