@@ -1,0 +1,4 @@
+# Normalisasi line-ending: hash prompt registry dihitung dari konten LF.
+# Tanpa ini, checkout Windows (CRLF) vs CI (LF) menghasilkan hash berbeda
+# → HashMismatchError di CI (pins dibuat dari working-copy CRLF).
+*.prompt text eol=lf

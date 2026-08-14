@@ -163,6 +163,7 @@ ignore = [
     "TRY002", # create-your-own-exception — test raises use builtins intentionally
     "FURB162", # fromisoformat-replace-z — test fixtures use fixed offsets
     "F841",   # unused-variable — test helpers assign for readability
+    "EXE001", # shebang-without-exec-bit — Windows checkout tidak set exec mode
 ]
 "alembic/env.py" = [
     "INP001", # implicit-namespace-package — alembic script location, not a package
