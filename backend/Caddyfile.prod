@@ -1,5 +1,8 @@
 # Lumine production Caddyfile (VPS) — dengan Authelia SSO untuk superadmin.
 #
+# DOMAIN: lumine.biz.id (via Cloudflare proxy, SSL Full mode)
+# VPS IP: 166.88.227.177 (tersembunyi di balik Cloudflare)
+#
 # Routes:
 #   /api/*          → backend api (publik, auth via HMAC)
 #   /health         → api (probe)
@@ -10,19 +13,23 @@
 #   /auth*          → Authelia portal (login page)
 #   lainnya         → frontend (SPA, publik)
 #
-# HTTPS: tambahkan domain untuk auto-TLS. Dengan bare IP, Caddy melayani HTTP.
+# Catatan Cloudflare:
+#   - SSL mode harus "Full" (bukan Flexible) di Cloudflare dashboard
+#   - Caddy melayani HTTP di dalam VPS; Cloudflare yang terminasi TLS ke user
+#   - Jika ingin Caddy auto-TLS end-to-end, ganti ke "Full (Strict)" dan
+#     tambah Cloudflare Origin Certificate di VPS
 
-http://166.88.227.177 {
-    # ── Authelia helper snippets ─────────────────────────────────────────────
+# ── HTTP: selama Cloudflare masih proxy, semua traffic masuk via HTTP ke VPS
+# ── Ganti ke https://lumine.biz.id setelah domain aktif dan SSL Full terkonfirmasi
+
+http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
+    # ── Authelia portal ───────────────────────────────────────────────────────
     @authelia_auth {
         path /auth*
     }
     handle @authelia_auth {
         reverse_proxy authelia:9091
     }
-
-    # Forward-auth subrequest ke Authelia (untuk route yang dilindungi)
-    # Caddy forward_auth directive — berlaku untuk block yang memanggil ini.
 
     # ── API (HMAC auth, tidak perlu Authelia) ─────────────────────────────────
     handle /api/* {
@@ -33,13 +40,17 @@ http://166.88.227.177 {
         reverse_proxy api:8000
     }
 
+    handle /metrics {
+        reverse_proxy api:8000
+    }
+
     # ── MT5 noVNC — protected by Authelia ────────────────────────────────────
     @novnc {
         path /novnc*
     }
     handle @novnc {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=http://166.88.227.177/novnc/
+            uri /api/verify?rd=http://lumine.biz.id/novnc/
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         uri strip_prefix /novnc
@@ -52,7 +63,7 @@ http://166.88.227.177 {
     }
     handle @dozzle {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=http://166.88.227.177/dozzle/
+            uri /api/verify?rd=http://lumine.biz.id/dozzle/
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         uri strip_prefix /dozzle
@@ -65,7 +76,7 @@ http://166.88.227.177 {
     }
     handle @ninerouter {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=http://166.88.227.177/9router/
+            uri /api/verify?rd=http://lumine.biz.id/9router/
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         uri strip_prefix /9router
@@ -78,7 +89,7 @@ http://166.88.227.177 {
     }
     handle @superadmin {
         forward_auth authelia:9091 {
-            uri /api/verify?rd=http://166.88.227.177/superadmin
+            uri /api/verify?rd=http://lumine.biz.id/superadmin
             copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
         }
         reverse_proxy frontend:80
