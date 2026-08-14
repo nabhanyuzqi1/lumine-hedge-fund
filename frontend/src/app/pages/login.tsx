@@ -1,47 +1,57 @@
 import * as React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth/role-context";
 
 /**
- * Halaman login sederhana untuk Lumine.
- * Production: integrate dengan Authelia SSO atau backend session.
- * MVP: simple credential entry yang set role ke localStorage.
+ * Halaman login Lumine — first-party internal auth.
+ *
+ * Credential diverifikasi backend (POST /api/auth/login, PBKDF2 hash di
+ * PostgreSQL). Sukses → HttpOnly cookie `lumine_session` + redirect ke
+ * halaman asal (?redirect= dari Caddy forward_auth 401, atau state.from
+ * dari SPA route guard).
  */
 
-// Demo credentials — replace dengan real auth di production
-const DEMO_CREDENTIALS: Record<string, { password: string; role: "user" | "admin" | "superadmin" }> = {
-  trader: { password: "lumine2026", role: "user" },
-  admin: { password: "lumine-admin", role: "admin" },
-};
-
 export function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, loading, login } = useAuth();
   const location = useLocation();
-  const from = (location.state as { from?: Location })?.from?.pathname ?? "/app/terminal";
+  const [searchParams] = useSearchParams();
+
+  const redirectTarget =
+    searchParams.get("redirect") ??
+    (location.state as { from?: Location })?.from?.pathname ??
+    "/app/terminal";
 
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-abyss">
+        <div className="font-mono text-xs uppercase tracking-widest text-ink-faint">
+          Verifying session…
+        </div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={redirectTarget} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
-
-    await new Promise((r) => setTimeout(r, 300));
-
-    const cred = DEMO_CREDENTIALS[username.toLowerCase()];
-    if (cred && cred.password === password) {
-      login(cred.role, username);
-    } else {
+    setSubmitting(true);
+    try {
+      await login(username.trim(), password);
+      // State update triggers the <Navigate> above.
+    } catch {
       setError("Kredensial tidak valid. Hubungi administrator.");
+    } finally {
+      setSubmitting(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -53,9 +63,9 @@ export function LoginPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-chip bg-accent">
               <span className="font-display text-sm font-bold text-white">L</span>
             </div>
-            <span className="font-display text-lg font-semibold text-text-primary">LUMINE</span>
+            <span className="font-display text-lg font-semibold text-ink">LUMINE</span>
           </div>
-          <p className="font-mono text-[11px] uppercase tracking-widest text-text-muted">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
             Institutional Trading Platform
           </p>
         </div>
@@ -63,7 +73,7 @@ export function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
+            <label className="font-mono text-[11px] uppercase tracking-wider text-ink-faint">
               Username
             </label>
             <input
@@ -72,13 +82,14 @@ export function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               required
               autoComplete="username"
-              className="w-full rounded-chip border border-border-subtle bg-bg-raised px-3 py-2 font-mono text-sm text-text-primary placeholder-text-muted outline-none ring-offset-0 focus:border-accent focus:ring-1 focus:ring-accent"
+              autoFocus
+              className="w-full rounded-chip border border-line bg-raised px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint outline-none ring-offset-0 focus:border-accent focus:ring-1 focus:ring-accent"
               placeholder="username"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
+            <label className="font-mono text-[11px] uppercase tracking-wider text-ink-faint">
               Password
             </label>
             <input
@@ -87,7 +98,7 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full rounded-chip border border-border-subtle bg-bg-raised px-3 py-2 font-mono text-sm text-text-primary placeholder-text-muted outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+              className="w-full rounded-chip border border-line bg-raised px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint outline-none ring-offset-0 focus:border-accent focus:ring-1 focus:ring-accent"
               placeholder="••••••••"
             />
           </div>
@@ -100,14 +111,14 @@ export function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             className="w-full rounded-chip bg-accent px-4 py-2.5 font-mono text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Verifikasi…" : "Masuk ke Platform"}
+            {submitting ? "Memverifikasi…" : "Masuk ke Platform"}
           </button>
         </form>
 
-        <p className="text-center font-mono text-[10px] text-text-muted">
+        <p className="text-center font-mono text-[10px] text-ink-faint">
           Akses terbatas untuk pengguna terdaftar
         </p>
       </div>

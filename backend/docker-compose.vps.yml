@@ -84,63 +84,8 @@ services:
       timeout: 5s
       retries: 3
 
-  # ── Authelia — SSO/MFA untuk superadmin routes ───────────────────────────
-  # Proteksi semua route /superadmin/* via Caddy forward-auth.
-  # Config di ./authelia/; user database di ./authelia/users_database.yml.
-  # Env wajib: AUTHELIA_JWT_SECRET, AUTHELIA_SESSION_SECRET (di .env)
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.0
-    container_name: lumine-keycloak
-    command: start
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME_URL: https://lumine.biz.id/auth
-      KC_HOSTNAME_ADMIN_URL: https://lumine.biz.id/auth
-      KC_HTTP_RELATIVE_PATH: /auth
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: lumine
-      KC_DB_PASSWORD: ${DB_PASSWORD}
-      KC_HEALTH_ENABLED: true
-      KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME_STRICT: "false"
-      KC_METRICS_ENABLED: false
-    expose:
-      - "8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  authelia:
-    image: authelia/authelia:4.38
-    container_name: lumine-authelia
-    environment:
-      - AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET:?AUTHELIA_JWT_SECRET wajib di .env}
-      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET:?AUTHELIA_SESSION_SECRET wajib di .env}
-      - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY:?AUTHELIA_STORAGE_ENCRYPTION_KEY wajib di .env}
-    volumes:
-      - ./authelia:/config
-    expose:
-      - "9091"
-    depends_on:
-      - redis
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9091/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # ── Dozzle — container log monitoring (superadmin side) ──────────────────
-  # Loopback-only: akses via Caddy /dozzle (dilindungi Authelia forward-auth).
+  # Loopback-only: akses via Caddy /dozzle (dilindungi forward_auth internal).
   dozzle:
     image: amir20/dozzle:latest
     environment:
@@ -192,5 +137,4 @@ volumes:
   redis_data:
   caddy_data:
   caddy_config:
-  authelia_data:
 

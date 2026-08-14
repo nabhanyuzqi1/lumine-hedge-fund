@@ -1,3 +1,10 @@
+# Lumine Caddyfile — production (VPS).
+#
+# Auth: first-party internal session auth (users di PostgreSQL via
+# backend /api/auth/*). Caddy forward_auth → backend /api/auth/verify
+# melindungi /superadmin, /novnc, /dozzle di layer reverse-proxy
+# (defense in depth di atas SPA route guards). 401 → redirect /login.
+
 http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
 
     handle /api/* {
@@ -10,17 +17,13 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy api:8000
     }
 
-    @keycloak {
-        path /auth*
-    }
-    handle @keycloak {
-        reverse_proxy keycloak:8080
-    }
-
     @superadmin {
         path /superadmin*
     }
     handle @superadmin {
+        forward_auth api:8000 {
+            uri /api/auth/verify?role=superadmin
+        }
         reverse_proxy frontend:80
     }
 
@@ -28,6 +31,9 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         path /novnc*
     }
     handle @novnc {
+        forward_auth api:8000 {
+            uri /api/auth/verify?role=admin
+        }
         uri strip_prefix /novnc
         reverse_proxy lumine-mt5:6901
     }
@@ -36,12 +42,24 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         path /dozzle*
     }
     handle @dozzle {
+        forward_auth api:8000 {
+            uri /api/auth/verify?role=admin
+        }
         uri strip_prefix /dozzle
         reverse_proxy dozzle:8080
     }
 
     handle {
         reverse_proxy frontend:80
+    }
+
+    # 401 dari forward_auth → arahkan ke halaman login SPA (non-API paths).
+    handle_errors {
+        @unauth {
+            expression {http.error.status_code} == 401
+            not path /api/*
+        }
+        redir @unauth /login?redirect={http.request.uri.path} 302
     }
 
     encode zstd gzip

@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     api_rate_limit_per_minute: int = 120
     hmac_secret_key: str = ""  # Override in production; noqa: S105
 
+    # ── Session auth (internal, replaces Authelia/Keycloak) ─────────────
+    # Bootstrap credentials seeded idempotently into the users table on
+    # startup. Override via env in production .env (same file that holds
+    # HMAC_SECRET_KEY). Defaults preserve the pre-migration demo logins so
+    # existing operators can authenticate after the upgrade.
+    session_ttl_seconds: int = 43_200  # 12h
+    superadmin_password: str = "Lumine@2026!"  # noqa: S105 — bootstrap seed
+    admin_password: str = "lumine-admin"  # noqa: S105 — bootstrap seed
+    trader_password: str = "lumine2026"  # noqa: S105 — bootstrap seed
+
     # ── SSE ───────────────────────────────────────────────────────────────
     sse_heartbeat_interval_s: int = 30
     sse_max_gap_events: int = 100

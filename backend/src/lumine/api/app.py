@@ -54,6 +54,12 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     settings = get_settings()
 
+    # Seed bootstrap users (superadmin/admin/trader) idempotently. Best
+    # effort: never blocks startup when the DB is briefly unavailable.
+    from lumine.api.routers.auth import seed_bootstrap_users
+
+    await seed_bootstrap_users(settings)
+
     # Initialize MarketService for tick caching
     market_service = MarketService()
     _app_state["market_service"] = market_service
@@ -158,6 +164,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         rpc.router,
     ):
         app.include_router(router, prefix="/api/v1")
+
+    # First-party session auth (replaces Authelia/Keycloak). Mounted at
+    # /api/auth (outside /api/v1) so Caddy forward_auth can target
+    # /api/auth/verify and the SPA can call /api/auth/me without HMAC.
+    from lumine.api.routers import auth as auth_router_module
+
+    app.include_router(auth_router_module.router, prefix="/api")
 
     @app.get("/health", include_in_schema=False)
     async def health() -> dict[str, str]:

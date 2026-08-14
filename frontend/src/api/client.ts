@@ -170,6 +170,28 @@ export async function post<T>(
   return throwOnError(envelope, response.status);
 }
 
+export async function put<T>(
+  path: string,
+  body: unknown,
+  options: RequestOptions = {}
+): Promise<T> {
+  const url = buildUrl(path);
+  const headers = await signedHeaders("PUT", url, body, {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    ...options.headers,
+  });
+  const response = await fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+    signal: options.signal,
+  });
+
+  const envelope = await parseEnvelope<T>(response);
+  return throwOnError(envelope, response.status);
+}
+
 export async function del(path: string, options: RequestOptions = {}): Promise<void> {
   const url = buildUrl(path);
   const headers = await signedHeaders("DELETE", url, "", {

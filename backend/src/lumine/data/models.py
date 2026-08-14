@@ -888,3 +888,35 @@ class TcaRecord(Base):
         Index("ix_tca_decision_ts", "decision_ts"),
         Index("ix_tca_broker_ts", "broker_id", "decision_ts"),
     )
+
+
+class User(Base):
+    """Internal session-auth user (replaces Authelia/Keycloak).
+
+    Bootstrap users (superadmin/admin/trader) are seeded idempotently at
+    startup from Settings; credentials are stored as PBKDF2-HMAC-SHA256
+    (hash + per-user salt), never plaintext.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    password_salt: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+
+    __table_args__ = (
+        Index("ix_users_username", "username"),
+    )

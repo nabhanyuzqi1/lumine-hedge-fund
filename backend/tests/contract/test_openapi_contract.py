@@ -47,9 +47,15 @@ def test_all_paths_live_under_api_v1_prefix() -> None:
     schema = _load_schema()
     paths = [path for path in schema["paths"] if path != "/health"]
     assert paths, "openapi.yaml must declare at least one path"
-    assert all(path.startswith("/api/v1/") for path in paths), (
-        f"unversioned paths: {[p for p in paths if not p.startswith('/api/v1/')]}"
+    # /api/auth/* (first-party session auth, no HMAC) is the documented
+    # exception — login/logout/me/verify are consumed by the SPA and by
+    # Caddy forward_auth, never by HMAC-signed machine clients.
+    auth_paths = [p for p in paths if p.startswith("/api/auth/")]
+    api_paths = [p for p in paths if not p.startswith("/api/auth/")]
+    assert all(p.startswith("/api/v1/") for p in api_paths), (
+        f"unversioned paths: {[p for p in api_paths if not p.startswith('/api/v1/')]}"
     )
+    assert auth_paths, "auth router must be present in the schema"
 
 
 def test_all_nine_routers_present() -> None:
@@ -72,6 +78,9 @@ def test_every_operation_declares_hmac_headers() -> None:
             continue
         for operation in path_item.values():
             if not isinstance(operation, dict) or "responses" not in operation:
+                continue
+            # /api/auth/* uses the session cookie flow, not HMAC headers.
+            if path.startswith("/api/auth/"):
                 continue
             params = {p["name"] for p in operation.get("parameters", []) if p.get("in") == "header"}
             assert params >= HMAC_HEADERS, (
