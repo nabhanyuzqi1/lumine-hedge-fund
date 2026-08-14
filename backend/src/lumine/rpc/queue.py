@@ -50,8 +50,9 @@ async def set_result(command_id: str, status: str, result: Any = None, error: st
     r = await get_redis()
     record = {
         "command_id": command_id,
+        "command": None,  # backfilled by the worker when known
         "status": status,
-        "result": json.dumps(result) if result is not None else None,
+        "result": result,  # nested JSON serializes fine via json.dumps(record)
         "error": error,
         "processed_at": datetime.now(UTC).isoformat(),
     }
