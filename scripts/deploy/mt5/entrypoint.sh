@@ -73,8 +73,8 @@ fi
 
 if [[ -f "${MT5_BIN}" ]]; then
   # ── Install + compile LumineEA (Redis bridge agent) ──────────────────────
-  # Data folder MT5: <WINEPREFIX>/drive_c/AppData/Roaming/MetaQuotes/Terminal/<hash>/
-  MT5_DATA_DIR=$(find "${WINEPREFIX}/drive_c" -type d -path "*MetaQuotes/Terminal/*/MQL5" 2>/dev/null | head -1)
+  # Data folder MT5: mode portable → <MT5_DIR>/MQL5 (bukan AppData/MetaQuotes)
+  MT5_DATA_DIR=$(find "${WINEPREFIX}/drive_c" -type d -name "MQL5" 2>/dev/null | head -1)
   if [[ -n "${MT5_DATA_DIR}" ]]; then
     echo "==> MT5 data dir: ${MT5_DATA_DIR}"
     mkdir -p "${MT5_DATA_DIR}/Experts"
