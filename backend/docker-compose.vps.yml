@@ -103,7 +103,7 @@ services:
              python /app/redis_http_proxy.py"
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - PROXY_PORT=8765
+      - PORT=8765
     volumes:
       - ./scripts:/app:ro
     expose:
