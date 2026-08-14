@@ -13,6 +13,7 @@ input string  InpProxyURL = "http://lumine.biz.id/mt5-proxy";  // Redis HTTP pro
 
 // ── Global State ──────────────────────────────────────────────────────────
 string g_proxyURL;
+string g_orderId;              // order_id dari command aktif (untuk result sync)
 datetime g_lastTickTime = 0;
 
 //+------------------------------------------------------------------+
@@ -130,6 +131,10 @@ void ProcessCommand(const string json)
    string id = ExtractJsonString(json, "command_id");
    if(StringLen(id) == 0) id = ExtractJsonString(json, "id");
    string action = ExtractJsonString(json, "action");
+   
+   // Simpan order_id untuk result sync (bridge ResultMessage.order_id)
+   g_orderId = ExtractJsonString(json, "order_id");
+   if(StringLen(g_orderId) == 0) g_orderId = id;
    
    // Suppress log saat command kosong (queue timeout)
    if(StringLen(id) == 0 || StringLen(action) == 0)
@@ -298,8 +303,8 @@ void ExecuteModify(const string id, ulong ticket, double sl, double tp)
 void SendResult(const string id, const string status, long ticket, 
                 const string error, double fillPrice)
   {
-   string json = StringFormat("{\"id\":\"%s\",\"status\":\"%s\",\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f}",
-                              id, status, ticket, EscapeJson(error), fillPrice);
+   string json = StringFormat("{\"id\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f}",
+                              id, g_orderId, status, ticket, EscapeJson(error), fillPrice);
    
    char data[];
    StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);

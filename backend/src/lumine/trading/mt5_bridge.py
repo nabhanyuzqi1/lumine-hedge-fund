@@ -111,7 +111,22 @@ class MT5Bridge:
 
                 if message and message["type"] == "message":
                     try:
-                        result = ResultMessage(**json.loads(message["data"]))
+                        payload = json.loads(message["data"])
+                        # EA kirim {id, order_id?, status, ticket, error, fill_price}
+                        # — map tolerant ke ResultMessage (PITFALL: field "id"
+                        # bukan command_id → ResultMessage(**payload) TypeError).
+                        raw_id = payload.get("id", "") or payload.get("command_id", "")
+                        result = ResultMessage(
+                            command_id=raw_id,
+                            order_id=payload.get("order_id", "") or raw_id,
+                            ticket=int(payload.get("ticket", 0) or 0),
+                            status=payload.get("status", "ERROR"),
+                            fill_price=payload.get("fill_price"),
+                            fill_volume=payload.get("fill_volume"),
+                            error_code=int(payload.get("error_code", 0) or 0),
+                            error_message=payload.get("error", "") or payload.get("error_message", ""),
+                            timestamp=payload.get("timestamp", ""),
+                        )
                         await self._on_result(result)
                     except Exception:
                         pass  # Log error in production
