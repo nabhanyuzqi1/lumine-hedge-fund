@@ -82,16 +82,24 @@ if [[ -f "${MT5_BIN}" ]]; then
     METAEDITOR="${MT5_BIN%/terminal64.exe}/MetaEditor64.exe"
     if [[ -f "${METAEDITOR}" ]]; then
       echo "==> Compile LumineEA via MetaEditor (headless)..."
-      timeout 60 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log"
-      sleep 2
-      if [[ -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
-        echo "==> LumineEA.ex5 COMPILED OK"
-      else
+      # Retry ×3 dengan wineserver reset: compile pertama bisa hang karena
+      # state wineserver dari proses yang di-kill (SIGKILL → lock stale).
+      for attempt in 1 2 3; do
+        pkill -9 wineserver 2>/dev/null; pkill -9 wine64-preloader 2>/dev/null
+        sleep 1
+        timeout 90 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log" >/dev/null 2>&1
+        sleep 2
+        if [[ -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
+          echo "==> LumineEA.ex5 COMPILED OK (attempt ${attempt})"
+          break
+        fi
+        echo "==> attempt ${attempt}: ex5 belum ada — retry"
+      done
+      if [[ ! -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
         echo "==> WARNING: LumineEA compile gagal — cek ${MT5_DATA_DIR}/Experts/lumineea_compile.log" >&2
-        tail -5 "${MT5_DATA_DIR}/Experts/lumineea_compile.log" 2>/dev/null
       fi
     else
-      echo "==> WARNING: metaeditor64.exe tidak ditemukan — attach manual dari VNC"
+      echo "==> WARNING: MetaEditor64.exe tidak ditemukan — attach manual dari VNC"
     fi
   else
     echo "==> WARNING: MQL5 data dir belum ada (terminal belum pernah jalan) — install EA setelah login"
