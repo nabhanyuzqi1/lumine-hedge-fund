@@ -1,6 +1,5 @@
 ---
-# Authelia 4.38 configuration — HTTPS via lumine.biz.id (Cloudflare proxy)
-# Domain aktif: lumine.biz.id → 166.88.227.177 via Cloudflare Flexible SSL
+# Authelia 4.38 — HTTPS via lumine.biz.id (Cloudflare Flexible SSL)
 
 server:
   address: tcp://0.0.0.0:9091
@@ -13,8 +12,6 @@ theme: dark
 identity_validation:
   reset_password:
     jwt_secret: ${AUTHELIA_JWT_SECRET}
-
-default_redirection_url: https://lumine.biz.id/superadmin
 
 totp:
   issuer: lumine-hedge-fund
@@ -33,7 +30,6 @@ authentication_backend:
 access_control:
   default_policy: deny
   rules:
-    # Superadmin routes (dilindungi — butuh login)
     - domain: "lumine.biz.id"
       resources:
         - "^/superadmin(/.*)?$"
@@ -41,12 +37,8 @@ access_control:
         - "^/dozzle(/.*)?$"
         - "^/9router(/.*)?$"
       policy: one_factor
-
-    # Semua route lain = bypass (public)
     - domain: "lumine.biz.id"
       policy: bypass
-
-    # Bare IP juga bypass (internal access)
     - domain: "166.88.227.177"
       policy: bypass
 
@@ -55,11 +47,10 @@ session:
   name: lumine_session
   expiration: 3600
   inactivity: 300
-
   cookies:
     - domain: "lumine.biz.id"
       authelia_url: https://lumine.biz.id/auth/
-
+      default_redirection_url: https://lumine.biz.id/superadmin
   redis:
     host: redis
     port: 6379
