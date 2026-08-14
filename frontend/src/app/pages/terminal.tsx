@@ -130,9 +130,10 @@ function OrdersTable({
             <button
               type="button"
               onClick={() => navigate(`/orders/${row.id}`)}
-              className="font-mono text-xs text-accent hover:underline"
+              title={row.id}
+              className="max-w-[10ch] truncate whitespace-nowrap font-mono text-xs text-accent hover:underline"
             >
-              {row.id}
+              {row.id.slice(0, 8)}…
             </button>
           ),
         },
@@ -228,15 +229,6 @@ function CommandBar({
 }) {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const [utc, setUtc] = useState(() => new Date().toISOString().replace("T", " ").slice(0, 19));
-
-  useEffect(() => {
-    const id = setInterval(
-      () => setUtc(new Date().toISOString().replace("T", " ").slice(0, 19)),
-      1000
-    );
-    return () => clearInterval(id);
-  }, []);
 
   const submit = useCallback(() => {
     const value = input.trim().toUpperCase();
@@ -257,9 +249,6 @@ function CommandBar({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const statusTone: "ok" | "warn" | "danger" =
-    sseStatus === "open" ? "ok" : sseStatus === "error" ? "danger" : "warn";
-
   return (
     <header className="flex flex-wrap items-center gap-3 border-b border-line pb-2">
       {/* Header inside dihapus (duplikat TopBar) — CommandBar murni fungsional */}
@@ -275,16 +264,18 @@ function CommandBar({
           className="w-28 bg-transparent font-mono text-[11px] uppercase tracking-wider text-ink outline-none placeholder:text-ink-faint"
         />
       </div>
-      <div className="flex items-center gap-2">
-        <Badge tone={statusTone} label={sseStatus.toUpperCase()} />
-        <span className="hidden font-mono text-[10px] text-ink-faint md:inline">
-          {/* key hints */}
-          / focus · 5/15/60/240 timeframe · Enter GO
-        </span>
-      </div>
-      <div className="ml-auto flex items-center gap-2">
-        <span className="font-mono text-[11px] text-ink-dim tabular-nums">{utc} UTC</span>
-      </div>
+      <span className="font-mono text-[10px] text-ink-faint">
+        {/* key hints */}
+        / focus · 5/15/60/240 timeframe · Enter GO
+      </span>
+      <span
+        className="ml-auto h-1.5 w-1.5 rounded-full"
+        aria-label={`SSE ${sseStatus}`}
+        style={{
+          background:
+            sseStatus === "open" ? "var(--color-emerald)" : sseStatus === "error" ? "var(--color-soft-red)" : "var(--color-amber)",
+        }}
+      />
     </header>
   );
 }
