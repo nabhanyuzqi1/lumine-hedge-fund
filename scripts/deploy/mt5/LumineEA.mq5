@@ -277,14 +277,14 @@ string ExecuteCommand(const string payload)
         {
          status = "REJECTED";
          errCode = (int)res.retcode;
-         errMsg = TradeRetcodeToString(res.retcode);
+         errMsg = RetcodeStr(res.retcode);
         }
      }
    else
      {
       status = "ERROR";
       errCode = (int)res.retcode;
-      errMsg = res.retcode == 0 ? "OrderSend failed" : TradeRetcodeToString(res.retcode);
+      errMsg = res.retcode == 0 ? "OrderSend failed" : RetcodeStr(res.retcode);
      }
 
    string result = StringFormat(
@@ -321,6 +321,22 @@ string EscapeJson(const string s)
    StringReplace(r, "\\", "\\\\");
    StringReplace(r, "\"", "\\\"");
    return r;
+  }
+
+// MQL5 tidak punya retcode-to-string built-in — map sebagian, sisanya numerik.
+string RetcodeStr(const uint retcode)
+  {
+   switch(retcode)
+     {
+      case TRADE_RETCODE_DONE:        return "DONE";
+      case TRADE_RETCODE_REJECT:      return "REJECT";
+      case TRADE_RETCODE_INVALID_PRICE: return "INVALID_PRICE";
+      case TRADE_RETCODE_INVALID_STOPS: return "INVALID_STOPS";
+      case TRADE_RETCODE_NO_MONEY:    return "NO_MONEY";
+      case TRADE_RETCODE_MARKET_CLOSED: return "MARKET_CLOSED";
+      case TRADE_RETCODE_TIMEOUT:     return "TIMEOUT";
+      default:                        return "RETCODE_" + IntegerToString(retcode);
+     }
   }
 
 //+------------------------------------------------------------------+
