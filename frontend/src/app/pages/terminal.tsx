@@ -6,7 +6,6 @@ import { usePerformanceMetrics } from "@/hooks/usePerformanceMetrics";
 import { PerformanceIndicator } from "@/components/monitoring/performance-indicator";
 import type { Timeframe } from "@/components/charts/candlestick-chart";
 import { ChartCard } from "@/components/charts/chart-card";
-import { TopBar } from "@/app/components/top-bar";
 import { useSSE } from "@/hooks/useSSE";
 import { buildAuthHeaders, getHmacCredentials } from "@/lib/api/auth";
 
@@ -451,7 +450,6 @@ export function TerminalPage() {
 
   return (
     <>
-      <TopBar />
       <div className="mx-auto w-full max-w-[1600px] space-y-2 p-3 md:p-4">
         <CommandBar onSymbolChange={setSelectedSymbol} sseStatus={sseStatus} />
         <TickerTape />
