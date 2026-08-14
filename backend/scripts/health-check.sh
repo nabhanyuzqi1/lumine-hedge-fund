@@ -86,8 +86,9 @@ check_container "9router"
 check_http "domain-health"    "https://lumine.biz.id/health"
 check_http "domain-frontend"  "https://lumine.biz.id/"
 check_http "local-health"     "http://localhost/health"
-check_http "authelia-health"  "http://localhost:9091/auth/api/health"
-check_http "9router"          "http://localhost:20128" "401"
+# Authelia: cek via container health (tidak ada HTTP /health endpoint public)
+# Container check sudah di atas (lumine-authelia)
+check_http "9router"          "http://localhost:20128" "307"
 
 # --- Summary ---
 if [ "${FAILURES}" -gt 0 ]; then
