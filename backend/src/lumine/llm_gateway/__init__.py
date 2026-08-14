@@ -590,7 +590,9 @@ def create_gateway_from_env() -> LLMGateway:
     from lumine.llm_gateway.providers import SimpleModelRegistry
     from lumine.llm_gateway.recorder import UsageRecorder
 
-    base_url = os.getenv("LLM_GATEWAY_9ROUTER_URL", "https://api.9router.com")
+    # LLM_GATEWAY_URL is the canonical compose env (api -> http://9router:20128).
+    # LLM_GATEWAY_9ROUTER_URL kept as a fallback for older configs.
+    base_url = os.getenv("LLM_GATEWAY_URL", os.getenv("LLM_GATEWAY_9ROUTER_URL", "http://localhost:20128"))
     api_key = os.getenv("LLM_GATEWAY_API_KEY", "")
 
     daily_budget = float(os.getenv("LLM_GATEWAY_DAILY_BUDGET_USD", 500.0))

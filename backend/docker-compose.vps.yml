@@ -84,6 +84,20 @@ services:
       timeout: 5s
       retries: 3
 
+  # ── Dozzle — container log monitoring (superadmin side) ──────────────────
+  # Loopback-only: akses via Caddy /dozzle (basic auth DOZZLE_USERNAME/PASSWORD).
+  dozzle:
+    image: amir20/dozzle:latest
+    environment:
+      - DOZZLE_USERNAME=${DOZZLE_USERNAME:-lumine}
+      - DOZZLE_PASSWORD=${DOZZLE_PASSWORD:-change-me-superadmin}
+      - DOZZLE_LEVEL=info
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+
   frontend:
     build:
       context: ../frontend

@@ -11,6 +11,9 @@ http://166.88.227.177 {
     handle /health {
         reverse_proxy api:8000
     }
+    handle /dozzle/* {
+        reverse_proxy dozzle:8080
+    }
     handle {
         reverse_proxy frontend:80
     }
