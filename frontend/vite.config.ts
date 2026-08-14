@@ -3,10 +3,10 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// base './' keeps all asset URLs relative, so the built dist/ folder works
-// unchanged on GitHub Pages (project subpath) and on a VPS nginx root.
+// base "/" — asset absolut; "./" menyebabkan /app/* refresh resolve ke
+// /app/assets/* → nginx SPA fallback → MIME text/html → blank screen.
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

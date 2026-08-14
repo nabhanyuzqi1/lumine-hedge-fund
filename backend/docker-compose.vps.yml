@@ -129,6 +129,9 @@ services:
       - "80:80"
       - "443:443"
     environment:
+      # VNC_PASSWORD dipakai Caddyfile ({$VNC_PASSWORD}) untuk noVNC
+      # autoconnect — single login (tanpa dialog password VNC kedua).
+      - VNC_PASSWORD=${VNC_PASSWORD:?VNC_PASSWORD wajib di .env}
       - CADDY_ADMIN_USER=${CADDY_ADMIN_USER:-superadmin}
       - CADDY_ADMIN_HASH=${CADDY_ADMIN_HASH}
     volumes:

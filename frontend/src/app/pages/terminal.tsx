@@ -220,11 +220,9 @@ function TickerTape() {
 
 /** Command bar: symbol entry, session clock, SSE status (Bloomberg <GO> style). */
 function CommandBar({
-  symbol,
   onSymbolChange,
   sseStatus,
 }: {
-  symbol: string;
   onSymbolChange: (s: string) => void;
   sseStatus: "open" | "closed" | "error" | "connecting";
 }) {
@@ -264,9 +262,7 @@ function CommandBar({
 
   return (
     <header className="flex flex-wrap items-center gap-3 border-b border-line pb-2">
-      <span className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
-        LUMINE <span className="text-accent">{symbol}</span> TERMINAL
-      </span>
+      {/* Header inside dihapus (duplikat TopBar) — CommandBar murni fungsional */}
       <div className="flex items-center gap-1.5 rounded-chip border border-line bg-raised px-2 py-1">
         <span className="font-mono text-[10px] text-ink-faint">{"</"}</span>
         <input
@@ -283,7 +279,7 @@ function CommandBar({
         <Badge tone={statusTone} label={sseStatus.toUpperCase()} />
         <span className="hidden font-mono text-[10px] text-ink-faint md:inline">
           {/* key hints */}
-          / focus · 1/5/15/30/60/D timeframe · Enter GO
+          / focus · 5/15/60/240 timeframe · Enter GO
         </span>
       </div>
       <div className="ml-auto flex items-center gap-2">
@@ -466,7 +462,7 @@ export function TerminalPage() {
     <>
       <TopBar />
       <div className="mx-auto w-full max-w-[1600px] space-y-2 p-3 md:p-4">
-        <CommandBar symbol={selectedSymbol} onSymbolChange={setSelectedSymbol} sseStatus={sseStatus} />
+        <CommandBar onSymbolChange={setSelectedSymbol} sseStatus={sseStatus} />
         <TickerTape />
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
