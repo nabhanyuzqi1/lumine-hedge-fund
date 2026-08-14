@@ -13,6 +13,21 @@
 # =============================================================================
 set -euo pipefail
 
+# ── Graceful shutdown: simpan workspace MT5 (EA attach persist) ─────────
+# Docker stop/restart kirim SIGTERM ke PID 1 (entrypoint). Trap ini
+# menjalankan `wineserver -k` GRACEFUL (WM_QUIT, bukan SIGKILL) sehingga
+# MT5 sempat SAVE workspace (chart + EA attachment) sebelum exit.
+# Tanpa ini, MT5 di-kill paksa → workspace tidak tersimpan → restart
+# berikutnya restore profile lama (EA attach hilang).
+graceful_shutdown() {
+  echo "==> Graceful shutdown: wineserver -k (save MT5 workspace)..." >&2
+  wineserver -k >/dev/null 2>&1 || true
+  sleep 8
+  echo "==> Shutdown selesai. Exit." >&2
+  exit 0
+}
+trap graceful_shutdown TERM INT
+
 # ── 0. Validasi ──────────────────────────────────────────────────────────────
 if [[ -z "${VNC_PASSWORD:-}" ]]; then
   echo "ERROR: VNC_PASSWORD wajib di-set (env compose). Keluar." >&2
@@ -93,6 +108,14 @@ if [[ -f "${MT5_BIN}" ]]; then
         sed -i '/^\[Experts\]/a AllowWebRequest=http://lumine.biz.id' "${MT5_INI}"
       else
         echo -e "\n[Experts]\nAllowWebRequest=http://lumine.biz.id" >> "${MT5_INI}"
+      fi
+      # Pastikan restore workspace aktif → chart + EA attach persist
+      # antar restart (MT5 default bisa off di portable mode).
+      sed -i '/^RestoreLast=/d' "${MT5_INI}" 2>/dev/null || true
+      if grep -q '^\[Common\]' "${MT5_INI}"; then
+        sed -i '/^\[Common\]/a RestoreLast=1' "${MT5_INI}"
+      else
+        echo -e "\n[Common]\nRestoreLast=1" >> "${MT5_INI}"
       fi
     else
       echo "==> terminal.ini tidak ditemukan (first boot?) — whitelist persist setelah manual setup pertama kali"
