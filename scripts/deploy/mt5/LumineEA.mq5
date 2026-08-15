@@ -535,13 +535,17 @@ void SendPositionsSnapshot()
 //+------------------------------------------------------------------+
 void SendDealsSnapshot()
   {
-   datetime from = 0;   // sejak awal account (deal history lengkap)
+   datetime from = TimeCurrent() - 30 * 86400;   // 30 hari terakhir
    datetime to   = TimeCurrent();
-   if(!HistorySelect(from, to)) return;
-
-   string json = "{\"symbol\":\"" + Symbol() + "\",\"deals\":[";
+   if(!HistorySelect(from, to))
+     {
+      Print("LumineEA: SendDealsSnapshot HistorySelect gagal err=", GetLastError());
+      return;
+     }
 
    int total = HistoryDealsTotal();
+   string json = "{\"symbol\":\"" + Symbol() + "\",\"deals\":[";
+
    int count = 0;
    // Kirim 50 deal terbaru saja per snapshot (batch; backend dedupe by ticket)
    int start = MathMax(0, total - 50);
@@ -569,8 +573,16 @@ void SendDealsSnapshot()
      }
    json += "]}";
 
+   if(count == 0)
+     {
+      Print("LumineEA: SendDealsSnapshot no deals (total=", total, ")");
+      return;   // tidak ada deal — tidak kirim payload kosong
+     }
+
    int res = HttpPostJson("/deals", json, 3000);
-   if(res != 200 && res != -1 && !g_proxyDown)
+   if(res == 200)
+      Print("LumineEA: deals sent count=", count, " total=", total);
+   else if(res != -1 && !g_proxyDown)
       Print("LumineEA: SendDealsSnapshot failed http=", res);
   }
 
