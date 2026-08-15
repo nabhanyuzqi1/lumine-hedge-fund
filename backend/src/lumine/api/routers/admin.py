@@ -235,7 +235,11 @@ async def get_system_info(
 
     try:
         services = await asyncio.to_thread(_list_containers)
-    except Exception:
+    except Exception as exc:
+        # Log exception untuk debug (jangan silent fail).
+        import structlog
+        log = structlog.get_logger()
+        log.error("docker_list_containers_failed", exc_type=type(exc).__name__, exc_msg=str(exc)[:300])
         services = [ServiceStatus(name="unknown", status="unknown")]
 
     return SystemInfo(
