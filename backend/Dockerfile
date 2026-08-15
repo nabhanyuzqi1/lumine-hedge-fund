@@ -25,6 +25,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 RUN groupadd --system lumine && useradd --system --gid lumine --no-create-home lumine
 
+# Superadmin system-info: Docker socket akses butuh group docker.
+# Host docker.sock biasanya gid 999 atau dynamically assigned — match host GID.
+# WORKAROUND: buat group docker dengan GID yang match socket host (default 999),
+# lalu tambahkan lumine ke group itu. Jika host GID berbeda, override di compose:
+#   args: DOCKER_GID=<stat -c %g /var/run/docker.sock>
+ARG DOCKER_GID=988
+RUN groupadd -g ${DOCKER_GID} docker 2>/dev/null || true \
+    && usermod -aG docker lumine
+
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
