@@ -243,76 +243,85 @@ export function IntelligenceField() {
               role="button"
               aria-label={`${node.name} intelligence agent — inspect`}
             >
-              {/* Node disc */}
+              {/* Stack: disc + label, presisi via flex column */}
               <div
-                className="relative flex h-[58px] w-[58px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border backdrop-blur transition-all duration-300"
-                style={{
-                  borderColor: active ? node.color : "var(--color-line)",
-                  background:
-                    "linear-gradient(145deg, var(--color-raised) 0%, var(--color-abyss) 100%)",
-                  boxShadow: active
-                    ? `0 0 28px ${node.color}59, inset 0 0 14px ${node.color}1f, 0 4px 16px rgba(0,0,0,0.5)`
-                    : `0 0 14px ${node.color}1f, 0 2px 10px rgba(0,0,0,0.4)`,
-                }}
+                className={cn(
+                  "flex -translate-x-1/2 -translate-y-1/2 flex-col items-center",
+                  labelAbove ? "flex-col-reverse" : ""
+                )}
               >
-                {/* Inner ring accent */}
-                <div
-                  className="absolute inset-[3px] rounded-full border transition-opacity duration-300"
+                {/* Disc — 3D sphere */}
+                <motion.div
+                  className="relative flex h-[58px] w-[58px] items-center justify-center rounded-full border"
                   style={{
-                    borderColor: node.color,
-                    opacity: active ? 0.45 : 0.12,
+                    borderColor: active ? node.color : "var(--color-line)",
+                    background:
+                      "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 34%, transparent 48%), linear-gradient(150deg, #1a2436 0%, #0b0f17 100%)",
+                    boxShadow: active
+                      ? `0 10px 24px rgba(0,0,0,0.6), 0 0 26px ${node.color}66, inset 0 1px 0 rgba(255,255,255,0.14)`
+                      : `0 8px 20px rgba(0,0,0,0.5), 0 0 14px ${node.color}22, inset 0 1px 0 rgba(255,255,255,0.1)`,
                   }}
-                />
-                {/* Icon */}
-                <span
-                  className="transition-colors duration-300"
-                  style={{
-                    color: active ? node.color : "var(--color-ink-dim)",
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{
+                    duration: 4,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                    delay: NODES.indexOf(node) * 0.6,
                   }}
                 >
-                  {node.id === "technical" ? (
-                    <TechnicalIcon size={24} />
-                  ) : node.id === "macro" ? (
-                    <MacroIcon size={24} />
-                  ) : node.id === "news" ? (
-                    <NewsIcon size={24} />
-                  ) : (
-                    <StructureIcon size={24} />
-                  )}
-                </span>
-                {/* Live status dot */}
-                <span
-                  className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-abyss"
-                  style={{ backgroundColor: node.color }}
-                >
-                  <span
-                    className="absolute inset-0 animate-ping rounded-full"
-                    style={{ backgroundColor: node.color, opacity: 0.5 }}
+                  {/* Inner ring accent */}
+                  <div
+                    className="absolute inset-[3px] rounded-full border transition-opacity duration-300"
+                    style={{
+                      borderColor: node.color,
+                      opacity: active ? 0.5 : 0.15,
+                    }}
                   />
-                </span>
-              </div>
-
-              {/* Label — solid chip so connecting lines never collide */}
-              <div
-                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap"
-                style={{
-                  top: labelAbove ? "auto" : "calc(100% + 6px)",
-                  bottom: labelAbove ? "calc(100% + 6px)" : "auto",
-                }}
-              >
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-chip border border-line-soft bg-abyss/90 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] backdrop-blur transition-colors duration-300"
-                  style={{
-                    color: active ? node.color : "var(--color-ink-dim)",
-                    borderColor: active ? `${node.color}66` : undefined,
-                  }}
-                >
+                  {/* Icon */}
                   <span
-                    className="h-1 w-1 rounded-full"
+                    className="transition-colors duration-300"
+                    style={{
+                      color: active ? node.color : "var(--color-ink-dim)",
+                    }}
+                  >
+                    {node.id === "technical" ? (
+                      <TechnicalIcon size={24} />
+                    ) : node.id === "macro" ? (
+                      <MacroIcon size={24} />
+                    ) : node.id === "news" ? (
+                      <NewsIcon size={24} />
+                    ) : (
+                      <StructureIcon size={24} />
+                    )}
+                  </span>
+                  {/* Live status dot */}
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-abyss"
                     style={{ backgroundColor: node.color }}
-                  />
-                  {node.name}
-                </span>
+                  >
+                    <span
+                      className="absolute inset-0 animate-ping rounded-full"
+                      style={{ backgroundColor: node.color, opacity: 0.5 }}
+                    />
+                  </span>
+                </motion.div>
+
+                {/* Label — chip solid, presisi 6px dari disc */}
+                <div className={labelAbove ? "mb-1.5" : "mt-1.5"}>
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-chip border border-line-soft bg-abyss/90 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] backdrop-blur transition-colors duration-300"
+                    style={{
+                      color: active ? node.color : "var(--color-ink-dim)",
+                      borderColor: active ? `${node.color}66` : undefined,
+                    }}
+                  >
+                    <span
+                      className="h-1 w-1 rounded-full"
+                      style={{ backgroundColor: node.color }}
+                    />
+                    {node.name}
+                  </span>
+                </div>
               </div>
             </motion.div>
           );

@@ -69,27 +69,50 @@ export function AgentNetwork({ className, showHeader = true }: AgentNetworkProps
               onClick={() => setSelected(agent)}
               aria-label={`Inspect ${agent.name} agent`}
             >
-              {/* Node */}
-              <div
-                className="relative flex h-14 w-14 items-center justify-center rounded-full border bg-raised/80 backdrop-blur transition-all duration-300 group-hover:shadow-xl"
-                style={{ borderColor: agent.color }}
+              {/* Node — 3D sphere */}
+              <motion.div
+                className="relative flex h-16 w-16 items-center justify-center rounded-full border"
+                style={{
+                  borderColor: agent.color,
+                  background:
+                    "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 34%, transparent 48%), linear-gradient(150deg, #1a2436 0%, #0b0f17 100%)",
+                  boxShadow:
+                    "0 10px 22px rgba(0,0,0,0.55), 0 0 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12)",
+                }}
+                animate={{ y: [0, -3, 0] }}
+                transition={{
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                  delay: i * 0.5,
+                }}
               >
                 <div
                   className="absolute inset-0 rounded-full opacity-15 blur-md transition-opacity duration-300 group-hover:opacity-35"
                   style={{ backgroundColor: agent.color }}
                 />
+                {/* Inner ring accent */}
+                <div
+                  className="absolute inset-[3px] rounded-full border transition-opacity duration-300 group-hover:opacity-60"
+                  style={{ borderColor: agent.color, opacity: 0.18 }}
+                />
                 <span
                   className="relative transition-transform duration-300 group-hover:scale-110"
                   style={{ color: agent.color }}
                 >
-                  <Icon size={24} />
+                  <Icon size={26} />
                 </span>
                 {/* Status dot */}
                 <span
                   className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-abyss"
                   style={{ backgroundColor: agent.color }}
-                />
-              </div>
+                >
+                  <span
+                    className="absolute inset-0 animate-ping rounded-full"
+                    style={{ backgroundColor: agent.color, opacity: 0.5 }}
+                  />
+                </span>
+              </motion.div>
               {/* Label — nama saja (role dilihat di Dialog) */}
               <div className="text-center">
                 <div className="font-display text-xs font-semibold text-ink">

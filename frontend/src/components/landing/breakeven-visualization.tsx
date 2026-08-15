@@ -155,24 +155,50 @@ export function BreakEvenVisualization({
               </text>
 
               {/* Price path */}
-              <path
+              <motion.path
                 d={`M ${PAD} ${ENTRY_Y} L ${W - PAD} ${TP_Y}`}
                 fill="none"
                 stroke="url(#be-gradient)"
                 strokeWidth="2.5"
                 strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                whileInView={{ pathLength: 1 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 1.6, ease: "easeInOut" }}
+              />
+              {/* Area glow under path */}
+              <motion.path
+                d={`M ${PAD} ${ENTRY_Y} L ${W - PAD} ${TP_Y} L ${W - PAD} ${H} L ${PAD} ${H} Z`}
+                fill="url(#be-area)"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 1.4, delay: 0.8 }}
               />
               <defs>
                 <linearGradient id="be-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#4d8dff" stopOpacity="0.9" />
                   <stop offset="100%" stopColor="#34d399" stopOpacity="0.9" />
                 </linearGradient>
+                <linearGradient id="be-area" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#34d399" stopOpacity="0.10" />
+                  <stop offset="100%" stopColor="#4d8dff" stopOpacity="0.02" />
+                </linearGradient>
               </defs>
 
               {/* Entry marker */}
               <circle cx={PAD} cy={ENTRY_Y} r="4" fill="#FFB020" />
 
-              {/* Position marker */}
+              {/* Position marker glow + dot */}
+              <motion.circle
+                cx={markerX}
+                cy={markerY}
+                r="14"
+                fill={decision.color}
+                opacity="0.15"
+                animate={{ cx: markerX, cy: markerY }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
               <motion.circle
                 cx={markerX}
                 cy={markerY}
@@ -183,6 +209,23 @@ export function BreakEvenVisualization({
                 animate={{ cx: markerX, cy: markerY }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
+              {/* Live price at marker */}
+              <motion.text
+                x={markerX}
+                y={markerY - 14}
+                fontSize="11"
+                fontWeight="700"
+                fill={decision.color}
+                textAnchor="middle"
+                fontFamily="IBM Plex Mono, monospace"
+                animate={{ x: markerX }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              >
+                {(() => {
+                  const price = 3350 + (pos / 100) * 18;
+                  return price.toFixed(2);
+                })()}
+              </motion.text>
             </svg>
           </div>
 

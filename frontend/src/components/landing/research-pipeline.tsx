@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
+import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -68,8 +68,22 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
   const [active, setActive] = useState(0);
   const stage = PIPELINE_STAGES[active];
 
+  // Scroll-driven: stage maju otomatis saat user scroll melewati section.
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start 0.85", "end 0.45"],
+  });
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    const next = Math.min(
+      PIPELINE_STAGES.length - 1,
+      Math.max(0, Math.floor(v * PIPELINE_STAGES.length))
+    );
+    setActive(next);
+  });
+
   return (
-    <div className={cn("w-full max-w-4xl space-y-6", className)}>
+    <div ref={sectionRef} className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
       {showHeader && (
         <div className="space-y-3 text-center">
