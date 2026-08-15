@@ -221,7 +221,11 @@ async def get_system_info(
                 health = c.attrs["State"]["Health"]["Status"]
             running = c.status == "running"
             name = (c.name or "unknown").removeprefix("/")
-            image = (c.image.tags[0] if c.image and c.image.tags else None)
+            # Image bisa None jika sudah dihapus (dangling) — handle gracefully.
+            try:
+                image = c.image.tags[0] if c.image and c.image.tags else None
+            except Exception:
+                image = None
             out.append(
                 ServiceStatus(
                     name=name,
