@@ -89,9 +89,15 @@ export async function listPortfolios(filter?: PortfolioFilter): Promise<{
  */
 export async function getPositionList(_portfolioId: string): Promise<Position[]> {
   // Single-default-portfolio backend: /portfolio/positions (2026-08-14).
-  const result = await api.get<{ data: Position[] }>(`/api/portfolio/positions`);
+  // Backend return PaginatedList envelope {data: {items: [...]}} — handle
+  // kedua shape (array lama vs {items}) agar RiskGauges tidak crash.
+  const result = await api.get<{ data: Position[] | { items: Position[] } }>(
+    `/api/portfolio/positions`
+  );
   if (result.error) throw result.error;
-  return result.data?.data ?? [];
+  const data = result.data?.data;
+  if (Array.isArray(data)) return data;
+  return data?.items ?? [];
 }
 
 /**
@@ -126,11 +132,15 @@ export async function getPositionDetail(
  */
 export async function getExposureData(_portfolioId: string): Promise<ExposureSummary[]> {
   // Single-default-portfolio backend: /portfolio/exposure (2026-08-14).
-  const result = await api.get<{ data: ExposureSummary[] }>(
+  // Backend return PaginatedList envelope {data: {items: [...]}} — handle
+  // kedua shape (array lama vs {items}).
+  const result = await api.get<{ data: ExposureSummary[] | { items: ExposureSummary[] } }>(
     `/api/portfolio/exposure`
   );
   if (result.error) throw result.error;
-  return result.data?.data ?? [];
+  const data = result.data?.data;
+  if (Array.isArray(data)) return data;
+  return data?.items ?? [];
 }
 
 /**

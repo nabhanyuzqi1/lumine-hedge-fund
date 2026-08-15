@@ -26,7 +26,29 @@ function renderPage(workflowId = "wf-xauusd-daily", runId = "run-001") {
 
 describe("WorkflowRunDetailPage", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("backend offline")));
+    // ZERO-DEMO: GET /workflows/{runId} → run real shape (envelope).
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_input: RequestInfo | URL) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              meta: { api_version: "v1", timestamp: new Date().toISOString(), request_id: "test", status: "ok" },
+              data: {
+                run_id: "run-001",
+                workflow_id: "wf-xauusd-daily",
+                workflow_name: "XAUUSD Daily Direction",
+                status: "running",
+                started_at: "2026-08-15T00:00:00Z",
+                finished_at: null,
+              },
+              error: null,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        )
+      )
+    );
     useCommitteeStore.setState({
       activities: [
         {

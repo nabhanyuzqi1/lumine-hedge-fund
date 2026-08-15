@@ -31,6 +31,11 @@ const STREAMS: StreamSpec[] = [
 
 const CHANNEL_MAP = new Map(STREAMS.map((s) => [s.channel, s]));
 
+// Ref stabil — useSSE effect deps membandingkan `headers` (reference).
+// PITFALL: `?? {}` membuat objek BARU tiap render → connect loop →
+// "Maximum update depth exceeded" (React batal render, UI blank).
+const EMPTY_HEADERS: Record<string, string> = {};
+
 function toActivity(
   channel: string,
   data: CommitteeStreamEvent | null,
@@ -93,7 +98,7 @@ export function useCommitteeStreams(enabled = true) {
   const apiOrigin = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/api\/v1\/?$/, "");
 
   for (const spec of STREAMS) {
-    const channelHeaders = headersByChannel[spec.channel] ?? {};
+    const channelHeaders = headersByChannel[spec.channel] ?? EMPTY_HEADERS;
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const sse = useSSE<CommitteeStreamEvent>({
       url: `${apiOrigin}/api/v1/streams/${spec.channel}`,
