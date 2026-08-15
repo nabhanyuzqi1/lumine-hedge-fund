@@ -157,11 +157,13 @@ jobs:
             git checkout dev
             git reset --hard origin/dev
             cd backend
-            docker compose -f docker-compose.vps.yml build api frontend
-            docker compose -f docker-compose.vps.yml up -d api frontend
-            sleep 15
-            # Health check
-            STATUS=$(curl -sI http://localhost/health | head -1 | awk '{print $2}')
+            # PITFALL (terbukti 2×): up --force-recreate TANPA build memakai
+            # image lama — kode baru tidak ter-deploy. Wajib build --no-cache.
+            docker compose -f docker-compose.vps.yml build --no-cache api frontend migrate
+            docker compose -f docker-compose.vps.yml up -d --force-recreate api frontend migrate
+            sleep 25
+            # Health check (Caddy internal, butuh Host header)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: lumine.biz.id" http://127.0.0.1/health)
             if [ "$STATUS" != "200" ]; then
               echo "Health check failed: $STATUS"
               exit 1
