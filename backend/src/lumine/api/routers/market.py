@@ -242,16 +242,39 @@ async def get_ohlcv(
         return []
     try:
         async with get_sessionmaker()() as session:
-            stmt = select(model).order_by(model.ts.desc()).limit(limit)
-            if since is not None:
-                stmt = stmt.where(model.ts >= since)
+            # 15m: agregasi BENAR 3 bar 5m per bucket 900s (sebelumnya cuma
+            # bar 5m kelipatan 900s → candle 15m tampil "hancur" karena
+            # cuma 5 menit data). Fix batch-2.
             if timeframe == "15m":
-                # bucket 15m = bar 5m yang ts-nya kelipatan 900s
-                from sqlalchemy import func
+                from sqlalchemy import text as sa_text
 
-                stmt = stmt.where(func.extract("epoch", model.ts) % 900 == 0)
-            result = await session.execute(stmt)
-            rows = list(result.scalars().all())
+                result = await session.execute(
+                    sa_text(
+                        """
+                        SELECT
+                          to_timestamp(floor(extract(epoch FROM ts) / 900) * 900) AT TIME ZONE 'UTC' AS ts,
+                          symbol,
+                          (array_agg(open ORDER BY ts))[1] AS open,
+                          max(high) AS high,
+                          min(low) AS low,
+                          (array_agg(close ORDER BY ts))[array_length(array_agg(close ORDER BY ts), 1)] AS close,
+                          sum(volume) AS volume
+                        FROM bars_5m
+                        WHERE symbol = :sym {since_clause}
+                        GROUP BY 1, 2
+                        ORDER BY 1 DESC
+                        LIMIT :lim
+                        """.format(since_clause="AND ts >= :since" if since is not None else ""),
+                    ),
+                    {"sym": symbol.upper(), "lim": limit, **({"since": since} if since is not None else {})},
+                )
+                rows = result.all()
+            else:
+                stmt = select(model).order_by(model.ts.desc()).limit(limit)
+                if since is not None:
+                    stmt = stmt.where(model.ts >= since)
+                result = await session.execute(stmt)
+                rows = list(result.scalars().all())
     except Exception:
         return []
     rows.reverse()

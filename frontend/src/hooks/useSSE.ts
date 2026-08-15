@@ -59,6 +59,11 @@ export interface UseSSEReturn {
 const INITIAL_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 30_000;
 const BACKOFF_RESET_MS = 30_000;
+// Heartbeat server (streams.py) = 30s; stale = 2× heartbeat = 60s.
+// PITFALL: stale timer (10s) < heartbeat (30s) → status flicker
+// stale→open terus → "Realtime feed degraded" palsu di GapBanner.
+const HEARTBEAT_INTERVAL_MS = 30_000;
+const STALE_AFTER_MS = 60_000;
 
 function getRetryAfterMs(response: Response, defaultMs: number): number {
   const header = response.headers.get("Retry-After");
@@ -192,7 +197,9 @@ export function useSSE<T>(options: UseSSEOptions<T>): UseSSEReturn {
       let currentId = "";
       let currentData = "";
 
-      const heartbeatIntervalMs = 5_000; // default per sse-api.md market-data
+      const heartbeatIntervalMs = HEARTBEAT_INTERVAL_MS; // match server 30s
+      // stale timer = 2× heartbeat = 60s (STALE_AFTER_MS).
+      // PITFALL lama: 10s stale vs 30s heartbeat → flicker "degraded".
       resetStaleTimer(heartbeatIntervalMs);
 
       while (enabled) {
