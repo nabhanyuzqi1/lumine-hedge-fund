@@ -195,13 +195,16 @@ class PositionSyncWorker:
             existing.status = "open"
             session.add(existing)
         else:
-            # Posisi MT5 baru — strategy default, opened_lineage NULL (source
-            # broker snapshot, bukan pipeline decision).
+            # Posisi MT5 baru — strategy_id deterministik per ticket (unik,
+            # menghindari konflik ix_positions_open UNIQUE (symbol,book,
+            # strategy_id) WHERE open — semua posisi MT5 pakai strategy
+            # berbeda sehingga bisa banyak posisi XAUUSD open sekaligus).
+            # opened_lineage NULL (source broker snapshot, bukan pipeline).
             session.add(
                 Position(
                     symbol=symbol,
                     book="default",
-                    strategy_id=await _strategy_id(session),
+                    strategy_id=_lineage_for_ticket(ticket),
                     side=side,
                     size=volume,
                     avg_entry=price_open,
@@ -263,23 +266,8 @@ def _parse_time(value: Any) -> datetime | None:
 
 
 def _lineage_for_ticket(ticket: int) -> UUID:
-    """Deterministic lineage UUID dari ticket (tanpa row lineage_records)."""
+    """Deterministic UUID dari ticket (strategy_id posisi MT5 sync)."""
     import hashlib
 
     digest = hashlib.sha256(f"mt5-sync:{ticket}".encode()).digest()[:16]
     return UUID(bytes=digest)
-
-
-async def _strategy_id(session: AsyncSession) -> UUID:
-    """Strategy default dari strategy_versions (pertama)."""
-    from sqlalchemy import select
-
-    from lumine.data.models import StrategyVersion
-
-    row = (
-        await session.execute(select(StrategyVersion).limit(1))
-    ).scalar_one_or_none()
-    if row is not None:
-        return row.id
-    # Fallback deterministik
-    return _lineage_for_ticket(0)
