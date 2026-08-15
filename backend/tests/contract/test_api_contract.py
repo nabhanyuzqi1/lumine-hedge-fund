@@ -13,6 +13,9 @@ from collections import deque
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from typing import Self
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -54,7 +57,7 @@ class FakeSession:
     def __init__(self, rows: list[object] | None = None) -> None:
         self.rows = rows or []
 
-    async def __aenter__(self) -> FakeSession:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(self, *exc: object) -> None:
@@ -102,7 +105,7 @@ def mock_market_service(monkeypatch: pytest.MonkeyPatch) -> None:
     from lumine.api.routers import streams as streams_module
 
     monkeypatch.setattr(
-        streams_module, "get_market_service", lambda: FakeMarketService(), raising=False
+        streams_module, "get_market_service", FakeMarketService, raising=False
     )
 
 
