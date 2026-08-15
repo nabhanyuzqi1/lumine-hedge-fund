@@ -985,8 +985,9 @@ def test_market_correlation_endpoint(client: TestClient, mock_db_session: None) 
     response = client.get("/api/v1/market/correlation?symbols=XAUUSD&symbols=EURUSD")
     assert response.status_code == 200
     matrix = response.json()["data"]
-    assert matrix["XAUUSD"]["XAUUSD"] == 1.0
-    assert matrix["EURUSD"]["XAUUSD"] == matrix["XAUUSD"]["EURUSD"]
+    # G4: ZERO-DEMO — tanpa data bars (mock DB kosong) → matrix KOSONG
+    # (bukan 0.0 menyesatkan). Hanya symbol dengan data yang muncul.
+    assert matrix == {}
 
 
 def test_market_spread_endpoint(client: TestClient, mock_market_service: None) -> None:

@@ -398,7 +398,7 @@ async def get_correlation(
     # G4: ZERO-DEMO jujur — hanya symbol DENGAN data yang muncul di matrix
     # (sebelumnya symbol tanpa data diisi 0.0 → heatmap menyesatkan "no
     # correlation" padahal "no data"). Dengan 1 stream aktif (XAUUSD),
-    # matrix = 1×1 → frontend render satu cell + label jelas.
+    # matrix = 1x1 → frontend render satu cell + label jelas.
     active = [s for s in universe if s in series]
     matrix: dict[str, dict[str, float]] = {}
     for a in active:
