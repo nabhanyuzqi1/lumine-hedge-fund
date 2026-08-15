@@ -67,7 +67,7 @@ export function EquityCurve({ className, showHeader = true }: EquityCurveProps) 
   };
 
   return (
-    <div className={cn("w-full max-w-4xl space-y-6", className)}>
+    <div className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
       {showHeader && (
         <div className="space-y-3 text-center">

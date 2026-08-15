@@ -83,7 +83,7 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
   });
 
   return (
-    <div ref={sectionRef} className={cn("w-full max-w-4xl space-y-6", className)}>
+    <div ref={sectionRef} className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
       {showHeader && (
         <div className="space-y-3 text-center">

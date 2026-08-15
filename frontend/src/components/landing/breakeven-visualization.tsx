@@ -80,7 +80,7 @@ export function BreakEvenVisualization({
   const x65 = xAt(65);
 
   return (
-    <div className={cn("w-full max-w-4xl space-y-6", className)}>
+    <div className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
       {showHeader && (
         <div className="space-y-3 text-center">
           <div className="flex items-center justify-center gap-2">
@@ -189,44 +189,33 @@ export function BreakEvenVisualization({
               {/* Entry marker */}
               <circle cx={PAD} cy={ENTRY_Y} r="4" fill="#FFB020" />
 
-              {/* Position marker glow + dot */}
-              <motion.circle
-                cx={markerX}
-                cy={markerY}
-                r="14"
-                fill={decision.color}
-                opacity="0.15"
-                animate={{ cx: markerX, cy: markerY }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-              <motion.circle
+              {/* Position marker glow + dot (instan — selalu presisi) */}
+              <circle cx={markerX} cy={markerY} r="14" fill={decision.color} opacity="0.15" />
+              <circle
                 cx={markerX}
                 cy={markerY}
                 r="6"
                 fill={decision.color}
                 stroke="#070b12"
                 strokeWidth="2"
-                animate={{ cx: markerX, cy: markerY }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
-              {/* Live price at marker */}
-              <motion.text
-                x={markerX}
-                y={markerY - 14}
-                fontSize="11"
-                fontWeight="700"
-                fill={decision.color}
-                textAnchor="middle"
-                fontFamily="IBM Plex Mono, monospace"
-                animate={{ x: markerX }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              >
-                {(() => {
-                  const price = 3350 + (pos / 100) * 18;
-                  return price.toFixed(2);
-                })()}
-              </motion.text>
             </svg>
+
+            {/* Live price overlay — HTML, menempel presisi di marker */}
+            <div
+              className="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-chip border border-line bg-abyss/95 px-2 py-0.5 font-mono text-[11px] font-bold tabular-nums backdrop-blur"
+              style={{
+                left: `${(markerX / W) * 100}%`,
+                top: `${Math.max(markerY - 26, 2) / H}%`,
+                color: decision.color,
+                borderColor: `${decision.color}44`,
+              }}
+            >
+              {(() => {
+                const price = 3350 + (pos / 100) * 18;
+                return price.toFixed(2);
+              })()}
+            </div>
           </div>
 
           {/* Slider */}

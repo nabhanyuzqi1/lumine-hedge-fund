@@ -68,7 +68,7 @@ export function AuditLog({ className, showHeader = true }: AuditLogProps) {
   };
 
   return (
-    <div className={cn("w-full max-w-4xl space-y-6", className)}>
+    <div className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
       {showHeader && (
         <div className="space-y-3 text-center">
           <div className="flex items-center justify-center gap-2">

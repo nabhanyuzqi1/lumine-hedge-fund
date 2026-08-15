@@ -91,7 +91,7 @@ export function PerformanceDashboard({ className, showHeader = true }: Performan
   const metrics = source === "backtest" ? SIMULATED_METRICS : PAPER_METRICS;
 
   return (
-    <div className={cn("w-full max-w-4xl space-y-6", className)}>
+    <div className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
       {showHeader && (
         <div className="space-y-3 text-center">
           <div className="flex items-center justify-center gap-2">

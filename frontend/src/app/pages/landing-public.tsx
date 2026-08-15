@@ -5,7 +5,6 @@ import { useState, type ReactNode } from "react";
 
 // Landing components
 import { IntelligenceField } from "@/components/landing/intelligence-field";
-import { AgentNetwork } from "@/components/landing/agent-network";
 import { DecisionFlow } from "@/components/landing/decision-flow";
 import { BreakEvenVisualization } from "@/components/landing/breakeven-visualization";
 import { ResearchPipeline } from "@/components/landing/research-pipeline";
@@ -14,7 +13,6 @@ import { EquityCurve } from "@/components/landing/equity-curve";
 import { RegimeEngine } from "@/components/landing/regime-engine";
 import { AuditLog } from "@/components/landing/audit-log";
 import { PhilosophySection } from "@/components/landing/philosophy-section";
-import { RoadmapSection } from "@/components/landing/roadmap-section";
 import { TickerTape } from "@/components/landing/ticker-tape";
 import { LumineIcon } from "@/components/landing/agent-icons";
 
@@ -332,34 +330,6 @@ export function LandingPublicPage() {
       {/* Ticker tape — simulated market strip */}
       <TickerTape />
 
-      {/* INTELLIGENCE — split: teks kiri, network kanan (S17-18) */}
-      <section id="intelligence" className="border-b border-line bg-bg py-16 md:py-24">
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
-          {/* Left — editorial */}
-          <SectionHeader
-            kicker="Intelligence Network"
-            title={
-              <>
-                Not one AI.
-                <br />
-                An intelligence system.
-              </>
-            }
-            description="Four specialized agents evaluate independent dimensions of the market. Their signals converge on Lumine Core, which assembles a single directional thesis."
-            className="mb-0"
-          />
-          {/* Right — nodes */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.8 }}
-          >
-            <AgentNetwork showHeader={false} />
-          </motion.div>
-        </div>
-      </section>
-
       {/* DECISION & RISK — flow 3 langkah: sinyal → tesis → gerbang risiko */}
       <section id="risk" className="border-b border-line bg-raised py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
@@ -452,19 +422,6 @@ export function LandingPublicPage() {
       {/* PHILOSOPHY — minimal editorial (Section 41) */}
       <section className="border-b border-line bg-abyss py-16 md:py-24">
         <PhilosophySection />
-      </section>
-
-      {/* ROADMAP — timeline (Section 42) */}
-      <section id="roadmap" className="border-b border-line bg-bg py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Roadmap"
-            align="center"
-            title="Built in phases. Verified at every step."
-            className="mb-10"
-          />
-          <RoadmapSection showHeader={false} />
-        </div>
       </section>
 
       {/* CTA — quiet (Section 42) */}

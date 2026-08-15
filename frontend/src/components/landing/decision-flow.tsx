@@ -76,7 +76,7 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
         transition={{ duration: 0.5 }}
       >
         <StepLabel n="1" label="Empat analis mengirim sinyal" />
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           {decision.analyses.map((analysis, i) => {
             const agent = AGENTS.find((a) => a.name === analysis.agent);
             const Icon = agent ? AGENT_ICONS[agent.id] : null;
@@ -88,22 +88,22 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
                   ? "text-down"
                   : "text-ink-dim";
             return (
-              <motion.div
+              <motion.span
                 key={analysis.agent}
-                className="flex flex-col items-center gap-2 rounded-chip border border-line-soft bg-abyss/40 p-3"
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-2 rounded-chip border border-line-soft bg-abyss/40 px-3 py-1.5"
+                initial={{ opacity: 0, y: 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
+                transition={{ duration: 0.35, delay: i * 0.07 }}
               >
-                <span style={{ color }}>{Icon && <Icon size={20} />}</span>
+                <span style={{ color }}>{Icon && <Icon size={16} />}</span>
                 <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-ink">
                   {analysis.agent}
                 </span>
                 <span className={cn("font-mono text-[10px] font-bold", biasColor)}>
                   {analysis.bias} {analysis.confidence.toFixed(0)}%
                 </span>
-              </motion.div>
+              </motion.span>
             );
           })}
         </div>
