@@ -189,11 +189,10 @@ export function StructureIcon({ className, size = 24 }: IconProps) {
 }
 
 /**
- * Lumine Mark — v4 "M-Chart" (tech clean).
- * Monogram M digambar sebagai chart double-top ASIMETRIS yang
- * trending naik: puncak kedua lebih tinggi dari puncak pertama,
- * garis berakhir naik ke kanan-atas (uptrend). Mewakili LUMINE
- * sekaligus arah (grafik naik). Signal head di ujung = eksekusi.
+ * Lumine Mark — v5 "M" (tech clean, jelas terbaca).
+ * Monogram M penuh: dua puncak + lembah tengah. ASIMETRIS —
+ * puncak kanan lebih tinggi dari puncak kiri, dan keseluruhan
+ * bentuk condong naik (grafik uptrend). Signal head di ujung.
  */
 export function LumineIcon({ className, size = 24 }: IconProps) {
   return (
@@ -205,16 +204,16 @@ export function LumineIcon({ className, size = 24 }: IconProps) {
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* M — asymmetric double-top chart, trending up */}
+      {/* M — full monogram, asymmetric double top, trending up */}
       <path
-        d="M3 24 L9 13 L14 18 L23 8"
+        d="M4 26 L10 12 L16 20 L22 8 L27 14"
         stroke="currentColor"
         strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {/* Signal head */}
-      <circle cx="23" cy="8" r="2.2" fill="currentColor" />
+      <circle cx="27" cy="14" r="2.2" fill="currentColor" />
     </svg>
   );
 }

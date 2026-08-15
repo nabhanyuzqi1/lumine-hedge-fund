@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="7" fill="#0B0F17"/>
-  <!-- M — asymmetric double-top chart, trending up -->
-  <path d="M3 24 L9 13 L14 18 L23 8" fill="none" stroke="#4D8DFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- M — full monogram, asymmetric double top, trending up -->
+  <path d="M4 26 L10 12 L16 20 L22 8 L27 14" fill="none" stroke="#4D8DFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- Signal head -->
-  <circle cx="23" cy="8" r="2.2" fill="#34D399"/>
+  <circle cx="27" cy="14" r="2.2" fill="#34D399"/>
 </svg>
