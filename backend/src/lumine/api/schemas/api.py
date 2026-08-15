@@ -387,6 +387,23 @@ class SystemInfo(BaseModel):
     enabled_symbols: list[str] = ["XAUUSD"]
 
 
+class LLMUsageEntry(BaseModel):
+    """Satu LLM call (B10 — LLM routing diagram superadmin)."""
+
+    id: UUID
+    ts: datetime
+    role: str
+    tier: str
+    model: str | None = None  # model_id (post-fallback)
+    tokens_in: int
+    tokens_out: int
+    cost_usd: Decimal
+    fallback_hops: int
+    degraded: bool
+    lane: str | None = None
+    latency_ms: int | None = None
+
+
 class SystemConfigUpdate(BaseModel):
     """Payload untuk memperbarui konfigurasi runtime via superadmin."""
 

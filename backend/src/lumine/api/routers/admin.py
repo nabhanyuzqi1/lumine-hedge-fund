@@ -8,7 +8,7 @@ import secrets
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.api.middleware.rate_limit import rate_limit_dependency
@@ -18,6 +18,7 @@ from lumine.api.schemas.api import (
     CreateKeyRequest,
     KillSwitchRequest,
     KillSwitchStatus,
+    LLMUsageEntry,
     ServiceStatus,
     SystemConfigUpdate,
     SystemInfo,
@@ -280,6 +281,50 @@ async def get_system_info(
 # Runtime override store — env vars tidak bisa diubah in-process di prod,
 # tapi kita simpan di Redis agar restart bisa memuat override.
 _SYSCONFIG_KEY = "lumine:system_config"
+
+
+@router.get("/llm-usage", response_model=list[LLMUsageEntry])
+async def list_llm_usage(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> list[LLMUsageEntry]:
+    """B10: recent LLM calls — untuk LLM routing diagram superadmin.
+
+    Data real dari tabel llm_usage (append-only cost-accounting log).
+    """
+    from sqlalchemy import select
+
+    from lumine.data.models import LLMUsage, ModelVersion
+    from lumine.data.session import get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            rows = (
+                await session.execute(
+                    select(LLMUsage, ModelVersion.model_id)
+                    .join(ModelVersion, LLMUsage.model_version_id == ModelVersion.id, isouter=True)
+                    .order_by(LLMUsage.ts.desc())
+                    .limit(limit)
+                )
+            ).all()
+            return [
+                LLMUsageEntry(
+                    id=row.LLMUsage.id,
+                    ts=row.LLMUsage.ts,
+                    role=row.LLMUsage.role,
+                    tier=row.LLMUsage.tier,
+                    model=row.model_id,
+                    tokens_in=row.LLMUsage.tokens_in,
+                    tokens_out=row.LLMUsage.tokens_out,
+                    cost_usd=row.LLMUsage.cost_usd,
+                    fallback_hops=row.LLMUsage.fallback_hops,
+                    degraded=row.LLMUsage.degraded,
+                    lane=row.LLMUsage.lane,
+                )
+                for row in rows
+            ]
+    except Exception:
+        return []
 
 
 @router.put("/system-config", response_model=dict)

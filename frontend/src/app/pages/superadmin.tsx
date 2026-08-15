@@ -4,6 +4,7 @@ import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/api/hooks";
 import { get, put } from "@/api/client";
 import { ApiKeyTable } from "@/components/admin/api-key-table";
 import { CreateKeyModal } from "@/components/admin/create-key-modal";
+import { LLMRoutingTab } from "@/components/superadmin/llm-routing-tab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,15 +56,16 @@ const SYMBOL_CANDIDATES = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTC
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs";
+type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "services", label: "Services" },
   { id: "config", label: "System Config" },
   { id: "keys", label: "API Keys" },
+  { id: "llm", label: "LLM Routing" },
   { id: "mt5", label: "MT5 Desktop" },
-  { id: "logs", label: "Logs (Dozzle)" },
+  { id: "logs", label: "Logs" },
 ];
 
 // ── Hooks (real backend calls — no demo fallback) ───────────────────────────
@@ -470,6 +472,7 @@ export function SuperadminPage() {
         {tab === "overview" && <OverviewTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "services" && <ServicesTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "config" && <ConfigTab data={systemInfo.data} isError={systemInfo.isError} />}
+        {tab === "llm" && <LLMRoutingTab />}
         {tab === "mt5" && <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />}
         {tab === "logs" && <EmbedTab url="/dozzle/" title="Dozzle — Container Log Viewer (session-protected)" />}
         {tab === "keys" && (

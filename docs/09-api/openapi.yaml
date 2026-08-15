@@ -2880,6 +2880,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/llm-usage:
+    get:
+      tags:
+      - admin
+      summary: List Llm Usage
+      description: 'B10: recent LLM calls — untuk LLM routing diagram superadmin.
+
+
+        Data real dari tabel llm_usage (append-only cost-accounting log).'
+      operationId: list_llm_usage_api_v1_admin_llm_usage_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LLMUsageEntry'
+                title: Response List Llm Usage Api V1 Admin Llm Usage Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/admin/system-config:
     put:
       tags:
@@ -3652,6 +3712,66 @@ components:
       - armed
       title: KillSwitchStatus
       description: Current kill-switch state.
+    LLMUsageEntry:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        ts:
+          type: string
+          format: date-time
+          title: Ts
+        role:
+          type: string
+          title: Role
+        tier:
+          type: string
+          title: Tier
+        model:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Model
+        tokens_in:
+          type: integer
+          title: Tokens In
+        tokens_out:
+          type: integer
+          title: Tokens Out
+        cost_usd:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Cost Usd
+        fallback_hops:
+          type: integer
+          title: Fallback Hops
+        degraded:
+          type: boolean
+          title: Degraded
+        lane:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Lane
+        latency_ms:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Latency Ms
+      type: object
+      required:
+      - id
+      - ts
+      - role
+      - tier
+      - tokens_in
+      - tokens_out
+      - cost_usd
+      - fallback_hops
+      - degraded
+      title: LLMUsageEntry
+      description: Satu LLM call (B10 — LLM routing diagram superadmin).
     LineageRecord:
       properties:
         lineage_id:
