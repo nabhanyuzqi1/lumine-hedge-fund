@@ -25,11 +25,13 @@ describe("HealthPage", () => {
               status: "ok",
             },
             data: {
-              symbol: "XAUUSD",
-              bid: 2400.5,
-              ask: 2400.8,
-              spread: 0.3,
-              timestamp: "2026-08-01T00:00:00Z",
+              XAUUSD: {
+                symbol: "XAUUSD",
+                bid: 2400.5,
+                ask: 2400.8,
+                spread: 0.3,
+                timestamp: "2026-08-01T00:00:00Z",
+              },
             },
             error: null,
           }),

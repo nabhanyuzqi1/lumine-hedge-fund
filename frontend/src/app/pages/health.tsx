@@ -16,7 +16,8 @@ interface QuoteSnapshot {
 }
 
 async function fetchQuote(symbol: string): Promise<QuoteSnapshot> {
-  return get<QuoteSnapshot>(`market/quotes/${symbol}`);
+  const res = await get<Record<string, QuoteSnapshot>>(`market/quotes?symbols=${symbol}`);
+  return res[symbol];
 }
 
 interface ProbeResult {
@@ -28,11 +29,14 @@ interface ProbeResult {
 }
 
 const PROBES = [
-  { path: "/health", label: "API health" },
-  { path: "/market/quotes/XAUUSD", label: "Market quotes" },
+  // Path relatif ke /api/v1 (client.get prepend base). Catatan:
+  // - /health ada di ROOT (bukan /api/v1/health) → probe lewat absolute URL
+  // - /journal/entries bukan path valid; endpoint real = /journal
+  { path: "/health", label: "API health", absolute: true },
+  { path: "/market/quotes?symbols=XAUUSD", label: "Market quotes" },
   { path: "/portfolio/positions", label: "Portfolio" },
   { path: "/workflows", label: "Workflows" },
-  { path: "/journal/entries", label: "Journal" },
+  { path: "/journal", label: "Journal" },
 ];
 
 function formatUTC(date: Date): string {
@@ -62,7 +66,14 @@ export function HealthPage() {
         PROBES.map(async (probe) => {
           const start = performance.now();
           try {
-            await get<unknown>(probe.path);
+            if (probe.absolute) {
+              // /health ada di root API (tanpa prefix /api/v1) dan TANPA auth
+              const res = await fetch(probe.path);
+              if (!res.ok)
+                throw new ApiError("health probe failed", res.status, "HTTP_ERROR", "");
+            } else {
+              await get<unknown>(probe.path);
+            }
             return {
               path: probe.path,
               label: probe.label,
