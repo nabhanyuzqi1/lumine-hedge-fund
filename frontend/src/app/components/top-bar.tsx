@@ -56,18 +56,20 @@ export function TopBar() {
             tidak menduplikasi symbol/price per halaman. */}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {isAuthenticated && username && (
-          <span className="text-text-secondary text-xs">
+          <span className="hidden text-text-secondary text-xs sm:inline">
             {username}
           </span>
         )}
         {killSwitchActive ? (
           <Badge tone="danger" label="KILL SWITCH ACTIVE" />
         ) : (
-          <Badge tone="ok" label="Kill standby" />
+          <span className="hidden md:inline-flex">
+            <Badge tone="ok" label="Kill standby" />
+          </span>
         )}
-        <span className="font-mono text-text-secondary" data-testid="utc-clock">
+        <span className="hidden font-mono text-text-secondary sm:inline" data-testid="utc-clock">
           {utc} UTC
         </span>
         <button
