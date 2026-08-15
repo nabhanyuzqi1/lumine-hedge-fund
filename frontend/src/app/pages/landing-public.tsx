@@ -332,9 +332,10 @@ export function LandingPublicPage() {
       {/* Ticker tape — simulated market strip */}
       <TickerTape />
 
-      {/* INTELLIGENCE — visual network (Section 17-18) */}
+      {/* INTELLIGENCE — split: teks kiri, network kanan (S17-18) */}
       <section id="intelligence" className="border-b border-line bg-bg py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
+          {/* Left — editorial */}
           <SectionHeader
             kicker="Intelligence Network"
             title={
@@ -345,15 +346,16 @@ export function LandingPublicPage() {
               </>
             }
             description="Four specialized agents evaluate independent dimensions of the market. Their signals converge on Lumine Core, which assembles a single directional thesis."
-            className="mb-10"
+            className="mb-0"
           />
+          {/* Right — nodes */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.8 }}
           >
-            <AgentNetwork className="mx-auto" showHeader={false} />
+            <AgentNetwork showHeader={false} />
           </motion.div>
         </div>
       </section>

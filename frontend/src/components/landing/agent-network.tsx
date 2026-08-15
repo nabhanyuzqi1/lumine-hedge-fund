@@ -53,7 +53,7 @@ export function AgentNetwork({ className, showHeader = true }: AgentNetworkProps
       )}
 
       {/* Four agents */}
-      <div className="grid w-full max-w-3xl grid-cols-2 gap-6 md:grid-cols-4 md:gap-10">
+      <div className="grid w-full grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
         {AGENTS.map((agent, i) => {
           const Icon = AGENT_ICONS[agent.id];
           return (
