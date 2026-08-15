@@ -38,5 +38,5 @@ volumes:
     name: lumine_autogenstudio_data
 
 networks:
-  lumine_default:
-    external: true
+  autogenstudio_net:
+    driver: bridge
