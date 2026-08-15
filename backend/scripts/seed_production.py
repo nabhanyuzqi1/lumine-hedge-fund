@@ -55,9 +55,9 @@ async def _seed_registry(session) -> dict[str, uuid.UUID]:
         row = ModelVersion(
             version="deepseek-v4-prod",
             status="production",
-            provider="9router",
-            model_id="deepseek/deepseek-v4",
-            tier="primary",
+            provider="opencode",
+            model_id="oc/deepseek-v4-flash-free",
+            tier="cost-efficient",
             context_window=131072,
             params={"temperature": 0.2, "budget_tokens": 4096},
         )
