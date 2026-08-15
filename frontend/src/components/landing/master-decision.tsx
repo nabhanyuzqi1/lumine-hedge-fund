@@ -69,9 +69,14 @@ function AgentAnalysisRow({ analysis }: AgentAnalysisRowProps) {
 interface MasterDecisionProps {
   className?: string;
   showHeader?: boolean;
+  variant?: "full" | "compact";
 }
 
-export function MasterDecision({ className, showHeader = true }: MasterDecisionProps) {
+export function MasterDecision({
+  className,
+  showHeader = true,
+  variant = "full",
+}: MasterDecisionProps) {
   const decision = SAMPLE_MASTER_DECISION;
 
   return (
@@ -128,25 +133,27 @@ export function MasterDecision({ className, showHeader = true }: MasterDecisionP
           </motion.div>
         </div>
 
-        {/* Agent analyses */}
-        <div className="space-y-3 p-4 md:p-6">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-            Agent Analyses
+        {/* Agent analyses — full variant only */}
+        {variant === "full" && (
+          <div className="space-y-3 p-4 md:p-6">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              Agent Analyses
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {decision.analyses.map((analysis, i) => (
+                <motion.div
+                  key={analysis.agent}
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.45, delay: i * 0.1 }}
+                >
+                  <AgentAnalysisRow analysis={analysis} />
+                </motion.div>
+              ))}
+            </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {decision.analyses.map((analysis, i) => (
-              <motion.div
-                key={analysis.agent}
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.45, delay: i * 0.1 }}
-              >
-                <AgentAnalysisRow analysis={analysis} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Consensus */}
         <div className="border-t border-line-soft bg-abyss/50 p-4 md:p-6">

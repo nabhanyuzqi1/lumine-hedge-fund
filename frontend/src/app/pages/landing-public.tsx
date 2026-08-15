@@ -11,12 +11,10 @@ import { AnimatedRiskValidation } from "@/components/landing/animated-risk-valid
 import { RiskEngine } from "@/components/landing/risk-engine";
 import { BreakEvenVisualization } from "@/components/landing/breakeven-visualization";
 import { ResearchPipeline } from "@/components/landing/research-pipeline";
-import { ValidationPipeline } from "@/components/landing/validation-pipeline";
 import { PerformanceDashboard } from "@/components/landing/performance-dashboard";
 import { EquityCurve } from "@/components/landing/equity-curve";
 import { RegimeEngine } from "@/components/landing/regime-engine";
 import { AuditLog } from "@/components/landing/audit-log";
-import { ArchitectureDiagram } from "@/components/landing/architecture-diagram";
 import { PhilosophySection } from "@/components/landing/philosophy-section";
 import { RoadmapSection } from "@/components/landing/roadmap-section";
 import { LumineIcon } from "@/components/landing/agent-icons";
@@ -44,7 +42,6 @@ const NAV_LINKS = [
   { href: "#risk", label: "Risk" },
   { href: "#research", label: "Research" },
   { href: "#performance", label: "Performance" },
-  { href: "#architecture", label: "Architecture" },
 ];
 
 function NavBar() {
@@ -240,24 +237,6 @@ function Hero() {
               </Button>
             </a>
           </motion.div>
-
-          {/* Under-CTA mono strip */}
-          <motion.div
-            className="mt-14 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line-soft pt-6 font-mono text-[10px] uppercase tracking-[0.18em]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-          >
-            <span className="text-ink-faint">
-              Engine <span className="text-ink">Multi-Agent</span>
-            </span>
-            <span className="text-ink-faint">
-              Instruments <span className="text-ink">XAUUSD · FX</span>
-            </span>
-            <span className="text-ink-faint">
-              Mode <span className="text-accent">Research / Paper</span>
-            </span>
-          </motion.div>
         </div>
 
         {/* Right — interactive intelligence field */}
@@ -337,7 +316,7 @@ export function LandingPublicPage() {
             description="Each agent contributes a weighted thesis. Lumine Core assembles them into one directional view with explicit confidence."
             className="mb-16"
           />
-          <MasterDecision className="mx-auto" showHeader={false} />
+          <MasterDecision className="mx-auto" showHeader={false} variant="compact" />
         </div>
       </section>
 
@@ -358,8 +337,8 @@ export function LandingPublicPage() {
             className="mb-20"
           />
           <AnimatedRiskValidation />
-          <div className="mt-20">
-            <RiskEngine showHeader={false} />
+          <div className="mt-16">
+            <RiskEngine showHeader={false} variant="compact" />
           </div>
         </div>
       </section>
@@ -387,9 +366,6 @@ export function LandingPublicPage() {
             className="mb-16"
           />
           <ResearchPipeline showHeader={false} />
-          <div className="mt-16">
-            <ValidationPipeline showHeader={false} />
-          </div>
         </div>
       </section>
 
@@ -433,19 +409,6 @@ export function LandingPublicPage() {
             className="mb-16"
           />
           <AuditLog showHeader={false} />
-        </div>
-      </section>
-
-      {/* ARCHITECTURE — interactive map (Section 26) */}
-      <section id="architecture" className="border-b border-line bg-bg py-24 md:py-32">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="System Architecture"
-            title="Data in. Intelligence. Decision. Risk. Execution. Feedback."
-            description="Hover each layer to see its inputs and outputs, and how components connect through the full loop."
-            className="mb-16"
-          />
-          <ArchitectureDiagram showHeader={false} />
         </div>
       </section>
 
@@ -540,9 +503,6 @@ export function LandingPublicPage() {
                 </a>
                 <a href="#research" className="text-sm text-ink-dim transition-colors hover:text-ink">
                   Research Pipeline
-                </a>
-                <a href="#architecture" className="text-sm text-ink-dim transition-colors hover:text-ink">
-                  Architecture
                 </a>
               </nav>
             </div>

@@ -155,8 +155,7 @@ export function PerformanceDashboard({ className, showHeader = true }: Performan
               className="space-y-4"
             >
               {/* Primary metrics */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <MetricCard label="Total Return" value={metrics.totalReturn} format="percent" />
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <MetricCard label="CAGR" value={metrics.cagr} format="percent" />
                 <MetricCard label="Max Drawdown" value={metrics.maxDrawdown} format="percent" />
                 <MetricCard label="Sharpe Ratio" value={metrics.sharpe.toFixed(2)} format="ratio" />
@@ -164,16 +163,9 @@ export function PerformanceDashboard({ className, showHeader = true }: Performan
 
               {/* Secondary metrics */}
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <MetricCard label="Sortino Ratio" value={metrics.sortino.toFixed(2)} format="ratio" />
                 <MetricCard label="Profit Factor" value={metrics.profitFactor.toFixed(2)} format="ratio" />
                 <MetricCard label="Win Rate" value={metrics.winRate} format="percent" />
-              </div>
-
-              {/* Tertiary metrics */}
-              <div className="grid gap-3 sm:grid-cols-3">
                 <MetricCard label="Expectancy (R)" value={metrics.expectancy.toFixed(2)} format="ratio" />
-                <MetricCard label="Avg R Multiple" value={metrics.avgR.toFixed(2)} format="ratio" />
-                <MetricCard label="Total Trades" value={metrics.totalTrades} format="number" />
               </div>
             </motion.div>
           </AnimatePresence>

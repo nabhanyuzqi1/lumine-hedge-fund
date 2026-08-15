@@ -106,9 +106,14 @@ const RISK_GATES: RiskGateProps[] = [
 interface RiskEngineProps {
   className?: string;
   showHeader?: boolean;
+  variant?: "full" | "compact";
 }
 
-export function RiskEngine({ className, showHeader = true }: RiskEngineProps) {
+export function RiskEngine({
+  className,
+  showHeader = true,
+  variant = "full",
+}: RiskEngineProps) {
   return (
     <div className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
@@ -133,6 +138,54 @@ export function RiskEngine({ className, showHeader = true }: RiskEngineProps) {
         </div>
       )}
 
+      {/* Compact: gate chips only */}
+      {variant === "compact" ? (
+        <>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {["Position Sizing", "Max Exposure", "Daily Loss Limit", "Kill Switch"].map(
+              (label, i) => (
+                <motion.div
+                  key={label}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.4, delay: i * 0.08 }}
+                >
+                  <div className="flex items-center gap-2 rounded-chip border border-line-soft bg-raised/40 px-3 py-1.5 backdrop-blur">
+                    <svg
+                      className="h-3.5 w-3.5 text-up"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink">
+                      {label}
+                    </span>
+                  </div>
+                </motion.div>
+              )
+            )}
+          </div>
+
+          {/* Important notice */}
+          <div className="rounded-chip border border-accent/30 bg-accent/5 p-4 backdrop-blur">
+            <p className="text-center text-xs leading-relaxed text-ink-dim">
+              <span className="font-semibold text-accent">Important:</span> AI does
+              not have unlimited authority. Every proposal passes through
+              deterministic risk validation before reaching execution.
+            </p>
+          </div>
+        </>
+      ) : (
+        /* Full variant: flow diagram + gate grid (unchanged) */
+        <>
       {/* Flow diagram */}
       <div className="flex flex-col items-center gap-4 rounded-panel border border-line bg-raised/50 p-6 shadow-panel">
         <div className="flex w-full max-w-md flex-col items-center gap-3">
@@ -239,6 +292,8 @@ export function RiskEngine({ className, showHeader = true }: RiskEngineProps) {
           deterministic risk validation before reaching execution.
         </p>
       </div>
+        </>
+      )}
     </div>
   );
 }

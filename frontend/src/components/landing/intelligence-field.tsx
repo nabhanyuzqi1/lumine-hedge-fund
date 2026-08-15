@@ -71,9 +71,7 @@ interface TelemetryItem {
 const TELEMETRY: TelemetryItem[] = [
   { label: "System", value: "Online" },
   { label: "Market", value: "XAUUSD" },
-  { label: "Regime", value: "Trending" },
   { label: "Agents", value: "04 / 04" },
-  { label: "Risk", value: "Normal" },
   { label: "Mode", value: "Research", accent: true },
 ];
 
@@ -367,7 +365,7 @@ export function IntelligenceField() {
       </div>
 
       {/* Telemetry strip — Section 15 */}
-      <div className="mx-auto mt-8 grid w-full max-w-[460px] grid-cols-3 gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-6">
+      <div className="mx-auto mt-8 grid w-full max-w-[460px] grid-cols-4 gap-px overflow-hidden rounded-panel border border-line bg-line">
         {TELEMETRY.map((t) => (
           <div
             key={t.label}
