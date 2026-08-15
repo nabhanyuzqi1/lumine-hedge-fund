@@ -1364,12 +1364,12 @@ paths:
       tags:
       - market
       summary: List Symbol Signals
-      description: 'Return recent analyst signals for one symbol (B-06).
+      description: 'Return recent analyst signals for one symbol (B-05/B5).
 
 
-        ZERO-DEMO: analyst signals dari pipeline agent — kosong sampai
+        ZERO-DEMO: sinyal real dari decision cycle LLM (tabel signals) —
 
-        committee live menghasilkan sinyal (tidak ada sinyal fiktif).'
+        kosong hanya jika committee belum pernah menghasilkan sinyal.'
       operationId: list_symbol_signals_api_v1_market_signals__symbol__get
       parameters:
       - name: symbol
@@ -1437,8 +1437,7 @@ paths:
       tags:
       - market
       summary: List Signals
-      description: 'Return recent analyst signals (ZERO-DEMO: kosong sampai pipeline
-        live).'
+      description: Return recent analyst signals (semua symbol; real dari tabel signals).
       operationId: list_signals_api_v1_market_signals_get
       parameters:
       - name: limit
