@@ -35,10 +35,17 @@ if TYPE_CHECKING:
 class AutoGenConfig(BaseModel):
     """Configuration for AutoGen orchestration."""
 
-    # Model routing
-    model_name: str = "gpt-5.5"
+    # Model routing — default ke 9router noAuth free model (oc/deepseek-v4-flash-free).
+    # model_name TIDAK boleh model fiksi (mis. gpt-5.5) — harus model yang
+    # terdaftar di gateway. Override via env LLM_DEFAULT_MODEL.
+    model_name: str = "oc/deepseek-v4-flash-free"
     max_tokens: int = 8192
     temperature: float = 0.7
+
+    # Gateway routing — 9router (LLM gateway). base_url+api_key wajib agar
+    # AutoGen tidak fallback ke api.openai.com (yang pasti gagal).
+    gateway_base_url: str = ""
+    gateway_api_key: str = ""
 
     # Budget control (per conversation)
     max_budget_per_task: float = 10.0
@@ -86,10 +93,14 @@ class AutoGenOrchestrator:
         if spec.name in self.agents:
             return self.agents[spec.name]
 
+        # Build llm_config dengan gateway routing (bukan default OpenAI).
+        llm_config = dict(spec.llm_config or {})
+        llm_config.update(self._build_llm_config())
+
         agent = ConversableAgent(
             name=spec.name,
             system_message=spec.system_message,
-            llm_config=spec.llm_config or {"model": self.config.model_name},
+            llm_config=llm_config,
             max_consecutive_auto_reply=spec.max_consecutive_auto_reply,
             human_input_mode=spec.human_input_mode,
         )
@@ -133,10 +144,28 @@ class AutoGenOrchestrator:
 
         self.chat_manager = GroupChatManager(
             groupchat=self.group_chat,
-            llm_config={"model": self.config.model_name},
+            llm_config=self._build_llm_config(),
         )
 
         return self.chat_manager
+
+    def _build_llm_config(self) -> dict[str, Any]:
+        """Shared llm_config dengan gateway routing (dipakai agent + manager)."""
+        cfg: dict[str, Any] = {
+            "model": self.config.model_name,
+            "temperature": self.config.temperature,
+            "max_tokens": self.config.max_tokens,
+        }
+        if self.config.gateway_base_url and self.config.gateway_api_key:
+            cfg["config_list"] = [
+                {
+                    "model": self.config.model_name,
+                    "base_url": self.config.gateway_base_url.rstrip("/"),
+                    "api_key": self.config.gateway_api_key,
+                    "price": [0, 0],
+                }
+            ]
+        return cfg
 
     async def run_conversation(
         self,

@@ -213,6 +213,8 @@ class NineRouterClient:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
+            # 9router append `data: [DONE]` SSE marker tanpa Accept json
+            "Accept": "application/json",
             "X-Lumine-Lineage": str(request.lineage_id or ""),
             "X-Lumine-Prompt-Hash": str(request.prompt_hash or ""),
         }
