@@ -99,7 +99,7 @@ int OnInit()
 
    Print("LumineEA v3 starting: proxy=", g_proxyURL,
          " seed=", g_seedEnabled ? "ON" : "OFF",
-         " build=", __DATE__, " ", __TIME__);
+         " build=", __DATE__, " started=", TimeToString(TimeLocal(), TIME_DATE|TIME_SECONDS));
 
    // PITFALL v2: polling di OnTick bergantung feed tick MT5. Feed pause →
    // EA mati total. OnTimer 1s = polling mandiri.
