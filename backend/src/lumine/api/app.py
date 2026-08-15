@@ -6,7 +6,6 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
@@ -187,14 +186,16 @@ async def _seed_worker() -> None:
             pass  # duplicate PK / transient — skip, tetap jalan
 
 
-async def _deals_worker() -> None:  # noqa: C901 — fixed deal-sync loop
-    """B1: consume mt5:deals (history deals EA snapshot) → sinkronisasi fills.
+async def _deals_worker() -> None:
+    """B1: consume mt5:deals (history deals EA snapshot) → sinkronisasi orders.
 
-    Setiap deal MT5 di-insert/di-ignore ke tabel fills (dedupe by
+    Setiap deal MT5 di-upsert ke tabel orders (status filled, dedupe by
     mt5_ticket). Ini memberi backend visibility penuh atas trade journal
     MT5 (deal history) — tidak hanya order yang lewat command bridge.
+    Fill ledger (fills) tidak disentuh: row fills butuh lineage_records
+    hash-chain (pipeline decision); deal MT5 bukan decision pipeline.
     """
-    from lumine.data.models import Fill
+    from lumine.data.models import Order
     from lumine.data.session import get_sessionmaker
     from lumine.shared.config import get_settings as _gs
 
@@ -215,12 +216,6 @@ async def _deals_worker() -> None:  # noqa: C901 — fixed deal-sync loop
             async with get_sessionmaker()() as session:
                 from sqlalchemy import select
 
-                from lumine.data.models import StrategyVersion
-
-                strategy = (
-                    await session.execute(select(StrategyVersion).limit(1))
-                ).scalar_one_or_none()
-                strategy_id = strategy.id if strategy is not None else None
                 inserted = 0
                 for d in deals:
                     try:
@@ -229,49 +224,40 @@ async def _deals_worker() -> None:  # noqa: C901 — fixed deal-sync loop
                         continue
                     existing = (
                         await session.execute(
-                            select(Fill).where(Fill.mt5_ticket == ticket)
+                            select(Order).where(Order.mt5_ticket == ticket)
                         )
                     ).scalar_one_or_none()
                     if existing is not None:
                         continue
-                    if strategy_id is None:
-                        continue
                     ts = datetime.fromtimestamp(int(d.get("time", 0)), UTC)
-                    side = "SELL" if int(d.get("type", 0)) == 1 else "BUY"
+                    side = "sell" if int(d.get("type", 0)) == 1 else "buy"
                     session.add(
-                        Fill(
-                            lineage_id=_deals_lineage(ticket),
+                        Order(
+                            portfolio_id="default",
                             symbol=str(d.get("symbol", "XAUUSD")).upper(),
-                            book="default",
-                            strategy_id=strategy_id,
                             side=side,
-                            size=Decimal(str(d.get("volume", 0))),
-                            fill_price=Decimal(str(d.get("price", 0))),
-                            ts=ts,
+                            order_type="market",
+                            volume=Decimal(str(d.get("volume", 0))),
+                            price=Decimal(str(d.get("price", 0))),
+                            status="filled",
+                            filled_volume=Decimal(str(d.get("volume", 0))),
                             mt5_ticket=ticket,
+                            created_at=ts,
+                            updated_at=ts,
                         )
                     )
                     inserted += 1
                 await session.commit()
                 if inserted:
-                    print(f"[DEALS] +{inserted} fills dari snapshot MT5", flush=True)
+                    print(f"[DEALS] +{inserted} orders (filled) dari snapshot MT5", flush=True)
         except Exception:
             pass  # transient — skip, tetap jalan
-
-
-def _deals_lineage(ticket: int) -> uuid:
-    """Deterministic lineage UUID untuk fill dari MT5 deal snapshot."""
-    import hashlib
-
-    digest = hashlib.sha256(f"mt5-deal:{ticket}".encode()).digest()[:16]
-    return uuid.UUID(bytes=digest)
 
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: initialize trading infrastructure."""
     settings = get_settings()
-
     # Seed bootstrap users (superadmin/admin/trader) idempotently. Best
     # effort: never blocks startup when the DB is briefly unavailable.
     await seed_bootstrap_users(settings)

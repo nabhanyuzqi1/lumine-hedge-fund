@@ -388,6 +388,8 @@ class Fill(Base):
     slippage: Mapped[Decimal] = mapped_column(Numeric(20, 5), nullable=False)
     book: Mapped[str] = mapped_column(Text, nullable=False)
     strategy_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    # B1: deal MT5 → fills (migrasi c02228f00014); dedupe snapshot deals.
+    mt5_ticket: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
