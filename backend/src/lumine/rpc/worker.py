@@ -148,6 +148,17 @@ async def run_worker(
         for _stream, messages in response or []:
             for message_id, fields in messages:
                 decoded = _decode_fields(fields)
+                # Hardening: satu message malformed tidak boleh crash worker loop.
+                # Skip + XACK agar stream tidak tersumbat selamanya.
+                if "command" not in decoded or "command_id" not in decoded:
+                    logger.warning(
+                        "rpc message %s malformed (missing command/command_id), skipping", message_id
+                    )
+                    await r.xack(STREAM, GROUP, message_id)
+                    continue
                 payload = json.loads(decoded.get("payload", "{}"))
-                await _process(decoded["command_id"], decoded["command"], payload, publisher, settings)
+                try:
+                    await _process(decoded["command_id"], decoded["command"], payload, publisher, settings)
+                except Exception:
+                    logger.exception("rpc message %s processing failed", message_id)
                 await r.xack(STREAM, GROUP, message_id)
