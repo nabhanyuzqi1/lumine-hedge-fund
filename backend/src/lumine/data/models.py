@@ -458,6 +458,8 @@ class Position(Base):
     # MT5 ticket (sync B1: posisi open dari MT5 di-identifikasi via ticket;
     # posisi dari fills tidak punya ticket — nullable).
     mt5_ticket: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # B8: unrealized P&L real dari MT5 (broker contract spec) per snapshot.
+    mt5_profit: Mapped[Decimal | None] = mapped_column(Numeric(20, 2), nullable=True)
 
     __table_args__ = (
         Index(

@@ -107,9 +107,15 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
         mid = await _live_mid(pos.symbol)
         if mid is None:
             mid = pos.avg_entry  # market libur → P&L flat di entry price
-        pnl = (mid - pos.avg_entry) * pos.size
-        if pos.side == "SHORT":
-            pnl = -pnl
+        # B8: pakai P&L real MT5 bila ada; fallback mark-to-market
+        # (side lowercase "buy"/"sell" dari sync MT5, atau "BUY"/"SHORT"
+        # dari pipeline lama — handle keduanya).
+        if pos.mt5_profit is not None:
+            pnl = pos.mt5_profit
+        else:
+            pnl = (mid - pos.avg_entry) * pos.size
+            if str(pos.side).upper() == "SHORT":
+                pnl = -pnl
         open_pnl += pnl
         margin_used += mid * abs(pos.size) * _MARGIN_RATE
 
@@ -365,7 +371,13 @@ async def list_positions(
             current = await _live_mid(pos.symbol)
             if current is None:
                 current = await _last_close(pos.symbol) or pos.avg_entry
-            unrealized = (current - pos.avg_entry) * pos.size
+            # B8: pakai unrealized P&L REAL dari MT5 bila ada (broker
+            # menghitung contract spec + spread aktual); fallback hitung
+            # mark-to-market (current - avg_entry) * size.
+            if pos.mt5_profit is not None:
+                unrealized = pos.mt5_profit
+            else:
+                unrealized = (current - pos.avg_entry) * pos.size
             items.append(
                 Position(
                     position_id=pos.position_id,
@@ -406,7 +418,11 @@ async def get_position(
         current = await _live_mid(pos.symbol)
         if current is None:
             current = await _last_close(pos.symbol) or pos.avg_entry
-        unrealized = (current - pos.avg_entry) * pos.size
+        # B8: P&L real MT5 bila ada; fallback mark-to-market
+        if pos.mt5_profit is not None:
+            unrealized = pos.mt5_profit
+        else:
+            unrealized = (current - pos.avg_entry) * pos.size
         return Position(
             position_id=pos.position_id,
             portfolio_id="default",

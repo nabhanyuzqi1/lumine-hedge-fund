@@ -176,7 +176,6 @@ class PositionSyncWorker:
         current = await self._live_price(symbol)
         if current is None:
             current = await self._last_close(symbol) or price_open
-        _ = profit  # profit MT5 (referensi; P&L API dihitung ulang live)
 
         existing = (
             await session.execute(
@@ -193,6 +192,7 @@ class PositionSyncWorker:
             existing.tp = Decimal(str(tp)) if tp not in (None, 0, "0") else None
             existing.opened_at = opened_at or existing.opened_at
             existing.status = "open"
+            existing.mt5_profit = profit  # B8: P&L real dari broker
             session.add(existing)
         else:
             # Posisi MT5 baru — strategy_id deterministik per ticket (unik,
@@ -214,6 +214,7 @@ class PositionSyncWorker:
                     opened_lineage=None,
                     status="open",
                     mt5_ticket=ticket,
+                    mt5_profit=profit,  # B8: P&L real dari broker
                 )
             )
         logger.debug("position sync upsert ticket=%s symbol=%s side=%s vol=%s", ticket, symbol, side, volume)
