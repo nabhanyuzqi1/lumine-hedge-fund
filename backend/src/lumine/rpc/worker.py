@@ -59,6 +59,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     from lumine.llm_gateway.registry import ModelRegistry
     from lumine.prompts.registry import Registry
 
+    from decimal import Decimal
+
     symbol = payload.get("symbol", "XAUUSD")
     settings = Settings()
     now = datetime.now(UTC)
@@ -98,9 +100,9 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             ).all()
             bars = [
                 {
-                    "high": float(r.high),
-                    "low": float(r.low),
-                    "close": float(r.close),
+                    "high": Decimal(str(r.high)),
+                    "low": Decimal(str(r.low)),
+                    "close": Decimal(str(r.close)),
                 }
                 for r in reversed(rows)
             ]
@@ -111,8 +113,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             closes = [b["close"] for b in bars]
             atr_14 = float(atr(bars, period=14))
             rsi_14 = float(rsi(bars, period=14))
-            ema_20 = sum(closes[-20:]) / 20
-            ema_50 = sum(closes[-50:]) / min(50, len(closes))
+            ema_20 = float(sum(closes[-20:]) / Decimal(20))
+            ema_50 = float(sum(closes[-50:]) / Decimal(min(50, len(closes))))
             last = bars[-1]
             ohlc = f"[{last['close']}, {max(b['high'] for b in bars[-5:])}, {min(b['low'] for b in bars[-5:])}, {closes[-1]}]"
 
