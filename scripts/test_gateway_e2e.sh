@@ -16,7 +16,7 @@ async def main():
     req = RouterRequest(
         model_version_id=uuid.uuid4(),
         role=\"test\",
-        tier=\"primary\",
+        tier=\"cost-efficient\",
         lineage_id=uuid.uuid4(),
         prompt_ref=\"test\",
         prompt_hash=\"test\",
@@ -28,7 +28,7 @@ async def main():
         resp = await client.complete_async(req)
         print(\"SUCCESS\")
         print(\"model_used:\", resp.model_used)
-        print(\"content:\", repr(resp.response.content[:100]))
+        print(\"content:\", repr(resp.content[:100]))
     except Exception as e:
         print(\"FAIL:\", type(e).__name__, str(e)[:300])
 

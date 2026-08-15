@@ -232,10 +232,25 @@ async def _event_stream(
             async for frame in _replay(channel, last_event_id):
                 yield frame
 
-        while not await request.is_disconnected():
-            yield ": heartbeat\n\n"
-            with contextlib.suppress(TimeoutError):
-                await asyncio.wait_for(request.is_disconnected(), timeout=interval_s)
+        # Subscribe ke SSEPublisher (in-memory queue) — relay event LIVE
+        # ke client. Sebelumnya stream hanya kirim heartbeat dan TIDAK
+        # pernah meneruskan event dari worker (bug: committee feed kosong).
+        publisher = get_sse_publisher(request)
+        queue = await publisher.subscribe()
+        try:
+            while not await request.is_disconnected():
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=interval_s)
+                except (asyncio.TimeoutError, TimeoutError):
+                    yield ": heartbeat\n\n"
+                    continue
+                # Relay event yang sesuai channel stream ini.
+                if event.channel == channel:
+                    data = dict(event.data)
+                    data.setdefault("timestamp", event.timestamp.isoformat())
+                    yield _emit(channel, stream_id, event.event_type, data)
+        finally:
+            await publisher.unsubscribe(queue)
     finally:
         _release_slot(key_id, host)
 

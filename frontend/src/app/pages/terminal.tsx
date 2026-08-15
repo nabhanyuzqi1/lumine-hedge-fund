@@ -7,6 +7,7 @@ import { PerformanceIndicator } from "@/components/monitoring/performance-indica
 import type { Timeframe } from "@/components/charts/candlestick-chart";
 import { ChartCard } from "@/components/charts/chart-card";
 import { useSSE } from "@/hooks/useSSE";
+import { useCommitteeStreams } from "@/hooks/useCommitteeStreams";
 import { buildAuthHeaders, getHmacCredentials } from "@/lib/api/auth";
 
 // lightweight-charts (~500 kB) stays out of the entry eval window: the chart
@@ -458,6 +459,10 @@ export function TerminalPage() {
     | "closed"
     | "error"
     | "connecting";
+
+  // Committee live feed: connect 4 SSE channel (analyst/ic/cio/risk) →
+  // committeeStore → CommitteeFeed. Tanpa ini feed kosong selamanya.
+  useCommitteeStreams();
 
   return (
     <>
