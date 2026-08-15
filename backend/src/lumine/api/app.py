@@ -8,7 +8,7 @@ import json
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from functools import partial
 from typing import Any
@@ -323,6 +323,38 @@ async def _seed_worker() -> None:
                         f"[SEED] {data.get('symbol')} {data.get('timeframe')} +{len(rows)} bars",
                         flush=True,
                     )
+                    # Fix stale 5m/15m: agregasi ulang bars_5m dari bars_1m
+                    # baru (bucket 300s) — EA refresh M1 tiap 30 menit.
+                    if data.get("timeframe") == "1m":
+                        from sqlalchemy import text as sa_text
+
+                        await session.execute(
+                            sa_text(
+                                """
+                                INSERT INTO bars_5m (ts, symbol, open, high, low, close, volume, source)
+                                SELECT
+                                  to_timestamp(floor(extract(epoch FROM ts) / 300) * 300) AT TIME ZONE 'UTC',
+                                  symbol,
+                                  (array_agg(open ORDER BY ts))[1],
+                                  max(high),
+                                  min(low),
+                                  (array_agg(close ORDER BY ts))[array_length(array_agg(close ORDER BY ts), 1)],
+                                  sum(volume),
+                                  'mt5'
+                                FROM bars_1m
+                                WHERE symbol = :sym AND ts >= :since
+                                GROUP BY 1, 2
+                                ON CONFLICT (ts, symbol) DO UPDATE SET
+                                  high = EXCLUDED.high, low = EXCLUDED.low,
+                                  close = EXCLUDED.close, volume = EXCLUDED.volume
+                                """
+                            ),
+                            {
+                                "sym": str(data["symbol"]).upper(),
+                                "since": datetime.now(UTC) - timedelta(hours=6),
+                            },
+                        )
+                        await session.commit()
         except Exception:
             pass  # duplicate PK / transient — skip, tetap jalan
 

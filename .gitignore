@@ -75,6 +75,9 @@ logs/
 # ── Local agent tooling state (not project artifacts) ─────────────────────
 .remember/
 .openclaude/
+.agents/
+.claude/
+skills-lock.json
 
 # ── Dev scratch state ──────────────────────────────────────────────────────
 backend/.data/

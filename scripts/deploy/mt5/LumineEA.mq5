@@ -63,6 +63,9 @@ string   g_seedTfNames[] = {"1m", "5m", "15m", "1h", "4h", "1d"};
 #define GV_SEED_DONE  "LUMINE_EA_SEED_DONE_V3"
 #define GV_LAST_TICK  "LUMINE_EA_LAST_TICK"
 
+// ── Refresh bars M1 periodik (fix stale 5m/15m) ─────────────────────────
+datetime  g_lastM1Refresh = 0;
+
 // ── Function prototypes ────────────────────────────────────────────────────
 // PITFALL: build MetaEditor ini TIDAK hoist function (commit 3834a9f) —
 // setiap function WAJIB dideklarasikan sebelum dipakai.
@@ -80,6 +83,7 @@ void     SendTick();
 void     SendPositionsSnapshot();
 void     SendDealsSnapshot();
 string   NormalizeSymbol(const string raw);
+void     SeedRecentM1();
 void     ProcessCommand(const string json);
 double   NormalizeVolume(const string symbol, double lots);
 ENUM_ORDER_TYPE_FILLING GetFilling(const string symbol);
@@ -208,6 +212,13 @@ void OnTimer()
      {
       g_lastDealsSent = now;
       SendDealsSnapshot();
+     }
+
+   // 3d) Refresh bars M1 terbaru (fix stale 5m/15m) tiap 30 menit
+   if(g_seedPhase == 2 && now >= g_lastM1Refresh + 1800)
+     {
+      g_lastM1Refresh = now;
+      SeedRecentM1();
      }
 
    // 4) Seed non-blocking (1 chunk per tick)
@@ -480,6 +491,38 @@ void SendTick()
       Print("LumineEA: SendTick failed http=", res, " (queued-retry via backoff)");
    // -1 sudah ditangani MarkProxyFail di HttpPostJson path (200-only marks ok;
    // non-200 → biarkan backoff, log state-change saja)
+  }
+
+//+------------------------------------------------------------------+
+//| Refresh bars M1 terbaru (120 bar) tiap 30 menit — bars_1m/5m/15m |
+//| tetap FRESH walau seed awal sudah selesai (fix stale 5m/15m).     |
+//+------------------------------------------------------------------+
+void SeedRecentM1()
+  {
+   string sym = NormalizeSymbol(g_seedSymbols[0]);
+   MqlRates rates[];
+   int got = CopyRates(sym, PERIOD_M1, 0, 120, rates);
+   if(got <= 0)
+     {
+      Print("LumineEA: SeedRecentM1 CopyRates err=", GetLastError());
+      return;
+     }
+   // JSON: [{ts, open, high, low, close, volume}...] oldest-first
+   string bars = "[";
+   for(int i = got - 1; i >= 0; i--)
+     {
+      if(i != got - 1) bars += ",";
+      bars += StringFormat("{\"ts\":%d,\"open\":%s,\"high\":%s,\"low\":%s,\"close\":%s,\"volume\":%s}",
+         (long)rates[i].time,
+         DoubleToString(rates[i].open, 2), DoubleToString(rates[i].high, 2),
+         DoubleToString(rates[i].low, 2), DoubleToString(rates[i].close, 2),
+         DoubleToString(rates[i].tick_volume, 0));
+     }
+   bars += "]";
+   string json = "{\"symbol\":\"" + sym + "\",\"timeframe\":\"1m\",\"bars\":" + bars + "}";
+   int res = HttpPostJson("/seed/bars", json, 3000);
+   if(res != 200 && res != -1 && !g_proxyDown)
+      Print("LumineEA: SeedRecentM1 failed http=", res);
   }
 
 //+------------------------------------------------------------------+
