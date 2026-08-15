@@ -132,6 +132,9 @@ const ORDER_STATUS_MAP: Record<RestOrder["status"], OrderFixture["status"]> = {
   cancelled: "CANCELLED",
 };
 
+/** ZERO-DEMO: when true, hooks return real/empty data instead of fixtures. */
+const USE_REAL_DATA = true;
+
 function toOrderFixture(order: RestOrder): OrderFixture {
   const status = ORDER_STATUS_MAP[order.status] ?? "ACTIVE";
   const entry = num(order.price);
@@ -243,10 +246,8 @@ function toApiKeyFixture(key: AdminKey): ApiKeyFixture {
 }
 
 /**
- * Query hooks with fixture fallback: the Phase 9 backend is not implemented
- * yet, so every hook tries the REST contract first and falls back to a
- * deterministic seeded fixture on error/empty. Same seed ⇒ identical chart
- * output across sessions and tests.
+ * Query hooks with fixture fallback (legacy). ZERO-DEMO mode disables
+ * fixtures and returns real/empty data when the backend returns nothing.
  */
 
 export function useMarketBars(symbol: string, timeframe: Timeframe) {
@@ -260,8 +261,9 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
         });
         if (Array.isArray(bars) && bars.length > 0) return bars.map(toChartBar);
       } catch {
-        // fall through to fixture
+        // fall through to empty / fixture
       }
+      if (USE_REAL_DATA) return [];
       return generateBars({ intervalSec: TIMEFRAME_SECONDS[timeframe] });
     },
     staleTime: 30_000,
@@ -436,7 +438,10 @@ export function useQuote(symbol: string) {
         const quote = await get<MarketData>(`/market/quote/${symbol}`);
         if (typeof quote?.symbol === "string") return toMarketQuote(quote);
       } catch {
-        // fall through to fixture
+        // fall through to empty / fixture
+      }
+      if (USE_REAL_DATA) {
+        return { symbol, bid: 0, ask: 0, last: 0, timestamp: 0 };
       }
       return generateQuote(symbol);
     },
@@ -454,8 +459,9 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
           return page.items.map(toPositionFixture);
         }
       } catch {
-        // fall through to fixture (offline resilience)
+        // fall through to empty / fixture
       }
+      if (USE_REAL_DATA) return [];
       return generatePositions();
     },
     staleTime: 30_000,
@@ -472,8 +478,9 @@ export function useOrders(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
           return page.items.map(toOrderFixture);
         }
       } catch {
-        // fall through to fixture (offline resilience)
+        // fall through to empty / fixture
       }
+      if (USE_REAL_DATA) return [];
       return generateOrders();
     },
     staleTime: 30_000,
