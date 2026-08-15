@@ -215,6 +215,12 @@ async def get_system_info(
         client = docker.from_env()
         out: list[ServiceStatus] = []
         for c in client.containers.list(all=True):
+            name = (c.name or "unknown").removeprefix("/")
+            # B2: one-shot container (migrate) — bukan service runtime.
+            # Exclude agar health count akurat (bukan "unhealthy" padahal
+            # memang wajar sudah selesai & berhenti).
+            if name == "backend-migrate-1":
+                continue
             status_raw = c.status or "unknown"
             health = None
             if c.attrs.get("State", {}).get("Health", {}).get("Status"):
