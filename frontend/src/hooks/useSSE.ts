@@ -62,7 +62,6 @@ const BACKOFF_RESET_MS = 30_000;
 // Heartbeat server (streams.py) = 30s; stale = 2× heartbeat = 60s.
 // PITFALL: stale timer (10s) < heartbeat (30s) → status flicker
 // stale→open terus → "Realtime feed degraded" palsu di GapBanner.
-const HEARTBEAT_INTERVAL_MS = 30_000;
 const STALE_AFTER_MS = 60_000;
 
 function getRetryAfterMs(response: Response, defaultMs: number): number {
@@ -121,15 +120,13 @@ export function useSSE<T>(options: UseSSEOptions<T>): UseSSEReturn {
     }
   }, []);
 
-  const resetStaleTimer = useCallback(
-    (heartbeatIntervalMs: number) => {
-      clearStaleTimer();
-      staleTimerRef.current = setTimeout(() => {
-        setStale(true);
-      }, heartbeatIntervalMs * 2);
-    },
-    [clearStaleTimer]
-  );
+  const resetStaleTimer = useCallback(() => {
+    clearStaleTimer();
+    // stale = 2× heartbeat = 60s (STALE_AFTER_MS).
+    staleTimerRef.current = setTimeout(() => {
+      setStale(true);
+    }, STALE_AFTER_MS);
+  }, [clearStaleTimer]);
 
   const connect = useCallback(async () => {
     if (!enabled) return;
@@ -197,10 +194,9 @@ export function useSSE<T>(options: UseSSEOptions<T>): UseSSEReturn {
       let currentId = "";
       let currentData = "";
 
-      const heartbeatIntervalMs = HEARTBEAT_INTERVAL_MS; // match server 30s
       // stale timer = 2× heartbeat = 60s (STALE_AFTER_MS).
       // PITFALL lama: 10s stale vs 30s heartbeat → flicker "degraded".
-      resetStaleTimer(heartbeatIntervalMs);
+      resetStaleTimer();
 
       while (enabled) {
         const { done, value } = await reader.read();
@@ -215,7 +211,7 @@ export function useSSE<T>(options: UseSSEOptions<T>): UseSSEReturn {
 
           if (line.startsWith(":")) {
             // Heartbeat comment — keeps connection alive.
-            resetStaleTimer(heartbeatIntervalMs);
+            resetStaleTimer();
             continue;
           }
 
