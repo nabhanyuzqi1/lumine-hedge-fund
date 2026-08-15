@@ -57,7 +57,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     from lumine.llm_gateway.budget import BudgetGate
     from lumine.llm_gateway.client import RouterClient
     from lumine.llm_gateway.gateway import Gateway
-    from lumine.llm_gateway.registry import ModelRegistry
+    from lumine.llm_gateway.registry import load_model_versions
     from lumine.prompts.registry import Registry
 
     symbol = payload.get("symbol", "XAUUSD")
@@ -71,11 +71,6 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
 
     async def _run() -> dict[str, Any]:
         """Execute the LLM cycle; raises on failure (caught by caller)."""
-        # ── Gateway + prompt registry ──────────────────────────────────────
-        client = RouterClient(url=settings.llm_gateway_url, api_key=settings.llm_gateway_api_key)
-        gateway = Gateway(registry=ModelRegistry({}), budget=BudgetGate({}), client=client)
-        prompt_registry = Registry(base_path=Path("/app/docs/prompts"))
-
         async with get_sessionmaker()() as session:
             # model_version + prompt_version production
             mv = (
@@ -86,6 +81,12 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             if mv is None:
                 msg = "no production model_versions row"
                 raise RuntimeError(msg)
+
+            # Registry model dari DB (wajib — resolve model_version_id)
+            model_registry = await load_model_versions(session)
+            client = RouterClient(url=settings.llm_gateway_url, api_key=settings.llm_gateway_api_key)
+            gateway = Gateway(registry=model_registry, budget=BudgetGate({}), client=client)
+            prompt_registry = Registry(base_path=Path("/app/docs/prompts"))
 
             # Indikator dari bars_5m (terakhir 60 bar)
             rows = (
