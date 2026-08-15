@@ -395,13 +395,15 @@ async def get_correlation(
                     series[sym] = [closes[i] / closes[i - 1] - 1.0 for i in range(1, len(closes))]
     except Exception:
         series = {}
+    # G4: ZERO-DEMO jujur — hanya symbol DENGAN data yang muncul di matrix
+    # (sebelumnya symbol tanpa data diisi 0.0 → heatmap menyesatkan "no
+    # correlation" padahal "no data"). Dengan 1 stream aktif (XAUUSD),
+    # matrix = 1×1 → frontend render satu cell + label jelas.
+    active = [s for s in universe if s in series]
     matrix: dict[str, dict[str, float]] = {}
-    for a in universe:
+    for a in active:
         row: dict[str, float] = {}
-        for b in universe:
-            if a not in series or b not in series:
-                row[b] = 1.0 if a == b else 0.0
-                continue
+        for b in active:
             if a == b:
                 row[b] = 1.0
                 continue

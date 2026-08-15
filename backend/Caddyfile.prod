@@ -40,6 +40,23 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy lumine-autogenstudio:8081
     }
 
+    # G5: Gatsby build tanpa pathPrefix → asset paths ABSOLUTE di root
+    # (/styles.*, /app-*, /static/*, /page-data/*, ...). Tanpa route ini
+    # browser minta asset di root → frontend SPA index (text/html) →
+    # Autogen Studio UI blank/rusak. Route asset → autogenstudio.
+    @gatsby_assets {
+        path /static/* /page-data/* /icons/* /manifest.webmanifest /sitemap* /favicon-32x32.png /favicon.ico
+    }
+    handle @gatsby_assets {
+        reverse_proxy lumine-autogenstudio:8081
+    }
+    @gatsby_chunks {
+        path /styles.* /app-* /commons* /component---* /framework* /polyfill* /webpack-runtime* /900-*
+    }
+    handle @gatsby_chunks {
+        reverse_proxy lumine-autogenstudio:8081
+    }
+
     # ── MT5 Redis HTTP Proxy (bypass internal hostname WebRequest limitation) ──
     # EA polling: GET /mt5-proxy/commands?timeout=1 → redis-http-proxy:8765
     # POST /mt5-proxy/results, /mt5-proxy/ticks

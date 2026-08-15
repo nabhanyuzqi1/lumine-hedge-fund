@@ -408,16 +408,23 @@ export function useCorrelation() {
     queryFn: async (): Promise<{ symbols: string[]; matrix: CorrelationMatrix }> => {
       try {
         // Backend: GET /api/v1/market/correlation?symbols=..&window=.. →
-        // Record<symbol, Record<symbol, float>> (symmetric).
+        // Record<symbol, Record<symbol, float>> (symmetric). G4: backend
+        // HANYA mengembalikan symbol dengan data bars — symbols diambil
+        // dari response (bukan hardcoded 6) agar heatmap tidak menampilkan
+        // cell 0.0 yang menyesatkan untuk symbol tanpa data.
         const matrixMap = await get<Record<string, Record<string, number>>>(
           "/market/correlation",
           { symbols: CORRELATION_SYMBOLS, window: "30" }
         );
-        if (matrixMap && typeof matrixMap[CORRELATION_SYMBOLS[0]] === "object") {
+        const activeSymbols =
+          matrixMap && typeof matrixMap === "object"
+            ? Object.keys(matrixMap).filter((s) => matrixMap[s] && typeof matrixMap[s] === "object")
+            : [];
+        if (activeSymbols.length > 0) {
           return {
-            symbols: CORRELATION_SYMBOLS,
-            matrix: CORRELATION_SYMBOLS.map((a) =>
-              CORRELATION_SYMBOLS.map((b) => num(matrixMap[a]?.[b], 0))
+            symbols: activeSymbols,
+            matrix: activeSymbols.map((a) =>
+              activeSymbols.map((b) => num(matrixMap[a]?.[b], 0))
             ),
           };
         }
