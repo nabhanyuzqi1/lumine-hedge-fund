@@ -260,13 +260,13 @@ async def get_ohlcv(
                           (array_agg(close ORDER BY ts))[array_length(array_agg(close ORDER BY ts), 1)] AS close,
                           sum(volume) AS volume
                         FROM bars_5m
-                        WHERE symbol = :sym {since_clause}
+                        WHERE symbol = :sym AND (:since IS NULL OR ts >= :since)
                         GROUP BY 1, 2
                         ORDER BY 1 DESC
                         LIMIT :lim
-                        """.format(since_clause="AND ts >= :since" if since is not None else ""),
+                        """
                     ),
-                    {"sym": symbol.upper(), "lim": limit, **({"since": since} if since is not None else {})},
+                    {"sym": symbol.upper(), "lim": limit, "since": since},
                 )
                 rows = result.all()
             else:
