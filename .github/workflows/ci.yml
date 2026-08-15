@@ -161,6 +161,8 @@ jobs:
             # image lama — kode baru tidak ter-deploy. Wajib build --no-cache.
             docker compose -f docker-compose.vps.yml build --no-cache api frontend migrate
             docker compose -f docker-compose.vps.yml up -d --force-recreate api frontend migrate
+            # Caddy: config (Caddyfile.prod) di-mount — recreate untuk reload
+            docker compose -f docker-compose.vps.yml up -d --force-recreate caddy
             sleep 25
             # Health check (Caddy internal, butuh Host header)
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: lumine.biz.id" http://127.0.0.1/health)
