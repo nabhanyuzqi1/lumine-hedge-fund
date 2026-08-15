@@ -201,35 +201,28 @@ async def get_system_info(
     settings: Annotated[Settings, Depends(get_settings)],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> SystemInfo:
-    """Snapshot status seluruh sistem — untuk superadmin control center."""
-    import subprocess
+    """Snapshot status seluruh sistem — untuk superadmin control center.
 
+    Baca status container via Docker API socket (docker CLI tidak ada di
+    image; SDK `docker` baca /containers/json langsung). Fallback graceful
+    ke [unknown] jika socket tidak di-mount (dev/local).
+    """
     services: list[ServiceStatus] = []
-    try:
-        # Subprocess blocking di async route → jalankan di threadpool
-        # (ASYNC221/PLW1510): cek exit code eksplisit agar error tidak ditelan.
-        result = await asyncio.to_thread(
-            subprocess.run,
-            ["docker", "ps", "-a", "--format", "{{.Names}}|{{.Status}}|{{.Image}}"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        for line in result.stdout.strip().splitlines():
-            parts = line.split("|")
-            if len(parts) < 3:
-                continue
-            name, status_raw, image = parts[0], parts[1], parts[2]
+
+    def _list_containers() -> list[ServiceStatus]:
+        import docker
+
+        client = docker.from_env()
+        out: list[ServiceStatus] = []
+        for c in client.containers.list(all=True):
+            status_raw = c.status or "unknown"
             health = None
-            if "(healthy)" in status_raw:
-                health = "healthy"
-            elif "(unhealthy)" in status_raw:
-                health = "unhealthy"
-            elif "(health: starting)" in status_raw:
-                health = "starting"
-            running = "Up" in status_raw
-            services.append(
+            if c.attrs.get("State", {}).get("Health", {}).get("Status"):
+                health = c.attrs["State"]["Health"]["Status"]
+            running = c.status == "running"
+            name = (c.name or "unknown").removeprefix("/")
+            image = (c.image.tags[0] if c.image and c.image.tags else None)
+            out.append(
                 ServiceStatus(
                     name=name,
                     status="running" if running else "stopped",
@@ -238,6 +231,10 @@ async def get_system_info(
                     uptime=status_raw,
                 )
             )
+        return sorted(out, key=lambda s: s.name)
+
+    try:
+        services = await asyncio.to_thread(_list_containers)
     except Exception:
         services = [ServiceStatus(name="unknown", status="unknown")]
 
