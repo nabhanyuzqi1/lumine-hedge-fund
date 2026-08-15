@@ -27,6 +27,19 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy frontend:80
     }
 
+    # ── AutoGen Studio (agent management UI) ──────────────────────────────
+    # Container lumine-autogenstudio:8081 (network backend_default — connect
+    # via `docker network connect backend_default lumine-autogenstudio`).
+    # Tanpa forward_auth (session autogenstudio sendiri); akses via
+    # https://lumine.biz.id/autogen-studio.
+    @autogenstudio {
+        path /autogen-studio /autogen-studio/*
+    }
+    handle @autogenstudio {
+        uri strip_prefix /autogen-studio
+        reverse_proxy lumine-autogenstudio:8081
+    }
+
     # ── MT5 Redis HTTP Proxy (bypass internal hostname WebRequest limitation) ──
     # EA polling: GET /mt5-proxy/commands?timeout=1 → redis-http-proxy:8765
     # POST /mt5-proxy/results, /mt5-proxy/ticks
