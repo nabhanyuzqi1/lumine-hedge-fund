@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
@@ -186,6 +187,86 @@ async def _seed_worker() -> None:
             pass  # duplicate PK / transient — skip, tetap jalan
 
 
+async def _deals_worker() -> None:  # noqa: C901 — fixed deal-sync loop
+    """B1: consume mt5:deals (history deals EA snapshot) → sinkronisasi fills.
+
+    Setiap deal MT5 di-insert/di-ignore ke tabel fills (dedupe by
+    mt5_ticket). Ini memberi backend visibility penuh atas trade journal
+    MT5 (deal history) — tidak hanya order yang lewat command bridge.
+    """
+    from lumine.data.models import Fill
+    from lumine.data.session import get_sessionmaker
+    from lumine.shared.config import get_settings as _gs
+
+    try:
+        r = await redis.from_url(_gs().redis_url)
+    except Exception:
+        return
+    while True:
+        try:
+            item = await r.brpop("mt5:deals", timeout=5)
+            if not item:
+                continue
+            _, payload = item
+            data = json.loads(payload)
+            deals = data.get("deals", [])
+            if not deals:
+                continue
+            async with get_sessionmaker()() as session:
+                from sqlalchemy import select
+
+                from lumine.data.models import StrategyVersion
+
+                strategy = (
+                    await session.execute(select(StrategyVersion).limit(1))
+                ).scalar_one_or_none()
+                strategy_id = strategy.id if strategy is not None else None
+                inserted = 0
+                for d in deals:
+                    try:
+                        ticket = int(d["ticket"])
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    existing = (
+                        await session.execute(
+                            select(Fill).where(Fill.mt5_ticket == ticket)
+                        )
+                    ).scalar_one_or_none()
+                    if existing is not None:
+                        continue
+                    if strategy_id is None:
+                        continue
+                    ts = datetime.fromtimestamp(int(d.get("time", 0)), UTC)
+                    side = "SELL" if int(d.get("type", 0)) == 1 else "BUY"
+                    session.add(
+                        Fill(
+                            lineage_id=_deals_lineage(ticket),
+                            symbol=str(d.get("symbol", "XAUUSD")).upper(),
+                            book="default",
+                            strategy_id=strategy_id,
+                            side=side,
+                            size=Decimal(str(d.get("volume", 0))),
+                            fill_price=Decimal(str(d.get("price", 0))),
+                            ts=ts,
+                            mt5_ticket=ticket,
+                        )
+                    )
+                    inserted += 1
+                await session.commit()
+                if inserted:
+                    print(f"[DEALS] +{inserted} fills dari snapshot MT5", flush=True)
+        except Exception:
+            pass  # transient — skip, tetap jalan
+
+
+def _deals_lineage(ticket: int) -> uuid:
+    """Deterministic lineage UUID untuk fill dari MT5 deal snapshot."""
+    import hashlib
+
+    digest = hashlib.sha256(f"mt5-deal:{ticket}".encode()).digest()[:16]
+    return uuid.UUID(bytes=digest)
+
+
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: initialize trading infrastructure."""
@@ -221,9 +302,16 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     # Initialize PositionSyncWorker if database pool available
     pool = getattr(settings, "database_url", None)
     if pool:
-        worker = await PositionSyncWorker.from_pool(pool, market_service, interval_seconds=5.0)
+        # B1: PositionSyncWorker sekarang consume mt5:positions (snapshot EA)
+        # → upsert tabel positions. Interval 10s (match EA snapshot cadence).
+        worker = await PositionSyncWorker.from_pool(pool, market_service, interval_seconds=10.0)
         _app_state["position_sync_worker"] = worker
         await worker.start()
+
+    # B1: consume mt5:deals (history deals EA) → sinkronisasi fills/journal.
+    if settings.redis_url:
+        deals_task = asyncio.create_task(_deals_worker())
+        _app_state["deals_worker_task"] = deals_task
 
     # RPC worker (B-04): consume the rpc:commands stream.
     if settings.redis_url:
@@ -245,6 +333,11 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         rpc_task.cancel()  # type: ignore[union-attr]
         with suppress(asyncio.CancelledError):
             await rpc_task  # type: ignore[union-attr]
+    deals_task = _app_state.get("deals_worker_task")
+    if deals_task:
+        deals_task.cancel()  # type: ignore[union-attr]
+        with suppress(asyncio.CancelledError):
+            await deals_task  # type: ignore[union-attr]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

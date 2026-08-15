@@ -443,9 +443,9 @@ class Position(Base):
     sl: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     tp: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    opened_lineage: Mapped[uuid.UUID] = mapped_column(
+    opened_lineage: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("lineage_records.lineage_id"),
-        nullable=False,
+        nullable=True,  # posisi MT5 sync (B1) tidak punya lineage pipeline
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -453,6 +453,9 @@ class Position(Base):
         default=_utcnow,
     )
     status: Mapped[str] = mapped_column(Text, nullable=False, default="open")
+    # MT5 ticket (sync B1: posisi open dari MT5 di-identifikasi via ticket;
+    # posisi dari fills tidak punya ticket — nullable).
+    mt5_ticket: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     __table_args__ = (
         Index(

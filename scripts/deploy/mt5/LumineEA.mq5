@@ -19,13 +19,15 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "3.00"
+#property version   "3.10"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy)
 input bool    InpSeedHistory = true;    // Seed history bars multi-TF saat start
 input int     InpSeedChunks  = 1000;    // Bar per chunk seed (100-1000)
 input int     InpMaxBackoff  = 60;      // Detik backoff maksimum saat proxy down
+input int     InpPositionsInterval = 10;  // Detik antar snapshot positions (B1 sync)
+input int     InpDealsInterval    = 30;  // Detik antar snapshot deals/history
 
 // ── Global State ──────────────────────────────────────────────────────────
 string   g_proxyURL;
@@ -33,6 +35,8 @@ string   g_orderId;                 // order_id command aktif (result sync)
 datetime g_lastTickSent   = 0;      // terakhir tick BERHASIL dikirim
 datetime g_lastTickTry    = 0;      // terakhir tick dicoba (untuk backoff)
 datetime g_lastCmdPoll    = 0;
+datetime g_lastPositionsSent = 0;   // B1: terakhir snapshot positions dikirim
+datetime g_lastDealsSent      = 0;   // B1: terakhir snapshot deals dikirim
 int      g_failCount      = 0;      // consecutive proxy failure
 bool     g_proxyDown      = false;  // log state-change saja
 int      g_maxBackoff;
@@ -73,6 +77,8 @@ void     SeedNextChunk();
 void     SeedAdvanceTf();
 void     PollCommands();
 void     SendTick();
+void     SendPositionsSnapshot();
+void     SendDealsSnapshot();
 void     ProcessCommand(const string json);
 double   NormalizeVolume(const string symbol, double lots);
 ENUM_ORDER_TYPE_FILLING GetFilling(const string symbol);
@@ -188,6 +194,20 @@ void OnTimer()
      }
    else if(g_seedPhase == 1)
       SeedNextChunk();   // proxy down → manfaatkan waktu untuk seed lokal
+
+   // 3b) Snapshot positions (B1 sync: tiap InpPositionsInterval detik)
+   if(now >= g_lastPositionsSent + InpPositionsInterval)
+     {
+      g_lastPositionsSent = now;
+      SendPositionsSnapshot();
+     }
+
+   // 3c) Snapshot deals/history (B1 sync: tiap InpDealsInterval detik)
+   if(now >= g_lastDealsSent + InpDealsInterval)
+     {
+      g_lastDealsSent = now;
+      SendDealsSnapshot();
+     }
 
    // 4) Seed non-blocking (1 chunk per tick)
    if(g_seedPhase == 1 && now < g_lastCmdPoll)
@@ -459,6 +479,99 @@ void SendTick()
       Print("LumineEA: SendTick failed http=", res, " (queued-retry via backoff)");
    // -1 sudah ditangani MarkProxyFail di HttpPostJson path (200-only marks ok;
    // non-200 → biarkan backoff, log state-change saja)
+  }
+
+//+------------------------------------------------------------------+
+//| Send snapshot open positions (B1 sync → /positions → mt5:positions |
+//| → PositionSyncWorker upsert DB). Tiap InpPositionsInterval detik.  |
+//+------------------------------------------------------------------+
+void SendPositionsSnapshot()
+  {
+   string json = "{\"snapshot_ts\":" + (string)(long)TimeCurrent() + ",\"positions\":[";
+
+   int total = PositionsTotal();
+   int count = 0;
+   for(int i = 0; i < total; i++)
+     {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if(!PositionSelectByTicket(ticket)) continue;
+
+      string symbol = PositionGetString(POSITION_SYMBOL);
+      long   type   = PositionGetInteger(POSITION_TYPE);
+      double volume = PositionGetDouble(POSITION_VOLUME);
+      double open   = PositionGetDouble(POSITION_PRICE_OPEN);
+      double sl     = PositionGetDouble(POSITION_SL);
+      double tp     = PositionGetDouble(POSITION_TP);
+      double profit = PositionGetDouble(POSITION_PROFIT);
+      datetime time  = (datetime)PositionGetInteger(POSITION_TIME);
+
+      if(count > 0) json += ",";
+      json += StringFormat(
+         "{\"ticket\":%I64d,\"symbol\":\"%s\",\"type\":%I64d,\"volume\":%.4f,"
+         "\"price_open\":%.5f,\"sl\":%.5f,\"tp\":%.5f,\"profit\":%.2f,\"time\":%I64d}",
+         ticket, symbol, type, volume, open, sl, tp, profit, (long)time);
+      count++;
+     }
+   json += "]}";
+
+   if(count == 0)
+     {
+      // Tidak ada posisi open — kirim snapshot kosong agar backend bisa
+      // menutup posisi yang sudah tidak ada di MT5.
+      json = "{\"snapshot_ts\":" + (string)(long)TimeCurrent() + ",\"positions\":[]}";
+     }
+
+   int res = HttpPostJson("/positions", json, 3000);
+   if(res != 200 && res != -1 && !g_proxyDown)
+      Print("LumineEA: SendPositionsSnapshot failed http=", res);
+   // skip saat market closed? TIDAK — posisi tetap harus sinkron walau libur.
+  }
+
+//+------------------------------------------------------------------+
+//| Send history deals terbaru (B1 sync → /deals → mt5:deals →        |
+//| backend trade journal/fills). Tiap InpDealsInterval detik.        |
+//| HistorySelect(0, now) ambil semua deal dari awal hari.            |
+//+------------------------------------------------------------------+
+void SendDealsSnapshot()
+  {
+   datetime from = 0;   // sejak awal account (deal history lengkap)
+   datetime to   = TimeCurrent();
+   if(!HistorySelect(from, to)) return;
+
+   string json = "{\"symbol\":\"" + Symbol() + "\",\"deals\":[";
+
+   int total = HistoryDealsTotal();
+   int count = 0;
+   // Kirim 50 deal terbaru saja per snapshot (batch; backend dedupe by ticket)
+   int start = MathMax(0, total - 50);
+   for(int i = start; i < total; i++)
+     {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+
+      string symbol   = HistoryDealGetString(ticket, DEAL_SYMBOL);
+      long   type     = HistoryDealGetInteger(ticket, DEAL_TYPE);
+      double volume   = HistoryDealGetDouble(ticket, DEAL_VOLUME);
+      double price    = HistoryDealGetDouble(ticket, DEAL_PRICE);
+      double profit   = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+      double commission = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+      long   order    = HistoryDealGetInteger(ticket, DEAL_ORDER);
+      datetime time   = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+      long   entry    = HistoryDealGetInteger(ticket, DEAL_ENTRY);
+
+      if(count > 0) json += ",";
+      json += StringFormat(
+         "{\"ticket\":%I64d,\"order\":%I64d,\"symbol\":\"%s\",\"type\":%I64d,\"entry\":%I64d,"
+         "\"volume\":%.4f,\"price\":%.5f,\"profit\":%.2f,\"commission\":%.2f,\"time\":%I64d}",
+         ticket, order, symbol, type, entry, volume, price, profit, commission, (long)time);
+      count++;
+     }
+   json += "]}";
+
+   int res = HttpPostJson("/deals", json, 3000);
+   if(res != 200 && res != -1 && !g_proxyDown)
+      Print("LumineEA: SendDealsSnapshot failed http=", res);
   }
 
 //+------------------------------------------------------------------+

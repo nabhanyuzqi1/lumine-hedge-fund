@@ -95,6 +95,40 @@ def seed_bars():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/positions", methods=["POST"])
+def positions():
+    """
+    LPUSH mt5:positions (snapshot open positions dari EA, tiap ~10s).
+    Body: {snapshot_ts, positions: [{ticket, symbol, type, volume,
+    price_open, sl, tp, profit, time}]}
+    PositionSyncWorker di API backend consume → upsert tabel positions.
+    """
+    try:
+        data = request.get_json(force=True)
+        payload = json.dumps(data)
+        r.lpush("mt5:positions", payload)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/deals", methods=["POST"])
+def deals():
+    """
+    LPUSH mt5:deals (history deals dari EA: HistoryDealsGet chunk).
+    Body: {symbol, deals: [{ticket, order, type, entry, volume, price,
+    profit, commission, time}]}
+    Backend consume → sinkronisasi fills / trade journal.
+    """
+    try:
+        data = request.get_json(force=True)
+        payload = json.dumps(data)
+        r.lpush("mt5:deals", payload)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))
     app.run(host="0.0.0.0", port=port, debug=False)
