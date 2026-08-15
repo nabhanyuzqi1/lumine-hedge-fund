@@ -178,33 +178,16 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm font-bold text-accent">
-                    {stage.number}
-                  </span>
-                  <h4 className="font-display text-lg font-bold text-ink">
-                    {stage.title}
-                  </h4>
-                </div>
-                <span
-                  className={cn(
-                    "rounded-chip border px-2 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-widest",
-                    stage.status === "complete"
-                      ? "border-up/30 bg-up/10 text-up"
-                      : stage.status === "in-progress"
-                        ? "border-accent/30 bg-accent/10 text-accent"
-                        : "border-line-soft bg-raised/30 text-ink-faint"
-                  )}
-                >
-                  {stage.status === "complete"
-                    ? "Complete"
-                    : stage.status === "in-progress"
-                      ? "In Progress"
-                      : "Pending"}
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-xs uppercase tracking-[0.25em] text-accent">
+                  Stage {stage.number}
                 </span>
+                <span className="h-px w-6 bg-line" />
+                <h4 className="font-display text-lg font-bold text-ink">
+                  {stage.title}
+                </h4>
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-ink-dim">
+              <p className="mt-2 text-sm leading-relaxed text-ink-dim">
                 {stage.description}
               </p>
             </motion.div>

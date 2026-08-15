@@ -363,13 +363,13 @@ export function LandingPublicPage() {
         </div>
       </section>
 
-      {/* RESEARCH — editorial (Section 22) */}
+      {/* RESEARCH — strategy lifecycle (Section 22) */}
       <section id="research" className="border-b border-line bg-raised py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
-            kicker="Research Pipeline"
-            title="From observation to deployment."
-            description="Every strategy moves through a disciplined lifecycle. Nothing reaches execution without out-of-sample validation."
+            kicker="Strategy Lifecycle"
+            title="From hypothesis to deployed capital."
+            description="Lumine only deploys capital on strategies that survive this lifecycle. Every stage is a checkpoint — a strategy is not an edge until it passes all of them."
             className="mb-10"
           />
           <ResearchPipeline showHeader={false} />
