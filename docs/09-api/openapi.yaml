@@ -4633,6 +4633,13 @@ components:
           - type: number
           - type: 'null'
           title: Max Daily Loss Pct
+        enabled_symbols:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Enabled Symbols
       type: object
       title: SystemConfigUpdate
       description: Payload untuk memperbarui konfigurasi runtime via superadmin.
@@ -4658,6 +4665,13 @@ components:
         version:
           type: string
           title: Version
+        enabled_symbols:
+          items:
+            type: string
+          type: array
+          title: Enabled Symbols
+          default:
+          - XAUUSD
       type: object
       required:
       - services

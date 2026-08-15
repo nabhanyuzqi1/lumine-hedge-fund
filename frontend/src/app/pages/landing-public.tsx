@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { useState, type ReactNode } from "react";
 
-// Landing page components
-import { InteractiveHeroNetwork } from "@/components/landing/interactive-hero-network";
-import { SystemTelemetry } from "@/components/landing/system-telemetry";
+// Landing components
+import { IntelligenceField } from "@/components/landing/intelligence-field";
 import { AgentNetwork } from "@/components/landing/agent-network";
 import { MasterDecision } from "@/components/landing/master-decision";
-import { RiskEngine } from "@/components/landing/risk-engine";
 import { AnimatedRiskValidation } from "@/components/landing/animated-risk-validation";
+import { RiskEngine } from "@/components/landing/risk-engine";
 import { BreakEvenVisualization } from "@/components/landing/breakeven-visualization";
 import { ResearchPipeline } from "@/components/landing/research-pipeline";
 import { ValidationPipeline } from "@/components/landing/validation-pipeline";
@@ -19,423 +19,541 @@ import { AuditLog } from "@/components/landing/audit-log";
 import { ArchitectureDiagram } from "@/components/landing/architecture-diagram";
 import { PhilosophySection } from "@/components/landing/philosophy-section";
 import { RoadmapSection } from "@/components/landing/roadmap-section";
+import { LumineIcon } from "@/components/landing/agent-icons";
 
 /**
- * Lumine Landing Page — AI-Native Quantitative Intelligence
- * 
- * Complete rebuild following 39-section master prompt.
- * Design philosophy: Bloomberg Terminal × Quant Research Lab × 
- * Institutional Trading Infrastructure × Modern AI Laboratory
- * 
- * NOT a trading bot landing page. This is a serious quantitative
- * intelligence system with institutional-grade risk controls.
+ * Lumine Landing Page — UI/UX Rebuild V2 (from scratch).
+ *
+ * Art direction: "A living quantitative intelligence instrument."
+ * Bloomberg Terminal × Quant Research Lab × AI Infrastructure × Premium Fintech.
+ *
+ * Visual rhythm (dense → sparse → editorial → technical → quiet):
+ *   HERO [dense split] → INTELLIGENCE [visual] → MASTER [dense data]
+ *   → RISK [technical] → BREAKEVEN [interactive] → RESEARCH [editorial]
+ *   → VALIDATION [technical] → PERFORMANCE [data-dense] → REGIME [visual]
+ *   → AUDIT [terminal] → ARCHITECTURE [map] → PHILOSOPHY [minimal]
+ *   → ROADMAP [timeline] → CTA [quiet] → FOOTER
  */
 
+/* ------------------------------------------------------------------ */
+/* Navigation — compact technical bar with system status (Section 12)  */
+/* ------------------------------------------------------------------ */
+
+const NAV_LINKS = [
+  { href: "#intelligence", label: "Intelligence" },
+  { href: "#risk", label: "Risk" },
+  { href: "#research", label: "Research" },
+  { href: "#performance", label: "Performance" },
+  { href: "#architecture", label: "Architecture" },
+];
+
 function NavBar() {
+  const { scrollY } = useScroll();
+  const [scrolled, setScrolled] = useState(false);
+
+  useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 40));
+
   return (
-    <header className="sticky top-0 z-50 border-b border-line-soft bg-abyss/80 backdrop-blur">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
+    <header
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "border-b border-line bg-abyss/90 backdrop-blur-md"
+          : "border-b border-transparent bg-transparent"
+      }`}
+    >
+      <div
+        className={`mx-auto flex w-full max-w-7xl items-center justify-between px-6 transition-all duration-300 ${
+          scrolled ? "h-12" : "h-16"
+        }`}
+      >
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-chip bg-accent">
-            <span className="font-display text-xs font-bold text-white">L</span>
-          </div>
-          <span className="font-display text-sm font-semibold tracking-tight text-ink">
+        <Link to="/" className="flex items-center gap-2.5">
+          <LumineIcon className="h-6 w-6 text-accent" />
+          <span className="font-display text-sm font-bold tracking-[0.2em] text-ink">
             LUMINE
           </span>
         </Link>
 
-        {/* Nav links */}
-        <nav className="hidden items-center gap-6 md:flex">
-          <a
-            href="#intelligence"
-            className="font-mono text-[11px] uppercase tracking-widest text-ink-dim transition-colors hover:text-ink"
-          >
-            Intelligence
-          </a>
-          <a
-            href="#risk"
-            className="font-mono text-[11px] uppercase tracking-widest text-ink-dim transition-colors hover:text-ink"
-          >
-            Risk
-          </a>
-          <a
-            href="#research"
-            className="font-mono text-[11px] uppercase tracking-widest text-ink-dim transition-colors hover:text-ink"
-          >
-            Research
-          </a>
-          <a
-            href="#roadmap"
-            className="font-mono text-[11px] uppercase tracking-widest text-ink-dim transition-colors hover:text-ink"
-          >
-            Roadmap
-          </a>
+        {/* Technical nav */}
+        <nav className="hidden items-center gap-7 md:flex">
+          {NAV_LINKS.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-dim transition-colors hover:text-ink"
+            >
+              {l.label}
+            </a>
+          ))}
         </nav>
 
-        {/* CTA */}
-        <Link to="/login">
-          <Button
-            size="sm"
-            className="hidden bg-accent font-mono text-[11px] uppercase tracking-widest text-white hover:bg-accent-soft md:inline-flex"
-          >
-            System Access
-          </Button>
-        </Link>
+        {/* Status + CTA */}
+        <div className="flex items-center gap-4">
+          <div className="hidden items-center gap-2 lg:flex">
+            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-up" />
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-faint">
+              System Online
+            </span>
+          </div>
+          <Link to="/login">
+            <Button
+              size="sm"
+              className="bg-accent font-mono text-[10px] uppercase tracking-[0.2em] text-white hover:bg-accent-soft"
+            >
+              Enter System
+            </Button>
+          </Link>
+        </div>
       </div>
     </header>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Section header primitive — varied rhythm per section                 */
+/* ------------------------------------------------------------------ */
+
+interface SectionHeaderProps {
+  kicker: string;
+  title: ReactNode;
+  description?: string;
+  align?: "left" | "center";
+  className?: string;
+}
+
+function SectionHeader({
+  kicker,
+  title,
+  description,
+  align = "left",
+  className = "",
+}: SectionHeaderProps) {
+  const alignCls =
+    align === "center" ? "items-center text-center" : "items-start text-left";
+  return (
+    <motion.div
+      className={`flex flex-col gap-4 ${alignCls} ${className}`}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="h-px w-8 bg-accent/60" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-accent">
+          {kicker}
+        </span>
+      </div>
+      <h2 className="max-w-3xl font-display text-3xl font-bold leading-[1.15] tracking-tight text-ink md:text-4xl lg:text-5xl">
+        {title}
+      </h2>
+      {description && (
+        <p className="max-w-2xl text-base leading-relaxed text-ink-dim md:text-lg">
+          {description}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* HERO — split layout: typography left, intelligence field right      */
+/* ------------------------------------------------------------------ */
+
 function Hero() {
   return (
-    <section className="relative min-h-screen overflow-hidden border-b border-line bg-abyss">
-      {/* System telemetry overlay — repositioned top-right */}
-      <div className="absolute right-6 top-20 z-10">
-        <SystemTelemetry />
+    <section className="relative overflow-hidden border-b border-line bg-abyss">
+      {/* Ambient background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-40 top-1/4 h-[480px] w-[480px] rounded-full bg-accent/[0.04] blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-cyan/[0.03] blur-[100px]" />
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              "linear-gradient(var(--color-line) 1px, transparent 1px), linear-gradient(90deg, var(--color-line) 1px, transparent 1px)",
+            backgroundSize: "80px 80px",
+          }}
+        />
       </div>
 
-      {/* Hero content — asymmetric layout, left-aligned */}
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col items-start justify-center px-6 py-32">
-        {/* System status badge */}
-        <motion.div
-          className="mb-8 inline-flex items-center gap-2 rounded-chip border border-line-soft bg-raised/50 px-4 py-2 backdrop-blur"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="h-2 w-2 animate-pulse rounded-full bg-up" />
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink">
-            Lumine Intelligence System — Online
-          </span>
-        </motion.div>
+      <div className="relative mx-auto grid w-full max-w-7xl gap-12 px-6 pb-20 pt-32 md:pt-36 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-8 lg:pb-28">
+        {/* Left — editorial typography */}
+        <div className="flex flex-col items-start">
+          <motion.div
+            className="mb-7 inline-flex items-center gap-2.5 rounded-chip border border-line-soft bg-raised/60 px-3.5 py-1.5 backdrop-blur"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-up" />
+            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.25em] text-ink">
+              Multi-Agent Intelligence System
+            </span>
+          </motion.div>
 
-        {/* Main headline — asymmetric typography, split alignment */}
-        <motion.div
-          className="mb-12 max-w-4xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <h1 className="font-display text-5xl font-bold leading-[1.1] tracking-tight text-ink md:text-6xl lg:text-7xl xl:text-8xl">
+          <motion.h1
+            className="font-display text-[2.75rem] font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl lg:text-[4.5rem] xl:text-[5rem]"
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+          >
             AI-Native
             <br />
             <span className="text-ink-dim">Quantitative</span>
             <br />
-            Intelligence.
-          </h1>
-        </motion.div>
+            <span className="text-accent">Intelligence.</span>
+          </motion.h1>
 
-        {/* Supporting text */}
-        <motion.p
-          className="mb-16 max-w-2xl text-base leading-relaxed text-ink-dim md:text-lg"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          A multi-agent intelligence system engineered to research, evaluate,
-          and execute systematic trading strategies under disciplined risk
-          controls.
-        </motion.p>
+          <motion.p
+            className="mt-7 max-w-xl text-base leading-relaxed text-ink-dim md:text-lg"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.35 }}
+          >
+            A coordinated system of specialized agents that research, evaluate,
+            and execute systematic strategies — every decision passing through
+            deterministic validation and disciplined risk controls.
+          </motion.p>
 
-        {/* CTAs */}
+          <motion.div
+            className="mt-9 flex flex-wrap items-center gap-4"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.5 }}
+          >
+            <a href="#intelligence">
+              <Button
+                size="lg"
+                className="bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
+              >
+                Explore the System
+              </Button>
+            </a>
+            <a href="#research">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="border-line font-mono text-[11px] uppercase tracking-[0.22em] text-ink hover:bg-raised"
+              >
+                View Research
+              </Button>
+            </a>
+          </motion.div>
+
+          {/* Under-CTA mono strip */}
+          <motion.div
+            className="mt-14 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line-soft pt-6 font-mono text-[10px] uppercase tracking-[0.18em]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+          >
+            <span className="text-ink-faint">
+              Engine <span className="text-ink">Multi-Agent</span>
+            </span>
+            <span className="text-ink-faint">
+              Instruments <span className="text-ink">XAUUSD · FX</span>
+            </span>
+            <span className="text-ink-faint">
+              Mode <span className="text-accent">Research / Paper</span>
+            </span>
+          </motion.div>
+        </div>
+
+        {/* Right — interactive intelligence field */}
         <motion.div
-          className="mb-20 flex flex-wrap items-center gap-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          <a href="#intelligence">
-            <Button
-              size="lg"
-              className="bg-accent font-mono text-xs uppercase tracking-widest text-white hover:bg-accent-soft"
-            >
-              Explore the System
-            </Button>
-          </a>
-          <a href="#research">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="border-line font-mono text-xs uppercase tracking-widest text-ink hover:bg-raised"
-            >
-              View Research
-            </Button>
-          </a>
-        </motion.div>
-
-        {/* Interactive intelligence network */}
-        <motion.div
-          className="w-full"
-          initial={{ opacity: 0, scale: 0.95 }}
+          className="flex items-center justify-center"
+          initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.8 }}
+          transition={{ duration: 1, delay: 0.45, ease: "easeOut" }}
         >
-          <InteractiveHeroNetwork />
+          <IntelligenceField />
         </motion.div>
       </div>
 
       {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="pointer-events-none absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 lg:flex"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1.2 }}
+        transition={{ delay: 1.4 }}
       >
-        <motion.div
-          className="flex flex-col items-center gap-2"
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+        <motion.span
+          className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink-faint"
+          animate={{ y: [0, 5, 0] }}
+          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
         >
-          <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-            Scroll
-          </span>
-          <div className="h-6 w-[1px] bg-gradient-to-b from-ink-faint to-transparent" />
-        </motion.div>
+          Scroll
+        </motion.span>
       </motion.div>
     </section>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* PAGE                                                               */
+/* ------------------------------------------------------------------ */
+
 export function LandingPublicPage() {
   return (
-    <div className="min-h-screen bg-abyss">
+    <div className="min-h-screen bg-abyss text-ink">
       <NavBar />
 
-      {/* Hero */}
+      {/* HERO — dense split */}
       <Hero />
 
-      {/* Section 8: Not One AI — Multi-Agent System */}
-      <section
-        id="intelligence"
-        className="border-b border-line bg-bg py-20 md:py-32"
-      >
-        <div className="mx-auto w-full max-w-7xl space-y-12 px-6">
-          <div className="space-y-4 text-center">
-            <h2 className="font-display text-3xl font-bold text-ink md:text-5xl">
-              Not One AI.
-              <br />
-              An Intelligence System.
-            </h2>
-            <p className="mx-auto max-w-3xl text-base leading-relaxed text-ink-dim md:text-lg">
-              Lumine combines specialized agents into a coordinated quantitative
-              research and decision-making architecture. Each agent evaluates a
-              different dimension of the market before decisions pass through
-              deterministic validation and risk controls.
-            </p>
-          </div>
-
-          {/* Agent network visualization */}
-          <AgentNetwork className="mx-auto" />
-        </div>
-      </section>
-
-      {/* Section 9: Master Decision */}
-      <section className="border-b border-line bg-raised py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <MasterDecision />
-        </div>
-      </section>
-
-      {/* Section 10: Risk Engine */}
-      <section id="risk" className="border-b border-line bg-bg py-20 md:py-32">
+      {/* INTELLIGENCE — visual network (Section 17-18) */}
+      <section id="intelligence" className="border-b border-line bg-bg py-24 md:py-32">
         <div className="mx-auto w-full max-w-7xl px-6">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 font-display text-3xl font-bold text-ink md:text-4xl lg:text-5xl">
-              Intelligence Decides.
-              <br />
-              <span className="text-ink-dim">Risk Controls Execution.</span>
-            </h2>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-ink-dim md:text-lg">
-              AI can propose a trade. It cannot override the system's risk boundaries.
-              Every proposal passes through deterministic validation gates.
-            </p>
-          </div>
-
-          {/* Animated validation sequence */}
-          <div className="mb-16">
-            <AnimatedRiskValidation />
-          </div>
-
-          {/* Original risk engine component */}
-          <RiskEngine />
+          <SectionHeader
+            kicker="Intelligence Network"
+            title={
+              <>
+                Not one AI.
+                <br />
+                An intelligence system.
+              </>
+            }
+            description="Four specialized agents evaluate independent dimensions of the market. Their signals converge on Lumine Core, which assembles a single directional thesis."
+            className="mb-16"
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <AgentNetwork className="mx-auto" />
+          </motion.div>
         </div>
       </section>
 
-      {/* Section 11: Break-Even Visualization */}
-      <section className="border-b border-line bg-raised py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
+      {/* MASTER DECISION — dense data (Section 19) */}
+      <section className="border-b border-line bg-raised py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Master Intelligence"
+            title="Signals converge into a single decision."
+            description="Each agent contributes a weighted thesis. Lumine Core assembles them into one directional view with explicit confidence."
+            className="mb-16"
+          />
+          <MasterDecision className="mx-auto" />
+        </div>
+      </section>
+
+      {/* RISK — technical (Section 20) */}
+      <section id="risk" className="border-b border-line bg-abyss py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Risk Engine"
+            align="center"
+            title={
+              <>
+                Intelligence proposes.
+                <br />
+                <span className="text-ink-dim">Risk decides.</span>
+              </>
+            }
+            description="AI can suggest a trade. It cannot override the system's risk boundaries. Every proposal passes through deterministic validation gates."
+            className="mb-20"
+          />
+          <AnimatedRiskValidation />
+          <div className="mt-20">
+            <RiskEngine />
+          </div>
+        </div>
+      </section>
+
+      {/* BREAKEVEN — interactive (Section 21) */}
+      <section className="border-b border-line bg-bg py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Structure-Based Breakeven"
+            title="Break-even is a decision, not a price."
+            description="Lumine evaluates whether to hold or move stop-loss to break-even based on market structure and momentum — not arbitrary price levels."
+            className="mb-16"
+          />
           <BreakEvenVisualization />
         </div>
       </section>
 
-      {/* Section 12: Research Pipeline */}
-      <section
-        id="research"
-        className="border-b border-line bg-bg py-20 md:py-32"
-      >
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
+      {/* RESEARCH — editorial (Section 22) */}
+      <section id="research" className="border-b border-line bg-raised py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Research Pipeline"
+            title="From observation to deployment."
+            description="Every strategy moves through a disciplined lifecycle. Nothing reaches execution without out-of-sample validation."
+            className="mb-16"
+          />
           <ResearchPipeline />
-        </div>
-      </section>
-
-      {/* Section 13: Validation Pipeline */}
-      <section className="border-b border-line bg-raised py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <ValidationPipeline />
-        </div>
-      </section>
-
-      {/* Section 14: Performance Dashboard */}
-      <section className="border-b border-line bg-bg py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <PerformanceDashboard />
-        </div>
-      </section>
-
-      {/* Section 15: Equity Curve */}
-      <section className="border-b border-line bg-raised py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <EquityCurve />
-        </div>
-      </section>
-
-      {/* Section 16: Market Regime Engine */}
-      <section className="border-b border-line bg-bg py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <RegimeEngine />
-        </div>
-      </section>
-
-      {/* Section 17: Auditability */}
-      <section className="border-b border-line bg-raised py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <AuditLog />
-        </div>
-      </section>
-
-      {/* Section 18: System Architecture */}
-      <section className="border-b border-line bg-bg py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <ArchitectureDiagram />
-        </div>
-      </section>
-
-      {/* Section 20: Philosophy */}
-      <section className="border-b border-line bg-abyss py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <PhilosophySection />
-        </div>
-      </section>
-
-      {/* Section 21: Roadmap */}
-      <section
-        id="roadmap"
-        className="border-b border-line bg-bg py-20 md:py-32"
-      >
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
-          <RoadmapSection />
-        </div>
-      </section>
-
-      {/* Section 22: Final CTA */}
-      <section className="border-b border-line bg-raised py-20 md:py-32">
-        <div className="mx-auto w-full max-w-4xl space-y-8 px-6 text-center">
-          <h2 className="font-display text-3xl font-bold text-ink md:text-5xl">
-            Enter the Lumine
-            <br />
-            Research Environment.
-          </h2>
-          <p className="mx-auto max-w-2xl text-base leading-relaxed text-ink-dim">
-            Explore an AI-native approach to quantitative research, systematic
-            decision-making, and disciplined execution.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link to="/login">
-              <Button
-                size="lg"
-                className="bg-accent font-mono text-xs uppercase tracking-widest text-white hover:bg-accent-soft"
-              >
-                Explore Lumine
-              </Button>
-            </Link>
-            <a href="#intelligence">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="border-line font-mono text-xs uppercase tracking-widest text-ink hover:border-accent hover:bg-accent/10"
-              >
-                View System
-              </Button>
-            </a>
+          <div className="mt-16">
+            <ValidationPipeline />
           </div>
         </div>
       </section>
 
-      {/* Section 23: Footer */}
-      <footer className="border-t border-line-soft bg-abyss">
-        <div className="mx-auto w-full max-w-7xl px-6 py-12">
-          <div className="grid gap-12 md:grid-cols-3">
+      {/* PERFORMANCE — data-dense (Section 23) */}
+      <section id="performance" className="border-b border-line bg-bg py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Performance"
+            align="center"
+            title="An analytics laboratory, not a scoreboard."
+            description="Illustrative data showing how Lumine evaluates strategy quality across backtest, paper, and live phases."
+            className="mb-16"
+          />
+          <PerformanceDashboard />
+          <div className="mt-16">
+            <EquityCurve />
+          </div>
+        </div>
+      </section>
+
+      {/* REGIME — full-width visual (Section 24) */}
+      <section className="border-b border-line bg-raised py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Market Regime"
+            title="The system adapts to the market's current state."
+            description="Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
+            className="mb-16"
+          />
+          <RegimeEngine />
+        </div>
+      </section>
+
+      {/* AUDIT — terminal-style stream (Section 25) */}
+      <section className="border-b border-line bg-abyss py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Audit Trail"
+            title="Every decision, logged."
+            description="A complete, inspectable record of how each thesis was assembled, validated, and executed. Pause the stream to read it."
+            className="mb-16"
+          />
+          <AuditLog />
+        </div>
+      </section>
+
+      {/* ARCHITECTURE — interactive map (Section 26) */}
+      <section id="architecture" className="border-b border-line bg-bg py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="System Architecture"
+            title="Data in. Intelligence. Decision. Risk. Execution. Feedback."
+            description="Hover each layer to see its inputs and outputs, and how components connect through the full loop."
+            className="mb-16"
+          />
+          <ArchitectureDiagram />
+        </div>
+      </section>
+
+      {/* PHILOSOPHY — minimal editorial (Section 41) */}
+      <section className="border-b border-line bg-abyss py-24 md:py-36">
+        <PhilosophySection />
+      </section>
+
+      {/* ROADMAP — timeline (Section 42) */}
+      <section id="roadmap" className="border-b border-line bg-bg py-24 md:py-32">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <SectionHeader
+            kicker="Roadmap"
+            align="center"
+            title="Built in phases. Verified at every step."
+            className="mb-16"
+          />
+          <RoadmapSection />
+        </div>
+      </section>
+
+      {/* CTA — quiet (Section 42) */}
+      <section className="border-b border-line bg-raised py-24 md:py-32">
+        <div className="mx-auto w-full max-w-4xl px-6">
+          <motion.div
+            className="flex flex-col items-center gap-8 text-center"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <LumineIcon className="h-10 w-10 text-accent" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-faint">
+                Research Environment
+              </span>
+            </div>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-ink md:text-5xl">
+              Explore the system.
+            </h2>
+            <p className="max-w-xl text-base leading-relaxed text-ink-dim">
+              See how specialized agents form a thesis, how risk governs every
+              decision, and how validation keeps the pipeline honest.
+            </p>
+            <Link to="/login">
+              <Button
+                size="lg"
+                className="group bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
+              >
+                Enter the System
+                <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">
+                  →
+                </span>
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-line bg-abyss">
+        <div className="mx-auto w-full max-w-7xl px-6 py-14">
+          <div className="grid gap-12 md:grid-cols-4">
             {/* Brand */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-chip bg-accent">
-                  <span className="font-display text-[10px] font-bold text-white">
-                    L
-                  </span>
-                </div>
-                <span className="font-display text-sm font-semibold text-ink">
+            <div className="space-y-4 md:col-span-2">
+              <div className="flex items-center gap-2.5">
+                <LumineIcon className="h-6 w-6 text-accent" />
+                <span className="font-display text-sm font-bold tracking-[0.2em] text-ink">
                   LUMINE
                 </span>
               </div>
-              <p className="text-sm leading-relaxed text-ink-dim">
-                AI-Native Quantitative Intelligence.
+              <p className="max-w-sm text-sm leading-relaxed text-ink-dim">
+                AI-native quantitative intelligence. A coordinated system of
+                specialized agents under disciplined risk controls.
               </p>
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint">
+                © 2026 Lumine — Institutional AI-native platform
+              </div>
             </div>
 
-            {/* Links */}
+            {/* Platform */}
             <div className="space-y-3">
-              <div className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink-faint">
+              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-ink-faint">
                 Platform
               </div>
               <nav className="flex flex-col gap-2">
-                <a
-                  href="#intelligence"
-                  className="text-sm text-ink-dim transition-colors hover:text-ink"
-                >
-                  Intelligence System
+                <a href="#intelligence" className="text-sm text-ink-dim transition-colors hover:text-ink">
+                  Intelligence
                 </a>
-                <a
-                  href="#risk"
-                  className="text-sm text-ink-dim transition-colors hover:text-ink"
-                >
+                <a href="#risk" className="text-sm text-ink-dim transition-colors hover:text-ink">
                   Risk Engine
                 </a>
-                <a
-                  href="#research"
-                  className="text-sm text-ink-dim transition-colors hover:text-ink"
-                >
+                <a href="#research" className="text-sm text-ink-dim transition-colors hover:text-ink">
                   Research Pipeline
                 </a>
-                <a
-                  href="#roadmap"
-                  className="text-sm text-ink-dim transition-colors hover:text-ink"
-                >
-                  Roadmap
+                <a href="#architecture" className="text-sm text-ink-dim transition-colors hover:text-ink">
+                  Architecture
                 </a>
               </nav>
             </div>
 
-            {/* Contact */}
+            {/* Connect */}
             <div className="space-y-3">
-              <div className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink-faint">
+              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-ink-faint">
                 Connect
               </div>
               <nav className="flex flex-col gap-2">
-                <Link
-                  to="/login"
-                  className="text-sm text-ink-dim transition-colors hover:text-ink"
-                >
+                <Link to="/login" className="text-sm text-ink-dim transition-colors hover:text-ink">
                   System Access
                 </Link>
                 <a
@@ -450,30 +568,16 @@ export function LandingPublicPage() {
             </div>
           </div>
 
-          {/* Footer bottom */}
-          <div className="mt-12 space-y-4 border-t border-line-soft pt-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-ink-faint">
-                  © 2026 LUMINE
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                  Institutional AI-native quantitative platform
-                </span>
-              </div>
-            </div>
-
-            {/* Disclaimer */}
-            <div className="rounded-chip border border-warn/30 bg-warn/5 p-4">
-              <p className="text-xs leading-relaxed text-ink-dim">
-                <span className="font-semibold text-warn">Disclaimer:</span>{" "}
-                Lumine is a technology and quantitative research platform.
-                Nothing on this website constitutes financial advice or a
-                guarantee of investment performance. Historical, simulated, and
-                backtested results do not guarantee future results. All trading
-                involves risk.
-              </p>
-            </div>
+          {/* Disclaimer */}
+          <div className="mt-12 rounded-panel border border-warn/25 bg-warn/5 p-4">
+            <p className="text-xs leading-relaxed text-ink-dim">
+              <span className="font-semibold text-warn">Disclaimer:</span>{" "}
+              Lumine is a technology and quantitative research platform. Nothing
+              on this website constitutes financial advice or a guarantee of
+              investment performance. Historical, simulated, and backtested
+              results do not guarantee future results. All trading involves
+              risk. All data shown on this page is illustrative and simulated.
+            </p>
           </div>
         </div>
       </footer>
