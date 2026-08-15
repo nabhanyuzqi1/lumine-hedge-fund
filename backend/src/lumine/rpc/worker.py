@@ -158,6 +158,30 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 )
             )
 
+            # G3: journal pipeline — analyst step → workflow_journal (hash chain).
+            from lumine.autogen_pipeline.journal import log_step
+
+            await log_step(
+                session,
+                workflow_id=result["run_id"],
+                step_name="technical_analyst",
+                status="completed",
+                duration_ms=int((datetime.now(UTC) - now).total_seconds() * 1000),
+                input_snapshot={
+                    "symbol": symbol,
+                    "ohlc": ohlc,
+                    "atr_14": atr_14,
+                    "rsi_14": rsi_14,
+                    "ema_20": ema_20,
+                    "ema_50": ema_50,
+                },
+                output_snapshot={
+                    "recommendation": str(analyst.parsed.get("recommendation", "hold")),
+                    "confidence": float(analyst.parsed.get("confidence", 0.5)),
+                },
+                lineage_id=None,  # cycle ringkas — lineage_records penuh belum dibuat
+            )
+
             # IC Forum (LLM real) — konsumsi analyst output
             ic = await run_ic_forum(
                 gateway=gateway,
@@ -188,6 +212,18 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                         "timestamp": now.isoformat(),
                     },
                 )
+            )
+
+            # G3: journal pipeline — IC decision step → workflow_journal.
+            await log_step(
+                session,
+                workflow_id=result["run_id"],
+                step_name="ic_forum",
+                status="completed",
+                duration_ms=int((datetime.now(UTC) - now).total_seconds() * 1000),
+                input_snapshot={"symbol": symbol, "analyst_inputs": [analyst.parsed]},
+                output_snapshot={"action": action, "confidence": confidence},
+                lineage_id=None,
             )
 
             # B5: persist signals → dashboard AI confidence / signals panel.

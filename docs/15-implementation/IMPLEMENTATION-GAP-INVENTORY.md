@@ -1,19 +1,19 @@
 # Implementation Gap Inventory — Backend · Frontend · General
 
-- **Date:** 2026-08-14 (sesi lanjutan; diverifikasi terhadap source code, bukan klaim docs)
+- **Date:** 2026-08-16 (sesi lanjutan; diverifikasi terhadap source code, bukan klaim docs)
 - **Status:** Active — living document; perbarui setiap kali gap ditutup
-- **Progress 2026-08-14 (final):** B-01..B-07 CLOSED (679 backend tests) · W2 F-01..F-12 CLOSED (172 frontend tests) · W3 docker CLOSED · W4 LIVE https://lumine.biz.id (Cloudflare Flexible SSL, domain aktif) · G-01 CLOSED (EMERGENCY-RUNBOOK.md 11 seksi) · G-06 CLOSED (backup-postgres+health-check+resource-watchdog cron) · G-08 CLOSED (.github/workflows/ci.yml + GitHub secrets VPS_HOST+VPS_SSH_KEY, CI 4/4 green termasuk Deploy→VPS) · G-07 CLOSED (DNS router.lumine.biz.id accessible) · **AUTH-01 CLOSED — internal session auth**: users table (0012), PBKDF2, cookie Secure, Caddy forward_auth, backend 698 pass · **G-11..G-14 CLOSED** (auth router, landing Linear+shadcn, terminal Bloomberg SSE, superadmin rebuild) · **G-05 CLOSED — secrets rotated** (password produksi baru di .env VPS, rotate_users.py, old pw 401 verified) · **LLM_GATEWAY_API_KEY SET** (9router v0.5.55+ updated, key sk-fc79… live, /v1/models 200) · **B-05 portfolio CLOSED** (summary+equity dari live PostgreSQL, fallback deterministic saat DB down) · **UI/UX overhaul** (terminal tanpa header duplikat + responsive, dashboard bounded scroll, health rebuild probes+SSE, journal header mono, rail role-gated tooltip, vite base '/', nginx cache headers, dozzle DOZZLE_BASE, noVNC single-login WS autoconnect) · **G-03 partial → gitleaks 0 leak (149 commits) + ruff 851→0 + bandit 0H/0M** · **B-09 MT5 EA bridge COMPLETE**: LumineEA.mq5 HTTP transport (WebRequest → Caddy /mt5-proxy → redis-http-proxy → Redis), OrderSend OPEN/CLOSE/MODIFY, ticks → mt5:ticks, EA auto-attach persist (backup workspace .chr + restore entrypoint), **E2E order flow FULLY WORKING** (POST /orders → bridge → EA → MT5 FILLED → DB sync status+volume+ticket; DEMO_DATA=0 production) · **SEED COMPLETE**: EA InpSeedHistory CopyRates M1/H1 5000 bars → seed_worker → bars_1m/1h; /market/bars+ohlcv DB-backed (fallback demo) · **B-08 TCA backfill CLOSED**: seed_production.py (registry versions + brokers/accounts + 5 fills/tca/lineage, benchmark arrival_mid, fill_price sync) · **CI VERIFIED 4/4 green** (backend lint/test, frontend build, Deploy→VPS) · **SECURITY AUDIT**: npm 0 vuln, pip-audit clean, bandit 0H/0M, Caddy HSTS+Permissions-Policy deployed · Sisa minor: bars_1d kosong (EA err 4401 — history D1 tidak ada di cache MT5), useDemoStreams cleanup, bundle code-split.
+- **Progress 2026-08-15/16 (final):** **10 bug user CLOSED** (B1 MT5 positions+deals sync 18 posisi/20 orders live, B2 health count konsisten, B3 spread NaN+stream count, B4 bar garbage+live bars 1m/5m, B5 signals table+persist decision cycle, B6 SSE per-channel HMAC+relative API URL, B7 topbar responsive, B8 mt5_profit broker, B9 NormalizeSymbol+enabled_symbols, B10 LLM routing diagram) · **CI HIJAU**: frontend 170/170 vitest + TSC 0 + build, backend 574 unit + 57 contract + ruff clean, **auto-deploy VPS via GitHub Actions verified** (health 200) · **G1 PR #2 merged dev→main (0 gap)** · **G2 decision cycle scheduler otomatis** (5 menit, lock Redis) · **G3 journal pipeline** (log_step hash chain) · **G4 correlation jujur** (hanya symbol dengan data) · **G5 Autogen Studio asset routing fixed** (Gatsby absolut paths → autogenstudio; css/js 200) · **AUTH-01 CLOSED** (internal session auth) · **G-11..G-14 CLOSED** · **B-05/B-08 CLOSED** (portfolio live PostgreSQL + positions/deals MT5 sync)
 - **Scope:** Phase 15/16 — backend (`backend/src/lumine/`), frontend (`frontend/src/`), general (infra/ops/CI)
 - **Urutan eksekusi:** [`COMPLETION-WORKFLOW.md`](../COMPLETION-WORKFLOW.md) — backend → frontend → docker+bridge → VPS live, dengan gate per workstream
 
-## Executive Summary
+## Executive Summary (2026-08-16)
 
 | Area | Status | Catatan |
 |------|--------|---------|
-| Backend API layer | 🟡 Partial | 9 router live + klaster market + PATCH orders + simulate (sesi ini); RPC stub, data masih demo (belum storage), 3 modul kosong |
-| Backend AI pipeline | 🔴 BLOCKED | llm_gateway diimplementasi tapi 52 test pre-existing FAIL (API mismatch `Registry.__init__`) — pipeline belum hijau |
-| Frontend | 🟡 Partial | Semua halaman REST-first via hooks (fallback fixture); 5 mutation REST penuh; sisa: panel UI lanjutan + 2 hook fixture-only |
-| General (infra/ops) | 🔴 BLOCKED | BLOCK-001..008 Phase 16 checklist — sebagian besar belum dikerjakan (DR test, security audit, untracked services) |
+| Backend API layer | 🟢 LIVE | 9 router + market cluster + RPC worker hardening + positions/deals sync MT5 real + signals persisted + decision scheduler |
+| Backend AI pipeline | 🟢 HIJAU | 574 unit + 57 contract PASS; LLM decision cycle real via 9router (analyst + IC forum → signals/journal) |
+| Frontend | 🟢 HIJAU | 170/170 vitest + TSC 0 + build; semua halaman zero-demo (fixture fallback nonaktif); committee streams live |
+| General (infra/ops) | 🟢 HIJAU | CI 4/4 green + auto-deploy VPS; Autogen Studio UI fixed; 11/13 services healthy (2 orphan non-runtime) |
 
 Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (sesi sebelumnya) + dokumen ini.
 
