@@ -8,7 +8,9 @@ import { useUiStore } from "@/stores/uiStore";
 import { StreamStatusList } from "@/components/streams/stream-status-list";
 import { useAuth } from "@/lib/auth/role-context";
 
-const TOTAL_STREAMS = 6;
+// 5 stream aktif: market-data/XAUUSD + analyst-outputs + ic-decisions +
+// cio-proposals + risk-assessments (committee, diregister useCommitteeStreams).
+const TOTAL_STREAMS = 5;
 
 function formatUTC(date: Date): string {
   return date.toISOString().replace("T", " ").slice(0, 19);

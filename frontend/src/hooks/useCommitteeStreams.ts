@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { buildAuthHeaders, getHmacCredentials } from "@/lib/api/auth";
 import { useSSE, type SSEEnvelope } from "@/hooks/useSSE";
 import { useCommitteeStore, type CommitteeActivity } from "@/stores/committeeStore";
+import { useStreamStore } from "@/stores/streamStore";
 
 interface CommitteeStreamEvent {
   run_id?: string;
@@ -60,6 +61,7 @@ export function useCommitteeStreams(enabled = true) {
     Record<string, Record<string, string>>
   >({});
   const appendActivity = useCommitteeStore((s) => s.appendActivity);
+  const setStreamState = useStreamStore((s) => s.setStreamState);
 
   useEffect(() => {
     let active = true;
@@ -93,7 +95,7 @@ export function useCommitteeStreams(enabled = true) {
   for (const spec of STREAMS) {
     const channelHeaders = headersByChannel[spec.channel] ?? {};
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    useSSE<CommitteeStreamEvent>({
+    const sse = useSSE<CommitteeStreamEvent>({
       url: `${apiOrigin}/api/v1/streams/${spec.channel}`,
       enabled: enabled && (Object.keys(channelHeaders).length > 0 || !getHmacCredentials()),
       headers: channelHeaders,
@@ -102,5 +104,16 @@ export function useCommitteeStreams(enabled = true) {
         if (activity) appendActivity(activity);
       },
     });
+    // B3: register status ke streamStore agar header health count akurat
+    // (sebelumnya committee streams tidak terhitung → "1/6" padahal 5
+    // stream jalan).
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      setStreamState(spec.channel, {
+        status: sse.status,
+        stale: sse.stale,
+        error: sse.error ? sse.error.message : null,
+      });
+    }, [sse.status, sse.stale, sse.error, spec.channel, setStreamState]);
   }
 }
