@@ -35,7 +35,7 @@ import { LumineIcon } from "@/components/landing/agent-icons";
 /* ------------------------------------------------------------------ */
 
 const NAV_LINKS = [
-  { href: "#intelligence", label: "Intelligence" },
+  { href: "#", label: "Overview" },
   { href: "#risk", label: "Risk" },
   { href: "#research", label: "Research" },
   { href: "#performance", label: "Performance" },
@@ -492,8 +492,8 @@ export function LandingPublicPage() {
                 Platform
               </div>
               <nav className="flex flex-col gap-2">
-                <a href="#intelligence" className="text-sm text-ink-dim transition-colors hover:text-ink">
-                  Intelligence
+                <a href="#" className="text-sm text-ink-dim transition-colors hover:text-ink">
+                  System Overview
                 </a>
                 <a href="#risk" className="text-sm text-ink-dim transition-colors hover:text-ink">
                   Risk Engine
