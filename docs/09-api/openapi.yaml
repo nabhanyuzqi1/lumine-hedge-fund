@@ -442,7 +442,12 @@ paths:
       tags:
       - portfolio
       summary: List Positions
-      description: List open positions.
+      description: 'List open positions (ZERO-DEMO: real data dari tabel positions).
+
+
+        Mark-to-market pakai harga live MarketService; kalau feed kosong
+
+        (market libur) fallback ke avg_entry → unrealized_pnl flat 0.'
       operationId: list_positions_api_v1_portfolio_positions_get
       parameters:
       - name: limit
@@ -504,7 +509,7 @@ paths:
       tags:
       - portfolio
       summary: Get Position
-      description: Return a single open position.
+      description: 'Return a single open position (ZERO-DEMO: real dari tabel positions).'
       operationId: get_position_api_v1_portfolio_positions__position_id__get
       parameters:
       - name: position_id

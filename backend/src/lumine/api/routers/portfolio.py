@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -366,22 +366,38 @@ async def list_positions(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
     pagination: Annotated[Pagination, Depends()],
 ) -> PaginatedList[Position]:
-    """List open positions."""
-    items: list[Position] = [
-        Position(
-            position_id=uuid4(),
-            portfolio_id="default",
-            symbol="XAUUSD",
-            direction="long",
-            volume=Decimal("1.50"),
-            entry_price=Decimal("2420.30"),
-            current_price=Decimal("2435.80"),
-            stop_loss=Decimal("2400.00"),
-            take_profit=Decimal("2500.00"),
-            unrealized_pnl=Decimal("1200.50"),
-            opened_at=datetime.now(UTC),
-        ),
-    ]
+    """List open positions (ZERO-DEMO: real data dari tabel positions).
+
+    Mark-to-market pakai harga live MarketService; kalau feed kosong
+    (market libur) fallback ke avg_entry → unrealized_pnl flat 0.
+    """
+    from lumine.data.repositories import PositionRepository
+    from lumine.data.session import get_sessionmaker
+
+    async with get_sessionmaker()() as session:
+        repo = PositionRepository(session)
+        positions = await repo.list_open()
+        items: list[Position] = []
+        for pos in positions:
+            current = await _live_mid(pos.symbol)
+            if current is None:
+                current = await _last_close(pos.symbol) or pos.avg_entry
+            unrealized = (current - pos.avg_entry) * pos.size
+            items.append(
+                Position(
+                    position_id=pos.position_id,
+                    portfolio_id="default",
+                    symbol=pos.symbol,
+                    direction="long" if pos.side == "buy" else "short",
+                    volume=abs(pos.size),
+                    entry_price=pos.avg_entry,
+                    current_price=current,
+                    stop_loss=pos.sl,
+                    take_profit=pos.tp,
+                    unrealized_pnl=unrealized.quantize(Decimal("0.01")),
+                    opened_at=pos.opened_at,
+                )
+            )
     return PaginatedList(
         items=items,
         total=len(items),
@@ -395,20 +411,32 @@ async def get_position(
     position_id: UUID,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
 ) -> Position:
-    """Return a single open position."""
-    return Position(
-        position_id=position_id,
-        portfolio_id="default",
-        symbol="XAUUSD",
-        direction="long",
-        volume=Decimal("1.50"),
-        entry_price=Decimal("2420.30"),
-        current_price=Decimal("2435.80"),
-        stop_loss=Decimal("2400.00"),
-        take_profit=Decimal("2500.00"),
-        unrealized_pnl=Decimal("1200.50"),
-        opened_at=datetime.now(UTC),
-    )
+    """Return a single open position (ZERO-DEMO: real dari tabel positions)."""
+    from lumine.data.repositories import PositionRepository
+    from lumine.data.session import get_sessionmaker
+
+    async with get_sessionmaker()() as session:
+        repo = PositionRepository(session)
+        pos = await repo.get(position_id)
+        if pos is None:
+            raise HTTPException(status_code=404, detail=f"position not found: {position_id}")
+        current = await _live_mid(pos.symbol)
+        if current is None:
+            current = await _last_close(pos.symbol) or pos.avg_entry
+        unrealized = (current - pos.avg_entry) * pos.size
+        return Position(
+            position_id=pos.position_id,
+            portfolio_id="default",
+            symbol=pos.symbol,
+            direction="long" if pos.side == "buy" else "short",
+            volume=abs(pos.size),
+            entry_price=pos.avg_entry,
+            current_price=current,
+            stop_loss=pos.sl,
+            take_profit=pos.tp,
+            unrealized_pnl=unrealized.quantize(Decimal("0.01")),
+            opened_at=pos.opened_at,
+        )
 
 
 @router.get("/exposure", response_model=PaginatedList[ExposureSummary])
