@@ -35,13 +35,15 @@ import time
 import uuid
 from collections import deque
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
+from lumine.api.sse.publisher import SSEPublisher
+from lumine.trading.market_service import MarketService
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -55,6 +57,22 @@ _BUFFER_MAX_EVENTS = 1000
 _REPLAY_RETENTION_S = 300  # 5 minutes
 _HEARTBEAT_MARKET_S = 5
 _HEARTBEAT_DEFAULT_S = 15
+
+
+def get_market_service() -> MarketService:
+    """Dependency to access market service from app state."""
+    from lumine.api.app import _app_state
+
+    return _app_state.get("market_service")
+
+
+def get_sse_publisher(request: Request) -> SSEPublisher:
+    """Get SSEPublisher instance from request state or app state."""
+    if hasattr(request.state, "sse_publisher"):
+        return request.state.sse_publisher
+    from lumine.api.app import _app_state
+
+    return _app_state.get("sse_publisher")
 
 
 @dataclass(frozen=True)
@@ -81,6 +99,34 @@ def _iso_utc_ms(dt: datetime) -> str:
     naive/aware subtraction errors.
     """
     return dt.astimezone(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+# ── Market calendar (ADR-0037): XAUUSD via broker HFM = forex 24x5 ──────────
+# Pasar forex tutup akhir pekan: Sabtu 00:00 UTC s/d Senin 21:00 UTC
+# (weekend gap). Feed broker berhenti push tick → SSE harus tandai
+# market_closed, bukan stream kosong tanpa penjelasan.
+_WEEKEND_CLOSE_WDAY = 5  # Sabtu (ISO: 5)
+_WEEKEND_REOPEN_HOUR = 21  # Senin 21:00 UTC
+
+
+def _market_status(now: datetime | None = None) -> dict[str, Any]:
+    """Return market session status for XAUUSD (forex 24x5).
+
+    Returns dict dengan `open` (bool) + `reason`/`next_open` — dipakai
+    SSE market-data untuk emit event `market_closed` saat libur.
+    """
+    now = now or datetime.now(UTC)
+    wday = now.weekday()  # ISO: 0=Senin .. 6=Minggu
+    if wday >= _WEEKEND_CLOSE_WDAY or (wday == 0 and now.hour < _WEEKEND_REOPEN_HOUR):
+        # Weekend gap: Sabtu (5) + Minggu (6), dan Senin sebelum 21:00 UTC
+        days_until = (0 - wday) % 7
+        if days_until == 0:
+            days_until = 7
+        next_open = now.replace(
+            hour=_WEEKEND_REOPEN_HOUR, minute=0, second=0, microsecond=0
+        ) + timedelta(days=days_until)
+        return {"open": False, "reason": "weekend", "next_open": _iso_utc_ms(next_open)}
+    return {"open": True, "reason": "open", "next_open": None}
 
 
 def _frame(
@@ -186,10 +232,25 @@ async def _event_stream(
             async for frame in _replay(channel, last_event_id):
                 yield frame
 
-        while not await request.is_disconnected():
-            yield ": heartbeat\n\n"
-            with contextlib.suppress(TimeoutError):
-                await asyncio.wait_for(request.is_disconnected(), timeout=interval_s)
+        # Subscribe ke SSEPublisher (in-memory queue) — relay event LIVE
+        # ke client. Sebelumnya stream hanya kirim heartbeat dan TIDAK
+        # pernah meneruskan event dari worker (bug: committee feed kosong).
+        publisher = get_sse_publisher(request)
+        queue = await publisher.subscribe()
+        try:
+            while not await request.is_disconnected():
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=interval_s)
+                except (asyncio.TimeoutError, TimeoutError):
+                    yield ": heartbeat\n\n"
+                    continue
+                # Relay event yang sesuai channel stream ini.
+                if event.channel == channel:
+                    data = dict(event.data)
+                    data.setdefault("timestamp", event.timestamp.isoformat())
+                    yield _emit(channel, stream_id, event.event_type, data)
+        finally:
+            await publisher.unsubscribe(queue)
     finally:
         _release_slot(key_id, host)
 
@@ -209,11 +270,150 @@ def _stream_response(request: Request, channel: str, interval_s: float) -> Strea
 @router.get("/market-data")
 async def stream_market_data(
     request: Request,
-    _symbol: Annotated[str, Query(min_length=1, description="Symbol to subscribe (required)")],
+    symbol: Annotated[str, Query(min_length=1, description="Symbol to subscribe (required)")],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
 ) -> StreamingResponse:
     """SSE stream of market bar/tick updates for one symbol (~1/sec, 5s heartbeat)."""
-    return _stream_response(request, "market-data", _HEARTBEAT_MARKET_S)
+
+    async def market_event_stream():
+        """Emit tick updates from MarketService cache."""
+        host = "unknown" if request.client is None else request.client.host
+        key_id = (
+            request.state.principal.key_id if hasattr(request.state, "principal") else "anonymous"
+        )
+        _acquire_slot(key_id, host)
+
+        stream_id = uuid.uuid4().hex[:12]
+        started_at = _iso_utc_ms(datetime.now(UTC))
+        market_service = get_market_service()
+        publisher = get_sse_publisher(request)
+
+        try:
+            # Publish stream_open lifecycle event
+            await publisher.publish_stream_open(f"market:{symbol}")
+
+            yield _emit(
+                f"market:{symbol}",
+                stream_id,
+                "stream_open",
+                {"stream_id": stream_id, "started_at": started_at},
+            )
+
+            # Market calendar: kalau pasar libur (weekend/holiday), emit
+            # `market_closed` — UI tampilkan status, koneksi tetap hidup
+            # (auto-resume saat market buka, tanpa refresh browser).
+            status = _market_status()
+            if not status["open"]:
+                yield _emit(
+                    f"market:{symbol}",
+                    stream_id,
+                    "market_closed",
+                    {
+                        "reason": status["reason"],
+                        "next_open": status["next_open"],
+                        "message": f"Market closed ({status['reason']}) — live ticks resume at {status['next_open']}",
+                    },
+                )
+                interval_s = _HEARTBEAT_MARKET_S
+                while not await request.is_disconnected():
+                    yield ": heartbeat\n\n"
+                    with contextlib.suppress(TimeoutError):
+                        await asyncio.wait_for(request.is_disconnected(), timeout=interval_s)
+                return
+
+            last_tick_time = time.time()
+            while not await request.is_disconnected():
+                try:
+                    tick = await market_service.get_quote(symbol)
+                    if tick and (time.time() - last_tick_time) > 1.0:
+                        frame = _emit(
+                            f"market:{symbol}",
+                            stream_id,
+                            "tick_update",
+                            {
+                                # Contract frontend: MarketDataEvent { tick: MarketTick }
+                                # (symbol, bid, ask, last, timestamp) — jangan field langsung.
+                                "tick": {
+                                    "symbol": symbol,
+                                    "bid": tick.bid,
+                                    "ask": tick.ask,
+                                    "last": tick.bid,
+                                    "timestamp": _iso_utc_ms(tick.timestamp),
+                                },
+                            },
+                        )
+                        yield frame
+                        last_tick_time = time.time()
+
+                    with contextlib.suppress(TimeoutError):
+                        await asyncio.wait_for(
+                            request.is_disconnected(), timeout=_HEARTBEAT_MARKET_S
+                        )
+                except Exception:
+                    break
+
+                yield ": heartbeat\n\n"
+        finally:
+            _release_slot(key_id, host)
+
+    return StreamingResponse(
+        market_event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+async def _event_stream_wrapper(
+    request: Request,
+    channel: str,
+    interval_s: float,
+) -> AsyncIterator[str]:
+    """SSE stream wrapper with SSEPublisher integration."""
+    host = "unknown" if request.client is None else request.client.host
+    key_id = request.state.principal.key_id if hasattr(request.state, "principal") else "anonymous"
+    _acquire_slot(key_id, host)
+
+    stream_id = uuid.uuid4().hex[:12]
+    started_at = _iso_utc_ms(datetime.now(UTC))
+
+    try:
+        publisher = get_sse_publisher(request)
+        await publisher.publish_stream_open(channel)
+
+        yield _emit(
+            channel,
+            stream_id,
+            "stream_open",
+            {"stream_id": stream_id, "started_at": started_at},
+        )
+
+        try:
+            last_event_id = int(request.headers.get("Last-Event-ID", "0"))
+        except ValueError:
+            last_event_id = 0
+
+        if last_event_id > 0:
+            oldest = min((b.event_id for b in _buffers.get(channel, ())), default=last_event_id + 1)
+            gap_detected = oldest > last_event_id + 1
+            yield _frame(
+                channel,
+                stream_id,
+                last_event_id,
+                "stream_resumed",
+                {"from_event_id": last_event_id, "gap_detected": gap_detected},
+            )
+            async for frame in _replay(channel, last_event_id):
+                yield frame
+
+        while not await request.is_disconnected():
+            yield ": heartbeat\n\n"
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(request.is_disconnected(), timeout=interval_s)
+    finally:
+        _release_slot(key_id, host)
 
 
 @router.get("/analyst-outputs")

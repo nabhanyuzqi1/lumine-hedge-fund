@@ -1,11 +1,11 @@
 /* Self-hosted fonts — removes render-blocking Google Fonts request (FCP/TBT win in CI and prod).
  * Inter/Archivo variable fonts cover the full weight range; IBM Plex Mono needs explicit 400/500/600. */
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/archivo';
-@import '@fontsource/ibm-plex-mono/400.css';
-@import '@fontsource/ibm-plex-mono/500.css';
-@import '@fontsource/ibm-plex-mono/600.css';
-@import 'tailwindcss';
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/archivo";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "tailwindcss";
 
 /*
  * Lumine design tokens — derived from docs/10-frontend/design-tokens.md
@@ -13,9 +13,9 @@
  * emerald = up, soft crimson = down, amber = warn, cyan = info).
  */
 @theme {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Archivo Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
 
   /* foundations */
   --color-abyss: #070b12;
@@ -85,9 +85,7 @@ body {
   background-color: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-feature-settings:
-    'tnum' 1,
-    'cv01' 1;
+  font-feature-settings: "tnum" 1, "cv01" 1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

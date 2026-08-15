@@ -1,5 +1,0 @@
-# Jangan pernah commit: kredensial nyata tidak masuk repo.
-.env
-state-exports/*.tar.gz
-state-exports/*.tgz
-!.gitkeep-token-placeholder

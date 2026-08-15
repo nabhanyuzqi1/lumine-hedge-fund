@@ -13,6 +13,34 @@
 # =============================================================================
 set -euo pipefail
 
+# ── Graceful shutdown: simpan workspace MT5 (EA attach persist) ─────────
+# Docker stop/restart kirim SIGTERM ke PID 1 (entrypoint). Trap ini
+# menjalankan shutdown GRACEFUL sehingga MT5 SAVE workspace (chart + EA
+# attachment) sebelum exit:
+#   1. xdotool WM_CLOSE (windowclose) → MT5 tampilkan dialog "save?"
+#   2. xdotool key Return → klik tombol default (Save) pada dialog
+#   3. wineserver -k → fallback cleanup
+# Tanpa ini, MT5 di-kill paksa → workspace tidak tersimpan → restart
+# berikutnya restore profile lama (EA attach hilang).
+graceful_shutdown() {
+  echo "==> Graceful shutdown: WM_CLOSE ke MT5 + save workspace..." >&2
+  # PITFALL: window title MT5 = "<acc> - <broker>..." (contoh "235158357 -
+  # HFMarketsGlobal-Demo4: ...") — TIDAK mengandung "MetaTrader"! Pattern
+  # yang stabil: nama broker (HFMarkets) atau WM_CLASS terminal64.
+  xdotool search --name "HFMarkets" windowclose 2>/dev/null || true
+  xdotool search --class "terminal64" windowclose 2>/dev/null || true
+  sleep 4
+  # Dialog "Do you want to save..." (jika muncul) menjadi window aktif →
+  # Enter menekan tombol default (Save). Tanpa --window = kirim ke fokus.
+  xdotool key Return 2>/dev/null || true
+  sleep 6
+  wineserver -k >/dev/null 2>&1 || true
+  sleep 8
+  echo "==> Shutdown selesai. Exit." >&2
+  exit 0
+}
+trap graceful_shutdown TERM INT
+
 # ── 0. Validasi ──────────────────────────────────────────────────────────────
 if [[ -z "${VNC_PASSWORD:-}" ]]; then
   echo "ERROR: VNC_PASSWORD wajib di-set (env compose). Keluar." >&2
@@ -72,6 +100,111 @@ if [[ ! -f "${MT5_BIN}" ]]; then
 fi
 
 if [[ -f "${MT5_BIN}" ]]; then
+  # ── Install + compile LumineEA (Redis bridge agent) ──────────────────────
+  # Data folder MT5: mode portable → <MT5_DIR>/MQL5 (bukan AppData/MetaQuotes)
+  MT5_DATA_DIR=$(find "${WINEPREFIX}/drive_c" -type d -name "MQL5" 2>/dev/null | head -1)
+  if [[ -n "${MT5_DATA_DIR}" ]]; then
+    echo "==> MT5 data dir: ${MT5_DATA_DIR}"
+    mkdir -p "${MT5_DATA_DIR}/Experts"
+    cp -f /opt/lumine-ea/LumineEA.mq5 "${MT5_DATA_DIR}/Experts/LumineEA.mq5"
+
+    # ── Patch terminal.ini: auto-whitelist WebRequest URL ─────────────────
+    # MT5 menyimpan whitelist di terminal.ini [Experts]\AllowWebRequest=...
+    # PITFALL: sed/echo menulis ASCII ke file UTF-16LE → mojibake (key tidak
+    # terbaca MT5). WAJIB decode → modify → encode ulang UTF-16LE via python.
+    MT5_INI="${MT5_DATA_DIR}/../Config/terminal.ini"
+    if [[ -f "${MT5_INI}" ]]; then
+      echo "==> Patch terminal.ini: auto-whitelist http://lumine.biz.id + RestoreLast=1"
+      python3 - "${MT5_INI}" <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path, "rb") as f:
+    raw = f.read()
+# Normalisasi: hapus BOM jika ada, decode UTF-16LE
+if raw[:2] == b"\xff\xfe" or raw[:2] == b"\xfe\xff":
+    raw = raw[2:]
+text = raw.decode("utf-16-le")
+# CRLF explicit (hindari literal newline dalam heredoc)
+CRLF = chr(13) + chr(10)
+lines = text.split(CRLF)
+# Hapus entry lama (idempotent)
+lines = [l for l in lines if not l.strip().startswith(("AllowWebRequest=", "RestoreLast="))]
+# Pastikan section [Experts] dengan AllowWebRequest
+def ensure_section(lines, section, keyvals):
+    sec_idx = None
+    for i, l in enumerate(lines):
+        if l.strip() == section:
+            sec_idx = i
+            break
+    if sec_idx is None:
+        lines.append("")
+        lines.append(section)
+        sec_idx = len(lines) - 1
+    insert_at = sec_idx + 1
+    for kv in reversed(keyvals):
+        lines.insert(insert_at, kv)
+    return lines
+
+lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id"])
+lines = ensure_section(lines, "[Common]", ["RestoreLast=1"])
+new_text = CRLF.join(lines)
+# Tulis ulang dengan BOM + CRLF (format Windows)
+with open(path, "wb") as f:
+    f.write(b"\xff\xfe" + new_text.encode("utf-16-le"))
+print("    -> terminal.ini patched OK")
+PYEOF
+    else
+      echo "==> terminal.ini tidak ditemukan (first boot?) — whitelist persist setelah manual setup pertama kali"
+    fi
+
+    METAEDITOR="${MT5_BIN%/terminal64.exe}/MetaEditor64.exe"
+
+    # ── Restore workspace Default (EA attach persist) ──────────────────────
+    # Backup dibuat dari profile valid (chart XAUUSD + LumineEA) yang user
+    # simpan via File → Save As Profile. PITFALL: MT5 di wine TIDAK auto-save
+    # workspace saat exit (WM_CLOSE langsung tutup tanpa save) → restore
+    # manual setiap boot agar EA auto-attach tanpa setup ulang.
+    WORKSPACE_BACKUP="${WINEPREFIX}/lumine-workspace-backup"
+    if [[ -d "${WORKSPACE_BACKUP}" ]]; then
+      echo "==> Restore workspace Default (EA attach)"
+      mkdir -p "${MT5_DATA_DIR}/Profiles/Charts/Default"
+      cp -f "${WORKSPACE_BACKUP}/"*.chr "${MT5_DATA_DIR}/Profiles/Charts/Default/" 2>/dev/null || true
+    fi
+
+    if [[ -f "${METAEDITOR}" ]]; then
+      echo "==> Compile LumineEA via MetaEditor (headless)..."
+      # Hapus ex5 lama DULU: check -f ex5 jadi false-positive kalau ex5
+      # lama masih ada padahal compile baru gagal → ex5 basi tidak pernah
+      # diganti. Dengan rm, retry ×3 benar-benar menghasilkan ex5 baru.
+      rm -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5"
+      # Retry ×3 dengan wineserver reset: compile pertama bisa hang karena
+      # state wineserver dari proses yang di-kill (SIGKILL → lock stale).
+      for attempt in 1 2 3; do
+        # || true: pkill tanpa match return 1 → set -e langsung exit!
+        pkill -9 wineserver 2>/dev/null || true
+        pkill -9 wine64-preloader 2>/dev/null || true
+        sleep 1
+        # -k 10: wine bisa abaikan SIGTERM → paksa SIGKILL setelah 10s grace.
+        timeout -k 10 90 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log" >/dev/null 2>&1 || true
+        pkill -9 wineserver 2>/dev/null || true
+        pkill -9 wine64-preloader 2>/dev/null || true
+        sleep 2
+        if [[ -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
+          echo "==> LumineEA.ex5 COMPILED OK (attempt ${attempt})"
+          break
+        fi
+        echo "==> attempt ${attempt}: ex5 belum ada — retry"
+      done
+      if [[ ! -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
+        echo "==> WARNING: LumineEA compile gagal — cek ${MT5_DATA_DIR}/Experts/lumineea_compile.log" >&2
+      fi
+    else
+      echo "==> WARNING: MetaEditor64.exe tidak ditemukan — attach manual dari VNC"
+    fi
+  else
+    echo "==> WARNING: MQL5 data dir belum ada (terminal belum pernah jalan) — install EA setelah login"
+  fi
+
   echo "==> Jalankan MT5: ${MT5_BIN}"
   wine "${MT5_BIN}" &
   MT_PID=$!

@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
-import type { EChartsCoreOption } from 'echarts/core';
+import type { EChartsCoreOption } from "echarts/core";
 
-import { ChartCard } from '@/components/charts/chart-card';
-import { useEcharts } from '@/hooks/useEcharts';
-import { CHART_COLORS } from '@/lib/chart-theme';
-import { confidenceToEcharts } from '@/lib/chart-transform';
-import type { SignalPoint } from '@/data/fixtures';
+import { ChartCard } from "@/components/charts/chart-card";
+import type { SignalPoint } from "@/data/fixtures";
+import { useEcharts } from "@/hooks/useEcharts";
+import { CHART_COLORS } from "@/lib/chart-theme";
+import { confidenceToEcharts } from "@/lib/chart-transform";
 
 export interface ConfidenceChartProps {
   points: SignalPoint[];
@@ -30,14 +30,14 @@ export function ConfidenceChart({ points, height = 320 }: ConfidenceChartProps) 
         itemHeight: 10,
         textStyle: { color: CHART_COLORS.text },
       },
-      xAxis: { type: 'time', axisLabel: { hideOverlap: true } },
-      yAxis: { type: 'value', min: 0, max: 1 },
+      xAxis: { type: "time", axisLabel: { hideOverlap: true } },
+      yAxis: { type: "value", min: 0, max: 1 },
       series: series.map((line, index) => ({
         name: line.name,
-        type: 'line',
+        type: "line",
         data: line.data,
         smooth: false,
-        symbol: 'none',
+        symbol: "none",
         lineWidth: 2,
         itemStyle: { color: ANALYST_COLORS[index % ANALYST_COLORS.length] },
       })),

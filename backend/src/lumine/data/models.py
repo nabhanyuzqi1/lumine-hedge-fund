@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from decimal import Decimal  # noqa: TC003 — SQLAlchemy de-stringifies annotations at runtime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
@@ -400,6 +400,31 @@ class Fill(Base):
     )
 
 
+class Order(Base):
+    """Order lifecycle record (B-05: physical table, previously demo-only)."""
+
+    __tablename__ = "orders"
+
+    order_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(Text, nullable=False)
+    symbol: Mapped[str] = mapped_column(Text, nullable=False)
+    side: Mapped[str] = mapped_column(Text, nullable=False)
+    order_type: Mapped[str] = mapped_column(Text, nullable=False)
+    volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False)
+    price: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    filled_volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False, default=Decimal(0))
+    rejected_reason: Mapped[str | None] = mapped_column(Text)
+    mt5_ticket: Mapped[int | None] = mapped_column(BigInteger)  # ticket MT5 hasil FILLED (migrasi 0013)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+    __table_args__ = (
+        Index("ix_orders_portfolio_status", "portfolio_id", "status"),
+        Index("ix_orders_symbol_created", "symbol", "created_at"),
+    )
+
+
 class Position(Base):
     """Derived current state. Mutated on each fill. Rebuildable from fills."""
 
@@ -418,9 +443,9 @@ class Position(Base):
     sl: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     tp: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    opened_lineage: Mapped[uuid.UUID] = mapped_column(
+    opened_lineage: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("lineage_records.lineage_id"),
-        nullable=False,
+        nullable=True,  # posisi MT5 sync (B1) tidak punya lineage pipeline
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -428,6 +453,9 @@ class Position(Base):
         default=_utcnow,
     )
     status: Mapped[str] = mapped_column(Text, nullable=False, default="open")
+    # MT5 ticket (sync B1: posisi open dari MT5 di-identifikasi via ticket;
+    # posisi dari fills tidak punya ticket — nullable).
+    mt5_ticket: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     __table_args__ = (
         Index(
@@ -863,4 +891,36 @@ class TcaRecord(Base):
         UniqueConstraint("fill_id", name="uq_tca_fill"),
         Index("ix_tca_decision_ts", "decision_ts"),
         Index("ix_tca_broker_ts", "broker_id", "decision_ts"),
+    )
+
+
+class User(Base):
+    """Internal session-auth user (replaces Authelia/Keycloak).
+
+    Bootstrap users (superadmin/admin/trader) are seeded idempotently at
+    startup from Settings; credentials are stored as PBKDF2-HMAC-SHA256
+    (hash + per-user salt), never plaintext.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    password_salt: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+
+    __table_args__ = (
+        Index("ix_users_username", "username"),
     )

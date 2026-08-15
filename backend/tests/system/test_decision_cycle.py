@@ -101,7 +101,7 @@ def _handler(
     veto: bool = False,
     overrode_ic: bool = False,
     fail_role: str | None = None,
-) -> Any:  # noqa: ANN401 — scripted fixture returns raw model text
+) -> Any:
     """Scripted per-role LLM output; ``fail_role`` simulates a gateway outage."""
 
     def handle(req: RouterRequest) -> str:
@@ -185,7 +185,7 @@ async def seeded_world(
     }
 
 
-def _ctx(seeded_world: dict[str, Any], **overrides: Any) -> CycleContext:  # noqa: ANN401
+def _ctx(seeded_world: dict[str, Any], **overrides: Any) -> CycleContext:
     base = {
         "symbol": "XAUUSD",
         "book": "main",
@@ -210,7 +210,7 @@ def _ctx(seeded_world: dict[str, Any], **overrides: Any) -> CycleContext:  # noq
     return CycleContext(**base)  # type: ignore[arg-type]
 
 
-def _portfolio(**overrides: Any) -> PortfolioState:  # noqa: ANN401
+def _portfolio(**overrides: Any) -> PortfolioState:
     base = {
         "equity": Decimal(100000),
         "total_notional": Decimal(0),
@@ -227,8 +227,8 @@ def _portfolio(**overrides: Any) -> PortfolioState:  # noqa: ANN401
 @pytest_asyncio.fixture
 async def orchestrator(
     db_session: AsyncSession,
-    redis_client: Any,  # noqa: ANN401
-    integration_settings: Any,  # noqa: ANN401
+    redis_client: Any,
+    integration_settings: Any,
 ) -> tuple[DecisionOrchestrator, FakeBridge]:
     from lumine.data.session import get_sessionmaker
 
@@ -276,12 +276,12 @@ class TestDecisionCycle:
 
     async def test_strong_sell_dispatches_sell(
         self,
-        db_session: AsyncSession,  # noqa: ARG002 — injected by fixture
+        db_session: AsyncSession,
         seeded_world: dict[str, Any],
         orchestrator: tuple[DecisionOrchestrator, FakeBridge],
     ) -> None:
         orche, bridge = orchestrator
-        orche._gateway = FakeGateway(  # type: ignore[attr-defined]  # noqa: SLF001
+        orche._gateway = FakeGateway(  # type: ignore[attr-defined]
             handler=_handler(action="SELL", analyst_bias="bearish")
         )
         result = await orche.execute(_ctx(seeded_world), _portfolio())
@@ -298,7 +298,7 @@ class TestDecisionCycle:
         orchestrator: tuple[DecisionOrchestrator, FakeBridge],
     ) -> None:
         orche, bridge = orchestrator
-        orche._gateway = FakeGateway(  # type: ignore[attr-defined]  # noqa: SLF001
+        orche._gateway = FakeGateway(  # type: ignore[attr-defined]
             handler=_handler(action="HOLD")
         )
         result = await orche.execute(_ctx(seeded_world), _portfolio())
@@ -317,14 +317,14 @@ class TestDecisionCycle:
         orche, _bridge = orchestrator
         # Low analyst confidence (0.3 < 0.6 threshold) → deterministic
         # debate trigger fires; the moderator stage must run.
-        orche._gateway = FakeGateway(  # type: ignore[attr-defined]  # noqa: SLF001
+        orche._gateway = FakeGateway(  # type: ignore[attr-defined]
             handler=_handler(analyst_confidence=0.3)
         )
         ctx = _ctx(seeded_world)
         result = await orche.execute(ctx, _portfolio())
 
         assert result.verdict == "approved"
-        assert any(c.role == "debate_moderator" for c in orche._gateway.calls)  # type: ignore[attr-defined]  # noqa: SLF001
+        assert any(c.role == "debate_moderator" for c in orche._gateway.calls)  # type: ignore[attr-defined]
         # Debate evidence is journaled for THIS cycle.
         stmt = select(WorkflowJournal).where(WorkflowJournal.workflow_id == ctx.workflow_id)
         journal = list((await db_session.execute(stmt)).scalars().all())
@@ -337,7 +337,7 @@ class TestDecisionCycle:
         orchestrator: tuple[DecisionOrchestrator, FakeBridge],
     ) -> None:
         orche, _bridge = orchestrator
-        orche._gateway = FakeGateway(  # type: ignore[attr-defined]  # noqa: SLF001
+        orche._gateway = FakeGateway(  # type: ignore[attr-defined]
             handler=_handler(overrode_ic=True)
         )
         result = await orche.execute(_ctx(seeded_world), _portfolio())
@@ -349,7 +349,7 @@ class TestDecisionCycle:
 
     async def test_risk_rejects_over_exposure(
         self,
-        db_session: AsyncSession,  # noqa: ARG002 — injected by fixture
+        db_session: AsyncSession,
         seeded_world: dict[str, Any],
         orchestrator: tuple[DecisionOrchestrator, FakeBridge],
     ) -> None:
@@ -364,7 +364,7 @@ class TestDecisionCycle:
 
     async def test_lineage_write_failure_halts(
         self,
-        db_session: AsyncSession,  # noqa: ARG002 — injected by fixture
+        db_session: AsyncSession,
         seeded_world: dict[str, Any],
         orchestrator: tuple[DecisionOrchestrator, FakeBridge],
     ) -> None:
@@ -378,12 +378,12 @@ class TestDecisionCycle:
 
     async def test_gateway_failure_is_safe_state(
         self,
-        db_session: AsyncSession,  # noqa: ARG002 — injected by fixture
+        db_session: AsyncSession,
         seeded_world: dict[str, Any],
         orchestrator: tuple[DecisionOrchestrator, FakeBridge],
     ) -> None:
         orche, bridge = orchestrator
-        orche._gateway = FakeGateway(  # type: ignore[attr-defined]  # noqa: SLF001
+        orche._gateway = FakeGateway(  # type: ignore[attr-defined]
             handler=_handler(fail_role="macro_analyst")
         )
         with pytest.raises(RouterClientError):

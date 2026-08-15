@@ -47,7 +47,7 @@ def _worm_object_key(table_name: str, anchor_seq: int) -> str:
     return _key_for(table_name, anchor_seq)
 
 
-def _anchor_payload(  # noqa: PLR0913, PLR0917 — payload fields are a fixed contract
+def _anchor_payload(
     table_name: str,
     anchor_seq: int,
     anchored_hash: str,
@@ -85,8 +85,9 @@ async def _read_state(session: AsyncSession, table_name: str) -> AnchorState | N
 
 
 async def _write_state(session: AsyncSession, state: AnchorState) -> None:
-    session.add(state)
-    # UPSERT semantics: the state row exists after the first anchor.
+    # UPSERT semantics: the state row exists after the first anchor, so a
+    # plain session.add() would violate the table_name PK on the second
+    # write. The explicit ON CONFLICT upsert below is the only write path.
     stmt = text(
         "INSERT INTO anchor_state (table_name, last_anchor_seq, last_row_count, last_anchor_ts) "
         "VALUES (:t, :seq, :count, :ts) "
@@ -106,7 +107,7 @@ async def _write_state(session: AsyncSession, state: AnchorState) -> None:
     )
 
 
-async def maybe_anchor(  # noqa: PLR0913 — anchor cadence contract is fixed
+async def maybe_anchor(
     session: AsyncSession,
     *,
     table_name: str,
@@ -139,7 +140,7 @@ async def maybe_anchor(  # noqa: PLR0913 — anchor cadence contract is fixed
         if head is None:
             return  # nothing to anchor (empty chain)
         anchored_hash, anchored_row_id = head
-    except Exception:  # noqa: BLE001 — a head read failure must never stall the chain
+    except Exception:
         # The chain head must be readable; if not, record a breach and
         # let the caller transaction proceed (chain append already done).
         session.add(
@@ -166,7 +167,7 @@ async def maybe_anchor(  # noqa: PLR0913 — anchor cadence contract is fixed
         # Object-lock stub (Phase 11): DB copy only, worm copy not yet
         # available. Not a breach — the sink is intentionally absent.
         pass
-    except Exception:  # noqa: BLE001 — a worm failure must never stall the chain
+    except Exception:
         session.add(
             SecurityEvent(
                 event_type="chain_anchor_break",

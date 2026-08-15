@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # ── LLM Gateway (9router) ─────────────────────────────────────────────
     llm_gateway_url: str = "http://localhost:8080"
-    llm_gateway_api_key: str = ""  # noqa: S105
+    llm_gateway_api_key: str = ""
     llm_daily_budget_usd: float = 50.0
     llm_request_timeout_s: int = 120
     llm_default_model: str = "deepseek-v4"
@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     # Redis key under which a reconciliation/risk mismatch arms the kill switch.
     kill_switch_key: str = "kill:switch"
 
+    # ── Data mode (B-05) ──────────────────────────────────────────────────
+    # True = routers serve deterministic demo_data (no storage wiring);
+    # False = repositories read/write PostgreSQL (orders/positions).
+    demo_data: bool = True
+
     # ── Decision cycle (D3-12) ────────────────────────────────────────────
     decision_cycle_timeout_s: int = 60  # total soft deadline for one cycle
 
@@ -74,6 +79,20 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_rate_limit_per_minute: int = 120
     hmac_secret_key: str = ""  # Override in production; noqa: S105
+
+    # ── Session auth (internal, replaces Authelia/Keycloak) ─────────────
+    # Bootstrap credentials seeded idempotently into the users table on
+    # startup. Override via env in production .env (same file that holds
+    # HMAC_SECRET_KEY). Defaults preserve the pre-migration demo logins so
+    # existing operators can authenticate after the upgrade.
+    session_ttl_seconds: int = 43_200  # 12h
+    # True di production (HTTPS via Cloudflare): browser drop cookie non-Secure
+    # di beberapa konfigurasi (extension/privacy). Origin tetap HTTP, tapi
+    # browser menerima cookie Secure karena koneksi browser→CF adalah HTTPS.
+    session_cookie_secure: bool = False
+    superadmin_password: str = "Lumine@2026!"  # noqa: S105 — bootstrap seed
+    admin_password: str = "lumine-admin"  # noqa: S105 — bootstrap seed
+    trader_password: str = "lumine2026"  # noqa: S105 — bootstrap seed
 
     # ── SSE ───────────────────────────────────────────────────────────────
     sse_heartbeat_interval_s: int = 30

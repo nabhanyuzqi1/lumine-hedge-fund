@@ -71,6 +71,9 @@ class RouterClient:
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
+            # 9router (dan gateway lain) append `data: [DONE]` SSE marker
+            # jika Accept tidak application/json → resp.json() gagal parse.
+            "Accept": "application/json",
         }
         body = {
             "model": req.model,

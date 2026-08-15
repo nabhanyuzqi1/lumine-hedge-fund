@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
-import { AreaSeries, createChart, type IChartApi, type ISeriesApi } from 'lightweight-charts';
+import { AreaSeries, type IChartApi, type ISeriesApi, createChart } from "lightweight-charts";
 
-import { ChartCard } from '@/components/charts/chart-card';
-import { useChartResize } from '@/hooks/useChartResize';
-import { buildLwcOptions, getChartColors } from '@/lib/chart-theme';
-import { equityToArea } from '@/lib/chart-transform';
-import type { EquityPoint } from '@/data/fixtures';
+import { ChartCard } from "@/components/charts/chart-card";
+import type { EquityPoint } from "@/data/fixtures";
+import { useChartResize } from "@/hooks/useChartResize";
+import { buildLwcOptions, getChartColors } from "@/lib/chart-theme";
+import { equityToArea } from "@/lib/chart-transform";
 
 export interface EquityChartProps {
   points: EquityPoint[];
@@ -20,7 +20,7 @@ export interface EquityChartProps {
 export function EquityChart({ points, height = 240 }: EquityChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -31,7 +31,7 @@ export function EquityChart({ points, height = 240 }: EquityChartProps) {
     const area = chartInstance.addSeries(AreaSeries, {
       lineColor: colors.accent,
       topColor: `${colors.accent}33`,
-      bottomColor: 'transparent',
+      bottomColor: "transparent",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true,

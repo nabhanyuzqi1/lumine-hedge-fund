@@ -1,18 +1,18 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OrderDetailPage } from '@/app/pages/order-detail';
-import { ToastProvider } from '@/components/ui/toast';
-import { useUiStore } from '@/stores/uiStore';
+import { OrderDetailPage } from "@/app/pages/order-detail";
+import { ToastProvider } from "@/components/ui/toast";
+import { useUiStore } from "@/stores/uiStore";
 
-vi.mock('echarts/core');
-vi.mock('echarts/charts');
-vi.mock('echarts/components');
-vi.mock('echarts/renderers');
+vi.mock("echarts/core");
+vi.mock("echarts/charts");
+vi.mock("echarts/components");
+vi.mock("echarts/renderers");
 
-function renderPage(orderId = 'ord-001') {
+function renderPage(orderId = "ord-001") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MemoryRouter initialEntries={[`/orders/${orderId}`]}>
@@ -23,13 +23,28 @@ function renderPage(orderId = 'ord-001') {
           </Routes>
         </ToastProvider>
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
-describe('OrderDetailPage', () => {
+describe("OrderDetailPage", () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('backend offline')));
+    // Query hooks fall back to fixtures when GETs reject, while the cancel
+    // mutation now hits the live DELETE /api/v1/orders/{id} endpoint.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "DELETE") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ data: { order_id: "ord-001", status: "cancelled" } }),
+              { status: 200, headers: { "Content-Type": "application/json" } }
+            )
+          );
+        }
+        return Promise.reject(new Error("backend offline"));
+      })
+    );
     useUiStore.setState({ killSwitchActive: false });
   });
 
@@ -37,34 +52,34 @@ describe('OrderDetailPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders order summary and lifecycle timeline', async () => {
+  it("renders order summary and lifecycle timeline", async () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText(/Order ord-001/i)).toBeDefined());
-    expect(screen.getByTestId('order-lifecycle-timeline')).toBeDefined();
-    expect(screen.getByTestId('cancel-order-button')).toBeDefined();
+    expect(screen.getByTestId("order-lifecycle-timeline")).toBeDefined();
+    expect(screen.getByTestId("cancel-order-button")).toBeDefined();
   });
 
-  it('opens confirm dialog and cancels the order', async () => {
+  it("opens confirm dialog and cancels the order", async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('cancel-order-button')).toBeEnabled());
+    await waitFor(() => expect(screen.getByTestId("cancel-order-button")).toBeEnabled());
 
-    fireEvent.click(screen.getByTestId('cancel-order-button'));
-    await waitFor(() => expect(screen.getByTestId('confirm-cancel-order')).toBeDefined());
+    fireEvent.click(screen.getByTestId("cancel-order-button"));
+    await waitFor(() => expect(screen.getByTestId("confirm-cancel-order")).toBeDefined());
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('confirm-cancel-order'));
+      fireEvent.click(screen.getByTestId("confirm-cancel-order"));
     });
 
-    await waitFor(() => expect(screen.queryByTestId('confirm-cancel-order')).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId("confirm-cancel-order")).toBeNull());
   });
 
-  it('disables cancel button when kill switch is active', async () => {
+  it("disables cancel button when kill switch is active", async () => {
     useUiStore.setState({ killSwitchActive: true });
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('cancel-order-button')).toBeDisabled());
-    expect(screen.getByTestId('kill-switch-disabled-hint')).toBeDefined();
+    await waitFor(() => expect(screen.getByTestId("cancel-order-button")).toBeDisabled());
+    expect(screen.getByTestId("kill-switch-disabled-hint")).toBeDefined();
   });
 });

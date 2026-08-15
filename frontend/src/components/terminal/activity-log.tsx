@@ -1,12 +1,12 @@
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "zustand/react/shallow";
 
-import { Badge } from '@/components/ui/badge';
-import { useActivityStore, type LogLevel } from '@/stores/activityStore';
+import { Badge } from "@/components/ui/badge";
+import { type LogLevel, useActivityStore } from "@/stores/activityStore";
 
-const LEVEL_TONE: Record<LogLevel, 'info' | 'ok' | 'warn' | 'danger'> = {
-  info: 'info',
-  warn: 'warn',
-  danger: 'danger',
+const LEVEL_TONE: Record<LogLevel, "info" | "ok" | "warn" | "danger"> = {
+  info: "info",
+  warn: "warn",
+  danger: "danger",
 };
 
 /**
@@ -27,7 +27,7 @@ export function ActivityLog({ limit = 24 }: { limit?: number }) {
   }
 
   return (
-    <ul className="space-y-1" data-testid="activity-log">
+    <ul className="max-h-[320px] space-y-1 overflow-auto" data-testid="activity-log">
       {shown.map((entry) => (
         <li key={entry.id} className="flex items-start gap-2 rounded-md px-1.5 py-1">
           <Badge tone={LEVEL_TONE[entry.level]} label={entry.stream} />

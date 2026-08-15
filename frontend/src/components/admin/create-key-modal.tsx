@@ -1,6 +1,6 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,14 +8,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 const SCOPES = [
-  'market.read',
-  'portfolio.read',
-  'portfolio.write',
-  'orders.write',
-  'journal.read',
-  'admin.keys',
+  "market.read",
+  "portfolio.read",
+  "portfolio.write",
+  "orders.write",
+  "journal.read",
+  "admin.keys",
 ];
 
 interface CreateKeyModalProps {
@@ -25,18 +25,18 @@ interface CreateKeyModalProps {
 }
 
 export function CreateKeyModal({ open, onOpenChange, onCreate }: CreateKeyModalProps) {
-  const [selected, setSelected] = React.useState<string[]>(['market.read', 'portfolio.read']);
+  const [selected, setSelected] = React.useState<string[]>(["market.read", "portfolio.read"]);
 
   const toggleScope = (scope: string) => {
     setSelected((prev) =>
-      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]
     );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onCreate(selected);
-    setSelected(['market.read', 'portfolio.read']);
+    setSelected(["market.read", "portfolio.read"]);
   };
 
   return (

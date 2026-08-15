@@ -49,6 +49,14 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
     return _sessionmaker  # type: ignore[return-value]
 
 
+async def get_db_session() -> AsyncSession:
+    """Get a single-use async session for direct operations."""
+    sm = get_sessionmaker()
+    session = sm()
+    await session.__aenter__()
+    return session
+
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Yield an AsyncSession for dependency injection / context managers."""
     sm = get_sessionmaker()

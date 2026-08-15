@@ -25,12 +25,25 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 RUN groupadd --system lumine && useradd --system --gid lumine --no-create-home lumine
 
+# Superadmin system-info: Docker socket akses butuh group docker.
+# Host docker.sock biasanya gid 999 atau dynamically assigned — match host GID.
+# WORKAROUND: buat group docker dengan GID yang match socket host (default 999),
+# lalu tambahkan lumine ke group itu. Jika host GID berbeda, override di compose:
+#   args: DOCKER_GID=<stat -c %g /var/run/docker.sock>
+ARG DOCKER_GID=988
+RUN groupadd -g ${DOCKER_GID} docker 2>/dev/null || true \
+    && usermod -aG docker lumine
+
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
 COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini ./
+COPY scripts/ scripts/
+# Prompt registry (registry.yaml + schemas) — dibutuhkan pipeline LLM
+# (analyst/ic/cio/risk stages). Jangan copy docs/ penuh (hanya prompts/).
+COPY docs/prompts/ docs/prompts/
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
@@ -43,4 +56,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-CMD ["uvicorn", "lumine.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "lumine.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

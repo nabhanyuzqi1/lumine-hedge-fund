@@ -2,12 +2,12 @@
 
 AI-native quantitative hedge fund platform. Lumine starts with XAUUSD and is designed for auditable, risk-controlled, multi-portfolio execution.
 
-> Phase 15 Implementation is in progress. Architecture and design phases 0-14 are documented and approved. Production trading is not enabled by this repository state.
+> **Status**: Sprint 1 Foundation in progress. Architecture and design phases 0-14 are documented and approved. Production trading is not enabled by this repository state.
 
 ## Product Surface
 
 - FastAPI backend for market data, decisions, risk, execution, journal, audit, and SSE streams.
-- React/Vite frontend with landing portal at `/` and terminal at `/terminal`.
+- React/Vite frontend with institutional dashboard and terminal.
 - PostgreSQL for durable state and audit records.
 - Redis for realtime buffers, idempotency, and bridge transport.
 - MetaTrader 5 Expert Advisor bridge for execution.
@@ -23,7 +23,6 @@ AI-native quantitative hedge fund platform. Lumine starts with XAUUSD and is des
 | Architecture and phase docs | [`docs/`](docs/) |
 | Infrastructure | [`infrastructure/`](infrastructure/) |
 | Deployment scripts | [`scripts/deploy/`](scripts/deploy/) |
-| CI/CD workflows | [`.github/workflows/`](.github/workflows/) |
 | Project commands | [`Makefile`](Makefile) |
 
 Phase index:
@@ -104,41 +103,38 @@ The project virtual environment must be used when the system `uv` environment is
 backend/.venv/bin/pytest backend/tests/unit backend/tests/contract
 ```
 
-## Current Audit Status
+## Canonical Quality Gates
 
-The latest Sprint 7 audit changes include hash-chain verification, TCA calculation and quality alerts, explicit orchestrator TCA metadata propagation, and retry-safe execution persistence.
+```bash
+make lint
+make typecheck
+make test
+make coverage
+make security
+make verify-chain
+```
 
-Verified locally:
+Focused backend commands:
 
-- Unit and contract tests: `537 passed`.
-- Focused hardening tests: `27 passed`.
-- Coverage: `89.99%` with an `80%` gate.
-- Ruff check and format: pass.
-- Mypy: pass for 78 source files.
-- Git diff check: pass.
+```bash
+cd backend
+uv run pytest tests/unit tests/contract
+uv run pytest tests/integration
+uv run alembic upgrade head
+uv run python scripts/verify_chain.py
+```
 
-Still environment-dependent or open:
+The project virtual environment must be used when the system `uv` environment is not provisioned correctly:
 
-- Integration tests require Docker-backed PostgreSQL and Redis.
-- Alembic requires a PostgreSQL role matching `DATABASE_URL`.
-- Bandit reports three low-confidence B608 findings for allowlisted dynamic SQL identifiers.
-- Full WORM anchor enumeration and DB/WORM reconciliation remain open before Sprint 7 can be closed fully.
+```bash
+backend/.venv/bin/pytest backend/tests/unit backend/tests/contract
+```
 
-Evidence: [Sprint 7 audit hardening](docs/15-implementation/sprint-evidence/sprint-7-audit-hardening.md).
+## Current Implementation Status
 
-## CI/CD
+Sprint 1 Foundation in progress. Deliverables: repository scaffolding, dependency management with `uv`, TypeScript setup with Biome, Docker Compose dev environment, and Alembic migrations.
 
-GitHub Actions workflows are path-aware and use Python 3.12, `uv`, Node.js 22, PostgreSQL 16, and Redis 7 where required.
-
-| Workflow | Scope | Main gates |
-|---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Backend | Ruff, mypy, Bandit, Semgrep, Gitleaks, pip-audit, unit/integration/contract/system tests, OpenAPI drift, Trivy |
-| [`ci-frontend.yml`](.github/workflows/ci-frontend.yml) | Frontend | ESLint, TypeScript, Vitest, Vite build, Lighthouse CI |
-| [`docs.yml`](.github/workflows/docs.yml) | Docs | Link check, ADR index, freshness warning |
-| [`supply-chain.yml`](.github/workflows/supply-chain.yml) | Dependencies | pip-audit, SBOM, OSV, Gitleaks |
-| [`deploy.yml`](.github/workflows/deploy.yml) | Deployment | GHCR image, staging SSH deploy, health/config/SSE smoke checks, production approval |
-
-Deployment requires GitHub Actions secrets and environments documented in [CI/CD Pipeline](docs/14-implementation/ci-cd-pipeline.md), [Infrastructure](docs/11-infrastructure/README.md), and [Security](docs/12-security/README.md).
+See [docs/15-implementation/sprint-plan.md](docs/15-implementation/sprint-plan.md) for detailed sprint breakdown and exit criteria.
 
 ## Security Rules
 

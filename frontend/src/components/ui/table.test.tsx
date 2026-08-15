@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
 
-describe('Table', () => {
-  it('renders a semantic table', () => {
+describe("Table", () => {
+  it("renders a semantic table", () => {
     render(
       <Table>
         <TableHeader>
@@ -19,11 +19,11 @@ describe('Table', () => {
             <TableCell className="text-right font-mono tabular-nums">2450.30</TableCell>
           </TableRow>
         </TableBody>
-      </Table>,
+      </Table>
     );
 
-    expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Symbol' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'XAUUSD' })).toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Symbol" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "XAUUSD" })).toBeInTheDocument();
   });
 });

@@ -1,21 +1,9 @@
 # Copyright (c) 2026 Lumine. All rights reserved.
-"""Prompt registry loader (D3-8).
+"""Prompt registry with SHA-256 hash validation and versioning (ADR-0015).
 
-``docs/prompts/registry.yaml`` is the human-editable source of truth listing
-every prompt version with its SHA-256 hash. The loader verifies each file's
-actual hash against the manifest at startup — a mismatch is fatal (principle
-#6: reproducibility; failures stop the pipeline, not hide it).
-
-Database persistence (``prompt_versions`` upsert) is split into
-:func:`upsert_prompt_versions` so the pure loader stays unit-testable without
-a database. Call the upsert from app startup or integration tests.
-
-Contract sources:
-- ``docs/04-communication-and-prompts/prompt-storage.md`` — file layout, hash
-  semantics, variables/output_schema contracts.
-- ``docs/04-communication-and-prompts/prompt-versioning.md`` — loader contract.
-- ``docs/15-implementation/sprint-evidence/sprint-3-decision-engine.md`` D3-8
-  — registry.yaml manifest format.
+Provides typed access to prompt files with automatic hash verification,
+variable extraction, and output schema loading. Registry data is loaded from
+`docs/prompts/registry.yaml` and cached for performance.
 """
 
 from __future__ import annotations
@@ -24,313 +12,459 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import Any
 
 import yaml
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
-    from pathlib import Path
-
-    from sqlalchemy.ext.asyncio import AsyncSession
-
-# Regex for ``{{ var }}`` / ``{{var}}`` / ``{{   var   }}`` placeholders.
-# Liquid-style templating (prompt-storage.md:66). Matches one variable name
-# per placeholder; whitespace inside the braces is tolerated.
-_PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
-
-_REGISTRY_FILENAME = "registry.yaml"
+# ── Exceptions ────────────────────────────────────────────────────────────────
 
 
-class PromptRegistryError(Exception):
-    """Base class for prompt registry failures."""
+class RegistryError(Exception):
+    """Base exception for registry operations."""
 
 
-class MissingRegistryFileError(PromptRegistryError):
-    """``registry.yaml`` is absent from the prompt directory."""
+
+class MissingRegistryFileError(RegistryError):
+    """registry.yaml is absent or unreadable."""
 
 
-class MissingPromptFileError(PromptRegistryError):
-    """A ``prompt_ref`` listed in the manifest does not exist on disk."""
+
+class MissingPromptFileError(RegistryError):
+    """A prompt file referenced in registry.yaml is absent."""
 
 
-class HashMismatchError(PromptRegistryError):
-    """A prompt file's actual SHA-256 differs from ``expected_hash``.
 
-    Fatal on load — a tampered prompt must never silently serve (D3-8).
-    """
+class HashMismatchError(RegistryError):
+    """Expected SHA-256 does not match computed hash of the prompt file."""
 
 
-class PromptNotFoundError(PromptRegistryError):
-    """``get_prompt`` asked for an unknown (sub_role, version)."""
+
+class PromptNotFoundError(RegistryError):
+    """No prompt bundle exists for the given (sub_role, version)."""
 
 
-class MissingVariableError(PromptRegistryError):
-    """A template variable referenced in the body was not supplied.
 
-    Missing variables are a validation failure, not a silent fallback
-    (prompt-storage.md:95).
-    """
+class MissingVariableError(RegistryError):
+    """render() was called without a declared template variable."""
+
+    def __init__(self, variable: str) -> None:
+        super().__init__(f"missing declared variable: {variable}")
+        self.variable = variable
 
 
-@dataclass(frozen=True, slots=True)
+# ── Data contracts ────────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
 class PromptPins:
-    """Immutable provenance pins stored alongside a rendered prompt.
-
-    These are what get written to ``lineage_records.prompt_version_id`` and
-    ``reasoning_traces.prompt_hash`` so a decision is replayable: resolve the
-    version, recompute the hash, reproduce the prompt. A divergent hash on
-    replay = alert (the file changed under a pinned version).
-    """
+    """Immutable hash pin for a prompt bundle — used for drift detection."""
 
     sub_role: str
     version: str
     prompt_ref: str
-    prompt_hash: str
+    prompt_hash: str  # SHA-256 hex of full file bytes
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class PromptBundle:
-    """A loaded, hash-verified prompt ready for templating.
+    """Loaded + validated prompt ready for LLM consumption."""
 
-    ``text`` is the prompt *body* (frontmatter stripped) — what the LLM sees.
-    ``pins.prompt_hash`` is the SHA-256 of the *full file bytes* (frontmatter
-    included), so edits to either frontmatter or body are detectable drift.
-    """
-
+    pins: PromptPins
     text: str
     variables: list[str]
-    output_schema: dict[str, object]
-    pins: PromptPins
+    output_schema: dict[str, Any]
     model_tier_hint: str = "cost-efficient"
 
 
-@dataclass(slots=True)
-class _ManifestEntry:
-    """Parsed row from registry.yaml before file verification."""
+@dataclass(frozen=True)
+class PromptRef:
+    """Reference to a prompt file in the repository."""
 
     sub_role: str
     version: str
     prompt_ref: str
     expected_hash: str
-    model_tier_hint: str
-    variables: list[str]
-    output_schema_ref: str
+    model_tier_hint: str = "cost-efficient"
+    variables: list[str] = field(default_factory=list)
+    output_schema_ref: str | None = None
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True)
+class LoadedPrompt:
+    """Prompt loaded from disk with validated hash."""
+
+    ref: PromptRef
+    content: str
+    computed_hash: str
+
+    def validate(self) -> bool:
+        """Verify prompt hash matches registry expectation."""
+        return self.computed_hash == self.ref.expected_hash
+
+
 class Registry:
-    """In-memory map of verified prompts keyed by (sub_role, version)."""
+    """Prompt registry loader with hash validation."""
 
-    _bundles: dict[tuple[str, str], PromptBundle] = field(default_factory=dict)
+    def __init__(self, base_path: Path | None = None):
+        """Initialize registry loader.
 
-    def register(self, bundle: PromptBundle) -> None:
-        """Add or replace a prompt bundle keyed by (sub_role, version)."""
-        key = (bundle.pins.sub_role, bundle.pins.version)
-        self._bundles[key] = bundle
+        Args:
+            base_path: Path to directory containing registry.yaml.
+                       If not provided, defaults to docs/prompts/ at cwd.
 
-    def get_prompt(self, sub_role: str, version: str) -> PromptBundle:
-        """Return the bundle for ``(sub_role, version)`` or raise if absent."""
-        key = (sub_role, version)
-        try:
-            return self._bundles[key]
-        except KeyError:
-            msg = f"no prompt registered for {sub_role}@{version}"
-            raise PromptNotFoundError(msg) from None
+        """
+        if base_path is None:
+            self._base_path = Path.cwd() / "docs" / "prompts"
+        else:
+            self._base_path = base_path
+
+        self._prompts: dict[str, dict[str, PromptRef]] = {}
+        self._bundle_cache: dict[tuple[str, str], PromptBundle] = {}
+        self._load_registry()
+
+    def _load_registry(self) -> None:
+        """Load registry.yaml and parse all prompt refs."""
+        registry_path = self._base_path / "registry.yaml"
+
+        if not registry_path.exists():
+            msg = f"Registry file not found: {registry_path}"
+            raise FileNotFoundError(msg)
+
+        with open(registry_path, encoding="utf-8") as f:
+            registry_data = yaml.safe_load(f)
+
+        prompts_by_subrole: dict[str, dict[str, PromptRef]] = {}
+
+        for entry in registry_data.get("prompts", []):
+            sub_role = entry["sub_role"]
+            version = entry["version"]
+
+            ref = PromptRef(
+                sub_role=sub_role,
+                version=version,
+                prompt_ref=entry["prompt_ref"],
+                expected_hash=entry["expected_hash"],
+                model_tier_hint=entry.get("model_tier_hint", "cost-efficient"),
+                variables=entry.get("variables", []),
+                output_schema_ref=entry.get("output_schema_ref"),
+            )
+
+            if sub_role not in prompts_by_subrole:
+                prompts_by_subrole[sub_role] = {}
+
+            prompts_by_subrole[sub_role][version] = ref
+
+        # Validate all prompt hashes immediately (eager validation)
+        for sub_role, versions in prompts_by_subrole.items():
+            for version, ref in versions.items():
+                prompt_path = self._base_path / ref.prompt_ref
+
+                if not prompt_path.exists():
+                    msg = f"Prompt file not found: {prompt_path}"
+                    raise MissingPromptFileError(msg)
+
+                with open(prompt_path, "rb") as f:
+                    raw_bytes = f.read()
+                computed_hash = hashlib.sha256(raw_bytes).hexdigest()
+
+                if computed_hash != ref.expected_hash:
+                    msg = (
+                        f"Hash mismatch for {sub_role}@{version}: "
+                        f"expected {ref.expected_hash}, got {computed_hash}"
+                    )
+                    raise HashMismatchError(msg)
+
+                # Validate output schema file exists if referenced
+                if ref.output_schema_ref:
+                    schema_path = self._base_path / ref.output_schema_ref
+                    if not schema_path.exists():
+                        raise FileNotFoundError(f"Output schema not found: {schema_path}")
+
+        self._prompts = prompts_by_subrole
+
+    def get_latest(self, sub_role: str) -> PromptRef | None:
+        """Get latest prompt version for a sub-role.
+
+        Args:
+            sub_role: The agent sub-role (e.g., technical_analyst, macro_analyst)
+
+        Returns:
+            Latest PromptRef or None if not found
+
+        """
+        versions = self._prompts.get(sub_role, {})
+        if not versions:
+            return None
+
+        # Return highest version (assume vN ordering works lexicographically)
+        latest_version = max(versions.keys(), key=lambda v: [int(x) for x in v[1:].split(".")])
+        return versions[latest_version]
+
+    def get(self, sub_role: str, version: str) -> PromptRef | None:
+        """Get specific prompt version for a sub-role.
+
+        Args:
+            sub_role: The agent sub-role
+            version: Version string (e.g., v1, v2)
+
+        Returns:
+            PromptRef or None if not found
+
+        """
+        versions = self._prompts.get(sub_role, {})
+        return versions.get(version)
 
     def list_prompts(self) -> list[tuple[str, str]]:
-        """Return every ``(sub_role, version)`` key currently registered."""
-        return list(self._bundles)
+        """Return list of (sub_role, version) tuples."""
+        result: list[tuple[str, str]] = []
+        for sub_role, versions in self._prompts.items():
+            for version in versions:
+                result.append((sub_role, version))
+        return result
 
-    def __iter__(self) -> Iterator[PromptBundle]:
-        """Iterate over all registered prompt bundles."""
-        return iter(self._bundles.values())
+    def list_versions(self, sub_role: str) -> list[str]:
+        """List all versions for a sub-role."""
+        versions = self._prompts.get(sub_role, {})
+        return list(versions.keys())
+
+    def list_subroles(self) -> list[str]:
+        """List all available sub-roles in registry."""
+        return list(self._prompts.keys())
+
+    def get_variables(self, sub_role: str) -> list[str]:
+        """Return declared template variables for the latest version of a sub-role.
+
+        Args:
+            sub_role: The agent sub-role
+
+        Returns:
+            Declared variable names, or [] when the sub-role is unknown
+            or the latest version declares none.
+
+        """
+        ref = self.get_latest(sub_role)
+        if ref is None:
+            return []
+        return list(ref.variables)
 
     def __len__(self) -> int:
-        """Return the number of registered prompt bundles."""
-        return len(self._bundles)
+        """Return count of registered prompts."""
+        return sum(len(v) for v in self._prompts.values())
 
+    def __iter__(self):
+        """Iterate over all bundles."""
+        for sub_role, versions in self._prompts.items():
+            for version in versions:
+                yield self.get_prompt(sub_role, version)
 
-# ── loading ───────────────────────────────────────────────────────────────────
+    def get_prompt(self, sub_role: str, version: str) -> PromptBundle:
+        """Get prompt bundle by sub-role and version.
 
+        Args:
+            sub_role: The agent sub-role
+            version: Version string (e.g., v1, v2)
 
-def _sha256_hex(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+        Returns:
+            PromptBundle with content and metadata
 
+        Raises:
+            PromptNotFoundError: If prompt doesn't exist
+            HashMismatchError: If hash validation fails
 
-def _strip_frontmatter(raw: str) -> str:
-    """Return the prompt body with a leading YAML frontmatter block removed.
+        """
+        cache_key = (sub_role, version)
+        if cache_key in self._bundle_cache:
+            return self._bundle_cache[cache_key]
 
-    A frontmatter block starts at column 0 with ``---`` and ends at the next
-    line that is exactly ``---``. If no well-formed block is present, the
-    input is returned unchanged.
-    """
-    if not raw.startswith("---"):
-        return raw
-    lines = raw.splitlines(keepends=True)
-    # lines[0] is the opening "---..."; find the closing fence.
-    for idx in range(1, len(lines)):
-        if lines[idx].strip() == "---":
-            return "".join(lines[idx + 1 :]).lstrip("\n")
-    # No closing fence — treat the whole thing as the body.
-    return raw
+        ref = self.get(sub_role, version)
+        if ref is None:
+            msg = f"No prompt found for {sub_role}@{version}"
+            raise PromptNotFoundError(msg)
 
+        # Load from disk
+        prompt_path = self._base_path / ref.prompt_ref
 
-def _load_output_schema(prompt_dir: Path, ref: str) -> dict[str, object]:
-    """Resolve an ``output_schema_ref`` to a JSON-Schema dict.
-
-    ``ref`` is relative to ``prompt_dir`` (e.g. ``schemas/analyst_output.json``).
-    A bare JSON string (no path separator, parses as JSON) is also accepted so
-    the manifest can inline a schema for tiny prompts.
-    """
-    if "/" not in ref and ref.lstrip().startswith("{"):
-        return dict(json.loads(ref))
-    schema_path = prompt_dir / ref
-    return dict(json.loads(schema_path.read_text(encoding="utf-8")))
-
-
-def _parse_manifest(prompt_dir: Path) -> list[_ManifestEntry]:
-    reg_path = prompt_dir / _REGISTRY_FILENAME
-    if not reg_path.is_file():
-        msg = f"registry manifest not found: {reg_path}"
-        raise MissingRegistryFileError(msg)
-    data = yaml.safe_load(reg_path.read_text(encoding="utf-8")) or {}
-    return [
-        _ManifestEntry(
-            sub_role=raw["sub_role"],
-            version=raw["version"],
-            prompt_ref=raw["prompt_ref"],
-            expected_hash=raw["expected_hash"],
-            model_tier_hint=raw.get("model_tier_hint", "cost-efficient"),
-            variables=list(raw.get("variables", [])),
-            output_schema_ref=raw["output_schema_ref"],
-        )
-        for raw in data.get("prompts", [])
-    ]
-
-
-def load_registry(prompt_dir: Path) -> Registry:
-    """Parse ``registry.yaml``, verify every hash, build a :class:`Registry`.
-
-    Verification is all-or-nothing: any missing file or hash mismatch raises
-    before any prompt is served, so the registry is never in a half-loaded
-    state (safe-state by default).
-    """
-    entries = _parse_manifest(prompt_dir)
-    registry = Registry()
-    for entry in entries:
-        file_path = prompt_dir / entry.prompt_ref
-        if not file_path.is_file():
-            msg = f"prompt file missing for {entry.sub_role}@{entry.version}: {file_path}"
+        if not prompt_path.exists():
+            msg = f"Prompt file not found: {prompt_path}"
             raise MissingPromptFileError(msg)
-        raw_bytes = file_path.read_bytes()
-        actual_hash = _sha256_hex(raw_bytes)
-        if actual_hash != entry.expected_hash:
+
+        with open(prompt_path, "rb") as f:
+            raw_bytes = f.read()
+
+        content = raw_bytes.decode("utf-8")
+        computed_hash = hashlib.sha256(raw_bytes).hexdigest()
+
+        # Verify hash
+        if computed_hash != ref.expected_hash:
             msg = (
-                f"hash mismatch for {entry.sub_role}@{entry.version}: "
-                f"expected {entry.expected_hash}, got {actual_hash}"
+                f"Hash mismatch for {sub_role}@{version}: "
+                f"expected {ref.expected_hash}, got {computed_hash}"
             )
             raise HashMismatchError(msg)
-        body = _strip_frontmatter(raw_bytes.decode("utf-8"))
-        output_schema = _load_output_schema(prompt_dir, entry.output_schema_ref)
+
+        # Strip YAML frontmatter (--- delimited header) if present
+        text = content
+        if text.startswith("---"):
+            lines = text.split("\n")
+            # Find closing --- marker on its own line
+            for i, line in enumerate(lines[1:], start=1):
+                if line.strip() == "---":
+                    # Body starts after this line
+                    text = "\n".join(lines[i+1:])
+                    break
+            else:
+                # No closing marker found, keep full content
+                text = content
+
+        # Load output schema
+        output_schema: dict[str, Any] = {}
+        if ref.output_schema_ref:
+            schema_path = self._base_path / ref.output_schema_ref
+            if not schema_path.exists():
+                raise FileNotFoundError(f"Output schema not found: {schema_path}")
+            with open(schema_path, encoding="utf-8") as f:
+                output_schema = json.load(f)
+
+        pins = PromptPins(
+            sub_role=sub_role,
+            version=version,
+            prompt_ref=ref.prompt_ref,
+            prompt_hash=computed_hash,
+        )
+
         bundle = PromptBundle(
-            text=body,
-            variables=entry.variables,
+            pins=pins,
+            text=text,
+            variables=ref.variables,
             output_schema=output_schema,
-            pins=PromptPins(
-                sub_role=entry.sub_role,
-                version=entry.version,
-                prompt_ref=entry.prompt_ref,
-                prompt_hash=actual_hash,
-            ),
-            model_tier_hint=entry.model_tier_hint,
+            model_tier_hint=ref.model_tier_hint,
         )
-        registry.register(bundle)
-    return registry
+
+        self._bundle_cache[cache_key] = bundle
+        return bundle
+
+    def render(self, bundle: PromptBundle, ctx: dict[str, Any]) -> str:
+        """Render a prompt bundle with context variables (Liquid-style).
+
+        Uses simple Jinja2/f-string style {{variable}} substitution.
+
+        Args:
+            bundle: The prompt bundle to render
+            ctx: Variable substitutions
+
+        Returns:
+            Rendered prompt string
+
+        Raises:
+            MissingVariableError: If declared variable is missing from context
+            or if template contains undeclared variables
+
+        """
+        result = bundle.text
+
+        for var in bundle.variables:
+            if var not in ctx:
+                raise MissingVariableError(var)
+
+            value = str(ctx[var])
+
+            # Match {{var}}, {{var }}, {{ var}}, {{ var }}, {{  var  }} (whitespace tolerant)
+            # Pattern: literal {{ with optional whitespace around variable name, literal }}
+            pattern = rf"\{{{{\s*{re.escape(var)}\s*}}}}"
+            # Use lambda to avoid backreference issues in replacement; bind loop
+            # var via default arg (B023 — late-binding fix).
+            result = re.sub(pattern, lambda m, v=value: v, result)
+
+        # Check for remaining unrendered placeholders (undeclared variables)
+        remaining = re.findall(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", result)
+        if remaining:
+            # Find first undeclared variable
+            for var in remaining:
+                if var not in bundle.variables:
+                    raise MissingVariableError(var)
+
+        return result
 
 
-# ── templating ────────────────────────────────────────────────────────────────
+def load_registry(prompts_path: Path | None = None) -> Registry:
+    """Load and return a Registry instance.
 
+    Args:
+        prompts_path: Path to directory containing registry.yaml.
+                     If not provided, defaults to docs/prompts/ at cwd.
 
-def render(bundle: PromptBundle, variables: dict[str, object]) -> str:
-    """Substitute ``{{ var }}`` placeholders with supplied values.
+    Returns:
+        Configured Registry instance
 
-    Every placeholder in the body must be supplied — a missing variable is a
-    fatal :class:`MissingVariableError`, never a silent literal leak
-    (prompt-storage.md:95).
+    Raises:
+        MissingRegistryFileError: If registry.yaml is missing
+
     """
-
-    def _replace(match: re.Match[str]) -> str:
-        name = match.group(1)
-        if name not in variables:
-            msg = f"missing template variable: {name}"
-            raise MissingVariableError(msg)
-        return str(variables[name])
-
-    return _PLACEHOLDER_RE.sub(_replace, bundle.text)
+    try:
+        return Registry(base_path=prompts_path)
+    except FileNotFoundError as e:
+        msg = str(e)
+        if "Registry file not found" in msg:
+            raise MissingRegistryFileError(msg) from e
+        raise
 
 
-# ── database persistence ──────────────────────────────────────────────────────
-
-
-async def upsert_prompt_versions(
-    session: AsyncSession,
-    registry: Registry,
-) -> None:
-    """Idempotently seed/update ``prompt_versions`` rows from the registry.
-
-    A row is matched on ``version`` (unique constraint) and refreshed if the
-    file hash changed. New rows are created with ``status='production'`` so
-    the runtime loader only emits production prompts at runtime. Call this
-    from app startup after :func:`load_registry` succeeds.
-
-    Split from the pure loader so unit tests can exercise hashing/parsing
-    without a database; the DB upsert is covered by integration tests.
-    """
-    # Local import keeps the loader importable without SQLAlchemy/asyncpg at
-    # module load (e.g. for pure unit-test collection). Mirrors the lazy-import
-    # pattern used in tests/integration/conftest.py.
-    from sqlalchemy.dialects.postgresql import insert as pg_insert  # noqa: PLC0415
-
-    from lumine.data.models import PromptVersion  # noqa: PLC0415
-
-    for bundle in registry:
-        pins = bundle.pins
-        stmt = pg_insert(PromptVersion).values(
-            sub_role=pins.sub_role,
-            version=pins.version,
-            prompt_ref=pins.prompt_ref,
-            prompt_hash=pins.prompt_hash,
-            variables=dict.fromkeys(bundle.variables, None),
-            output_schema=bundle.output_schema,
-            status="production",
-        )
-        # On conflict (same version), refresh hash/ref/variables/schema so the
-        # DB mirror tracks the manifest. status is not downgraded here.
-        stmt = stmt.on_conflict_do_update(
-            index_elements=["version"],
-            set_={
-                "prompt_hash": pins.prompt_hash,
-                "prompt_ref": pins.prompt_ref,
-                "variables": dict.fromkeys(bundle.variables, None),
-                "output_schema": bundle.output_schema,
-            },
-        )
-        await session.execute(stmt)
-    await session.commit()
-
-
-__all__: Sequence[str] = (
+__all__ = [
     "HashMismatchError",
+    "LoadedPrompt",
     "MissingPromptFileError",
     "MissingRegistryFileError",
     "MissingVariableError",
     "PromptBundle",
     "PromptNotFoundError",
     "PromptPins",
-    "PromptRegistryError",
+    "PromptRef",
     "Registry",
+    "RegistryError",
     "load_registry",
     "render",
-    "upsert_prompt_versions",
-)
+]
+
+
+def render(bundle: PromptBundle, ctx: dict[str, Any]) -> str:
+    """Render a prompt bundle with context variables (Liquid-style).
+
+    Uses simple Jinja2/f-string style {{variable}} substitution.
+
+    Args:
+        bundle: The prompt bundle to render
+        ctx: Variable substitutions
+
+    Returns:
+        Rendered prompt string
+
+    Raises:
+        MissingVariableError: If declared variable is missing from context
+        or if template contains undeclared variables
+
+    """
+    result = bundle.text
+
+    for var in bundle.variables:
+        if var not in ctx:
+            raise MissingVariableError(var)
+
+        value = str(ctx[var])
+
+        # Match {{var}}, {{var }}, {{ var}}, {{ var }}, {{  var  }} (whitespace tolerant)
+        # Pattern: literal {{ with optional whitespace around variable name, literal }}
+        pattern = rf"\{{{{\s*{re.escape(var)}\s*}}}}"
+        # Use lambda to avoid backreference issues in replacement; bind loop
+        # var via default arg (B023 — late-binding fix).
+        result = re.sub(pattern, lambda m, v=value: v, result)
+
+    # Check for remaining unrendered placeholders (undeclared variables)
+    remaining = re.findall(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", result)
+    if remaining:
+        # Find first undeclared variable
+        for var in remaining:
+            if var not in bundle.variables:
+                raise MissingVariableError(var)
+
+    return result

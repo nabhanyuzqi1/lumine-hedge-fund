@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lumine.local/schemas/proposal_v1.json",
+  "title": "ProposalV1",
+  "description": "Full CIO Proposer output pinned to lineage_records.proposal. Version 'v1' is the initial schema per docs/04-communication-and-prompts/proposal-schema.md.",
+  "type": "object",
+  "required": [
+    "version",
+    "decision_ts",
+    "symbol",
+    "action",
+    "confidence",
+    "reasoning",
+    "debate_held",
+    "overrode_ic",
+    "analyst_inputs",
+    "ic_output",
+    "policy_version_id",
+    "model_version_ids",
+    "prompt_version_ids"
+  ],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "decision_ts": { "type": "string", "format": "date-time" },
+    "symbol": { "type": "string", "example": "XAUUSD" },
+    "action": { "type": "string", "enum": ["BUY", "SELL", "HOLD", "REJECT"] },
+    "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "reasoning": { "type": "string" },
+    "debate_held": { "type": "boolean" },
+    "overrode_ic": { "type": "boolean" },
+    "override_reason": { "type": "string" },
+    "analyst_inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sub_role", "argument", "confidence", "bias"],
+        "properties": {
+          "sub_role": {
+            "type": "string",
+            "enum": ["technical_analyst", "macro_analyst", "news_analyst", "smc_analyst"]
+          },
+          "argument": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+          "bias": { "type": "string", "enum": ["bullish", "bearish", "neutral"] },
+          "citations": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "ic_output": {
+      "type": "object",
+      "required": ["recommendation", "confidence", "summary", "weights", "dissent"],
+      "properties": {
+        "recommendation": { "type": "string", "enum": ["BUY", "SELL", "HOLD", "REJECT"] },
+        "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "summary": { "type": "string" },
+        "weights": {
+          "type": "object",
+          "required": ["technical_analyst", "macro_analyst", "news_analyst", "smc_analyst"],
+          "properties": {
+            "technical_analyst": { "type": "number" },
+            "macro_analyst": { "type": "number" },
+            "news_analyst": { "type": "number" },
+            "smc_analyst": { "type": "number" }
+          }
+        },
+        "dissent": { "type": "string" }
+      }
+    },
+    "policy_version_id": { "type": "string", "format": "uuid" },
+    "model_version_ids": {
+      "type": "object",
+      "required": ["technical_analyst", "macro_analyst", "news_analyst", "smc_analyst", "ic_forum", "cio_proposer"],
+      "properties": {
+        "technical_analyst": { "type": "string", "format": "uuid" },
+        "macro_analyst": { "type": "string", "format": "uuid" },
+        "news_analyst": { "type": "string", "format": "uuid" },
+        "smc_analyst": { "type": "string", "format": "uuid" },
+        "ic_forum": { "type": "string", "format": "uuid" },
+        "cio_proposer": { "type": "string", "format": "uuid" }
+      }
+    },
+    "prompt_version_ids": {
+      "type": "object",
+      "required": ["technical_analyst", "macro_analyst", "news_analyst", "smc_analyst", "ic_forum", "cio_proposer"],
+      "properties": {
+        "technical_analyst": { "type": "string", "format": "uuid" },
+        "macro_analyst": { "type": "string", "format": "uuid" },
+        "news_analyst": { "type": "string", "format": "uuid" },
+        "smc_analyst": { "type": "string", "format": "uuid" },
+        "ic_forum": { "type": "string", "format": "uuid" },
+        "cio_proposer": { "type": "string", "format": "uuid" }
+      }
+    }
+  }
+}

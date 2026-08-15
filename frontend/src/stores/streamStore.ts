@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import type { SSEStatus } from '@/hooks/useSSE';
+import type { SSEStatus } from "@/hooks/useSSE";
+import { create } from "zustand";
 
 export interface StreamState {
   key: string;
@@ -23,7 +23,7 @@ interface StreamActions {
 function makeInitialStreamState(key: string): StreamState {
   return {
     key,
-    status: 'idle',
+    status: "idle",
     lastEventId: null,
     stale: false,
     error: null,

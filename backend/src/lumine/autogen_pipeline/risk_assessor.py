@@ -70,7 +70,7 @@ class AssessedSize:
     risk_notes: str
 
 
-async def run_risk_assessor(  # noqa: PLR0913 — stage contract is fixed
+async def run_risk_assessor(
     *,
     gateway: Gateway,
     registry: Registry,
@@ -110,7 +110,7 @@ async def run_risk_assessor(  # noqa: PLR0913 — stage contract is fixed
     return await run_llm_stage(gateway, registry, ctx, session=session, spend=spend)
 
 
-def apply_assessment(  # noqa: PLR0913 — sizing inputs are a fixed contract
+def apply_assessment(
     *,
     assessment: dict[str, Any],
     base_volume: Decimal,

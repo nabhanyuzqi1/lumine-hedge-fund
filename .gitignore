@@ -82,3 +82,7 @@ backend/.venv/
 *.db-journal
 # ── Local preview screenshots (never committed) ────────────────
 frontend/.shots/
+
+# tooling artifacts
+.playwright-mcp/
+backend/test_debug.py

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import secrets
 from datetime import UTC, datetime
 from typing import Annotated
@@ -17,6 +18,9 @@ from lumine.api.schemas.api import (
     CreateKeyRequest,
     KillSwitchRequest,
     KillSwitchStatus,
+    ServiceStatus,
+    SystemConfigUpdate,
+    SystemInfo,
 )
 from lumine.data.redis_client import get_redis
 from lumine.shared.config import Settings, get_settings
@@ -151,6 +155,7 @@ async def get_kill_switch(
     return KillSwitchStatus(
         armed=decoded.get("armed") == "1",
         reason=decoded.get("reason") or None,
+        tier=decoded.get("tier") if decoded.get("tier") in {"global", "book", "strategy"} else None,
         updated_at=datetime.fromisoformat(decoded["updated_at"])
         if "updated_at" in decoded
         else None,
@@ -175,6 +180,7 @@ async def set_kill_switch(
         mapping={
             "armed": "1" if request.armed else "0",
             "reason": request.reason,
+            "tier": request.tier or "global",
             "updated_at": now.isoformat(),
             "updated_by": _principal.key_id,
         },
@@ -182,5 +188,109 @@ async def set_kill_switch(
     return KillSwitchStatus(
         armed=request.armed,
         reason=request.reason,
+        tier=request.tier,
         updated_at=now,
     )
+
+
+# ── Superadmin endpoints ───────────────────────────────────────────────────
+
+
+@router.get("/system-info", response_model=SystemInfo)
+async def get_system_info(
+    settings: Annotated[Settings, Depends(get_settings)],
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> SystemInfo:
+    """Snapshot status seluruh sistem — untuk superadmin control center.
+
+    Baca status container via Docker API socket (docker CLI tidak ada di
+    image; SDK `docker` baca /containers/json langsung). Fallback graceful
+    ke [unknown] jika socket tidak di-mount (dev/local).
+    """
+    services: list[ServiceStatus] = []
+
+    def _list_containers() -> list[ServiceStatus]:
+        import docker
+
+        client = docker.from_env()
+        out: list[ServiceStatus] = []
+        for c in client.containers.list(all=True):
+            status_raw = c.status or "unknown"
+            health = None
+            if c.attrs.get("State", {}).get("Health", {}).get("Status"):
+                health = c.attrs["State"]["Health"]["Status"]
+            running = c.status == "running"
+            name = (c.name or "unknown").removeprefix("/")
+            # Image bisa None jika sudah dihapus (dangling) — handle gracefully.
+            try:
+                image = c.image.tags[0] if c.image and c.image.tags else None
+            except Exception:
+                image = None
+            out.append(
+                ServiceStatus(
+                    name=name,
+                    status="running" if running else "stopped",
+                    health=health,
+                    image=image,
+                    uptime=status_raw,
+                )
+            )
+        return sorted(out, key=lambda s: s.name)
+
+    try:
+        services = await asyncio.to_thread(_list_containers)
+    except Exception as exc:
+        # Log exception untuk debug (jangan silent fail).
+        import structlog
+        log = structlog.get_logger()
+        log.error("docker_list_containers_failed", exc_type=type(exc).__name__, exc_msg=str(exc)[:300])
+        services = [ServiceStatus(name="unknown", status="unknown")]
+
+    return SystemInfo(
+        services=services,
+        llm_gateway_url=settings.llm_gateway_url,
+        llm_gateway_configured=bool(settings.llm_gateway_api_key),
+        demo_data=settings.demo_data,
+        environment=getattr(settings, "environment", "production"),
+        version="1.0.0",
+    )
+
+
+# Runtime override store — env vars tidak bisa diubah in-process di prod,
+# tapi kita simpan di Redis agar restart bisa memuat override.
+_SYSCONFIG_KEY = "lumine:system_config"
+
+
+@router.put("/system-config", response_model=dict)
+async def update_system_config(
+    request: SystemConfigUpdate,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    """Update konfigurasi runtime (LLM key, trading params).
+
+    Nilai disimpan ke Redis. Untuk apply penuh perlu restart container api.
+    Field None = tidak diubah.
+    """
+    r = await get_redis()
+    updates: dict[str, str] = {}
+    if request.llm_gateway_api_key is not None:
+        updates["llm_gateway_api_key"] = request.llm_gateway_api_key
+    if request.llm_gateway_url is not None:
+        updates["llm_gateway_url"] = request.llm_gateway_url
+    if request.demo_data is not None:
+        updates["demo_data"] = "1" if request.demo_data else "0"
+    if request.llm_daily_budget_usd is not None:
+        updates["llm_daily_budget_usd"] = str(request.llm_daily_budget_usd)
+    if request.llm_default_model is not None:
+        updates["llm_default_model"] = request.llm_default_model
+    if request.max_exposure_per_trade is not None:
+        updates["max_exposure_per_trade"] = str(request.max_exposure_per_trade)
+    if request.risk_per_trade is not None:
+        updates["risk_per_trade"] = str(request.risk_per_trade)
+    if request.max_daily_loss_pct is not None:
+        updates["max_daily_loss_pct"] = str(request.max_daily_loss_pct)
+
+    if updates:
+        await r.hset(_SYSCONFIG_KEY, mapping=updates)
+
+    return {"updated": list(updates.keys()), "note": "restart api container to apply all changes"}

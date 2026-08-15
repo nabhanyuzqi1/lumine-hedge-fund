@@ -1,0 +1,8 @@
+---
+users:
+  superadmin:
+    displayname: "Lumine Superadmin"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$ePNU3KVGpH8LIf6+OhUoow$N+3k5F88OII4KH/0fJV+O5urm0ZUDaRZwT58o0bwY7k"
+    email: admin@lumine.biz.id
+    groups:
+      - admins

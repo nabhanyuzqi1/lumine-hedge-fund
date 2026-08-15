@@ -1,17 +1,17 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock('echarts/core');
-vi.mock('echarts/charts');
-vi.mock('echarts/components');
-vi.mock('echarts/renderers');
+vi.mock("echarts/core");
+vi.mock("echarts/charts");
+vi.mock("echarts/components");
+vi.mock("echarts/renderers");
 
-import * as echarts from 'echarts/core';
+import * as echarts from "echarts/core";
 
-import { AllocationChart } from '@/components/charts/allocation-chart';
-import { ConfidenceChart } from '@/components/charts/confidence-chart';
-import { CorrelationChart } from '@/components/charts/correlation-chart';
-import type { CorrelationMatrix, ExposureItem, SignalPoint } from '@/data/fixtures';
+import { AllocationChart } from "@/components/charts/allocation-chart";
+import { ConfidenceChart } from "@/components/charts/confidence-chart";
+import { CorrelationChart } from "@/components/charts/correlation-chart";
+import type { CorrelationMatrix, ExposureItem, SignalPoint } from "@/data/fixtures";
 
 type MockInstance = {
   setOption: ReturnType<typeof vi.fn>;
@@ -25,21 +25,21 @@ const mockEcharts = echarts as unknown as {
 };
 
 const ITEMS: ExposureItem[] = [
-  { symbol: 'XAUUSD', assetClass: 'Metals', weight: 0.38 },
-  { symbol: 'XAGUSD', assetClass: 'Metals', weight: 0.08 },
-  { symbol: 'EURUSD', assetClass: 'FX', weight: 0.16 },
+  { symbol: "XAUUSD", assetClass: "Metals", weight: 0.38 },
+  { symbol: "XAGUSD", assetClass: "Metals", weight: 0.08 },
+  { symbol: "EURUSD", assetClass: "FX", weight: 0.16 },
 ];
 
-const SYMBOLS = ['A', 'B'];
+const SYMBOLS = ["A", "B"];
 const MATRIX: CorrelationMatrix = [
   [1, 0.4],
   [0.4, 1],
 ];
 
 const POINTS: SignalPoint[] = [
-  { time: 1000, analyst: 'technical', confidence: 0.7 },
-  { time: 2000, analyst: 'macro', confidence: 0.4 },
-  { time: 1500, analyst: 'technical', confidence: 0.65 },
+  { time: 1000, analyst: "technical", confidence: 0.7 },
+  { time: 2000, analyst: "macro", confidence: 0.4 },
+  { time: 1500, analyst: "technical", confidence: 0.65 },
 ];
 
 type EchartsOption = {
@@ -52,7 +52,7 @@ async function latestOption(): Promise<EchartsOption> {
   return instance.setOption.mock.calls.at(-1)![0] as EchartsOption;
 }
 
-describe('ECharts panes', () => {
+describe("ECharts panes", () => {
   beforeEach(() => {
     mockEcharts.__resetInstances();
   });
@@ -61,32 +61,32 @@ describe('ECharts panes', () => {
     vi.useRealTimers();
   });
 
-  it('AllocationChart emits a treemap grouped by asset class', async () => {
+  it("AllocationChart emits a treemap grouped by asset class", async () => {
     render(<AllocationChart items={ITEMS} />);
 
-    expect(screen.getByText('Capital Allocation')).toBeDefined();
+    expect(screen.getByText("Capital Allocation")).toBeDefined();
     const option = await latestOption();
 
-    expect(option.series[0]!.type).toBe('treemap');
+    expect(option.series[0]!.type).toBe("treemap");
     const data = option.series[0]!.data as Array<{ name: string; value: number }>;
-    expect(data.map((n) => n.name)).toEqual(['Metals', 'FX']);
+    expect(data.map((n) => n.name)).toEqual(["Metals", "FX"]);
     expect(data[0]!.value).toBeCloseTo(0.46);
   });
 
-  it('CorrelationChart emits an n×n heatmap with labeled axes', async () => {
+  it("CorrelationChart emits an n×n heatmap with labeled axes", async () => {
     render(<CorrelationChart symbols={SYMBOLS} matrix={MATRIX} />);
 
-    expect(screen.getByText('Cross-Asset Correlation')).toBeDefined();
+    expect(screen.getByText("Cross-Asset Correlation")).toBeDefined();
     const option = await latestOption();
 
-    expect(option.series[0]!.type).toBe('heatmap');
+    expect(option.series[0]!.type).toBe("heatmap");
     expect(option.series[0]!.data).toHaveLength(4);
   });
 
-  it('ConfidenceChart emits one line per analyst, time-sorted', async () => {
+  it("ConfidenceChart emits one line per analyst, time-sorted", async () => {
     render(<ConfidenceChart points={POINTS} />);
 
-    expect(screen.getByText('AI Committee Confidence')).toBeDefined();
+    expect(screen.getByText("AI Committee Confidence")).toBeDefined();
     const option = await latestOption();
 
     const series = option.series as Array<{
@@ -94,16 +94,16 @@ describe('ECharts panes', () => {
       name: string;
       data: Array<[number, number]>;
     }>;
-    expect(series.map((s) => s.type)).toEqual(['line', 'line']);
-    expect(series.map((s) => s.name).sort()).toEqual(['macro', 'technical']);
-    const technical = series.find((s) => s.name === 'technical')!;
+    expect(series.map((s) => s.type)).toEqual(["line", "line"]);
+    expect(series.map((s) => s.name).sort()).toEqual(["macro", "technical"]);
+    const technical = series.find((s) => s.name === "technical")!;
     expect(technical.data).toEqual([
       [1_000_000, 0.7],
       [1_500_000, 0.65],
     ]);
   });
 
-  it('disposes the instance on unmount', () => {
+  it("disposes the instance on unmount", () => {
     const { unmount } = render(<AllocationChart items={ITEMS} />);
     const instance = mockEcharts.__getInstances()[0]!;
 

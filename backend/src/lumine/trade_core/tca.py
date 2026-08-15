@@ -40,7 +40,7 @@ class TcaCalculation:
     benchmark_source: str = "arrival_mid"
 
 
-def _mid(tick: Any) -> Decimal:  # noqa: ANN401
+def _mid(tick: Any) -> Decimal:
     """Return a validated bid/ask midpoint from a market-data row."""
     bid = cast("Decimal", tick.bid)
     ask = cast("Decimal", tick.ask)
@@ -50,7 +50,7 @@ def _mid(tick: Any) -> Decimal:  # noqa: ANN401
     return (bid + ask) / 2
 
 
-def calculate_tca(  # noqa: PLR0913
+def calculate_tca(
     *,
     side: str,
     fill_price: Decimal,
@@ -98,12 +98,12 @@ def calculate_tca(  # noqa: PLR0913
     )
 
 
-def _calendar_closed(calendar: Any, symbol: str, ts: datetime) -> bool:  # noqa: ANN401
+def _calendar_closed(calendar: Any, symbol: str, ts: datetime) -> bool:
     """Call an injected calendar without imposing a concrete calendar type."""
     return calendar is not None and calendar.is_closed(symbol, ts)
 
 
-def _next_open(calendar: Any, symbol: str, ts: datetime) -> datetime | None:  # noqa: ANN401
+def _next_open(calendar: Any, symbol: str, ts: datetime) -> datetime | None:
     """Resolve the next session open from an injected calendar."""
     return None if calendar is None else calendar.next_session_open(symbol, ts)
 
@@ -113,7 +113,7 @@ async def resolve_benchmark(
     symbol: str,
     decision_ts: datetime,
     *,
-    calendar: Any = None,  # noqa: ANN401
+    calendar: Any = None,
 ) -> Benchmark:
     """Resolve arrival mid, clamping closed-market decisions to next open.
 
@@ -152,7 +152,7 @@ async def resolve_benchmark(
     return Benchmark(price=_mid(tick), ts=tick.ts, source="arrival_mid")
 
 
-async def persist_tca(  # noqa: PLR0913
+async def persist_tca(
     session: AsyncSession,
     fill: Fill,
     *,
@@ -162,7 +162,7 @@ async def persist_tca(  # noqa: PLR0913
     account_id: str,
     pip_value: Decimal,
     pip_size: Decimal | None = None,
-    calendar: Any = None,  # noqa: ANN401
+    calendar: Any = None,
 ) -> TcaRecord:
     """Compute and stage a TCA row in the caller-owned fill transaction."""
     benchmark = await resolve_benchmark(session, fill.symbol, decision_ts, calendar=calendar)

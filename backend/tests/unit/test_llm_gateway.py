@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 _MVID = uuid.uuid4()
 
 
-def _req(**overrides: Any) -> RouterRequest:  # noqa: ANN401 — mirrors RouterRequest fields
+def _req(**overrides: Any) -> RouterRequest:
     base: dict[str, Any] = {
         "model_version_id": _MVID,
         "model": "deepseek-v4",

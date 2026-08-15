@@ -28,7 +28,7 @@ from lumine.llm_gateway.usage import LLMUsageRecordError, record_usage, write_us
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 
-def _req(**overrides: Any) -> RouterRequest:  # noqa: ANN401 — test helper, mirrors RouterRequest fields
+def _req(**overrides: Any) -> RouterRequest:
     base: dict[str, Any] = {
         "model_version_id": uuid.uuid4(),
         "model": "deepseek-v4",

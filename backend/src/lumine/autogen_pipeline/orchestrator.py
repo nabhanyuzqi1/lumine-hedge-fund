@@ -160,7 +160,7 @@ class CycleResult:
 class DecisionOrchestrator:
     """Compose LLM stages with the deterministic engine for one cycle."""
 
-    def __init__(  # noqa: PLR0913 — injected collaborators are the DI contract
+    def __init__(
         self,
         *,
         gateway: Gateway,
@@ -573,7 +573,7 @@ class DecisionOrchestrator:
         message = f"missing reasoning trace evidence for {stage}"
         raise LineageWriteError(message)
 
-    async def _write_lineage(  # noqa: PLR0913 — lineage contract is fixed
+    async def _write_lineage(
         self,
         ctx: CycleContext,
         lineage_id: uuid.UUID,
@@ -627,9 +627,9 @@ class DecisionOrchestrator:
         )
         try:
             if trace_ids:
-                from sqlalchemy import update  # noqa: PLC0415
+                from sqlalchemy import update
 
-                from lumine.data.models import (  # noqa: PLC0415
+                from lumine.data.models import (
                     ReasoningTrace,
                     WorkflowJournal,
                 )

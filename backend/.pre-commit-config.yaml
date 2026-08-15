@@ -1,0 +1,32 @@
+# Pre-commit hooks for Python code quality and security.
+# Install: pip install pre-commit && pre-commit install
+# Run on all files: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - sqlalchemy[asyncio]>=2.0.35
+          - types-redis>=5.0.0
+          - types-PyYAML>=6.0.0
+        args: [--ignore-missing-imports]
+
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v1.9.4
+    hooks:
+      - id: biome
+        # Biome runs on frontend/, not backend/
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.22.0
+    hooks:
+      - id: validate-pyproject

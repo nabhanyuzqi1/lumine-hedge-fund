@@ -123,7 +123,7 @@ Phases must be executed in order. Each phase produces documents in `docs/NN-phas
 | 12 | Security | `docs/12-security/` | Done |
 | 13 | Testing Strategy | `docs/13-testing/` | Done |
 | 14 | Implementation Planning | `docs/14-implementation/` | Done |
-| 15 | Implementation | code | **In Progress** — Sprint 1 partial, Sprint 2 pending |
+| 15 | Implementation | code | **In Progress** — Sprint 1–7 selesai (evidence: `docs/15-implementation/sprint-evidence/`); gap tersisa ter-inventori di `docs/15-implementation/IMPLEMENTATION-GAP-INVENTORY.md` (backend: RPC stub, demo-data, 52 test llm-gateway; frontend: panel UI lanjutan; general: blocker infra Phase 16). **Auth: internal session auth (AUTH-01 CLOSED)** — users table + PBKDF2 + cookie HMAC + Caddy forward_auth; Authelia & Keycloak dihapus. |
 
 > See `docs/phase-mapping.md` for how this master prompt maps to the actual repository folders.
 

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 _SUB_ROLE = "technical_analyst"
 
 
-async def run_technical_analyst(  # noqa: PLR0913 — analyst stage contract is fixed
+async def run_technical_analyst(
     *,
     gateway: Gateway,
     registry: Registry,

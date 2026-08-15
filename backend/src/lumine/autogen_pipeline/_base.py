@@ -187,7 +187,7 @@ async def run_llm_stage(
             idempotency_key=ctx.idempotency_key if attempt == 0 else f"{ctx.idempotency_key}-retry",
             messages=attempt_messages,
         )
-        result: GatewayResult = gateway.complete(request, spend=spend)
+        result: GatewayResult = await gateway.complete_async(request, spend=spend)
         raw_response = result.response.content
         parsed = _try_parse(raw_response)
         if parsed is not None:

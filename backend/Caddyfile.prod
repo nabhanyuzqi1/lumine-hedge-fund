@@ -1,0 +1,125 @@
+# Lumine Caddyfile — production (VPS).
+#
+# Auth: first-party internal session auth (users di PostgreSQL via
+# backend /api/auth/*). Caddy forward_auth → backend /api/auth/verify
+# melindungi /superadmin, /novnc, /dozzle di layer reverse-proxy
+# (defense in depth di atas SPA route guards). 401 → redirect /login.
+
+http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
+
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+    handle /health {
+        reverse_proxy api:8000
+    }
+    handle /metrics {
+        reverse_proxy api:8000
+    }
+
+    @superadmin {
+        path /superadmin*
+    }
+    handle @superadmin {
+        forward_auth api:8000 {
+            uri /api/auth/verify?role=superadmin
+        }
+        reverse_proxy frontend:80
+    }
+
+    # ── AutoGen Studio (agent management UI) ──────────────────────────────
+    # Container lumine-autogenstudio:8081 (network backend_default — connect
+    # via `docker network connect backend_default lumine-autogenstudio`).
+    # Tanpa forward_auth (session autogenstudio sendiri); akses via
+    # https://lumine.biz.id/autogen-studio.
+    @autogenstudio {
+        path /autogen-studio /autogen-studio/*
+    }
+    handle @autogenstudio {
+        uri strip_prefix /autogen-studio
+        reverse_proxy lumine-autogenstudio:8081
+    }
+
+    # ── MT5 Redis HTTP Proxy (bypass internal hostname WebRequest limitation) ──
+    # EA polling: GET /mt5-proxy/commands?timeout=1 → redis-http-proxy:8765
+    # POST /mt5-proxy/results, /mt5-proxy/ticks
+    # Tanpa forward_auth (EA tidak punya cookie session).
+    handle /mt5-proxy/* {
+        uri strip_prefix /mt5-proxy
+        reverse_proxy redis-http-proxy:8765
+    }
+
+    # ── noVNC (MT5 desktop) — single-login: /novnc → vnc.html dengan
+    # autoconnect + password dari env (tanpa login VNC kedua).
+    # PITFALL: `redir` di dalam `handle {}` pecah di Caddy 2.11 (target jadi
+    # path matcher) → redirect ditaruh di site level via named matcher.
+    @novnc_root {
+        path /novnc /novnc/
+    }
+    redir @novnc_root "/novnc/vnc.html?autoconnect=true&path=/novnc/websockify&password={$VNC_PASSWORD}&resize=scale" permanent
+
+    @novnc_ws {
+        path /novnc/websockify*
+    }
+    handle @novnc_ws {
+        # PITFALL: forward_auth memecah WebSocket upgrade di Caddy 2.11
+        # (header Connection/Upgrade hilang → websockify lihat plain GET →
+        # 404). WS endpoint dibuka tanpa auth: VNC tetap dilindungi password
+        # (autoconnect URL), halaman vnc.html + asset tetap di-auth.
+        uri strip_prefix /novnc
+        reverse_proxy lumine-mt5:6901
+    }
+
+    @novnc {
+        path /novnc*
+    }
+    handle @novnc {
+        forward_auth api:8000 {
+            uri /api/auth/verify?role=admin
+        }
+        uri strip_prefix /novnc
+        reverse_proxy lumine-mt5:6901
+    }
+
+    @dozzle {
+        path /dozzle*
+    }
+    handle @dozzle {
+        forward_auth api:8000 {
+            uri /api/auth/verify?role=admin
+        }
+        # DOZZLE_BASE=/dozzle → dozzle serve di /dozzle/* (asset ber-prefix).
+        # JANGAN strip prefix — dozzle butuh path lengkap.
+        reverse_proxy dozzle:8080
+    }
+
+    handle {
+        reverse_proxy frontend:80
+    }
+
+    # 401 dari forward_auth → arahkan ke halaman login SPA (non-API paths).
+    handle_errors {
+        @unauth {
+            expression {http.error.status_code} == 401
+            not path /api/*
+        }
+        redir @unauth /login?redirect={http.request.uri.path} 302
+    }
+
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy same-origin
+        # HSTS: 6 bulan, include subdomains (browser force HTTPS via CF)
+        Strict-Transport-Security "max-age=15768000; includeSubDomains"
+        # Batasi API browser (camera/mic/geolocation tidak dipakai)
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        -Server
+    }
+}
+
+http://router.lumine.biz.id {
+    reverse_proxy 9router:20128
+}

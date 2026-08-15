@@ -1,0 +1,185 @@
+# Lumine production stack — VPS deployment (166.88.227.177)
+#
+# Usage:
+#   cp .env.prod.example .env   # lalu isi DB_PASSWORD, HMAC_SECRET_KEY, dll
+#   docker compose -f docker-compose.vps.yml up -d
+#
+# v1 scope: postgres / redis / api / migrate / mt5-bridge / frontend / caddy.
+# Deferred: mt5-wine (scripts/deploy/mt5), 9router (LLM gateway) — lihat
+# docs/15-implementation/COMPLETION-WORKFLOW.md W4.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lumine
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: lumine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lumine:${DB_PASSWORD}@postgres:5432/lumine
+      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - TRADER_PASSWORD=${TRADER_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lumine:${DB_PASSWORD}@postgres:5432/lumine
+      # Production mode: DB-backed orders/positions + MT5 bridge aktif
+      # (default demo_data=True — WAJIB 0 di production)
+      - DEMO_DATA=${DEMO_DATA:-0}
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
+      - LLM_GATEWAY_URL=${LLM_GATEWAY_URL:-}
+      - LLM_GATEWAY_API_KEY=${LLM_GATEWAY_API_KEY:-}
+      - LLM_DEFAULT_MODEL=${LLM_DEFAULT_MODEL:-oc/deepseek-v4-flash-free}
+      - SESSION_COOKIE_SECURE=true
+      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - TRADER_PASSWORD=${TRADER_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Superadmin system-info: query container status via Docker API socket
+      # (docker CLI tidak ada di image; SDK python baca /containers/json).
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  mt5-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "scripts.run_bridge"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; redis.Redis.from_url('redis://redis:6379/0').ping()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Redis HTTP Proxy — bypass MQL5 socket limitation (demo account block) ──
+  # EA polling GET /commands?timeout=30 → BRPOP mt5:commands
+  # EA POST /results → PUBLISH mt5:results
+  # EA POST /ticks → LPUSH mt5:ticks
+  redis-http-proxy:
+    image: python:3.12-slim
+    restart: unless-stopped
+    command: >
+      sh -c "pip install --quiet flask redis &&
+             python /app/redis_http_proxy.py"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - PORT=8765
+    volumes:
+      - ./scripts:/app:ro
+    expose:
+      - "8765"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ── Dozzle — container log monitoring (superadmin side) ──────────────────
+  # Loopback-only: akses via Caddy /dozzle (dilindungi forward_auth internal).
+  dozzle:
+    image: amir20/dozzle:latest
+    environment:
+      - DOZZLE_USERNAME=${DOZZLE_USERNAME:-lumine}
+      - DOZZLE_PASSWORD=${DOZZLE_PASSWORD:-change-me-superadmin}
+      - DOZZLE_LEVEL=info
+      # Served di /dozzle via Caddy strip_prefix → base path wajib diketahui
+      # dozzle agar asset (JS/CSS) ikut ber-prefix (fix dozzle blank).
+      - DOZZLE_BASE=/dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        # Base relatif — resolve ke origin halaman (https://lumine.biz.id/api/v1
+        # di prod). Tanpa IP/domain: origin server tidak terekspos, no CORS.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_LUMINE_API_KEY: ${VITE_LUMINE_API_KEY:-}
+        VITE_LUMINE_API_SECRET: ${VITE_LUMINE_API_SECRET:-}
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # VNC_PASSWORD dipakai Caddyfile ({$VNC_PASSWORD}) untuk noVNC
+      # autoconnect — single login (tanpa dialog password VNC kedua).
+      - VNC_PASSWORD=${VNC_PASSWORD:?VNC_PASSWORD wajib di .env}
+      - CADDY_ADMIN_USER=${CADDY_ADMIN_USER:-superadmin}
+      - CADDY_ADMIN_HASH=${CADDY_ADMIN_HASH}
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+

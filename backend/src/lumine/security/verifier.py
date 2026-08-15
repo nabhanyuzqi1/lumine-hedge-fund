@@ -46,8 +46,8 @@ class VerificationResult:
         return not self.failures
 
 
-def _row_mapping(row: Any) -> dict[str, Any]:  # noqa: ANN401
-    mapping = row._mapping  # noqa: SLF001
+def _row_mapping(row: Any) -> dict[str, Any]:
+    mapping = row._mapping
     return dict(mapping)
 
 
@@ -131,7 +131,7 @@ async def _read_table(session: AsyncSession, table_name: str) -> list[dict[str, 
     order_column = CHAIN_ORDER_COLUMN[table_name]
     pk_column = CHAIN_PK_COLUMN[table_name]
     query = text(
-        f"SELECT * FROM {table_name} ORDER BY {order_column} ASC, {pk_column} ASC"  # noqa: S608 — identifiers come from module-level allowlists
+        f"SELECT * FROM {table_name} ORDER BY {order_column} ASC, {pk_column} ASC"  # noqa: S608  # nosec B608 — identifiers from module-level allowlists only
     )
     result = await session.execute(query)
     return [_row_mapping(row) for row in result]
@@ -171,7 +171,7 @@ async def _run(database_url: str) -> int:
             f"{status} {result.table_name}: rows={result.row_count} head={result.head_hash or '-'}"
         )
         output.extend(f"  {failure}" for failure in result.failures)
-    print("\n".join(output))  # noqa: T201 — CLI result output
+    print("\n".join(output))
     return 0 if all(result.valid for result in results) else 1
 
 
@@ -179,8 +179,8 @@ def main() -> int:
     args = _build_parser().parse_args()
     try:
         return asyncio.run(_run(args.database_url))
-    except Exception as exc:  # noqa: BLE001 — CLI must return a failing exit code
-        print(f"FAIL verifier: {exc}")  # noqa: T201 — CLI error output
+    except Exception as exc:
+        print(f"FAIL verifier: {exc}")
         return 1
 
 

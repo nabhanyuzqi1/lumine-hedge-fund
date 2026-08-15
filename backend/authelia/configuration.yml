@@ -1,0 +1,71 @@
+---
+server:
+  address: tcp://0.0.0.0:9091/auth
+
+log:
+  level: info
+
+theme: dark
+
+identity_validation:
+  reset_password:
+    jwt_secret: ${AUTHELIA_JWT_SECRET}
+
+totp:
+  issuer: lumine-hedge-fund
+  disable: false
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2id
+      iterations: 3
+      salt_length: 16
+      parallelism: 4
+      memory: 65536
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: 'router.lumine.biz.id'
+      policy: one_factor
+    - domain: 'lumine.biz.id'
+      resources:
+        - '^/superadmin(/.*)?$'
+        - '^/novnc(/.*)?$'
+        - '^/dozzle(/.*)?$'
+      policy: one_factor
+    - domain: 'lumine.biz.id'
+      policy: bypass
+    - domain: '166.88.227.177'
+      policy: bypass
+
+session:
+  secret: ${AUTHELIA_SESSION_SECRET}
+  name: lumine_session
+  expiration: 3600
+  inactivity: 300
+  cookies:
+    - domain: 'lumine.biz.id'
+      authelia_url: 'https://lumine.biz.id/auth/'
+      default_redirection_url: 'https://lumine.biz.id/superadmin'
+  redis:
+    host: redis
+    port: 6379
+    database_index: 1
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+  encryption_key: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  disable_startup_check: true
+  filesystem:
+    filename: /config/notification.txt

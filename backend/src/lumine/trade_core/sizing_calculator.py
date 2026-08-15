@@ -81,7 +81,7 @@ def clamp_volume(volume: Decimal, min_volume: Decimal, max_volume: Decimal) -> D
     return volume
 
 
-def calculate_size(  # noqa: PLR0913 — sizing inputs are a fixed contract
+def calculate_size(
     *,
     entry_price: Decimal,
     atr_14: Decimal,

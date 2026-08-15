@@ -1,27 +1,30 @@
 {
-  "name": "lumine-site",
+  "name": "lumine-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Lumine — AI-native quantitative hedge fund platform. Marketing landing page + institutional portal (Phase 10 stack).",
+  "description": "Lumine institutional dashboard and terminal",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "lighthouse:ci": "node scripts/lighthouse-ci.js",
     "lhci": "npm run lighthouse:ci"
   },
   "dependencies": {
+    "@radix-ui/react-avatar": "^1.2.6",
     "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
+    "@radix-ui/react-navigation-menu": "^1.2.22",
+    "@radix-ui/react-separator": "^1.1.15",
+    "@radix-ui/react-tooltip": "^1.2.16",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-query-devtools": "^5.101.4",
     "@tanstack/react-virtual": "^3.14.9",
@@ -29,6 +32,7 @@
     "clsx": "^2.1.1",
     "echarts": "^6.1.0",
     "lightweight-charts": "^5.2.0",
+    "lucide-react": "^1.31.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
@@ -36,7 +40,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@eslint/js": "^9.30.0",
+    "@biomejs/biome": "1.9.4",
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
@@ -48,19 +52,14 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "eslint": "^9.30.0",
-    "eslint-config-prettier": "^10.1.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^15.15.0",
     "jsdom": "^26.1.0",
-    "lighthouse": "^13.4.1",
-    "prettier": "^3.5.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.8.0",
-    "typescript-eslint": "^8.30.0",
+    "typescript": "~5.8.3",
     "vite": "^6.0.0",
     "vitest": "^3.1.0"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom"
   }
 }

@@ -1,65 +1,65 @@
-import * as React from 'react';
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
 
-import { useShallow } from 'zustand/react/shallow';
-
-import { useQuote } from '@/api/hooks';
-import { Badge } from '@/components/ui/badge';
-import { NumericText } from '@/components/ui/numeric-text';
-import { useStreamStore } from '@/stores/streamStore';
-import { useUiStore } from '@/stores/uiStore';
+import { Badge } from "@/components/ui/badge";
+import { useStreamStore } from "@/stores/streamStore";
+import { useUiStore } from "@/stores/uiStore";
+import { StreamStatusList } from "@/components/streams/stream-status-list";
+import { useAuth } from "@/lib/auth/role-context";
 
 const TOTAL_STREAMS = 6;
 
 function formatUTC(date: Date): string {
-  return date.toISOString().replace('T', ' ').slice(0, 19);
+  return date.toISOString().replace("T", " ").slice(0, 19);
 }
 
 function ShortcutLabel() {
   const isMac =
-    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
-  return <span aria-hidden="true">{isMac ? '⌘K' : 'Ctrl+K'}</span>;
+    typeof navigator !== "undefined" && navigator.platform.toLowerCase().includes("mac");
+  return <span aria-hidden="true">{isMac ? "⌘K" : "Ctrl+K"}</span>;
 }
 
 export function TopBar() {
+  const navigate = useNavigate();
+  const { logout, username, isAuthenticated } = useAuth();
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
-  const selectedSymbol = useUiStore((s) => s.selectedSymbol);
   const toggleCommandPalette = useUiStore((s) => s.toggleCommandPalette);
-  const quote = useQuote(selectedSymbol);
   const streams = useStreamStore(useShallow((s) => s.getAllStreams()));
   const [utc, setUtc] = React.useState(() => formatUTC(new Date()));
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   React.useEffect(() => {
     const id = setInterval(() => setUtc(formatUTC(new Date())), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const healthyCount = streams.filter((s) => s.status === 'open' && !s.stale).length;
+  const healthyCount = streams.filter((s) => s.status === "open" && !s.stale).length;
 
   return (
     <header
-      className="flex h-8 items-center justify-between border-b border-border-subtle bg-bg-raised px-3 text-xs"
+      className="flex h-8 items-center justify-between border-b border-line bg-raised px-3 text-xs"
       data-testid="top-bar"
     >
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-          <span className="font-medium text-text-primary">LIVE</span>
+          <span className="font-medium text-ink">LIVE</span>
         </div>
-        {quote.data && (
-          <div className="flex items-center gap-2 font-mono text-text-primary">
-            <span className="text-text-secondary">{selectedSymbol}</span>
-            <NumericText value={quote.data.last} decimals={2} />
-            <span className="hidden text-text-secondary sm:inline">
-              B <NumericText value={quote.data.bid} decimals={2} />
-            </span>
-            <span className="hidden text-text-secondary sm:inline">
-              A <NumericText value={quote.data.ask} decimals={2} />
-            </span>
-          </div>
-        )}
+        {/* Quote pindah ke terminal (CommandBar/QuotePanel) — TopBar global
+            tidak menduplikasi symbol/price per halaman. */}
       </div>
 
       <div className="flex items-center gap-3">
+        {isAuthenticated && username && (
+          <span className="text-text-secondary text-xs">
+            {username}
+          </span>
+        )}
         {killSwitchActive ? (
           <Badge tone="danger" label="KILL SWITCH ACTIVE" />
         ) : (
@@ -83,6 +83,19 @@ export function TopBar() {
         >
           {healthyCount}/{TOTAL_STREAMS}
         </span>
+        <span className="hidden lg:inline-flex" data-testid="stream-status-dots">
+          <StreamStatusList />
+        </span>
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="text-text-secondary hover:text-text-primary text-xs underline"
+            aria-label="Logout"
+          >
+            Logout
+          </button>
+        )}
       </div>
     </header>
   );

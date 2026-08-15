@@ -84,7 +84,7 @@ async def load_model_versions(session: AsyncSession) -> ModelRegistry:
     synchronously by :func:`resolve_model`. Only used by app bootstrap
     and integration tests — unit tests inject rows directly.
     """
-    from sqlalchemy import select  # noqa: PLC0415
+    from sqlalchemy import select
 
     rows = (await session.execute(select(ModelVersion))).scalars().all()
     return ModelRegistry({row.id: _row_to_dict(row) for row in rows})

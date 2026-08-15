@@ -3,14 +3,14 @@
  * to every test file — component tests assert against instances captured
  * here via `__getCharts()`.
  */
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
-export const ColorType = { Solid: 'solid' };
+export const ColorType = { Solid: "solid" };
 export const CrosshairMode = { Normal: 0 };
-export const CandlestickSeries = 'CandlestickSeries';
-export const HistogramSeries = 'HistogramSeries';
-export const AreaSeries = 'AreaSeries';
-export const LineSeries = 'LineSeries';
+export const CandlestickSeries = "CandlestickSeries";
+export const HistogramSeries = "HistogramSeries";
+export const AreaSeries = "AreaSeries";
+export const LineSeries = "LineSeries";
 
 const charts: Array<ReturnType<typeof makeChart>> = [];
 

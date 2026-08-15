@@ -80,11 +80,11 @@ def _canonicalize_ts(value: datetime) -> str:
     if value.tzinfo is None:
         # Hard error: a naive timestamp would serialize with a local offset
         # depending on the host, making the hash non-replayable.
-        raise ValueError("naive datetime in chained row — must be timezone-aware")  # noqa: EM101 — pattern used across bridge/types.py
+        raise ValueError("naive datetime in chained row — must be timezone-aware")
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
-def _canonicalize_value(value: Any) -> Any:  # noqa: ANN401 — JSONB payloads are arbitrary JSON
+def _canonicalize_value(value: Any) -> Any:
     """Recursively canonicalize a single value per ADR-0017.
 
     - JSONB values are recursively sorted by key (via ``json.dumps``
@@ -137,7 +137,7 @@ def compute_self_hash(prev_hash: str, row_without_self_hash: Mapping[str, Any]) 
     return sha256_hex(prev_hash.encode("utf-8") + canonical_json(row_without_self_hash))
 
 
-def orm_payload(record: Any) -> dict[str, Any]:  # noqa: ANN401 — SQLAlchemy mapped classes are not structurally typed
+def orm_payload(record: Any) -> dict[str, Any]:
     """Serialize an ORM row to the canonical hash payload.
 
     Every persisted column except ``self_hash``/``prev_hash`` (which the
@@ -240,7 +240,7 @@ async def read_last_hash(session: AsyncSession, table_name: str) -> str:
     pk_col = CHAIN_PK_COLUMN[table_name]
     # Identifiers are resolved only from the module-level allowlists
     # (CHAIN_ORDER_COLUMN / CHAIN_PK_COLUMN) — never from caller input.
-    sql = f"SELECT self_hash FROM {table_name} ORDER BY {order_col} DESC, {pk_col} DESC LIMIT 1"  # noqa: S608
+    sql = f"SELECT self_hash FROM {table_name} ORDER BY {order_col} DESC, {pk_col} DESC LIMIT 1"  # noqa: S608  # nosec B608 — identifiers from module-level allowlists only
     stmt = text(sql)
     result = await session.execute(stmt)
     row = result.first()
@@ -263,7 +263,7 @@ async def read_chain_head(session: AsyncSession, table_name: str) -> tuple[str, 
     pk_col = CHAIN_PK_COLUMN[table_name]
     # Identifiers come only from the module-level allowlists (S608-safe).
     sql = (
-        f"SELECT self_hash, {pk_col} FROM {table_name} "  # noqa: S608 — identifiers resolved from module-level allowlists
+        f"SELECT self_hash, {pk_col} FROM {table_name} "  # noqa: S608  # nosec B608 — identifiers from module-level allowlists only
         f"ORDER BY {order_col} DESC, {pk_col} DESC LIMIT 1"
     )
     result = await session.execute(text(sql))

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from lumine.prompts.registry import Registry
 
 
-async def run_cio_proposer(  # noqa: PLR0913 — stage/pin contract is fixed
+async def run_cio_proposer(
     *,
     gateway: Gateway,
     registry: Registry,

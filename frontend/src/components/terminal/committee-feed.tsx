@@ -1,20 +1,20 @@
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from "zustand/react/shallow";
 
-import { Badge } from '@/components/ui/badge';
-import { useCommitteeStore, type CommitteeActivity } from '@/stores/committeeStore';
+import { Badge } from "@/components/ui/badge";
+import { type CommitteeActivity, useCommitteeStore } from "@/stores/committeeStore";
 
-const TYPE_TONE: Record<CommitteeActivity['type'], 'info' | 'ok' | 'warn' | 'danger'> = {
-  analyst_output: 'info',
-  ic_decision: 'ok',
-  cio_proposal: 'warn',
-  risk_assessment: 'danger',
+const TYPE_TONE: Record<CommitteeActivity["type"], "info" | "ok" | "warn" | "danger"> = {
+  analyst_output: "info",
+  ic_decision: "ok",
+  cio_proposal: "warn",
+  risk_assessment: "danger",
 };
 
-const TYPE_LABEL: Record<CommitteeActivity['type'], string> = {
-  analyst_output: 'Analyst',
-  ic_decision: 'IC',
-  cio_proposal: 'CIO',
-  risk_assessment: 'Risk',
+const TYPE_LABEL: Record<CommitteeActivity["type"], string> = {
+  analyst_output: "Analyst",
+  ic_decision: "IC",
+  cio_proposal: "CIO",
+  risk_assessment: "Risk",
 };
 
 /**

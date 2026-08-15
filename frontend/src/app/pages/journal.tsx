@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 
-import { useJournal, useJournalPage, type JournalFilters } from '@/api/hooks';
-import { JournalTable } from '@/components/journal/journal-table';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { JournalEntry, JournalPage } from '@/data/fixtures';
+import { type JournalFilters, useJournal, useJournalPage } from "@/api/hooks";
+import { downloadCsv, toCsv } from "@/lib/csv";
+import { JournalTable } from "@/components/journal/journal-table";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { JournalEntry, JournalPage } from "@/data/fixtures";
 
-const ALL = 'all';
+const ALL = "all";
 
-type LocalFilters = Required<Omit<JournalFilters, 'portfolioId'>> & {
+type LocalFilters = Required<Omit<JournalFilters, "portfolioId">> & {
   portfolioId: string;
   start?: string;
   end?: string;
@@ -46,7 +47,7 @@ export function JournalPage() {
       portfolioId: filters.portfolioId === ALL ? undefined : filters.portfolioId,
       kind: filters.kind === ALL ? undefined : filters.kind,
     }),
-    [filters],
+    [filters]
   );
 
   const first = useJournal(backendFilters);
@@ -73,8 +74,7 @@ export function JournalPage() {
         if (
           prev.some(
             (p) =>
-              p.cursor === nextPage.data.cursor &&
-              p.entries.length === nextPage.data.entries.length,
+              p.cursor === nextPage.data.cursor && p.entries.length === nextPage.data.entries.length
           )
         ) {
           return prev;
@@ -91,11 +91,11 @@ export function JournalPage() {
 
   const symbols = useMemo(
     () => Array.from(new Set(allEntries.map((e) => e.symbol).filter(Boolean))),
-    [allEntries],
+    [allEntries]
   );
   const portfolios = useMemo(
     () => Array.from(new Set(allEntries.map((e) => e.portfolio_id))),
-    [allEntries],
+    [allEntries]
   );
 
   const handleLoadMore = () => {
@@ -107,15 +107,46 @@ export function JournalPage() {
     setFilters({ symbol: ALL, portfolioId: ALL, kind: ALL });
   };
 
+  const handleExportCsv = () => {
+    const entries = loadedPages.flatMap((page) => page.entries);
+    downloadCsv(
+      `lumine-journal-${new Date().toISOString().slice(0, 10)}.csv`,
+      toCsv(
+        entries.map((entry) => ({
+          id: entry.id,
+          timestamp: entry.timestamp,
+          portfolio_id: entry.portfolio_id,
+          kind: entry.kind,
+          actor: entry.actor,
+          summary: entry.summary,
+          linked_lineage_id: entry.linked_lineage_id ?? "",
+        }))
+      )
+    );
+  };
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-4">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary">Journal</h1>
-          <p className="text-sm text-text-secondary">
-            Audit trail of decisions, trades, risk checks, and notes.
-          </p>
+    <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 md:p-4">
+      {/* Bloomberg-style section header */}
+      <header className="flex items-center justify-between border-b border-line pb-2">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">LUMINE</span>
+          <span className="h-3 w-px bg-line" aria-hidden="true" />
+          <span className="font-mono text-[11px] uppercase tracking-widest text-ink-dim">JOURNAL</span>
+          <span className="hidden h-3 w-px bg-line sm:block" aria-hidden="true" />
+          <span className="hidden font-mono text-[10px] uppercase tracking-wider text-ink-faint sm:block">
+            decisions · trades · risk · notes
+          </span>
         </div>
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={loadedPages.every((page) => page.entries.length === 0)}
+          className="rounded-chip border border-line bg-bg px-3 py-1 text-xs text-ink-dim hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40"
+          data-testid="journal-export-csv"
+        >
+          Export CSV
+        </button>
       </header>
 
       <Card>
@@ -202,7 +233,7 @@ export function JournalPage() {
               <input
                 id="start"
                 type="date"
-                value={filters.start ?? ''}
+                value={filters.start ?? ""}
                 onChange={(e) => setFilters((f) => ({ ...f, start: e.target.value || undefined }))}
                 className="mt-1 block rounded-chip border border-border-subtle bg-bg-base px-2 py-1.5 text-xs text-text-primary"
                 data-testid="journal-start-date"
@@ -219,7 +250,7 @@ export function JournalPage() {
               <input
                 id="end"
                 type="date"
-                value={filters.end ?? ''}
+                value={filters.end ?? ""}
                 onChange={(e) => setFilters((f) => ({ ...f, end: e.target.value || undefined }))}
                 className="mt-1 block rounded-chip border border-border-subtle bg-bg-base px-2 py-1.5 text-xs text-text-primary"
                 data-testid="journal-end-date"
@@ -238,11 +269,14 @@ export function JournalPage() {
         </CardContent>
       </Card>
 
-      <JournalTable
-        entries={filteredEntries}
-        expandedId={expandedId}
-        onRowClick={(entry) => setExpandedId((id) => (id === entry.id ? null : entry.id))}
-      />
+      {/* Tabel bounded: scroll internal saat data banyak (max-h + overflow) */}
+      <div className="max-h-[60vh] overflow-auto rounded-panel border border-line">
+        <JournalTable
+          entries={filteredEntries}
+          expandedId={expandedId}
+          onRowClick={(entry) => setExpandedId((id) => (id === entry.id ? null : entry.id))}
+        />
+      </div>
 
       {hasMore && (
         <div className="flex justify-center">

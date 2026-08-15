@@ -8,9 +8,9 @@ paths:
     get:
       tags:
       - portfolio
-      summary: Get Portfolio Summary
-      description: Return the current portfolio summary.
-      operationId: get_portfolio_summary_api_v1_portfolio_summary_get
+      summary: Get Summary
+      description: Return the single (default) portfolio summary (live DB + MTM).
+      operationId: get_summary_api_v1_portfolio_summary_get
       parameters:
       - name: X-Lumine-API-Key
         in: header
@@ -49,12 +49,405 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio:
+    get:
+      tags:
+      - portfolio
+      summary: Get Portfolio
+      description: Return the single (default) portfolio (B-06 portfolio CRUD).
+      operationId: get_portfolio_api_v1_portfolio_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - portfolio
+      summary: Create Portfolio
+      description: 'Create a portfolio — single-portfolio v1: default book sudah ada.'
+      operationId: create_portfolio_api_v1_portfolio_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePortfolioRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}:
+    put:
+      tags:
+      - portfolio
+      summary: Update Portfolio
+      description: 'Rename/update the portfolio — v1 single-portfolio: tidak ada demo
+        echo.'
+      operationId: update_portfolio_api_v1_portfolio__portfolio_id__put
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePortfolioRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - portfolio
+      summary: Delete Portfolio
+      description: Delete a portfolio — v1 refuses the only book (safe default).
+      operationId: delete_portfolio_api_v1_portfolio__portfolio_id__delete
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}/equity:
+    get:
+      tags:
+      - portfolio
+      summary: Get Equity Curve
+      description: 'Equity curve (B-05/B-06) — derived dari live positions (opened_at
+        +
+
+        mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
+
+        atau belum ada posisi (bukan demo — lihat _real_equity_series).'
+      operationId: get_equity_curve_api_v1_portfolio__portfolio_id__equity_get
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_EquityPoint_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}/orders:
+    delete:
+      tags:
+      - portfolio
+      summary: Cancel All Orders
+      description: Cancel every open order in the portfolio (B-06 cancel-all).
+      operationId: cancel_all_orders_api_v1_portfolio__portfolio_id__orders_delete
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelAllResult'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/portfolio/{portfolio_id}/simulate:
+    post:
+      tags:
+      - portfolio
+      summary: Simulate Trade
+      description: 'Project portfolio impact of a hypothetical trade (what-if, no
+        execution).
+
+
+        ZERO-DEMO: harga live dari MarketService; NAV basis dari summary real.'
+      operationId: simulate_trade_api_v1_portfolio__portfolio_id__simulate_post
+      parameters:
+      - name: portfolio_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Portfolio Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulateTradeRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulateTradeResult'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/portfolio/positions:
     get:
       tags:
       - portfolio
       summary: List Positions
-      description: List open positions.
+      description: 'List open positions (ZERO-DEMO: real data dari tabel positions).
+
+
+        Mark-to-market pakai harga live MarketService; kalau feed kosong
+
+        (market libur) fallback ke avg_entry → unrealized_pnl flat 0.'
       operationId: list_positions_api_v1_portfolio_positions_get
       parameters:
       - name: limit
@@ -116,7 +509,7 @@ paths:
       tags:
       - portfolio
       summary: Get Position
-      description: Return a single open position.
+      description: 'Return a single open position (ZERO-DEMO: real dari tabel positions).'
       operationId: get_position_api_v1_portfolio_positions__position_id__get
       parameters:
       - name: position_id
@@ -230,7 +623,7 @@ paths:
       tags:
       - orders
       summary: List Orders
-      description: List orders.
+      description: List orders (DB-backed when DEMO_DATA=0).
       operationId: list_orders_api_v1_orders_get
       parameters:
       - name: limit
@@ -291,7 +684,8 @@ paths:
       tags:
       - orders
       summary: Create Order
-      description: Submit a new order.
+      description: Submit a new order (persisted when DEMO_DATA=0, diteruskan ke MT5
+        via bridge).
       operationId: create_order_api_v1_orders_post
       parameters:
       - name: X-Lumine-API-Key
@@ -342,7 +736,7 @@ paths:
       tags:
       - orders
       summary: Get Order
-      description: Return a single order.
+      description: Return a single order (DB-backed when DEMO_DATA=0).
       operationId: get_order_api_v1_orders__order_id__get
       parameters:
       - name: order_id
@@ -389,11 +783,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - orders
+      summary: Modify Order
+      description: Modify price/volume of a pending order (ModifyOrderDialog contract).
+      operationId: modify_order_api_v1_orders__order_id__patch
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModifyOrderRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
     delete:
       tags:
       - orders
       summary: Cancel Order
-      description: Cancel an open order.
+      description: Cancel an open order (persisted when DEMO_DATA=0).
       operationId: cancel_order_api_v1_orders__order_id__delete
       parameters:
       - name: order_id
@@ -434,6 +885,133 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orders/{order_id}/history:
+    get:
+      tags:
+      - orders
+      summary: Order History
+      description: 'Append-only state transitions for one order (B-06 order history).
+
+
+        Demo path yields a deterministic lifecycle (submitted → pending →
+
+        filled); the DB path reads ``order_state_transitions`` when storage
+
+        wiring lands.'
+      operationId: order_history_api_v1_orders__order_id__history_get
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_OrderHistoryEntry_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orders/bulk-status:
+    post:
+      tags:
+      - orders
+      summary: Bulk Order Status
+      description: Batch order status check (B-06).
+      operationId: bulk_order_status_api_v1_orders_bulk_status_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkStatusRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkStatusResult'
         '422':
           description: Validation Error
           content:
@@ -609,7 +1187,7 @@ paths:
       tags:
       - lineage
       summary: List Lineage
-      description: List decision lineage records.
+      description: List decision lineage records (DB-backed).
       operationId: list_lineage_api_v1_lineage_get
       parameters:
       - name: limit
@@ -671,7 +1249,7 @@ paths:
       tags:
       - lineage
       summary: Get Lineage Record
-      description: Return a single lineage record.
+      description: Return a single lineage record (DB-backed).
       operationId: get_lineage_record_api_v1_lineage__lineage_id__get
       parameters:
       - name: lineage_id
@@ -723,7 +1301,8 @@ paths:
       tags:
       - market
       summary: List Bars
-      description: Return recent market bars.
+      description: Return recent market bars (H1, DB-backed via bars_1h; seed dari
+        MT5).
       operationId: list_bars_api_v1_market_bars_get
       parameters:
       - name: limit
@@ -780,12 +1359,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/signals/{symbol}:
+    get:
+      tags:
+      - market
+      summary: List Symbol Signals
+      description: 'Return recent analyst signals for one symbol (B-06).
+
+
+        ZERO-DEMO: analyst signals dari pipeline agent — kosong sampai
+
+        committee live menghasilkan sinyal (tidak ada sinyal fiktif).'
+      operationId: list_symbol_signals_api_v1_market_signals__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedList_Signal_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/market/signals:
     get:
       tags:
       - market
       summary: List Signals
-      description: Return recent analyst signals.
+      description: 'Return recent analyst signals (ZERO-DEMO: kosong sampai pipeline
+        live).'
       operationId: list_signals_api_v1_market_signals_get
       parameters:
       - name: limit
@@ -842,12 +1495,639 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/quote/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Quote
+      description: 'Return the current bid/ask/last quote (live dari MarketService/Redis
+        ticks).
+
+
+        ZERO-DEMO: tanpa tick live (market libur / feed kosong) → 404,
+
+        bukan harga sintetis.'
+      operationId: get_quote_api_v1_market_quote__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketQuote'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/quotes:
+    get:
+      tags:
+      - market
+      summary: Get Quotes
+      description: Batch fetch quotes (live dari MarketService). Symbol tanpa tick
+        di-skip.
+      operationId: get_quotes_api_v1_market_quotes_get
+      parameters:
+      - name: symbols
+        in: query
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 50
+          title: Symbols
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/MarketQuote'
+                title: Response Get Quotes Api V1 Market Quotes Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/ohlcv/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Ohlcv
+      description: 'Return OHLCV bars for a symbol (DB-backed via bars_*; seed dari
+        MT5).
+
+
+        ZERO-DEMO: tabel kosong = return [] (bukan data fiktif random walk).'
+      operationId: get_ohlcv_api_v1_market_ohlcv__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(1m|5m|15m|30m|1h|4h|1d|1w)$
+          default: 1h
+          title: Timeframe
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: since
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Since
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketBar'
+                title: Response Get Ohlcv Api V1 Market Ohlcv  Symbol  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/symbol/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Symbol Config
+      description: Return instrument specification for a symbol.
+      operationId: get_symbol_config_api_v1_market_symbol__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymbolConfig'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/symbols:
+    get:
+      tags:
+      - market
+      summary: List Symbols
+      description: List all active instruments (optionally including inactive ones).
+      operationId: list_symbols_api_v1_market_symbols_get
+      parameters:
+      - name: asset_class
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Asset Class
+      - name: exchange
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Exchange
+      - name: include_inactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Include Inactive
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SymbolConfig'
+                title: Response List Symbols Api V1 Market Symbols Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/volatility/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Volatility
+      description: 'Return rolling volatility (fraction) — dihitung dari bars_1h real.
+
+
+        ZERO-DEMO: tanpa data bars → 0.0 (bukan formula sintetis).'
+      operationId: get_volatility_api_v1_market_volatility__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: window
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 365
+          minimum: 1
+          default: 14
+          title: Window
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VolatilityResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/correlation:
+    get:
+      tags:
+      - market
+      summary: Get Correlation
+      description: 'Return a symmetric correlation matrix dari returns bars real.
+
+
+        ZERO-DEMO: hanya symbol dengan data bars yang muncul; tanpa data →
+
+        diagonal 1.0 untuk symbol yang diminta, sisanya di-skip.'
+      operationId: get_correlation_api_v1_market_correlation_get
+      parameters:
+      - name: symbols
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          title: Symbols
+      - name: window
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 365
+          minimum: 1
+          default: 30
+          title: Window
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    type: number
+                title: Response Get Correlation Api V1 Market Correlation Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/spread/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Spread
+      description: 'Return spread statistics — live dari MarketService (bid/ask EA).
+
+
+        ZERO-DEMO: tanpa tick live → 0 (bukan wiggle sintetis).'
+      operationId: get_spread_api_v1_market_spread__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: period
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 86400
+          minimum: 1
+          default: 60
+          title: Period
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpreadMetrics'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/session/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Session
+      description: Return current trading session state (real market calendar, ADR-0037).
+      operationId: get_session_api_v1_market_session__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInfo'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/features/{symbol}:
+    get:
+      tags:
+      - market
+      summary: Get Features
+      description: 'Return computed technical features — dihitung dari bars real.
+
+
+        ZERO-DEMO: tanpa data bars → dict kosong (bukan fitur sintetis).'
+      operationId: get_features_api_v1_market_features__symbol__get
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Symbol
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureSet'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/journal:
     get:
       tags:
       - journal
       summary: List Journal Entries
-      description: List trade journal entries.
+      description: 'List trade journal entries (DB-backed: orders + workflow_journal).'
       operationId: list_journal_entries_api_v1_journal_get
       parameters:
       - name: limit
@@ -965,14 +2245,14 @@ paths:
         heartbeat).
       operationId: stream_market_data_api_v1_streams_market_data_get
       parameters:
-      - name: _symbol
+      - name: symbol
         in: query
         required: true
         schema:
           type: string
           minLength: 1
           description: Symbol to subscribe (required)
-          title: ' Symbol'
+          title: Symbol
         description: Symbol to subscribe (required)
       - name: X-Lumine-API-Key
         in: header
@@ -1549,6 +2829,116 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/system-info:
+    get:
+      tags:
+      - admin
+      summary: Get System Info
+      description: 'Snapshot status seluruh sistem — untuk superadmin control center.
+
+
+        Baca status container via Docker API socket (docker CLI tidak ada di
+
+        image; SDK `docker` baca /containers/json langsung). Fallback graceful
+
+        ke [unknown] jika socket tidak di-mount (dev/local).'
+      operationId: get_system_info_api_v1_admin_system_info_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfo'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/system-config:
+    put:
+      tags:
+      - admin
+      summary: Update System Config
+      description: 'Update konfigurasi runtime (LLM key, trading params).
+
+
+        Nilai disimpan ke Redis. Untuk apply penuh perlu restart container api.
+
+        Field None = tidak diubah.'
+      operationId: update_system_config_api_v1_admin_system_config_put
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemConfigUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Update System Config Api V1 Admin System Config Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/rpc/run-decision-cycle:
     post:
       tags:
@@ -1581,6 +2971,14 @@ paths:
           - type: string
           - type: 'null'
           title: X-Lumine-Signature
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/RpcCommandRequest'
+              - type: 'null'
+              title: Request
       responses:
         '200':
           description: Successful Response
@@ -1735,6 +3133,157 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/rpc/commands/{command_id}:
+    get:
+      tags:
+      - rpc
+      summary: Get Command Status
+      description: Return the execution status/result of a previously enqueued command.
+      operationId: get_command_status_api_v1_rpc_commands__command_id__get
+      parameters:
+      - name: command_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Command Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RpcCommandResult'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/login:
+    post:
+      tags:
+      - auth
+      summary: Login
+      description: Authenticate and set the ``lumine_session`` HttpOnly cookie.
+      operationId: login_api_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Login Api Auth Login Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/logout:
+    post:
+      tags:
+      - auth
+      summary: Logout
+      description: Clear the session cookie.
+      operationId: logout_api_auth_logout_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+                title: Response Logout Api Auth Logout Post
+  /api/auth/me:
+    get:
+      tags:
+      - auth
+      summary: Me
+      description: Return the current session principal (SPA bootstraps from here).
+      operationId: me_api_auth_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Me Api Auth Me Get
+  /api/auth/verify:
+    get:
+      tags:
+      - auth
+      summary: Verify
+      description: 'Caddy ``forward_auth`` target + SPA guard endpoint.
+
+
+        Returns 200 when a valid session exists and satisfies the optional
+
+        ``?role=`` gate (user < admin < superadmin); 401 otherwise.'
+      operationId: verify_api_auth_verify_get
+      parameters:
+      - name: role
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Verify Api Auth Verify Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AdminKey:
@@ -1766,6 +3315,51 @@ components:
       - created_at
       title: AdminKey
       description: API key management view.
+    BulkStatusRequest:
+      properties:
+        order_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 100
+          minItems: 1
+          title: Order Ids
+      type: object
+      required:
+      - order_ids
+      title: BulkStatusRequest
+      description: Batch order status check payload.
+    BulkStatusResult:
+      properties:
+        statuses:
+          additionalProperties:
+            type: string
+          type: object
+          title: Statuses
+        total:
+          type: integer
+          title: Total
+      type: object
+      required:
+      - statuses
+      - total
+      title: BulkStatusResult
+      description: Batch order status check result.
+    CancelAllResult:
+      properties:
+        cancelled:
+          type: integer
+          title: Cancelled
+        portfolio_id:
+          type: string
+          title: Portfolio Id
+      type: object
+      required:
+      - cancelled
+      - portfolio_id
+      title: CancelAllResult
+      description: Cancel-all outcome.
     CreateKeyRequest:
       properties:
         key_id:
@@ -1854,6 +3448,19 @@ components:
       - volume
       title: CreateOrderRequest
       description: Payload to submit a new order.
+    CreatePortfolioRequest:
+      properties:
+        name:
+          type: string
+          title: Name
+          default: default
+        currency:
+          type: string
+          title: Currency
+          default: USD
+      type: object
+      title: CreatePortfolioRequest
+      description: 'Create a portfolio (single-portfolio v1: returns the default).'
     CreatedAdminKey:
       properties:
         key_id:
@@ -1879,6 +3486,32 @@ components:
       - created_at
       title: CreatedAdminKey
       description: API key creation response containing the secret exactly once.
+    EquityPoint:
+      properties:
+        ts:
+          type: string
+          format: date-time
+          title: Ts
+        nav:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Nav
+        equity:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Equity
+        drawdown:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Drawdown
+      type: object
+      required:
+      - ts
+      - nav
+      - equity
+      - drawdown
+      title: EquityPoint
+      description: One point on the portfolio equity curve.
     ExposureSummary:
       properties:
         symbol:
@@ -1904,6 +3537,27 @@ components:
       - pct_of_nav
       title: ExposureSummary
       description: Exposure breakdown per symbol/bucket.
+    FeatureSet:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        features:
+          additionalProperties:
+            type: number
+          type: object
+          title: Features
+        computed_at:
+          type: string
+          format: date-time
+          title: Computed At
+      type: object
+      required:
+      - symbol
+      - features
+      - computed_at
+      title: FeatureSet
+      description: Computed technical features for a symbol.
     HTTPValidationError:
       properties:
         detail:
@@ -1955,6 +3609,15 @@ components:
           type: boolean
           title: Armed
           default: true
+        tier:
+          anyOf:
+          - type: string
+            enum:
+            - global
+            - book
+            - strategy
+          - type: 'null'
+          title: Tier
       type: object
       required:
       - reason
@@ -1970,6 +3633,15 @@ components:
           - type: string
           - type: 'null'
           title: Reason
+        tier:
+          anyOf:
+          - type: string
+            enum:
+            - global
+            - book
+            - strategy
+          - type: 'null'
+          title: Tier
         updated_at:
           anyOf:
           - type: string
@@ -2021,6 +3693,24 @@ components:
       - created_at
       title: LineageRecord
       description: Decision lineage audit record.
+    LoginRequest:
+      properties:
+        username:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Username
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Password
+      type: object
+      required:
+      - username
+      - password
+      title: LoginRequest
+      description: Login payload (JSON body, no HMAC — first-party session flow).
     MarketBar:
       properties:
         symbol:
@@ -2064,6 +3754,77 @@ components:
       - volume
       title: MarketBar
       description: OHLCV bar for market data endpoints.
+    MarketQuote:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        bid:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Bid
+        ask:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Ask
+        mid:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Mid
+        last:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Last
+        volume_24h:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Volume 24H
+        change_24h:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Change 24H
+        change_pct_24h:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Change Pct 24H
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+      type: object
+      required:
+      - symbol
+      - bid
+      - ask
+      - mid
+      - last
+      - volume_24h
+      - change_24h
+      - change_pct_24h
+      - timestamp
+      title: MarketQuote
+      description: Current bid/ask/last snapshot for a symbol.
+    ModifyOrderRequest:
+      properties:
+        price:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price
+        volume:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Volume
+      type: object
+      title: ModifyOrderRequest
+      description: Payload to modify a pending order (at least one field required).
     Order:
       properties:
         order_id:
@@ -2139,6 +3900,67 @@ components:
       - updated_at
       title: Order
       description: Order lifecycle record.
+    OrderHistoryEntry:
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          title: Order Id
+        previous_state:
+          type: string
+          title: Previous State
+        new_state:
+          type: string
+          title: New State
+        actor_role:
+          type: string
+          title: Actor Role
+        actor_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Id
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        decision_ts:
+          type: string
+          format: date-time
+          title: Decision Ts
+      type: object
+      required:
+      - order_id
+      - previous_state
+      - new_state
+      - actor_role
+      - decision_ts
+      title: OrderHistoryEntry
+      description: One order state transition (append-only audit).
+    PaginatedList_EquityPoint_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/EquityPoint'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[EquityPoint]
     PaginatedList_ExposureSummary_:
       properties:
         items:
@@ -2231,6 +4053,29 @@ components:
       - limit
       - offset
       title: PaginatedList[MarketBar]
+    PaginatedList_OrderHistoryEntry_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/OrderHistoryEntry'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+      - items
+      - total
+      - limit
+      - offset
+      title: PaginatedList[OrderHistoryEntry]
     PaginatedList_Order_:
       properties:
         items:
@@ -2473,6 +4318,112 @@ components:
       - enqueued_at
       title: RpcCommandResponse
       description: RPC command acceptance receipt.
+    RpcCommandResult:
+      properties:
+        command_id:
+          type: string
+          format: uuid
+          title: Command Id
+        command:
+          type: string
+          title: Command
+        status:
+          type: string
+          enum:
+          - queued
+          - processing
+          - completed
+          - failed
+          title: Status
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        enqueued_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Enqueued At
+        processed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Processed At
+      type: object
+      required:
+      - command_id
+      - command
+      - status
+      title: RpcCommandResult
+      description: RPC command execution status/result (polled by command_id).
+    ServiceStatus:
+      properties:
+        name:
+          type: string
+          title: Name
+        status:
+          type: string
+          title: Status
+        health:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Health
+        image:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image
+        uptime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Uptime
+      type: object
+      required:
+      - name
+      - status
+      title: ServiceStatus
+      description: Status satu container/service di stack.
+    SessionInfo:
+      properties:
+        current_session:
+          type: string
+          enum:
+          - asian
+          - european
+          - american
+          - 'off'
+          title: Current Session
+        next_session:
+          type: string
+          enum:
+          - asian
+          - european
+          - american
+          - 'off'
+          title: Next Session
+        time_until_next:
+          type: integer
+          title: Time Until Next
+        is_trading_open:
+          type: boolean
+          title: Is Trading Open
+      type: object
+      required:
+      - current_session
+      - next_session
+      - time_until_next
+      - is_trading_open
+      title: SessionInfo
+      description: Current trading session state for a symbol.
     Signal:
       properties:
         signal_id:
@@ -2515,6 +4466,209 @@ components:
       - generated_at
       title: Signal
       description: Analyst signal view.
+    SimulateTradeRequest:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        side:
+          type: string
+          enum:
+          - buy
+          - sell
+          title: Side
+        volume:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Volume
+        price:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Price
+      type: object
+      required:
+      - symbol
+      - side
+      - volume
+      - price
+      title: SimulateTradeRequest
+      description: Payload for a what-if trade simulation.
+    SimulateTradeResult:
+      properties:
+        projected_nav:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Projected Nav
+        margin_required:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Margin Required
+        pnl_change:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Pnl Change
+      type: object
+      required:
+      - projected_nav
+      - margin_required
+      - pnl_change
+      title: SimulateTradeResult
+      description: Projected portfolio impact of a hypothetical trade.
+    SpreadMetrics:
+      properties:
+        avg_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Avg Spread
+        avg_pct_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Avg Pct Spread
+        min_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Min Spread
+        max_spread:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Max Spread
+      type: object
+      required:
+      - avg_spread
+      - avg_pct_spread
+      - min_spread
+      - max_spread
+      title: SpreadMetrics
+      description: Spread statistics for a symbol over a period.
+    SymbolConfig:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        description:
+          type: string
+          title: Description
+        base_asset:
+          type: string
+          title: Base Asset
+        quote_currency:
+          type: string
+          title: Quote Currency
+        tick_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Tick Size
+        lot_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Lot Size
+        min_lot_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Min Lot Size
+        max_lot_size:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Max Lot Size
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - symbol
+      - description
+      - base_asset
+      - quote_currency
+      - tick_size
+      - lot_size
+      - min_lot_size
+      - max_lot_size
+      - is_active
+      title: SymbolConfig
+      description: Instrument specification for a trading symbol.
+    SystemConfigUpdate:
+      properties:
+        llm_gateway_api_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Llm Gateway Api Key
+        llm_gateway_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Llm Gateway Url
+        demo_data:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Demo Data
+        llm_daily_budget_usd:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Llm Daily Budget Usd
+        llm_default_model:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Llm Default Model
+        max_exposure_per_trade:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Exposure Per Trade
+        risk_per_trade:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Risk Per Trade
+        max_daily_loss_pct:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Daily Loss Pct
+      type: object
+      title: SystemConfigUpdate
+      description: Payload untuk memperbarui konfigurasi runtime via superadmin.
+    SystemInfo:
+      properties:
+        services:
+          items:
+            $ref: '#/components/schemas/ServiceStatus'
+          type: array
+          title: Services
+        llm_gateway_url:
+          type: string
+          title: Llm Gateway Url
+        llm_gateway_configured:
+          type: boolean
+          title: Llm Gateway Configured
+        demo_data:
+          type: boolean
+          title: Demo Data
+        environment:
+          type: string
+          title: Environment
+        version:
+          type: string
+          title: Version
+      type: object
+      required:
+      - services
+      - llm_gateway_url
+      - llm_gateway_configured
+      - demo_data
+      - environment
+      - version
+      title: SystemInfo
+      description: Snapshot status seluruh sistem untuk superadmin control center.
     TriggerWorkflowRequest:
       properties:
         workflow_name:
@@ -2555,6 +4709,16 @@ components:
       - msg
       - type
       title: ValidationError
+    VolatilityResponse:
+      properties:
+        volatility:
+          type: number
+          title: Volatility
+      type: object
+      required:
+      - volatility
+      title: VolatilityResponse
+      description: Rolling volatility for a symbol (fraction, e.g. 0.12 = 12%).
     WorkflowRun:
       properties:
         run_id:

@@ -1,15 +1,15 @@
-import * as React from 'react';
+import type * as React from "react";
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-export type ChartStatus = 'live' | 'stale' | 'offline';
+export type ChartStatus = "live" | "stale" | "offline";
 
-const STATUS_TO_BADGE: Record<ChartStatus, { tone: 'ok' | 'warn' | 'danger'; label: string }> = {
-  live: { tone: 'ok', label: 'LIVE' },
-  stale: { tone: 'warn', label: 'STALE' },
-  offline: { tone: 'danger', label: 'OFFLINE' },
+const STATUS_TO_BADGE: Record<ChartStatus, { tone: "ok" | "warn" | "danger"; label: string }> = {
+  live: { tone: "ok", label: "LIVE" },
+  stale: { tone: "warn", label: "STALE" },
+  offline: { tone: "danger", label: "OFFLINE" },
 };
 
 export interface ChartCardProps {
@@ -22,6 +22,7 @@ export interface ChartCardProps {
   height?: number;
   children: React.ReactNode;
   className?: string;
+  size?: "compact" | "normal";
 }
 
 /**
@@ -38,11 +39,13 @@ export function ChartCard({
   height = 320,
   children,
   className,
+  size = "normal",
 }: ChartCardProps) {
   const badge = status ? STATUS_TO_BADGE[status] : null;
+  const contentHeight = size === "compact" ? 160 : height;
 
   return (
-    <Card className={cn('min-w-0', className)}>
+    <Card className={cn("min-w-0", className)}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="min-w-0">
           <CardTitle>{title}</CardTitle>
@@ -54,7 +57,7 @@ export function ChartCard({
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="relative w-full overflow-hidden" style={{ height }}>
+        <div className="relative w-full overflow-hidden" style={{ height: contentHeight }}>
           {children}
         </div>
       </CardContent>

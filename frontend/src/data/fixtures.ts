@@ -33,6 +33,8 @@ export interface SignalPoint {
   time: number;
   analyst: string;
   confidence: number;
+  direction?: "bullish" | "bearish" | "neutral";
+  rationale?: string;
 }
 
 export type CorrelationMatrix = number[][];
@@ -137,12 +139,12 @@ export interface ExposureOptions {
 }
 
 const DEFAULT_EXPOSURE: ExposureItem[] = [
-  { symbol: 'XAUUSD', assetClass: 'Metals', weight: 0.38 },
-  { symbol: 'XAGUSD', assetClass: 'Metals', weight: 0.08 },
-  { symbol: 'EURUSD', assetClass: 'FX', weight: 0.16 },
-  { symbol: 'GBPUSD', assetClass: 'FX', weight: 0.09 },
-  { symbol: 'USOIL', assetClass: 'Energy', weight: 0.12 },
-  { symbol: 'BTCUSD', assetClass: 'Crypto', weight: 0.17 },
+  { symbol: "XAUUSD", assetClass: "Metals", weight: 0.38 },
+  { symbol: "XAGUSD", assetClass: "Metals", weight: 0.08 },
+  { symbol: "EURUSD", assetClass: "FX", weight: 0.16 },
+  { symbol: "GBPUSD", assetClass: "FX", weight: 0.09 },
+  { symbol: "USOIL", assetClass: "Energy", weight: 0.12 },
+  { symbol: "BTCUSD", assetClass: "Crypto", weight: 0.17 },
 ];
 
 export function generateExposure(options: ExposureOptions = {}): ExposureItem[] {
@@ -181,7 +183,7 @@ export interface SignalsOptions {
   analysts?: string[];
 }
 
-export const DEFAULT_ANALYSTS = ['technical', 'macro', 'news', 'smc'] as const;
+export const DEFAULT_ANALYSTS = ["technical", "macro", "news", "smc"] as const;
 
 export function generateSignals(options: SignalsOptions = {}): SignalPoint[] {
   const {
@@ -252,7 +254,7 @@ export interface MarketQuote {
   timestamp: number;
 }
 
-export function generateQuote(symbol = 'XAUUSD', seed = 31): MarketQuote {
+export function generateQuote(symbol = "XAUUSD", seed = 31): MarketQuote {
   const rand = mulberry32(seed);
   const last = 2_400 + (rand() - 0.5) * 40;
   const spread = 0.18 + rand() * 0.12;
@@ -266,17 +268,17 @@ export function generateQuote(symbol = 'XAUUSD', seed = 31): MarketQuote {
 }
 
 export const ORDER_STATUSES = [
-  'RECEIVED',
-  'VALIDATED',
-  'RISK_CHECK',
-  'ACTIVE',
-  'FILLED',
-  'CANCELLED',
-  'REJECTED',
+  "RECEIVED",
+  "VALIDATED",
+  "RISK_CHECK",
+  "ACTIVE",
+  "FILLED",
+  "CANCELLED",
+  "REJECTED",
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-export const TERMINAL_ORDER_STATUSES: readonly OrderStatus[] = ['FILLED', 'CANCELLED', 'REJECTED'];
+export const TERMINAL_ORDER_STATUSES: readonly OrderStatus[] = ["FILLED", "CANCELLED", "REJECTED"];
 
 export interface OrderLifecycleEvent {
   status: OrderStatus;
@@ -289,9 +291,9 @@ export interface OrderFixture {
   id: string;
   portfolio_id: string;
   symbol: string;
-  side: 'BUY' | 'SELL';
+  side: "BUY" | "SELL";
   quantity: number;
-  type: 'MARKET' | 'LIMIT' | 'STOP';
+  type: "MARKET" | "LIMIT" | "STOP";
   status: OrderStatus;
   entry_price: number;
   current_price: number;
@@ -300,11 +302,11 @@ export interface OrderFixture {
   lifecycle: OrderLifecycleEvent[];
 }
 
-const ORDER_STATUS_SEQUENCE: OrderStatus[] = ['RECEIVED', 'VALIDATED', 'RISK_CHECK', 'ACTIVE'];
+const ORDER_STATUS_SEQUENCE: OrderStatus[] = ["RECEIVED", "VALIDATED", "RISK_CHECK", "ACTIVE"];
 
 export function generateOrder(id: string, seed = 47): OrderFixture {
   const rand = mulberry32(seed);
-  const side: 'BUY' | 'SELL' = rand() > 0.5 ? 'BUY' : 'SELL';
+  const side: "BUY" | "SELL" = rand() > 0.5 ? "BUY" : "SELL";
   const quantity = Math.round((0.05 + rand() * 1.4) * 100) / 100;
   const entry = 2_400 + (rand() - 0.5) * 60;
   const current = entry * (1 + (rand() - 0.5) * 0.02);
@@ -313,36 +315,36 @@ export function generateOrder(id: string, seed = 47): OrderFixture {
   // Terminal status drawn from the full set; RECEIVED..ACTIVE progress seeded.
   const roll = rand();
   const status: OrderStatus =
-    roll < 0.4 ? 'FILLED' : roll < 0.55 ? 'CANCELLED' : roll < 0.65 ? 'REJECTED' : 'ACTIVE';
+    roll < 0.4 ? "FILLED" : roll < 0.55 ? "CANCELLED" : roll < 0.65 ? "REJECTED" : "ACTIVE";
 
   const progressed: OrderStatus[] = ORDER_STATUS_SEQUENCE.filter((s) =>
-    status === 'ACTIVE' ? s !== 'ACTIVE' : true,
+    status === "ACTIVE" ? s !== "ACTIVE" : true
   );
 
   const lifecycle: OrderLifecycleEvent[] = progressed.map((status_, i) => ({
     status: status_,
     timestamp: new Date((base + i * 3_000) * 1000).toISOString(),
-    note: status_ === 'RISK_CHECK' ? 'Exposure within risk budget' : undefined,
+    note: status_ === "RISK_CHECK" ? "Exposure within risk budget" : undefined,
   }));
-  if (status !== 'ACTIVE') {
+  if (status !== "ACTIVE") {
     lifecycle.push({
       status,
       timestamp: new Date((base + progressed.length * 3_000) * 1000).toISOString(),
-      note: status === 'REJECTED' ? 'Risk veto — drawdown guard' : undefined,
+      note: status === "REJECTED" ? "Risk veto — drawdown guard" : undefined,
     });
   }
 
   return {
     id,
-    portfolio_id: 'portfolio-demo',
-    symbol: 'XAUUSD',
+    portfolio_id: "portfolio-demo",
+    symbol: "XAUUSD",
     side,
     quantity,
-    type: rand() > 0.5 ? 'MARKET' : 'LIMIT',
+    type: rand() > 0.5 ? "MARKET" : "LIMIT",
     status,
     entry_price: entry,
     current_price: current,
-    pnl: side === 'BUY' ? (current - entry) * quantity : (entry - current) * quantity,
+    pnl: side === "BUY" ? (current - entry) * quantity : (entry - current) * quantity,
     created_at: new Date(base * 1000).toISOString(),
     lifecycle,
   };
@@ -352,7 +354,7 @@ export interface PositionFixture {
   id: string;
   portfolio_id: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: "LONG" | "SHORT";
   quantity: number;
   avg_entry_price: number;
   current_price: number;
@@ -362,17 +364,17 @@ export interface PositionFixture {
 
 export function generatePositions(seed = 43): PositionFixture[] {
   const rand = mulberry32(seed);
-  const symbols = ['XAUUSD', 'XAGUSD', 'EURUSD', 'BTCUSD', 'USOIL'];
+  const symbols = ["XAUUSD", "XAGUSD", "EURUSD", "BTCUSD", "USOIL"];
   const base = 1_720_000_000;
   return symbols.map((symbol, i) => {
-    const side: 'LONG' | 'SHORT' = rand() > 0.35 ? 'LONG' : 'SHORT';
+    const side: "LONG" | "SHORT" = rand() > 0.35 ? "LONG" : "SHORT";
     const avg = 2_400 + (rand() - 0.5) * 500;
     const qty = Math.round((0.1 + rand() * 1.8) * 100) / 100;
     const current = avg * (1 + (rand() - 0.5) * 0.03);
-    const pnl = (side === 'LONG' ? current - avg : avg - current) * qty;
+    const pnl = (side === "LONG" ? current - avg : avg - current) * qty;
     return {
-      id: `pos-${String(i + 1).padStart(3, '0')}`,
-      portfolio_id: 'portfolio-demo',
+      id: `pos-${String(i + 1).padStart(3, "0")}`,
+      portfolio_id: "portfolio-demo",
       symbol,
       side,
       quantity: qty,
@@ -384,29 +386,32 @@ export function generatePositions(seed = 43): PositionFixture[] {
   });
 }
 
+export const demoOrders = generateOrders();
+export const demoPositions = generatePositions();
+
 export function generateOrders(seed = 53): OrderFixture[] {
   const rand = mulberry32(seed);
   return Array.from({ length: 8 }, (_, i) =>
-    generateOrder(`ord-${String(i + 1).padStart(3, '0')}`, seed + i),
+    generateOrder(`ord-${String(i + 1).padStart(3, "0")}`, seed + i)
   ).sort(() => rand() - 0.5);
 }
 
 export const RUN_STAGES = [
-  'init',
-  'data_gathering',
-  'analyst_outputs',
-  'debate',
-  'ic_decision',
-  'cio_proposal',
-  'risk_assessment',
-  'sizing',
-  'order_draft',
-  'execution',
-  'journal',
+  "init",
+  "data_gathering",
+  "analyst_outputs",
+  "debate",
+  "ic_decision",
+  "cio_proposal",
+  "risk_assessment",
+  "sizing",
+  "order_draft",
+  "execution",
+  "journal",
 ] as const;
 export type RunStage = (typeof RUN_STAGES)[number];
 
-export const RUN_TERMINAL_STATES = ['completed', 'failed', 'cancelled', 'killed'] as const;
+export const RUN_TERMINAL_STATES = ["completed", "failed", "cancelled", "killed"] as const;
 export type RunTerminalState = (typeof RUN_TERMINAL_STATES)[number];
 
 export type RunStatus = RunStage | RunTerminalState;
@@ -431,9 +436,9 @@ export interface WorkflowRun {
 }
 
 const RUN_WORKFLOWS = [
-  { id: 'wf-xauusd-daily', name: 'XAUUSD Daily Direction' },
-  { id: 'wf-xauusd-news', name: 'News Event Sweep' },
-  { id: 'wf-portfolio-rebalance', name: 'Portfolio Rebalance' },
+  { id: "wf-xauusd-daily", name: "XAUUSD Daily Direction" },
+  { id: "wf-xauusd-news", name: "News Event Sweep" },
+  { id: "wf-portfolio-rebalance", name: "Portfolio Rebalance" },
 ];
 
 export function generateRun(runId: string, seed = 61): WorkflowRun {
@@ -442,7 +447,7 @@ export function generateRun(runId: string, seed = 61): WorkflowRun {
   const start = 1_720_000_000 + Math.floor(rand() * 500_000);
   const roll = rand();
   const terminal: RunTerminalState | null =
-    roll < 0.55 ? 'completed' : roll < 0.75 ? 'failed' : roll < 0.9 ? 'cancelled' : 'killed';
+    roll < 0.55 ? "completed" : roll < 0.75 ? "failed" : roll < 0.9 ? "cancelled" : "killed";
   const stopIndex = terminal
     ? RUN_STAGES.length - 2 + Math.floor(rand() * 3)
     : RUN_STAGES.length - 1;
@@ -456,21 +461,21 @@ export function generateRun(runId: string, seed = 61): WorkflowRun {
     id: runId,
     workflow_id: workflow.id,
     workflow_name: workflow.name,
-    status: terminal ?? 'journal',
+    status: terminal ?? "journal",
     started_at: new Date(start * 1000).toISOString(),
     completed_at: terminal
       ? new Date((start + stageCount * 45_000) * 1000).toISOString()
       : undefined,
-    model: 'gpt-5.6-family/9router',
+    model: "gpt-5.6-family/9router",
     cost_usd: Math.round((0.4 + rand() * 3.2) * 100) / 100,
-    error: terminal === 'failed' ? 'RiskValidator veto: max drawdown guard tripped' : undefined,
+    error: terminal === "failed" ? "RiskValidator veto: max drawdown guard tripped" : undefined,
     stages,
   };
 }
 
 export interface LineageNode {
   id: string;
-  type: 'decision' | 'input' | 'output' | 'override';
+  type: "decision" | "input" | "output" | "override";
   label: string;
   detail?: string;
   overridden?: boolean;
@@ -492,69 +497,69 @@ export function generateLineage(lineageId: string, seed = 73): LineageFixture {
   const created = 1_720_000_000 + Math.floor(rand() * 500_000);
 
   const tree: LineageNode = {
-    id: 'decision',
-    type: 'decision',
+    id: "decision",
+    type: "decision",
     label: `IC proposal — ${lineageId}`,
-    detail: 'Long XAUUSD 0.40 lots, stop 2,388',
+    detail: "Long XAUUSD 0.40 lots, stop 2,388",
     children: [
       {
-        id: 'technical',
-        type: 'input',
-        label: 'technical / trend',
-        detail: 'Bullish: 20>50 EMA, price above VWAP. Confidence 0.72',
+        id: "technical",
+        type: "input",
+        label: "technical / trend",
+        detail: "Bullish: 20>50 EMA, price above VWAP. Confidence 0.72",
         children: [
           {
-            id: 'input-1',
-            type: 'input',
-            label: 'ohlcv: XAUUSD 4H (120 bars)',
-            detail: 'window 2026-08-05→2026-08-11',
+            id: "input-1",
+            type: "input",
+            label: "ohlcv: XAUUSD 4H (120 bars)",
+            detail: "window 2026-08-05→2026-08-11",
           },
           {
-            id: 'input-2',
-            type: 'input',
-            label: 'indicators: EMA20/50, VWAP',
-            detail: 'computed by feature-engineering',
+            id: "input-2",
+            type: "input",
+            label: "indicators: EMA20/50, VWAP",
+            detail: "computed by feature-engineering",
           },
         ],
       },
       {
-        id: 'macro',
-        type: 'input',
-        label: 'macro / rates',
-        detail: 'Real yields -12bp this week; USD index soft. Confidence 0.58',
+        id: "macro",
+        type: "input",
+        label: "macro / rates",
+        detail: "Real yields -12bp this week; USD index soft. Confidence 0.58",
       },
       {
-        id: 'smc',
-        type: 'input',
-        label: 'smc / structure',
-        detail: 'Liquidity sweep + FVG retest. Confidence 0.64',
+        id: "smc",
+        type: "input",
+        label: "smc / structure",
+        detail: "Liquidity sweep + FVG retest. Confidence 0.64",
         children: [
           {
-            id: 'input-3',
-            type: 'input',
-            label: 'orderflow: 1m tape',
-            detail: '12,400 contracts traded',
+            id: "input-3",
+            type: "input",
+            label: "orderflow: 1m tape",
+            detail: "12,400 contracts traded",
           },
         ],
       },
       {
-        id: 'news',
-        type: 'input',
-        label: 'news / macro calendar',
-        detail: 'FOMC minutes due — elevated variance. Confidence 0.41',
+        id: "news",
+        type: "input",
+        label: "news / macro calendar",
+        detail: "FOMC minutes due — elevated variance. Confidence 0.41",
         overridden: true,
       },
       {
-        id: 'risk',
-        type: 'output',
-        label: 'risk_assessment / veto',
-        detail: 'PASS — exposure 8.2% < 15% cap; drawdown 4.1% < 6% guard',
+        id: "risk",
+        type: "output",
+        label: "risk_assessment / veto",
+        detail: "PASS — exposure 8.2% < 15% cap; drawdown 4.1% < 6% guard",
       },
       {
-        id: 'sizer',
-        type: 'output',
-        label: 'portfolio_sizer / size',
-        detail: '0.40 lots ≈ $960 risk budget (0.40% of equity)',
+        id: "sizer",
+        type: "output",
+        label: "portfolio_sizer / size",
+        detail: "0.40 lots ≈ $960 risk budget (0.40% of equity)",
         overridden: true,
       },
     ],
@@ -563,15 +568,15 @@ export function generateLineage(lineageId: string, seed = 73): LineageFixture {
   return {
     lineage_id: lineageId,
     run_id: `run-${Math.floor(rand() * 900_000) + 100_000}`,
-    workflow_id: 'wf-xauusd-daily',
-    model: 'gpt-5.6-family/9router',
+    workflow_id: "wf-xauusd-daily",
+    model: "gpt-5.6-family/9router",
     cost_usd: Math.round((0.4 + rand() * 3.2) * 100) / 100,
     created_at: new Date(created * 1000).toISOString(),
     root: tree,
   };
 }
 
-export type JournalKind = 'decision' | 'trade' | 'risk' | 'note';
+export type JournalKind = "decision" | "trade" | "risk" | "note";
 
 export interface JournalEntry {
   id: string;
@@ -592,25 +597,25 @@ export interface JournalPage {
 }
 
 const JOURNAL_ACTORS = [
-  'technical',
-  'macro',
-  'news',
-  'smc',
-  'ic',
-  'cio',
-  'risk-officer',
-  'pm',
-  'execution',
+  "technical",
+  "macro",
+  "news",
+  "smc",
+  "ic",
+  "cio",
+  "risk-officer",
+  "pm",
+  "execution",
 ];
 const JOURNAL_SUMMARIES: Array<[JournalKind, string]> = [
-  ['decision', 'Proposal drafted for XAUUSD long'],
-  ['decision', 'Debate round 2 — macro vs technical divergence'],
-  ['trade', 'Order FILLED 0.40 XAUUSD @ 2,401.5'],
-  ['trade', 'Position closed — take profit hit'],
-  ['risk', 'Drawdown guard check passed (4.1%)'],
-  ['risk', 'Exposure cap review — 8.2% of equity'],
-  ['note', 'Session notes: NFP week, widen stop'],
-  ['note', 'Model cost sweep: 9router routed to gpt-5.6'],
+  ["decision", "Proposal drafted for XAUUSD long"],
+  ["decision", "Debate round 2 — macro vs technical divergence"],
+  ["trade", "Order FILLED 0.40 XAUUSD @ 2,401.5"],
+  ["trade", "Position closed — take profit hit"],
+  ["risk", "Drawdown guard check passed (4.1%)"],
+  ["risk", "Exposure cap review — 8.2% of equity"],
+  ["note", "Session notes: NFP week, widen stop"],
+  ["note", "Model cost sweep: 9router routed to gpt-5.6"],
 ];
 
 /** 137 deterministic entries split into pages of `pageSize` via cursor. */
@@ -623,7 +628,7 @@ export interface JournalOptions {
 
 export function generateJournalEntries(
   cursor: string | null = null,
-  options: JournalOptions = {},
+  options: JournalOptions = {}
 ): JournalPage {
   const { seed = 89, pageSize = 50 } = options;
   const rand = mulberry32(seed);
@@ -634,14 +639,14 @@ export function generateJournalEntries(
   for (let i = offset; i < Math.min(offset + pageSize, JOURNAL_TOTAL); i++) {
     const [kind, summary] = JOURNAL_SUMMARIES[Math.floor(rand() * JOURNAL_SUMMARIES.length)]!;
     entries.push({
-      id: `entry-${String(i + 1).padStart(4, '0')}`,
+      id: `entry-${String(i + 1).padStart(4, "0")}`,
       timestamp: new Date((base + i * 2_160) * 1000).toISOString(),
-      symbol: rand() > 0.3 ? 'XAUUSD' : 'EURUSD',
-      portfolio_id: 'portfolio-demo',
+      symbol: rand() > 0.3 ? "XAUUSD" : "EURUSD",
+      portfolio_id: "portfolio-demo",
       kind,
       actor: JOURNAL_ACTORS[Math.floor(rand() * JOURNAL_ACTORS.length)]!,
       summary,
-      linked_lineage_id: kind === 'trade' || kind === 'decision' ? `lineage-${i + 1}` : undefined,
+      linked_lineage_id: kind === "trade" || kind === "decision" ? `lineage-${i + 1}` : undefined,
     });
   }
 
@@ -660,20 +665,20 @@ export interface ApiKeyFixture {
 }
 
 const API_SCOPES = [
-  'market.read',
-  'portfolio.read',
-  'portfolio.write',
-  'orders.write',
-  'journal.read',
-  'admin.keys',
+  "market.read",
+  "portfolio.read",
+  "portfolio.write",
+  "orders.write",
+  "journal.read",
+  "admin.keys",
 ];
 
 export function generateApiKeys(seed = 97): ApiKeyFixture[] {
   const rand = mulberry32(seed);
   const base = 1_720_000_000;
-  const prefixes = ['sk-live', 'sk-live', 'sk-test', 'sk-live', 'sk-test', 'sk-live'];
+  const prefixes = ["sk-live", "sk-live", "sk-test", "sk-live", "sk-test", "sk-live"];
   return prefixes.map((prefix, i) => ({
-    key_id: `key-${String(i + 1).padStart(3, '0')}`,
+    key_id: `key-${String(i + 1).padStart(3, "0")}`,
     prefix: `${prefix}-${Math.floor(rand() * 1_000_000).toString(36)}`,
     scopes: API_SCOPES.slice(0, 2 + Math.floor(rand() * 3)),
     created_at: new Date((base - i * 30_000_000) * 1000).toISOString(),
@@ -684,7 +689,7 @@ export function generateApiKeys(seed = 97): ApiKeyFixture[] {
 }
 
 /** One-time secret for a freshly created key — shown once, never retrievable. */
-export function generateApiKeySecret(scopes: string[] = ['market.read', 'portfolio.read']): {
+export function generateApiKeySecret(scopes: string[] = ["market.read", "portfolio.read"]): {
   key_id: string;
   prefix: string;
   secret: string;
@@ -694,7 +699,7 @@ export function generateApiKeySecret(scopes: string[] = ['market.read', 'portfol
   return {
     key_id: `key-${String(Math.floor(rand() * 900) + 100)}`,
     prefix: `sk-live-${Math.floor(rand() * 1_000_000).toString(36)}`,
-    secret: `sk-live-${Array.from({ length: 4 }, () => Math.floor(rand() * 1_000_000).toString(36)).join('-')}`,
+    secret: `sk-live-${Array.from({ length: 4 }, () => Math.floor(rand() * 1_000_000).toString(36)).join("-")}`,
     scopes,
   };
 }

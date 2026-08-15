@@ -1,5 +1,5 @@
-import '@testing-library/jest-dom/vitest';
-import { beforeAll } from 'vitest';
+import "@testing-library/jest-dom/vitest";
+import { beforeAll } from "vitest";
 
 class ResizeObserverMock {
   private callback: ResizeObserverCallback;
@@ -40,7 +40,7 @@ beforeAll(() => {
   // jsdom reports zero layout sizes by default; virtualizers need a viewport.
   const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
   HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
-    if (this.dataset.testid === 'data-table-scroll') {
+    if (this.dataset.testid === "data-table-scroll") {
       return {
         width: 800,
         height: 400,

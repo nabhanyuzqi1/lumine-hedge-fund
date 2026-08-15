@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type LogLevel = 'info' | 'warn' | 'danger';
+export type LogLevel = "info" | "warn" | "danger";
 
 export interface ActivityLogEntry {
   id: string;
@@ -18,7 +18,7 @@ interface ActivityState {
 }
 
 interface ActivityActions {
-  appendLog: (entry: Omit<ActivityLogEntry, 'id' | 'timestamp'>) => void;
+  appendLog: (entry: Omit<ActivityLogEntry, "id" | "timestamp">) => void;
   getEntries: () => ActivityLogEntry[];
 }
 

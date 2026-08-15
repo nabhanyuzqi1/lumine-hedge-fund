@@ -1,10 +1,11 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet } from "react-router-dom";
 
-import { CommandPalette } from './command-palette';
-import { KeyboardProvider } from './keyboard-provider';
-import { KillSwitchBanner } from './kill-switch-banner';
-import { Rail } from './rail';
-import { TopBar } from './top-bar';
+import { CommandPalette } from "./command-palette";
+import { KeyboardProvider } from "./keyboard-provider";
+import { KillSwitchBanner } from "./kill-switch-banner";
+import { Rail } from "./rail";
+import { TopBar } from "./top-bar";
+import { GapBanner } from "@/components/streams/gap-banner";
 
 /**
  * App shell (F-Sprint 6). Wraps every portal route with the live top bar,
@@ -22,6 +23,7 @@ export function PageShell() {
       </a>
       <div className="flex h-screen flex-col bg-bg-base" data-testid="page-shell">
         <TopBar />
+        <GapBanner />
         <KillSwitchBanner />
         <div className="flex flex-1 flex-col-reverse overflow-hidden md:flex-row">
           <Rail />

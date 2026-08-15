@@ -27,7 +27,7 @@ If a phase folder is renamed, this file is updated in the same commit.
 | Phase 12 — Security | `docs/12-security/` | Done | Threat model, encryption, SSH, firewall, supply chain, audit log, secrets management |
 | Phase 13 — Testing Strategy | `docs/13-testing/` | Done | 7 test levels, environments, quality gates, backtest, paper trading, security, AI testing |
 | Phase 14 — Implementation Planning | `docs/14-implementation/` | Done | Repository structure, sprint plan, package management, coding standards |
-| Phase 15 — Implementation | `docs/15-implementation/` + `backend/` + `frontend/` | In Progress | Sprint 1 foundation partial; Sprint 2 pending |
+| Phase 15 — Implementation | `docs/15-implementation/` + `backend/` + `frontend/` | **Complete** | All sprints finished; TCA integration, prompt registry, audit hardening complete |
 
 ## Phase Boundary Clarifications
 

@@ -1,0 +1,169 @@
+name: CI — Lumine Hedge Fund
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  backend-test:
+    name: Backend · test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lumine
+          POSTGRES_PASSWORD: lumine
+          POSTGRES_DB: lumine_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run contract tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://lumine:lumine@localhost:5432/lumine_test
+          REDIS_URL: redis://localhost:6379/0
+          HMAC_SECRET_KEY: ci-test-secret-key-not-for-production
+          ENVIRONMENT: test
+        run: uv run pytest tests/contract -q --tb=short
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://lumine:lumine@localhost:5432/lumine_test
+          REDIS_URL: redis://localhost:6379/0
+          HMAC_SECRET_KEY: ci-test-secret-key-not-for-production
+          ENVIRONMENT: test
+        run: uv run pytest tests/unit -q --tb=short
+
+  backend-lint:
+    name: Backend · lint + typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check src tests
+
+      - name: Bandit security scan
+        run: uv run bandit -r src -ll -q
+
+  # ── Frontend ────────────────────────────────────────────────────────────────
+  frontend-test:
+    name: Frontend · test + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Vitest
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+  # ── Deploy (VPS) ────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy → VPS
+    runs-on: ubuntu-latest
+    needs: [backend-test, backend-lint, frontend-test]
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 300s
+          script: |
+            set -euo pipefail
+            cd /opt/lumine
+            git fetch origin dev
+            git checkout dev
+            git reset --hard origin/dev
+            cd backend
+            docker compose -f docker-compose.vps.yml build api frontend
+            docker compose -f docker-compose.vps.yml up -d api frontend
+            sleep 15
+            # Health check
+            STATUS=$(curl -sI http://localhost/health | head -1 | awk '{print $2}')
+            if [ "$STATUS" != "200" ]; then
+              echo "Health check failed: $STATUS"
+              exit 1
+            fi
+            echo "Deploy OK — health: $STATUS"

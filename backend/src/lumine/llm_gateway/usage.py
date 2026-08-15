@@ -48,7 +48,7 @@ def _cost_usd(
     return cost.quantize(Decimal("0.000001"))
 
 
-def record_usage(  # noqa: PLR0913 — injected metadata is the DB-free contract
+def record_usage(
     *,
     request: RouterRequest,
     response: GatewayResponse,
@@ -91,7 +91,7 @@ async def write_usage(
     *,
     request: RouterRequest,
     response: GatewayResponse,
-    **kwargs: Any,  # noqa: ANN401 — passthrough to record_usage's injected metadata
+    **kwargs: Any,
 ) -> LLMUsage:
     """Append one ``LLMUsage`` row via ``session`` (idempotent per call).
 

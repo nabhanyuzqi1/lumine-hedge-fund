@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 
-import { useLineage } from '@/api/hooks';
-import { LineageViewer } from '@/components/lineage/lineage-viewer';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { LineageNode } from '@/data/fixtures';
+import { useLineage } from "@/api/hooks";
+import { LineageViewer } from "@/components/lineage/lineage-viewer";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { LineageNode } from "@/data/fixtures";
 
 function hasOverride(node: LineageNode): boolean {
   if (node.overridden) return true;
@@ -18,8 +18,8 @@ function hasOverride(node: LineageNode): boolean {
  */
 export function LineageDetailPage() {
   const { lineageId } = useParams<{ lineageId: string }>();
-  const lineage = useLineage(lineageId ?? '');
-  const [search, setSearch] = useState('');
+  const lineage = useLineage(lineageId ?? "");
+  const [search, setSearch] = useState("");
 
   const data = lineage.data;
   const overridden = useMemo(() => (data ? hasOverride(data.root) : false), [data]);

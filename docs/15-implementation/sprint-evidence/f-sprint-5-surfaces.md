@@ -14,6 +14,8 @@ Deliver the six routed surfaces defined in `docs/10-frontend/architecture.md` an
 wireframes W1–W6 (`docs/10-frontend/wireframes.md`) using fixture-fallback
 TanStack Query hooks because backend Phase 9 REST/SSE endpoints are not live yet.
 
+> **Status update (2026-08-14):** Backend kini live — 9 router di `/api/v1` termasuk 6 channel SSE. **Sesi lanjutan:** semua hook halaman REST-first (fallback fixture) + mutation REST penuh; import fixture di halaman hanya type-only. Halaman tidak lagi "fixture-backed" — data asli mengalir saat backend hidup + env kredensial terisi. Sisa pekerjaan: panel UI lanjutan (GAP F-01..F-12) — lihat `IMPLEMENTATION-GAP-INVENTORY.md`.
+
 **Exit criteria (from `frontend-sprint-plan.md` F-Sprint 5):**
 
 - Terminal `/` renders trading grid from fixtures: PriceChart, QuotePanel,

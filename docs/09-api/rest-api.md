@@ -263,3 +263,45 @@ GET /api/v1/lineage?portfolio_id={id}&from=2026-07-01T00:00:00Z&to=2026-08-01T00
 This document fixes the REST endpoint surface, common envelope,
 pagination, and idempotency contract. It does not define implementation,
 rate limits, or payload schemas owned by other phases.
+
+---
+
+## Implemented Surface Reconciliation (2026-08-14)
+
+The sections above are the Phase 9 contract as designed. The table below
+records the **actual surface served by `backend/src/lumine/api/routers/*`
+(verified against source + `docs/09-api/openapi.yaml`, which is regenerated
+byte-identical from code)**. Divergences are deliberate implementation
+decisions to satisfy the frontend client contracts (`frontend/src/lib/api/`)
+and are tracked in `docs/15-implementation/deviation-log.md`.
+
+### Implemented endpoints (per domain)
+
+| Domain | Implemented (under `/api/v1`) |
+|--------|-------------------------------|
+| portfolio | `GET /portfolio/summary`, `POST /portfolio/{portfolio_id}/simulate`, `GET /portfolio/positions`, `GET /portfolio/positions/{position_id}`, `GET /portfolio/exposure` — single-default-portfolio (`portfolio_id="default"`); `{id}` variants + CRUD + export **belum** ada |
+| orders | `GET /orders`, `GET /orders/{order_id}`, `POST /orders`, `PATCH /orders/{order_id}` (modify: `{price?, volume?}` min 1), `DELETE /orders/{order_id}` (cancel) — history + bulk status **belum** ada |
+| workflows | `GET /workflows` (PaginatedList[WorkflowRun]), `GET /workflows/{run_id}`, `POST /workflows` — **bukan** `{workflow_id}/runs` hierarchy dari spec |
+| lineage | `GET /lineage`, `GET /lineage/{lineage_id}` — sesuai spec |
+| market | `GET /market/bars`, `GET /market/signals` (global, paginated), `GET /market/quote/{symbol}`, `GET /market/quotes?symbols=`, `GET /market/ohlcv/{symbol}?timeframe&limit&since`, `GET /market/symbol/{symbol}`, `GET /market/symbols`, `GET /market/volatility/{symbol}?window`, `GET /market/correlation?symbols&window`, `GET /market/spread/{symbol}?period`, `GET /market/session/{symbol}`, `GET /market/features/{symbol}` — **path `quote/{symbol}` (singular) dan batch `quotes` berbeda dari spec `quotes/{symbol}`**; signals per-symbol belum |
+| journal | `GET /journal`, `GET /journal/{entry_id}` — sesuai spec |
+| streams | 6 SSE channel: `market-data`, `analyst-outputs`, `ic-decisions`, `cio-proposals`, `risk-assessments`, `execution-orders` (lihat `sse-api.md`) |
+| admin | `GET/POST /admin/keys`, `DELETE /admin/keys/{key_id}`, `GET/POST /admin/kill-switch` — kill-switch menerima `{armed, reason, tier?}` dan persist tier di Redis |
+| rpc | `POST /rpc/run-decision-cycle`, `POST /rpc/halt-trading`, `POST /rpc/resume-trading`, `POST /rpc/cancel-order` — **nama command berbeda dari spec** (`trigger-workflow`, `kill-switch`, `override-proposal`); kill-switch pindah ke `/admin/kill-switch`; semua command balas `accepted` (belum dispatch ke worker) |
+
+### Divergensi kontrak (spec vs implemented)
+
+| Spec (rest-api.md) | Implemented | Catatan |
+|--------------------|-------------|---------|
+| `GET /market/quotes/{symbol}` | `GET /market/quote/{symbol}` + `GET /market/quotes?symbols=` (batch) | Frontend client contract (`marketClient.ts`) |
+| `GET /market/signals/{symbol}` | `GET /market/signals` (global) | Per-symbol pending (GAP B-06) |
+| Workflows `{workflow_id}/runs` hierarchy | flat `/workflows/{run_id}` | Frontend `useRun` |
+| `POST /rpc/kill-switch {reason, tier, target?}` | `POST /admin/kill-switch {armed, reason, tier?}` | Tier dipersingkat ke global/book/strategy; `target` belum |
+| Cursor pagination (`cursor`, `has_more`) | offset/limit (`PaginatedList {items, total, limit, offset}`) | Frontend hooks memetakan offset → cursor page |
+| `POST /rpc/trigger-workflow` / `override-proposal` | belum ada (diganti `run-decision-cycle` dkk.) | — |
+
+### Sumber kebenaran
+
+- Machine-readable contract: `docs/09-api/openapi.yaml` (regenerated from code; test `test_checked_in_contract_matches_generated_schema`).
+- Frontend expectations: `docs/15-implementation/sprint-evidence/FRONTEND-API-SPECS.md`.
+- Gap & status: `docs/15-implementation/IMPLEMENTATION-GAP-INVENTORY.md`.

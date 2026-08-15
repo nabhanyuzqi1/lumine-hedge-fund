@@ -19,8 +19,25 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  caddy:
+    image: caddy:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,12 +46,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    expose:
+      - "8000"
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://lumine:lumine@postgres:5432/lumine
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=DEBUG
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - HMAC_SECRET_KEY=bootstrap-secret-local-dev
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,5 +66,50 @@ services:
       - ./src:/app/src
       - ./tests:/app/tests
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lumine:lumine@postgres:5432/lumine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  mt5-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "scripts.run_bridge"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    # The api image's HEALTHCHECK probes :8000 — the bridge serves nothing,
+    # so override with a Redis reachability probe instead.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; redis.Redis.from_url('redis://redis:6379/0').ping()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    expose:
+      - "80"
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
+  redis_data:

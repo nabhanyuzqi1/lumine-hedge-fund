@@ -1,13 +1,13 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { Badge } from '@/components/ui/badge';
-import type { JournalEntry, JournalKind } from '@/data/fixtures';
+import { Badge } from "@/components/ui/badge";
+import type { JournalEntry, JournalKind } from "@/data/fixtures";
 
-const KIND_TONE: Record<JournalKind, 'info' | 'ok' | 'warn' | 'danger' | 'neutral'> = {
-  decision: 'info',
-  trade: 'ok',
-  risk: 'warn',
-  note: 'neutral',
+const KIND_TONE: Record<JournalKind, "info" | "ok" | "warn" | "danger" | "neutral"> = {
+  decision: "info",
+  trade: "ok",
+  risk: "warn",
+  note: "neutral",
 };
 
 interface JournalTableProps {
@@ -45,7 +45,7 @@ export function JournalTable({ entries, expandedId, onRowClick }: JournalTablePr
                   <td className="px-3 py-2 font-mono text-text-secondary">
                     {new Date(entry.timestamp).toISOString()}
                   </td>
-                  <td className="px-3 py-2 font-mono text-text-primary">{entry.symbol ?? '-'}</td>
+                  <td className="px-3 py-2 font-mono text-text-primary">{entry.symbol ?? "-"}</td>
                   <td className="px-3 py-2">
                     <Badge tone={KIND_TONE[entry.kind]} label={entry.kind} />
                   </td>

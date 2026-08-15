@@ -1,62 +1,184 @@
-import * as React from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import * as React from "react";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
-import { PageShell } from './components/page-shell';
-import { SuspenseOutlet } from './components/suspense-outlet';
-import { LandingPage } from './pages/landing';
-import { OrderDetailPage } from './pages/order-detail';
-import { TerminalPage } from './pages/terminal';
+import { AuthProvider, RequireRole } from "@/lib/auth/role-context";
+import { PageShell } from "./components/page-shell";
+import { SuspenseOutlet } from "./components/suspense-outlet";
+import { LandingPublicPage } from "./pages/landing-public";
+import { LoginPage } from "./pages/login";
+import { OrderDetailPage } from "./pages/order-detail";
+import { TerminalPage } from "./pages/terminal";
 
 /**
- * Lumine portal route table (F-Sprint 5/6 surfaces).
+ * Lumine route table.
  *
- * `/` is the landing portal (card hub). The live Terminal workspace lives at
- * `/terminal`. Heavy surfaces (dashboard chart grid, streams, health) are
- * lazy-loaded to keep the critical bundle under budget; the layout route
- * persists the TopBar/Rail and data stores across navigation.
+ * Route hierarchy:
+ *   /               → Public landing page (Lumine Hedge Fund marketing)
+ *   /login          → Login page
+ *   /app/*          → Protected (user+) — trading workspace
+ *   /admin/*        → Protected (admin+) — admin panel
+ *   /superadmin     → Protected (superadmin) — control center
+ *
+ * PageShell (TopBar + Rail + layout) hanya muncul di /app/* dan /admin/*.
  */
 
+// ── Lazy routes ────────────────────────────────────────────────────────────
 const LazyDashboard = React.lazy(() =>
-  import('./pages/dashboard').then((m) => ({ default: m.DashboardPage })),
+  import("./pages/dashboard").then((m) => ({ default: m.DashboardPage }))
 );
 const LazyHealth = React.lazy(() =>
-  import('./pages/health').then((m) => ({ default: m.HealthPage })),
+  import("./pages/health").then((m) => ({ default: m.HealthPage }))
 );
 const LazyStreams = React.lazy(() =>
-  import('./pages/streams').then((m) => ({ default: m.StreamsPage })),
+  import("./pages/streams").then((m) => ({ default: m.StreamsPage }))
 );
 const LazyWorkflowRunDetail = React.lazy(() =>
-  import('./pages/workflow-run-detail').then((m) => ({ default: m.WorkflowRunDetailPage })),
+  import("./pages/workflow-run-detail").then((m) => ({ default: m.WorkflowRunDetailPage }))
 );
 const LazyLineageDetail = React.lazy(() =>
-  import('./pages/lineage-detail').then((m) => ({ default: m.LineageDetailPage })),
+  import("./pages/lineage-detail").then((m) => ({ default: m.LineageDetailPage }))
 );
 const LazyJournal = React.lazy(() =>
-  import('./pages/journal').then((m) => ({ default: m.JournalPage })),
+  import("./pages/journal").then((m) => ({ default: m.JournalPage }))
 );
 const LazyAdminKeys = React.lazy(() =>
-  import('./pages/admin-keys').then((m) => ({ default: m.AdminKeysPage })),
+  import("./pages/admin-keys").then((m) => ({ default: m.AdminKeysPage }))
+);
+const LazyWorkflowRunList = React.lazy(() =>
+  import("./pages/workflow-run-list").then((m) => ({ default: m.WorkflowRunListPage }))
+);
+const LazySuperadmin = React.lazy(() =>
+  import("./pages/superadmin").then((m) => ({ default: m.SuperadminPage }))
 );
 
+// ── Route guards ───────────────────────────────────────────────────────────
+function UserRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireRole role="user" redirectTo="/login">
+      {children}
+    </RequireRole>
+  );
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireRole role="admin" redirectTo="/login">
+      {children}
+    </RequireRole>
+  );
+}
+
+function SuperadminRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireRole role="superadmin" redirectTo="/login">
+      {children}
+    </RequireRole>
+  );
+}
+
+// ── Router ─────────────────────────────────────────────────────────────────
 export const router = createBrowserRouter([
+  // Public routes — no PageShell, no auth
   {
-    element: <PageShell />,
+    path: "/",
+    element: (
+      <AuthProvider>
+        <LandingPublicPage />
+      </AuthProvider>
+    ),
+  },
+  {
+    path: "/login",
+    element: (
+      <AuthProvider>
+        <LoginPage />
+      </AuthProvider>
+    ),
+  },
+
+  // App routes — PageShell + user role required
+  {
+    element: (
+      <AuthProvider>
+        <UserRoute>
+          <PageShell />
+        </UserRoute>
+      </AuthProvider>
+    ),
     children: [
-      { path: '/', element: <LandingPage /> },
-      { path: '/terminal', element: <TerminalPage /> },
-      { path: '/health', element: <LazyHealth /> },
-      { path: '/streams', element: <LazyStreams /> },
-      { path: '/dashboard', element: <LazyDashboard /> },
+      // /app/* prefix routes
+      { path: "/app/terminal", element: <TerminalPage /> },
+      { path: "/app/dashboard", element: <LazyDashboard /> },
+      { path: "/app/health", element: <LazyHealth /> },
+      { path: "/app/streams", element: <LazyStreams /> },
+      { path: "/app/journal", element: <LazyJournal /> },
+      { path: "/app/workflows", element: <LazyWorkflowRunList /> },
+
+      // Legacy routes — redirect untuk backward compat
+      { path: "/terminal", element: <Navigate to="/app/terminal" replace /> },
+      { path: "/dashboard", element: <Navigate to="/app/dashboard" replace /> },
+      { path: "/health", element: <Navigate to="/app/health" replace /> },
+      { path: "/streams", element: <Navigate to="/app/streams" replace /> },
+      { path: "/journal", element: <Navigate to="/app/journal" replace /> },
+      { path: "/workflows", element: <Navigate to="/app/workflows" replace /> },
+
       {
         element: <SuspenseOutlet />,
         children: [
-          { path: '/orders/:orderId', element: <OrderDetailPage /> },
-          { path: '/workflows/:workflowId/runs/:runId', element: <LazyWorkflowRunDetail /> },
-          { path: '/lineage/:lineageId', element: <LazyLineageDetail /> },
-          { path: '/journal', element: <LazyJournal /> },
-          { path: '/admin/keys', element: <LazyAdminKeys /> },
+          { path: "/app/orders/:orderId", element: <OrderDetailPage /> },
+          { path: "/orders/:orderId", element: <OrderDetailPage /> },
+          {
+            path: "/app/workflows/:workflowId/runs/:runId",
+            element: <LazyWorkflowRunDetail />,
+          },
+          {
+            path: "/workflows/:workflowId/runs/:runId",
+            element: <LazyWorkflowRunDetail />,
+          },
+          { path: "/app/lineage/:lineageId", element: <LazyLineageDetail /> },
+          { path: "/lineage/:lineageId", element: <LazyLineageDetail /> },
         ],
       },
+
+      // Admin routes — admin role required
+      {
+        path: "/admin/keys",
+        element: (
+          <AdminRoute>
+            <LazyAdminKeys />
+          </AdminRoute>
+        ),
+      },
+      { path: "/admin", element: <Navigate to="/admin/keys" replace /> },
+
+      // Superadmin route — superadmin role required (Caddy forward_auth +
+      // SPA RequireRole, session cookie dari backend /api/auth/*)
+      {
+        path: "/superadmin",
+        element: (
+          <SuperadminRoute>
+            <LazySuperadmin />
+          </SuperadminRoute>
+        ),
+      },
     ],
+  },
+
+  // 404 fallback
+  {
+    path: "*",
+    element: (
+      <AuthProvider>
+        <div className="flex min-h-screen items-center justify-center bg-abyss font-mono text-sm text-text-muted">
+          <div className="space-y-2 text-center">
+            <div className="text-2xl font-semibold text-ink">404</div>
+            <div>Page not found</div>
+            <a href="/" className="block text-accent hover:underline">
+              → Return to Lumine
+            </a>
+          </div>
+        </div>
+      </AuthProvider>
+    ),
   },
 ]);

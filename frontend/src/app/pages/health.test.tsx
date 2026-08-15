@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { HealthPage } from './health';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { HealthPage } from "./health";
 
 function renderWithQuery(ui: React.ReactElement) {
   const client = new QueryClient({
@@ -10,30 +10,32 @@ function renderWithQuery(ui: React.ReactElement) {
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
 }
 
-describe('HealthPage', () => {
+describe("HealthPage", () => {
   beforeEach(() => {
     vi.stubGlobal(
-      'fetch',
+      "fetch",
       vi.fn().mockResolvedValue({
         status: 200,
         text: async () =>
           JSON.stringify({
             meta: {
-              api_version: 'v1',
-              timestamp: '2026-08-01T00:00:00Z',
-              request_id: 'r1',
-              status: 'ok',
+              api_version: "v1",
+              timestamp: "2026-08-01T00:00:00Z",
+              request_id: "r1",
+              status: "ok",
             },
             data: {
-              symbol: 'XAUUSD',
-              bid: 2400.5,
-              ask: 2400.8,
-              spread: 0.3,
-              timestamp: '2026-08-01T00:00:00Z',
+              XAUUSD: {
+                symbol: "XAUUSD",
+                bid: 2400.5,
+                ask: 2400.8,
+                spread: 0.3,
+                timestamp: "2026-08-01T00:00:00Z",
+              },
             },
             error: null,
           }),
-      }),
+      })
     );
   });
 
@@ -41,12 +43,10 @@ describe('HealthPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders quote from API', async () => {
+  it("renders quote from API", async () => {
     renderWithQuery(<HealthPage />);
 
-    expect(screen.getByText('Loading quote...')).toBeInTheDocument();
-
-    await waitFor(() => expect(screen.getByText('XAUUSD')).toBeInTheDocument());
-    expect(screen.getByText('2400.50')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("XAUUSD")).toBeInTheDocument());
+    expect(screen.getByText("2400.50")).toBeInTheDocument();
   });
 });

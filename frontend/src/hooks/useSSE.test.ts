@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useSSE } from './useSSE';
+import { renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useSSE } from "./useSSE";
 
 class MockReadableStream {
   private chunks: Uint8Array[] = [];
@@ -15,7 +15,7 @@ class MockReadableStream {
   }
 
   getReader() {
-    if (this.locked) throw new Error('Stream already locked');
+    if (this.locked) throw new Error("Stream already locked");
     this.locked = true;
 
     return {
@@ -34,7 +34,7 @@ class MockReadableStream {
 
 function createMockResponse(
   stream: MockReadableStream,
-  overrides: Partial<Response> = {},
+  overrides: Partial<Response> = {}
 ): Response {
   return {
     ok: true,
@@ -45,7 +45,7 @@ function createMockResponse(
   } as Response;
 }
 
-describe('useSSE', () => {
+describe("useSSE", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
   });
@@ -55,58 +55,58 @@ describe('useSSE', () => {
     vi.restoreAllMocks();
   });
 
-  it('calls onEvent for parsed events', async () => {
+  it("calls onEvent for parsed events", async () => {
     const stream = new MockReadableStream();
     const onEvent = vi.fn();
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(createMockResponse(stream)));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(createMockResponse(stream)));
 
     stream.push(
-      'id: 1\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:00Z","request_id":"r1","status":"ok"},"data":{"price":2400},"error":null}\n\n',
+      'id: 1\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:00Z","request_id":"r1","status":"ok"},"data":{"price":2400},"error":null}\n\n'
     );
 
-    renderHook(() => useSSE({ url: 'http://localhost/stream', onEvent }));
+    renderHook(() => useSSE({ url: "http://localhost/stream", onEvent }));
 
     await waitFor(() => expect(onEvent).toHaveBeenCalledTimes(1));
     expect(onEvent.mock.calls[0]![0].data).toEqual({ price: 2400 });
   });
 
-  it('ignores heartbeat comments', async () => {
+  it("ignores heartbeat comments", async () => {
     const stream = new MockReadableStream();
     const onEvent = vi.fn();
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(createMockResponse(stream)));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(createMockResponse(stream)));
 
-    stream.push(': heartbeat\n\n');
+    stream.push(": heartbeat\n\n");
     stream.push(
-      'id: 2\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:01Z","request_id":"r2","status":"ok"},"data":{"price":2401},"error":null}\n\n',
+      'id: 2\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:01Z","request_id":"r2","status":"ok"},"data":{"price":2401},"error":null}\n\n'
     );
 
-    renderHook(() => useSSE({ url: 'http://localhost/stream', onEvent }));
+    renderHook(() => useSSE({ url: "http://localhost/stream", onEvent }));
 
     await waitFor(() => expect(onEvent).toHaveBeenCalledTimes(1));
     expect(onEvent.mock.calls[0]![0].data).toEqual({ price: 2401 });
   });
 
-  it('sends Last-Event-ID on reconnect', async () => {
+  it("sends Last-Event-ID on reconnect", async () => {
     const stream1 = new MockReadableStream();
     const stream2 = new MockReadableStream();
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(createMockResponse(stream1))
       .mockResolvedValueOnce(createMockResponse(stream2));
-    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal("fetch", fetchMock);
 
     stream1.push(
-      'id: 10\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:00Z","request_id":"r1","status":"ok"},"data":{"price":2400},"error":null}\n\n',
+      'id: 10\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:00Z","request_id":"r1","status":"ok"},"data":{"price":2400},"error":null}\n\n'
     );
     stream1.close();
 
     stream2.push(
-      'id: 11\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:01Z","request_id":"r2","status":"ok"},"data":{"price":2401},"error":null}\n\n',
+      'id: 11\nevent: market_data\ndata: {"meta":{"api_version":"v1","timestamp":"2026-08-01T00:00:01Z","request_id":"r2","status":"ok"},"data":{"price":2401},"error":null}\n\n'
     );
 
-    const { unmount } = renderHook(() => useSSE({ url: 'http://localhost/stream' }));
+    const { unmount } = renderHook(() => useSSE({ url: "http://localhost/stream" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
@@ -115,35 +115,35 @@ describe('useSSE', () => {
     await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2));
 
     const [, init] = fetchMock.mock.calls[1] as [string, RequestInit];
-    expect(init.headers).toMatchObject({ 'Last-Event-ID': '10' });
+    expect(init.headers).toMatchObject({ "Last-Event-ID": "10" });
 
     unmount();
   });
 
-  it('does not reconnect on 404', async () => {
+  it("does not reconnect on 404", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
       headers: new Headers(),
       body: null,
     });
-    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useSSE({ url: 'http://localhost/stream' }));
+    const { result } = renderHook(() => useSSE({ url: "http://localhost/stream" }));
 
-    await waitFor(() => expect(result.current.status).toBe('error'));
+    await waitFor(() => expect(result.current.status).toBe("error"));
 
     vi.advanceTimersByTime(5_000);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('honors Retry-After on 429', async () => {
+  it("honors Retry-After on 429", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
         ok: false,
         status: 429,
-        headers: new Headers({ 'Retry-After': '2' }),
+        headers: new Headers({ "Retry-After": "2" }),
         body: null,
       })
       .mockResolvedValueOnce({
@@ -152,9 +152,9 @@ describe('useSSE', () => {
         headers: new Headers(),
         body: null,
       });
-    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal("fetch", fetchMock);
 
-    renderHook(() => useSSE({ url: 'http://localhost/stream' }));
+    renderHook(() => useSSE({ url: "http://localhost/stream" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
@@ -162,11 +162,11 @@ describe('useSSE', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
-  it('backs off on network error', async () => {
-    const fetchMock = vi.fn().mockRejectedValue(new Error('Network failure'));
-    vi.stubGlobal('fetch', fetchMock);
+  it("backs off on network error", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("Network failure"));
+    vi.stubGlobal("fetch", fetchMock);
 
-    renderHook(() => useSSE({ url: 'http://localhost/stream' }));
+    renderHook(() => useSSE({ url: "http://localhost/stream" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 

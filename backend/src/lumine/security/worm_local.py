@@ -45,13 +45,13 @@ class LocalWorm(WormSink):
 
     backend = "local_append_only"
 
-    def __init__(self, root: Path) -> None:  # noqa: D107 — WORM root dir is self-evident
+    def __init__(self, root: Path) -> None:
         self.root = root
 
     def _path_for(self, object_key: str) -> Path:
         return self.root / object_key
 
-    async def store(self, payload: AnchorPayload) -> None:  # noqa: D102
+    async def store(self, payload: AnchorPayload) -> None:
         path = self._path_for(payload.object_key)
         path.parent.mkdir(parents=True, exist_ok=True)
         data = json.dumps(
@@ -75,10 +75,10 @@ class LocalWorm(WormSink):
             msg = f"worm object already exists (re-anchor of same seq!): {path}"
             raise RuntimeError(msg) from exc
 
-    async def read(self, object_key: str) -> bytes:  # noqa: D102
+    async def read(self, object_key: str) -> bytes:
         return self._path_for(object_key).read_bytes()
 
-    async def exists(self, object_key: str) -> bool:  # noqa: D102
+    async def exists(self, object_key: str) -> bool:
         return self._path_for(object_key).exists()
 
 

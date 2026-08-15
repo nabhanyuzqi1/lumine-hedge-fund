@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { AreaSeries, createChart, type IChartApi, type ISeriesApi } from 'lightweight-charts';
+import { AreaSeries, type IChartApi, type ISeriesApi, createChart } from "lightweight-charts";
 
-import { ChartCard } from '@/components/charts/chart-card';
-import { useChartResize } from '@/hooks/useChartResize';
-import { buildLwcOptions, getChartColors } from '@/lib/chart-theme';
-import { equityToArea, equityToDrawdown } from '@/lib/chart-transform';
-import type { EquityPoint } from '@/data/fixtures';
+import { ChartCard } from "@/components/charts/chart-card";
+import type { EquityPoint } from "@/data/fixtures";
+import { useChartResize } from "@/hooks/useChartResize";
+import { buildLwcOptions, getChartColors } from "@/lib/chart-theme";
+import { equityToArea, equityToDrawdown } from "@/lib/chart-transform";
 
 export interface DrawdownChartProps {
   equity: EquityPoint[];
@@ -20,7 +20,7 @@ export interface DrawdownChartProps {
 export function DrawdownChart({ equity, height = 240 }: DrawdownChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const drawdown = useMemo(() => equityToDrawdown(equity), [equity]);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function DrawdownChart({ equity, height = 240 }: DrawdownChartProps) {
     const area = chartInstance.addSeries(AreaSeries, {
       lineColor: colors.down,
       topColor: `${colors.down}26`,
-      bottomColor: 'transparent',
+      bottomColor: "transparent",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true,

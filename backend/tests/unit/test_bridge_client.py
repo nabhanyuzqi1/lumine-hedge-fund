@@ -47,7 +47,7 @@ class FakeRedis:
         for pubsub in self.subscribers:
             if pubsub.channel == key:
                 pubsub.messages.append({"type": "message", "channel": key, "data": value.encode()})
-                pubsub._event.set()  # noqa: SLF001
+                pubsub._event.set()
         return len(self.subscribers)
 
     def pubsub(self) -> FakePubSub:
@@ -69,7 +69,7 @@ class FakePubSub:
     async def get_message(
         self,
         *,
-        ignore_subscribe_messages: bool = True,  # noqa: ARG002
+        ignore_subscribe_messages: bool = True,
         timeout: float | None = None,
     ) -> dict[str, Any] | None:
         if not self.messages and timeout:
@@ -82,7 +82,7 @@ class FakePubSub:
             return self.messages.pop(0)
         return None
 
-    async def unsubscribe(self, channel: str | None = None) -> None:  # noqa: ARG002
+    async def unsubscribe(self, channel: str | None = None) -> None:
         if self in self.redis.subscribers:
             self.redis.subscribers.remove(self)
 

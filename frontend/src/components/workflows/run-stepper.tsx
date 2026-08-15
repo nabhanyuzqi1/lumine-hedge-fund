@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 import {
   RUN_STAGES,
   RUN_TERMINAL_STATES,
@@ -6,27 +6,27 @@ import {
   type RunStageEvent,
   type RunStatus,
   type RunTerminalState,
-} from '@/data/fixtures';
+} from "@/data/fixtures";
 
 const STAGE_LABEL: Record<RunStage, string> = {
-  init: 'Init',
-  data_gathering: 'Data gathering',
-  analyst_outputs: 'Analyst outputs',
-  debate: 'Debate',
-  ic_decision: 'IC decision',
-  cio_proposal: 'CIO proposal',
-  risk_assessment: 'Risk assessment',
-  sizing: 'Sizing',
-  order_draft: 'Order draft',
-  execution: 'Execution',
-  journal: 'Journal',
+  init: "Init",
+  data_gathering: "Data gathering",
+  analyst_outputs: "Analyst outputs",
+  debate: "Debate",
+  ic_decision: "IC decision",
+  cio_proposal: "CIO proposal",
+  risk_assessment: "Risk assessment",
+  sizing: "Sizing",
+  order_draft: "Order draft",
+  execution: "Execution",
+  journal: "Journal",
 };
 
-const TERMINAL_TONE: Record<RunTerminalState, 'ok' | 'danger' | 'warn' | 'danger'> = {
-  completed: 'ok',
-  failed: 'danger',
-  cancelled: 'warn',
-  killed: 'danger',
+const TERMINAL_TONE: Record<RunTerminalState, "ok" | "danger" | "warn" | "danger"> = {
+  completed: "ok",
+  failed: "danger",
+  cancelled: "warn",
+  killed: "danger",
 };
 
 interface Props {
@@ -55,18 +55,18 @@ export function RunStepper({ status, stages }: Props) {
             <li key={stage} className="relative flex items-start gap-3">
               <span
                 className={`z-10 mt-1.5 h-2 w-2 rounded-full border border-bg-raised ${
-                  done ? 'bg-accent' : 'bg-border-subtle'
-                } ${isActive ? 'ring-2 ring-accent/40' : ''}`}
+                  done ? "bg-accent" : "bg-border-subtle"
+                } ${isActive ? "ring-2 ring-accent/40" : ""}`}
                 aria-hidden
               />
               <div className="flex flex-1 items-baseline justify-between gap-2">
                 <span
                   className={`text-xs font-medium ${
                     isActive
-                      ? 'text-text-primary'
+                      ? "text-text-primary"
                       : done
-                        ? 'text-text-secondary'
-                        : 'text-text-tertiary'
+                        ? "text-text-secondary"
+                        : "text-text-tertiary"
                   }`}
                 >
                   {STAGE_LABEL[stage]}

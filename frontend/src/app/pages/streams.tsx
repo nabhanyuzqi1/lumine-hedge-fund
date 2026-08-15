@@ -1,42 +1,79 @@
-import { useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { useSSE } from '@/hooks/useSSE';
-import { useMarketStore, usePortfolioStore, useStreamStore } from '@/stores';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { NumericText } from '@/components/ui/numeric-text';
-import { DataTable } from '@/components/ui/data-table';
-import type { MarketTick } from '@/stores';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import { NumericText } from "@/components/ui/numeric-text";
+import { buildAuthHeaders, getHmacCredentials } from "@/lib/api/auth";
+import { useSSE } from "@/hooks/useSSE";
+import { useMarketStore, usePortfolioStore, useStreamStore } from "@/stores";
+import type { MarketTick } from "@/stores";
+import { useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 interface MarketDataEvent {
-  tick: MarketTick;
+  tick?: MarketTick;
+  /** Market libur (weekend/holiday) — stream hidup tanpa ticks. */
+  market_closed?: {
+    reason: string;
+    next_open: string;
+    message: string;
+  };
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
+// VITE_API_BASE_URL mengandung /api/v1 (client.ts convention) — strip suffix
+// agar SSE url = origin + /api/v1/streams/...
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1").replace(
+  /\/api\/v1\/?$/,
+  ""
+);
 
-/** Demo page proving SSE → Zustand → virtualized table end-to-end. */
+/** SSE stream monitor page — live Phase 9 streams → Zustand → table. */
 export function StreamsPage() {
   const upsertTick = useMarketStore((state) => state.upsertTick);
-  const tick = useMarketStore(useShallow((state) => state.getTick('XAUUSD')));
+  const tick = useMarketStore(useShallow((state) => state.getTick("XAUUSD")));
   const positionsById = usePortfolioStore((state) => state.positions);
   const positions = useMemo(() => Object.values(positionsById), [positionsById]);
   const setStreamState = useStreamStore((state) => state.setStreamState);
 
+  const streamPath = "/api/v1/streams/market-data?symbol=XAUUSD";
+  const [sseHeaders, setSseHeaders] = useState<Record<string, string>>({});
+
+  // PITFALL: backend require_scope("read:market") → SSE butuh HMAC headers,
+  // sama seperti terminal.tsx. Tanpa ini stream selalu 401 MISSING_AUTH.
+  useEffect(() => {
+    let active = true;
+    const creds = getHmacCredentials();
+    if (!creds) {
+      setSseHeaders({});
+      return;
+    }
+    buildAuthHeaders("GET", streamPath, "", creds.apiKey, creds.apiSecret).then((headers) => {
+      if (active) setSseHeaders(headers);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const { status, stale, error } = useSSE<MarketDataEvent>({
-    url: `${API_BASE_URL}/api/v1/streams/market-data?symbol=XAUUSD`,
-    enabled: true,
+    url: `${API_BASE_URL}${streamPath}`,
+    enabled: Object.keys(sseHeaders).length > 0 || !getHmacCredentials(),
+    headers: sseHeaders,
     onEvent: (envelope) => {
       if (envelope.data?.tick) {
         upsertTick(envelope.data.tick);
       }
+      // Market libur (weekend/holiday) — stream hidup tapi tanpa ticks.
+      if (envelope.data?.market_closed) {
+        console.info("[streams] market closed:", envelope.data.market_closed?.message);
+      }
     },
     onLifecycle: (event) => {
-      setStreamState('market-data/XAUUSD', {
-        status: event.type === 'stream_open' || event.type === 'stream_resumed' ? 'open' : 'closed',
+      setStreamState("market-data/XAUUSD", {
+        status: event.type === "stream_open" || event.type === "stream_resumed" ? "open" : "closed",
       });
     },
     onError: (err) => {
-      setStreamState('market-data/XAUUSD', { status: 'error', error: err.message });
+      setStreamState("market-data/XAUUSD", { status: "error", error: err.message });
     },
   });
 
@@ -57,8 +94,8 @@ export function StreamsPage() {
             </CardHeader>
             <CardContent>
               <Badge
-                tone={status === 'open' ? 'ok' : stale ? 'warn' : 'danger'}
-                label={stale ? 'stale' : status}
+                tone={status === "open" ? "ok" : stale ? "warn" : "danger"}
+                label={stale ? "stale" : status}
               />
             </CardContent>
           </Card>
@@ -103,13 +140,13 @@ export function StreamsPage() {
           <CardContent>
             <DataTable
               columns={[
-                { key: 'symbol', header: 'Symbol', cell: (row) => row.symbol },
-                { key: 'side', header: 'Side', cell: (row) => row.side },
-                { key: 'quantity', header: 'Qty', cell: (row) => row.quantity },
-                { key: 'entry', header: 'Entry', cell: (row) => row.avg_entry_price.toFixed(2) },
+                { key: "symbol", header: "Symbol", cell: (row) => row.symbol },
+                { key: "side", header: "Side", cell: (row) => row.side },
+                { key: "quantity", header: "Qty", cell: (row) => row.quantity },
+                { key: "entry", header: "Entry", cell: (row) => row.avg_entry_price.toFixed(2) },
                 {
-                  key: 'pnl',
-                  header: 'Unrealized P&L',
+                  key: "pnl",
+                  header: "Unrealized P&L",
                   cell: (row) => row.unrealized_pnl.toFixed(2),
                 },
               ]}
