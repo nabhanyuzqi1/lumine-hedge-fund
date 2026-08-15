@@ -64,7 +64,7 @@ export function StreamsPage() {
       }
       // Market libur (weekend/holiday) — stream hidup tapi tanpa ticks.
       if (envelope.data?.market_closed) {
-        setStreamState("market-data/XAUUSD", { status: "closed", error: envelope.data.message });
+        console.info("[streams] market closed:", envelope.data.market_closed?.message);
       }
     },
     onLifecycle: (event) => {

@@ -332,8 +332,8 @@ function TradingWorkspace() {
       }
       // Market libur (weekend/holiday) — stream hidup tapi tanpa ticks.
       if (envelope.data?.market_closed) {
-        setStreamState(streamKey, { status: "closed", error: envelope.data.message });
-        appendLog({ stream: "market", message: `Market closed: ${envelope.data.message}`, level: "warn" });
+        setStreamState(streamKey, { status: "closed", error: envelope.data.market_closed?.message });
+        appendLog({ stream: "market", message: `Market closed: ${envelope.data.market_closed?.message}`, level: "warn" });
       }
     },
     onLifecycle: (event) => {
