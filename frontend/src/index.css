@@ -17,7 +17,7 @@
   --font-display: "Archivo Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  /* foundations */
+  /* foundations - DARK MODE (default) */
   --color-abyss: #070b12;
   --color-bg: #0b0f17;
   --color-raised: #0f1522;
@@ -25,7 +25,7 @@
   --color-line: #1c2534;
   --color-line-soft: #151d2b;
 
-  /* ink */
+  /* ink - DARK MODE */
   --color-ink: #e8eef7;
   --color-ink-dim: #a7b3c5;
   --color-ink-faint: #6d7c92;
@@ -43,6 +43,29 @@
   --radius-chip: 4px;
 
   --shadow-panel: 0 0 0 1px rgba(28, 37, 52, 0.8), 0 24px 48px -24px rgba(0, 0, 0, 0.7);
+}
+
+/* Light mode overrides */
+:root.light {
+  --color-abyss: #f8f9fc;
+  --color-bg: #ffffff;
+  --color-raised: #f1f3f8;
+  --color-overlay: #e8ecf4;
+  --color-line: #d4dbe8;
+  --color-line-soft: #eef2f8;
+
+  --color-ink: #0f1419;
+  --color-ink-dim: #4a5568;
+  --color-ink-faint: #8899a6;
+
+  --color-accent: #2563eb;
+  --color-accent-soft: #93c5fd;
+  --color-up: #059669;
+  --color-down: #dc2626;
+  --color-warn: #d97706;
+  --color-cyan: #0891b2;
+
+  --shadow-panel: 0 0 0 1px rgba(212, 219, 232, 0.8), 0 8px 24px -8px rgba(0, 0, 0, 0.15);
 }
 
 /*

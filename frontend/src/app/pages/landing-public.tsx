@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 // Landing components
 import { IntelligenceField } from "@/components/landing/intelligence-field";
@@ -15,6 +16,8 @@ import { AuditLog } from "@/components/landing/audit-log";
 import { PhilosophySection } from "@/components/landing/philosophy-section";
 import { TickerTape } from "@/components/landing/ticker-tape";
 import { LumineIcon } from "@/components/landing/agent-icons";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
  * Lumine Landing Page — UI/UX Rebuild V2 (from scratch).
@@ -34,18 +37,19 @@ import { LumineIcon } from "@/components/landing/agent-icons";
 /* Navigation — compact technical bar with system status (Section 12)  */
 /* ------------------------------------------------------------------ */
 
-const NAV_LINKS = [
-  { href: "#", label: "Overview" },
-  { href: "#risk", label: "Risk" },
-  { href: "#research", label: "Research" },
-  { href: "#performance", label: "Performance" },
-];
-
 function NavBar() {
+  const { t } = useTranslation();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
 
   useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 40));
+
+  const navLinks = [
+    { href: "#", label: t("nav.overview", "Overview") },
+    { href: "#risk", label: t("nav.risk", "Risk") },
+    { href: "#research", label: t("nav.research", "Research") },
+    { href: "#performance", label: t("nav.performance", "Performance") },
+  ];
 
   return (
     <header
@@ -70,7 +74,7 @@ function NavBar() {
 
         {/* Technical nav */}
         <nav className="hidden items-center gap-7 md:flex">
-          {NAV_LINKS.map((l) => (
+          {navLinks.map((l) => (
             <a
               key={l.href}
               href={l.href}
@@ -81,14 +85,21 @@ function NavBar() {
           ))}
         </nav>
 
-        {/* Status + GitHub + CTA */}
-        <div className="flex items-center gap-4">
+        {/* Status + Language + Theme + GitHub + CTA */}
+        <div className="flex items-center gap-3">
           <div className="hidden items-center gap-2 lg:flex">
             <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-up" />
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-faint">
               System Online
             </span>
           </div>
+          
+          {/* Language & Theme Switchers */}
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
+          
           <a
             href="https://github.com/nabhanyuzqi1/lumine-hedge-fund"
             target="_blank"
@@ -106,7 +117,7 @@ function NavBar() {
               size="sm"
               className="bg-accent font-mono text-[10px] uppercase tracking-[0.2em] text-white hover:bg-accent-soft"
             >
-              Enter System
+              {t("hero.cta")}
             </Button>
           </Link>
         </div>

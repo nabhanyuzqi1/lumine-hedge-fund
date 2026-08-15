@@ -3,6 +3,9 @@ import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth/role-context";
 import { motion } from "framer-motion";
 import { LumineIcon } from "@/components/landing/agent-icons";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
  * Lumine Login — first-party internal auth.
@@ -104,6 +107,7 @@ function SystemTerminal() {
 /* ── Page ────────────────────────────────────────────────────────── */
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const { isAuthenticated, loading, login } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -259,106 +263,111 @@ export function LoginPage() {
               </span>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="login-username"
-                  className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint"
-                >
-                  Username
-                </label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
-                    <UserIcon />
-                  </span>
-                  <input
-                    id="login-username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    autoComplete="username"
-                    autoFocus
-                    className={`${inputBase} ${inputState}`}
-                    placeholder="username"
-                  />
-                </div>
-              </div>
+            <div className="mb-4 flex items-center justify-end gap-2">
+                          <LanguageSwitcher />
+                          <ThemeToggle />
+                        </div>
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="login-password"
-                  className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
-                    <LockIcon />
-                  </span>
-                  <input
-                    id="login-password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    className={`${inputBase} ${inputState}`}
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-chip p-1.5 text-ink-faint transition-colors hover:text-ink"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    <EyeIcon off={!showPassword} />
-                  </button>
-                </div>
-              </div>
+                        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                          <div className="space-y-1.5">
+                            <label
+                              htmlFor="login-username"
+                              className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint"
+                            >
+                              {t("login.username")}
+                            </label>
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
+                                <UserIcon />
+                              </span>
+                              <input
+                                id="login-username"
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                required
+                                autoComplete="username"
+                                autoFocus
+                                className={`${inputBase} ${inputState}`}
+                                placeholder="username"
+                              />
+                            </div>
+                          </div>
 
-              {error && (
-                <motion.p
-                  key={error}
-                  className="flex items-center gap-2 rounded-chip border border-down/30 bg-down/10 px-3 py-2 font-mono text-xs text-down"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                    />
-                  </svg>
-                  {error}
-                </motion.p>
-              )}
+                          <div className="space-y-1.5">
+                            <label
+                              htmlFor="login-password"
+                              className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint"
+                            >
+                              {t("login.password")}
+                            </label>
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
+                                <LockIcon />
+                              </span>
+                              <input
+                                id="login-password"
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                autoComplete="current-password"
+                                className={`${inputBase} ${inputState}`}
+                                placeholder="••••••••"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword((s) => !s)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-chip p-1.5 text-ink-faint transition-colors hover:text-ink"
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                              >
+                                <EyeIcon off={!showPassword} />
+                              </button>
+                            </div>
+                          </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex w-full items-center justify-center gap-2 rounded-chip bg-accent px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitting ? (
-                  <>
-                    <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Authenticating…
+                          {error && (
+                            <motion.p
+                              key={error}
+                              className="flex items-center gap-2 rounded-chip border border-down/30 bg-down/10 px-3 py-2 font-mono text-xs text-down"
+                              initial={{ opacity: 0, x: -8 }}
+                              animate={{ opacity: 1, x: 0 }}
+                            >
+                              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                                />
+                              </svg>
+                              {t("login.error")}
+                            </motion.p>
+                          )}
+
+                          <button
+                            type="submit"
+                            disabled={submitting}
+                            className="flex w-full items-center justify-center gap-2 rounded-chip bg-accent px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-[0.22em] text-white transition-colors hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {submitting ? (
+                              <>
+                                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                {t("login.submitting")}
                   </>
                 ) : (
-                  "Enter System"
-                )}
-              </button>
-            </form>
-          </div>
+                                  t("login.submit")
+                                )}
+                              </button>
+                            </form>
+                          </div>
 
-          <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
-            Restricted access — authorized users only
-          </p>
+                          <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+                            {t("login.restricted")}
+                          </p>
         </motion.div>
       </div>
     </div>

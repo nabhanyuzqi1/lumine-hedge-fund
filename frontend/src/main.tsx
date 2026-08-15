@@ -7,6 +7,8 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { queryClient } from "./api/query-client";
 import { router } from "./app/router";
 import "./index.css";
+import "./i18n";
+import { ThemeProvider } from "./components/theme-provider";
 
 // Devtools only in dev: the conditional import is tree-shaken out of the
 // production bundle (keeps ~370 kB of dev-only code off the critical path).
@@ -20,14 +22,16 @@ const ReactQueryDevtools = import.meta.env.DEV
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <TooltipProvider>
-      <ToastProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <ToastViewport />
-          {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-        </QueryClientProvider>
-      </ToastProvider>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <ToastProvider>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+            <ToastViewport />
+            {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+          </QueryClientProvider>
+        </ToastProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </StrictMode>
 );

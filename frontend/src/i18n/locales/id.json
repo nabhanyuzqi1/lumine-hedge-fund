@@ -1,0 +1,97 @@
+{
+  "nav": {
+    "overview": "Ikhtisar",
+    "risk": "Risiko",
+    "research": "Riset",
+    "performance": "Kinerja"
+  },
+  "hero": {
+    "title": "Inteligensi Kuantitatif Berbasis AI",
+    "subtitle": "Trading algoritmik tingkat institusional yang didukung agen otonom",
+    "cta": "Masuk Sistem",
+    "login": "Masuk"
+  },
+  "intelligence": {
+    "title": "Bidang Inteligensi",
+    "subtitle": "Orkestrasi multi-agen lintas riset, eksekusi, dan risiko"
+  },
+  "decision": {
+    "title": "Alur Keputusan",
+    "subtitle": "Rantai penalaran yang transparan dan dapat diaudit"
+  },
+  "risk": {
+    "title": "Mesin Risiko",
+    "subtitle": "Pemantauan posisi real-time dan batasan eksposur"
+  },
+  "breakeven": {
+    "title": "Analisis Break-Even",
+    "subtitle": "Visualisasi pemulihan drawdown dinamis"
+  },
+  "research": {
+    "title": "Pipeline Riset",
+    "subtitle": "Pengujian hipotesis sistematis dengan data pasar langsung"
+  },
+  "performance": {
+    "title": "Dashboard Kinerja",
+    "subtitle": "Analitik dan atribusi tingkat institusional"
+  },
+  "regime": {
+    "title": "Mesin Regime",
+    "subtitle": "Deteksi kondisi pasar dan perubahan strategi adaptif"
+  },
+  "audit": {
+    "title": "Log Audit",
+    "subtitle": "Setiap keputusan tercatat dengan provenance lengkap"
+  },
+  "philosophy": {
+    "title": "Dibangun di Atas Prinsip",
+    "principles": {
+      "evidence": {
+        "title": "Bukti Sebelum Modal",
+        "desc": "Setiap keputusan trading membawa rantai penalaran yang dapat diaudit"
+      },
+      "discipline": {
+        "title": "Disiplin Institusional",
+        "desc": "Kontrol risiko yang bertahan dalam volatilitas pasar"
+      },
+      "reproducibility": {
+        "title": "Dapat Direproduksi",
+        "desc": "Setiap keputusan dapat diputar ulang dan diverifikasi"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Trading kuantitatif berbasis AI dengan kontrol risiko yang disiplin",
+    "platform": "Platform",
+    "company": "Perusahaan",
+    "legal": "Legal",
+    "systemOverview": "Ikhtisar Sistem",
+    "riskEngine": "Mesin Risiko",
+    "research": "Riset",
+    "about": "Tentang",
+    "careers": "Karir",
+    "blog": "Blog",
+    "privacy": "Privasi",
+    "terms": "Ketentuan",
+    "security": "Keamanan",
+    "copyright": "© 2026 Lumine — Platform AI-native tingkat institusional"
+  },
+  "login": {
+    "title": "Autentikasi Diperlukan",
+    "username": "Nama Pengguna",
+    "password": "Kata Sandi",
+    "submit": "Masuk Sistem",
+    "submitting": "Mengautentikasi...",
+    "error": "Kredensial tidak valid",
+    "restricted": "Akses terbatas — hanya pengguna resmi",
+    "systemStatus": "Status Sistem"
+  },
+  "common": {
+    "loading": "Memuat...",
+    "error": "Terjadi kesalahan",
+    "retry": "Coba lagi",
+    "close": "Tutup",
+    "save": "Simpan",
+    "cancel": "Batal"
+  }
+}

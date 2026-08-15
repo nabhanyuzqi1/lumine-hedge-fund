@@ -1,0 +1,97 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "risk": "Risk",
+    "research": "Research",
+    "performance": "Performance"
+  },
+  "hero": {
+    "title": "AI-Native Quantitative Intelligence",
+    "subtitle": "Institutional-grade algorithmic trading powered by autonomous agents",
+    "cta": "Enter System",
+    "login": "Log In"
+  },
+  "intelligence": {
+    "title": "Intelligence Field",
+    "subtitle": "Multi-agent orchestration across research, execution, and risk"
+  },
+  "decision": {
+    "title": "Decision Flow",
+    "subtitle": "Transparent, auditable reasoning chains"
+  },
+  "risk": {
+    "title": "Risk Engine",
+    "subtitle": "Real-time position monitoring and exposure limits"
+  },
+  "breakeven": {
+    "title": "Break-Even Analysis",
+    "subtitle": "Dynamic drawdown recovery visualization"
+  },
+  "research": {
+    "title": "Research Pipeline",
+    "subtitle": "Systematic hypothesis testing with live market data"
+  },
+  "performance": {
+    "title": "Performance Dashboard",
+    "subtitle": "Institutional-grade analytics and attribution"
+  },
+  "regime": {
+    "title": "Regime Engine",
+    "subtitle": "Market state detection and adaptive strategy switching"
+  },
+  "audit": {
+    "title": "Audit Log",
+    "subtitle": "Every decision captured with full provenance"
+  },
+  "philosophy": {
+    "title": "Built on Principles",
+    "principles": {
+      "evidence": {
+        "title": "Evidence Before Capital",
+        "desc": "Every trade decision carries an auditable chain of reasoning"
+      },
+      "discipline": {
+        "title": "Institutional Discipline",
+        "desc": "Risk controls that survive market volatility"
+      },
+      "reproducibility": {
+        "title": "Reproducibility",
+        "desc": "Every decision is replayable and verifiable"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "AI-native quantitative trading under disciplined risk controls",
+    "platform": "Platform",
+    "company": "Company",
+    "legal": "Legal",
+    "systemOverview": "System Overview",
+    "riskEngine": "Risk Engine",
+    "research": "Research",
+    "about": "About",
+    "careers": "Careers",
+    "blog": "Blog",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "security": "Security",
+    "copyright": "© 2026 Lumine — Institutional AI-native platform"
+  },
+  "login": {
+    "title": "Authentication Required",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Enter System",
+    "submitting": "Authenticating...",
+    "error": "Invalid credentials",
+    "restricted": "Restricted access — authorized users only",
+    "systemStatus": "System Status"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}

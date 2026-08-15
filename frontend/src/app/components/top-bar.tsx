@@ -7,6 +7,7 @@ import { useStreamStore } from "@/stores/streamStore";
 import { useUiStore } from "@/stores/uiStore";
 import { StreamStatusList } from "@/components/streams/stream-status-list";
 import { useAuth } from "@/lib/auth/role-context";
+import { useNetworkPing } from "@/hooks/useNetworkPing";
 
 // 5 stream aktif: market-data/XAUUSD + analyst-outputs + ic-decisions +
 // cio-proposals + risk-assessments (committee, diregister useCommitteeStreams).
@@ -29,6 +30,7 @@ export function TopBar() {
   const toggleCommandPalette = useUiStore((s) => s.toggleCommandPalette);
   const streams = useStreamStore(useShallow((s) => s.getAllStreams()));
   const [utc, setUtc] = React.useState(() => formatUTC(new Date()));
+  const { latencyMs, ok: isOnline } = useNetworkPing();
 
   const handleLogout = () => {
     logout();
@@ -81,12 +83,19 @@ export function TopBar() {
           <ShortcutLabel />
         </button>
         <span
-          className="font-mono text-text-secondary"
-          data-testid="stream-health"
-          title={`${healthyCount} of ${TOTAL_STREAMS} streams healthy`}
-        >
-          {healthyCount}/{TOTAL_STREAMS}
-        </span>
+                  className="font-mono text-text-secondary"
+                  data-testid="stream-health"
+                  title={`${healthyCount} of ${TOTAL_STREAMS} streams healthy`}
+                >
+                  {healthyCount}/{TOTAL_STREAMS}
+                </span>
+                <span
+                  className={`font-mono text-xs ${isOnline ? "text-text-secondary" : "text-red-400"}`}
+                  data-testid="network-ping"
+                  title={isOnline && latencyMs != null ? `Latency: ${latencyMs}ms to backend` : "Offline"}
+                >
+                  {isOnline && latencyMs != null ? `NET ${latencyMs}ms` : "OFFLINE"}
+                </span>
         <span className="hidden lg:inline-flex" data-testid="stream-status-dots">
           <StreamStatusList />
         </span>
