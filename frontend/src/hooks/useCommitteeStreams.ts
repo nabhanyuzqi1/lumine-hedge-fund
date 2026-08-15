@@ -4,34 +4,24 @@ import { buildAuthHeaders, getHmacCredentials } from "@/lib/api/auth";
 import { useSSE, type SSEEnvelope } from "@/hooks/useSSE";
 import { useCommitteeStore, type CommitteeActivity } from "@/stores/committeeStore";
 
-/**
- * Committee SSE streams — analyst-outputs, ic-decisions, cio-proposals,
- * risk-assessments. Connect ke 4 channel dan append ke committeeStore
- * sehingga CommitteeFeed terisi LIVE.
- *
- * Sebelumnya committee feed kosong selamanya: frontend tidak pernah
- * connect ke stream ini (dan backend stream tidak relay event — fixed).
- */
-
 interface CommitteeStreamEvent {
-  symbol?: string;
+  run_id?: string;
+  workflow_run_id?: string;
+  analyst_name?: string;
   decision?: string;
   action?: string;
   recommendation?: string;
   confidence?: number;
-  analyst_name?: string;
-  agent?: string;
-  run_id?: string;
-  workflow_run_id?: string;
   timestamp?: string;
-  [key: string]: unknown;
 }
 
-const STREAMS: {
+interface StreamSpec {
   channel: string;
   type: CommitteeActivity["type"];
-  agent: string;
-}[] = [
+  agent: CommitteeActivity["agent"];
+}
+
+const STREAMS: StreamSpec[] = [
   { channel: "analyst-outputs", type: "analyst_output", agent: "Analyst" },
   { channel: "ic-decisions", type: "ic_decision", agent: "IC" },
   { channel: "cio-proposals", type: "cio_proposal", agent: "CIO" },
@@ -63,24 +53,36 @@ function toActivity(
 }
 
 export function useCommitteeStreams(enabled = true) {
-  const [headers, setHeaders] = useState<Record<string, string>>({});
+  // HMAC headers PER-CHANNEL (fix B6): signature path harus match path
+  // request — sebelumnya satu signature (analyst-outputs) dipakai untuk
+  // semua channel → 401 INVALID_SIGNATURE di cio/risk/ic.
+  const [headersByChannel, setHeadersByChannel] = useState<
+    Record<string, Record<string, string>>
+  >({});
   const appendActivity = useCommitteeStore((s) => s.appendActivity);
 
-  // HMAC headers untuk stream endpoint (sama pattern market-data).
   useEffect(() => {
     let active = true;
     const creds = getHmacCredentials();
     if (!creds) {
-      setHeaders({});
+      setHeadersByChannel({});
       return;
     }
-    // Path base untuk signature — query beda per channel, tapi signature
-    // dibangun per-request di useSSE via buildAuthHeaders di caller.
-    // Di sini kita pakai satu path generik; tiap stream pakai channel-nya.
-    const path = `/api/v1/streams/analyst-outputs`;
-    buildAuthHeaders("GET", path, "", creds.apiKey, creds.apiSecret).then((h) => {
-      if (active) setHeaders(h);
-    });
+    const build = async () => {
+      const result: Record<string, Record<string, string>> = {};
+      for (const spec of STREAMS) {
+        const path = `/api/v1/streams/${spec.channel}`;
+        result[spec.channel] = await buildAuthHeaders(
+          "GET",
+          path,
+          "",
+          creds.apiKey,
+          creds.apiSecret
+        );
+      }
+      if (active) setHeadersByChannel(result);
+    };
+    void build();
     return () => {
       active = false;
     };
@@ -89,11 +91,12 @@ export function useCommitteeStreams(enabled = true) {
   const apiOrigin = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/api\/v1\/?$/, "");
 
   for (const spec of STREAMS) {
+    const channelHeaders = headersByChannel[spec.channel] ?? {};
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useSSE<CommitteeStreamEvent>({
       url: `${apiOrigin}/api/v1/streams/${spec.channel}`,
-      enabled: enabled && (Object.keys(headers).length > 0 || !getHmacCredentials()),
-      headers,
+      enabled: enabled && (Object.keys(channelHeaders).length > 0 || !getHmacCredentials()),
+      headers: channelHeaders,
       onEvent: (envelope: SSEEnvelope<CommitteeStreamEvent>) => {
         const activity = toActivity(spec.channel, envelope.data, envelope.meta.timestamp);
         if (activity) appendActivity(activity);
