@@ -327,6 +327,31 @@ async def _seed_worker() -> None:
             pass  # duplicate PK / transient — skip, tetap jalan
 
 
+async def _decision_scheduler() -> None:
+    """G2: auto-run decision cycle tiap 5 menit saat market open.
+
+    Committee feed & signals hidup TANPA manual trigger. Market libur
+    (weekend gap) → skip. Lock Redis (nx, 240s) mencegah tumpang tindih
+    kalau cycle sebelumnya masih jalan atau user trigger manual.
+    """
+    from lumine.api.routers.streams import _market_status
+    from lumine.data.redis_client import get_redis
+    from lumine.rpc.queue import enqueue_command
+
+    while True:
+        try:
+            status = _market_status()
+            if status["open"]:
+                r = await get_redis()
+                lock = await r.set("lumine:decision_cycle_lock", "1", nx=True, ex=240)
+                if lock:
+                    await enqueue_command("run_decision_cycle", {"reason": "scheduler"})
+                    print("decision_scheduler: cycle triggered", flush=True)
+        except Exception as exc:  # scheduler tidak boleh mati
+            print(f"decision_scheduler error: {type(exc).__name__}: {str(exc)[:200]}", flush=True)
+        await asyncio.sleep(300)
+
+
 async def _deals_worker() -> None:
     """B1: consume mt5:deals (history deals EA snapshot) → sinkronisasi orders.
 
@@ -397,7 +422,7 @@ async def _deals_worker() -> None:
 
 
 @asynccontextmanager
-async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR0915 — infra init
     """Application lifespan: initialize trading infrastructure."""
     settings = get_settings()
     # Seed bootstrap users (superadmin/admin/trader) idempotently. Best
@@ -443,6 +468,11 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         deals_task = asyncio.create_task(_deals_worker())
         _app_state["deals_worker_task"] = deals_task
 
+    # G2: decision cycle scheduler — auto-run tiap 5 menit saat market open.
+    if settings.redis_url:
+        sched_task = asyncio.create_task(_decision_scheduler())
+        _app_state["decision_scheduler_task"] = sched_task
+
     # RPC worker (B-04): consume the rpc:commands stream.
     if settings.redis_url:
         rpc_task = asyncio.create_task(run_worker(sse_publisher, settings))
@@ -473,6 +503,11 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         bar_task.cancel()  # type: ignore[union-attr]
         with suppress(asyncio.CancelledError):
             await bar_task  # type: ignore[union-attr]
+    sched_task = _app_state.get("decision_scheduler_task")
+    if sched_task:
+        sched_task.cancel()  # type: ignore[union-attr]
+        with suppress(asyncio.CancelledError):
+            await sched_task  # type: ignore[union-attr]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
