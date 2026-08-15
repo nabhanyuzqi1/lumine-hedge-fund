@@ -59,6 +59,34 @@ string   g_seedTfNames[] = {"1m", "5m", "15m", "1h", "4h", "1d"};
 #define GV_SEED_DONE  "LUMINE_EA_SEED_DONE_V3"
 #define GV_LAST_TICK  "LUMINE_EA_LAST_TICK"
 
+// ── Function prototypes ────────────────────────────────────────────────────
+// PITFALL: build MetaEditor ini TIDAK hoist function (commit 3834a9f) —
+// setiap function WAJIB dideklarasikan sebelum dipakai.
+string   DeinitReasonStr(const int reason);
+int      CurrentBackoff();
+void     MarkProxyOk();
+void     MarkProxyFail(const string where, const int code);
+int      HttpPostJson(const string path, const string json, const int timeoutMs);
+void     QueueResult(const string json);
+void     FlushOneResult(const datetime now);
+void     SeedNextChunk();
+void     SeedAdvanceTf();
+void     PollCommands();
+void     SendTick();
+void     ProcessCommand(const string json);
+double   NormalizeVolume(const string symbol, double lots);
+ENUM_ORDER_TYPE_FILLING GetFilling(const string symbol);
+void     ExecuteOpen(const string id, const string symbol, const string side,
+                     double lots, double sl, double tp);
+void     ExecuteClose(const string id, ulong ticket);
+void     ExecuteModify(const string id, ulong ticket, double sl, double tp);
+string   BuildResultJson(const string id, const string status, long ticket,
+                         const string error, double fillPrice, double fillVolume);
+string   ExtractJsonString(const string json, const string key);
+double   ExtractJsonDouble(const string json, const string key);
+string   EscapeJson(const string s);
+string   RetcodeStr(uint retcode);
+
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
 //+------------------------------------------------------------------+
@@ -324,7 +352,7 @@ void SeedNextChunk()
      {
       MqlRates r = rates[i];
       if(i > 0) json += ",";
-      json += StringFormat("{\"ts\":%d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
+      json += StringFormat("{\"ts\":%I64d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
                            (long)r.time, r.open, r.high, r.low, r.close, (double)r.tick_volume);
      }
    json += "]}";
@@ -378,9 +406,9 @@ void PollCommands()
       if(StringLen(json) > 2)
          ProcessCommand(json);
      }
-   else if(res == 204)
+   else if(res == 204 || res == 408)
      {
-      MarkProxyOk();   // no command — normal
+      MarkProxyOk();   // no command / timeout — normal
      }
    else if(res == -1)
      {
@@ -414,7 +442,7 @@ void SendTick()
    double margin  = AccountInfoDouble(ACCOUNT_MARGIN);
 
    string json = StringFormat(
-      "{\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,\"timestamp\":%d,"
+      "{\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,\"timestamp\":%I64d,"
       "\"equity\":%.2f,\"balance\":%.2f,\"margin\":%.2f}",
       symbol, bid, ask, (long)timestamp, equity, balance, margin);
 
@@ -646,11 +674,11 @@ void ExecuteModify(const string id, ulong ticket, double sl, double tp)
 //+------------------------------------------------------------------+
 //| Build result JSON (central — konsisten dengan bridge schema)      |
 //+------------------------------------------------------------------+
-string BuildResultJson(const string id, const string status, long ticket,
+string   BuildResultJson(const string id, const string status, long ticket,
                        const string error, double fillPrice, double fillVolume)
   {
    return StringFormat("{\"id\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\","
-                       "\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f,\"fill_volume\":%.5f}",
+                       "\"ticket\":%I64d,\"error\":\"%s\",\"fill_price\":%.5f,\"fill_volume\":%.5f}",
                        id, g_orderId, status, ticket, EscapeJson(error), fillPrice, fillVolume);
   }
 
