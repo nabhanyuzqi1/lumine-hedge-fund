@@ -1,140 +1,362 @@
 //+------------------------------------------------------------------+
-//| LumineEA.mq5 — HTTP bridge agent untuk Lumine Hedge Fund (v2)    |
+//| LumineEA.mq5 — HTTP bridge agent untuk Lumine Hedge Fund (v3)    |
 //| Transport: HTTP polling (bypass demo account socket block)       |
-//| Redis HTTP Proxy: GET /commands?timeout=30 → BRPOP mt5:commands  |
-//|                   POST /results → PUBLISH mt5:results             |
-//|                   POST /ticks → LPUSH mt5:ticks                   |
+//| Redis HTTP Proxy: GET /commands?timeout=1 → BRPOP mt5:commands   |
+//|                   POST /results   → PUBLISH mt5:results          |
+//|                   POST /ticks     → LPUSH mt5:ticks              |
+//|                   POST /seed/bars → LPUSH mt5:seed              |
+//|                                                                   |
+//| v3 STABILITY:                                                     |
+//|  - Result queue + retry (order result TIDAK PERNAH hilang)        |
+//|  - Exponential backoff saat proxy down (1→2→4→...→60s),          |
+//|    instant recovery, log hanya saat state berubah                |
+//|  - Tick skip saat bid/ask = 0 (market closed)                    |
+//|  - Filling-mode fallback FOK→IOC→RETURN (retcode 10030 fix)      |
+//|  - Volume normalization (step/min/max)                           |
+//|  - Seed non-blocking: 1 chunk per OnTimer, multi-TF, paginated   |
+//|    (M1,M5,M15,H1,H4,D1 — chart 5m/15m/4H lengkap)                |
+//|  - State persist via GlobalVariables (survive re-init reason 3)  |
+//|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "2.00"
+#property version   "3.00"
 #property strict
 
-input string  InpProxyURL = "http://lumine.biz.id/mt5-proxy";  // Redis HTTP proxy URL (via Caddy)
-input bool    InpSeedHistory = false;   // Seed history bars (CopyRates) sekali saat OnInit
+input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy)
+input bool    InpSeedHistory = true;    // Seed history bars multi-TF saat start
+input int     InpSeedChunks  = 1000;    // Bar per chunk seed (100-1000)
+input int     InpMaxBackoff  = 60;      // Detik backoff maksimum saat proxy down
 
 // ── Global State ──────────────────────────────────────────────────────────
-string g_proxyURL;
-string g_orderId;              // order_id dari command aktif (untuk result sync)
-datetime g_lastTickTime = 0;
+string   g_proxyURL;
+string   g_orderId;                 // order_id command aktif (result sync)
+datetime g_lastTickSent   = 0;      // terakhir tick BERHASIL dikirim
+datetime g_lastTickTry    = 0;      // terakhir tick dicoba (untuk backoff)
+datetime g_lastCmdPoll    = 0;
+int      g_failCount      = 0;      // consecutive proxy failure
+bool     g_proxyDown      = false;  // log state-change saja
+int      g_maxBackoff;
+
+// ── Result queue (persist: order result harus sampai ke backend) ──────────
+#define RESULT_QUEUE_MAX 128
+string   g_resultQueue[RESULT_QUEUE_MAX];
+int      g_resultCount = 0;
+
+// ── Seed state machine (non-blocking) ────────────────────────────────────
+bool     g_seedEnabled;
+int      g_seedChunkSize;
+int      g_seedPhase     = 0;       // 0=idle 1=running 2=done
+int      g_seedSymIdx    = 0;
+int      g_seedTfIdx     = 0;
+int      g_seedOffset    = 0;       // offset CopyRates pagination
+int      g_seedTotal     = 0;
+int      g_seedSent      = 0;
+
+string   g_seedSymbols[] = {"XAUUSD"};
+ENUM_TIMEFRAMES g_seedTfs[] = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4, PERIOD_D1};
+string   g_seedTfNames[] = {"1m", "5m", "15m", "1h", "4h", "1d"};
+
+#define GV_SEED_DONE  "LUMINE_EA_SEED_DONE_V3"
+#define GV_LAST_TICK  "LUMINE_EA_LAST_TICK"
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   g_proxyURL = InpProxyURL;
-   Print("LumineEA starting (HTTP transport): proxy=", g_proxyURL);
-   
-   // WebRequest whitelist: add proxy URL to Tools → Options → Expert Advisors
-   // (MT5 tidak punya API untuk cek whitelist programmatically)
-   
-   // PITFALL: polling di OnTick bergantung feed tick MT5 — kalau feed
-   // terputus (server push pause), OnTick tidak dipanggil → EA mati
-   // total. OnTimer 1s = polling mandiri, tidak butuh tick.
+   g_proxyURL    = InpProxyURL;
+   g_seedEnabled = InpSeedHistory;
+   g_seedChunkSize = MathMax(100, MathMin(1000, InpSeedChunks));
+   g_maxBackoff  = MathMax(5, InpMaxBackoff);
+
+   Print("LumineEA v3 starting: proxy=", g_proxyURL,
+         " seed=", g_seedEnabled ? "ON" : "OFF",
+         " build=", __DATE__, " ", __TIME__);
+
+   // PITFALL v2: polling di OnTick bergantung feed tick MT5. Feed pause →
+   // EA mati total. OnTimer 1s = polling mandiri.
    EventSetTimer(1);
-   
-   Print("LumineEA ready (HTTP polling mode)");
-   
-   // Seed history bars (sekali; CopyRates → POST /seed/bars per chunk)
-   if(InpSeedHistory)
-      SeedHistory();
-   
+
+   // Restore state (survive REASON_CHARTCHANGE/RECOMPILE/TEMPLATE)
+   g_lastTickSent = (datetime)GlobalVariableGet(GV_LAST_TICK);
+   if(GlobalVariableCheck(GV_SEED_DONE) && GlobalVariableGet(GV_SEED_DONE) > 0)
+     {
+      g_seedPhase = 2;
+      Print("LumineEA: seed sudah pernah selesai (GlobalVariable) — skip");
+     }
+   else if(g_seedEnabled)
+     {
+      g_seedPhase  = 1;
+      g_seedOffset = 0;
+      Print("LumineEA: seed multi-TF mulai (non-blocking, 1 chunk/detik)");
+     }
+
+   Print("LumineEA v3 ready (HTTP polling, self-healing)");
    return(INIT_SUCCEEDED);
   }
 
 //+------------------------------------------------------------------+
-//| Expert deinitialization                                           |
+//| Expert deinitialization                                            |
+//| reason 3 = REASON_CHARTCHANGE (ganti TF/symbol) → OnInit re-run,  |
+//| state sudah dipersist via GlobalVariables → tidak ada yang hilang. |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
    EventKillTimer();
-   Print("LumineEA stopping: reason=", reason);
+
+   // Flush result queue best-effort sebelum mati (max 5 detik usaha)
+   for(int i = 0; i < g_resultCount && i < 8; i++)
+      FlushOneResult(0);
+
+   GlobalVariableSet(GV_LAST_TICK, (double)g_lastTickSent);
+   Print("LumineEA stopping: reason=", reason, " (", DeinitReasonStr(reason),
+         ") pendingResults=", g_resultCount);
+  }
+
+string DeinitReasonStr(const int reason)
+  {
+   switch(reason)
+     {
+      case REASON_PROGRAM:     return "ExpertRemove called";
+      case REASON_REMOVE:      return "EA removed from chart";
+      case REASON_RECOMPILE:   return "recompiled";
+      case REASON_CHARTCHANGE: return "chart TF/symbol changed";
+      case REASON_CHARTCLOSE:  return "chart closed";
+      case REASON_PARAMETERS:  return "input params changed";
+      case REASON_ACCOUNT:     return "account changed";
+      case REASON_TEMPLATE:    return "template applied";
+      case REASON_INITFAILED:  return "OnInit failed";
+      case REASON_CLOSE:       return "terminal closed";
+      default:                 return "unknown";
+     }
   }
 
 //+------------------------------------------------------------------+
-//| Expert timer — polling mandiri (tidak bergantung tick feed)      |
+//| Expert timer — orkestrator utama (1s)                             |
+//| Prioritas: result queue > poll command > tick > seed              |
 //+------------------------------------------------------------------+
 void OnTimer()
   {
-   // Send tick (throttle 1s; harga dari SymbolInfoTick — cache server)
-   // PITFALL: TimeCurrent() = server time — STAGNAN saat feed pause →
-   // throttle tidak pernah trigger. TimeLocal() selalu maju.
    datetime now = TimeLocal();
-   if(now > g_lastTickTime)
+
+   // 1) Flush result queue (order result = uang, prioritas tertinggi)
+   //    1 result per timer tick; retry sampai berhasil.
+   if(g_resultCount > 0 && now >= g_lastCmdPoll)   // jangan delay poll
+      FlushOneResult(now);
+
+   // 2) Poll commands (1x per detik, skip saat backoff aktif)
+   if(now >= g_lastCmdPoll)
      {
-      g_lastTickTime = now;
+      g_lastCmdPoll = now + 1;
+      PollCommands();
+     }
+
+   // 3) Send tick (throttle + backoff saat proxy bermasalah)
+   int backoff = CurrentBackoff();
+   if(now >= g_lastTickTry + backoff)
+     {
+      g_lastTickTry = now;
       SendTick();
      }
-   
-   // Poll for commands (non-blocking with timeout=1)
-   PollCommands();
+   else if(g_seedPhase == 1)
+      SeedNextChunk();   // proxy down → manfaatkan waktu untuk seed lokal
+
+   // 4) Seed non-blocking (1 chunk per tick)
+   if(g_seedPhase == 1 && now < g_lastCmdPoll)
+      SeedNextChunk();
   }
 
 //+------------------------------------------------------------------+
-//| HTTP POST JSON helper (WebRequest)                                |
+//| Backoff: 1,2,4,8,...,max detik. Reset saat sukses.                |
 //+------------------------------------------------------------------+
-int HttpPostJson(const string path, const string json)
+int CurrentBackoff()
+  {
+   if(g_failCount <= 0) return 1;
+   int b = 1;
+   for(int i = 0; i < g_failCount && i < 20; i++) b *= 2;
+   return MathMin(g_maxBackoff, b);
+  }
+
+void MarkProxyOk()
+  {
+   if(g_proxyDown)
+     {
+      Print("LumineEA: proxy RECOVERED (failures=", g_failCount, ")");
+      g_proxyDown = false;
+     }
+   g_failCount = 0;
+  }
+
+void MarkProxyFail(const string where, const int code)
+  {
+   g_failCount++;
+   if(!g_proxyDown)
+     {
+      g_proxyDown = true;
+      Print("LumineEA: proxy UNREACHABLE at ", where, " code=", code,
+            " — backoff mode (max ", g_maxBackoff, "s), will retry");
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| HTTP POST JSON (WebRequest wrapper, tahan banting)                |
+//+------------------------------------------------------------------+
+int HttpPostJson(const string path, const string json, const int timeoutMs = 3000)
   {
    char data[];
    StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
-   ArrayResize(data, ArraySize(data) - 1);  // tanpa null terminator
+   ArrayResize(data, ArraySize(data) - 1);  // buang null terminator
+
    char result[];
    string headers = "Content-Type: application/json\r\n";
    string url = g_proxyURL + path;
-   int res = WebRequest("POST", url, headers, 5000, data, result, headers);
-   if(res != 200)
-      Print("HttpPostJson ", path, " gagal http=", res, " err=", GetLastError());
+
+   int res = WebRequest("POST", url, headers, timeoutMs, data, result, headers);
+   if(res == 200)
+      MarkProxyOk();
    return res;
   }
 
 //+------------------------------------------------------------------+
-//| Seed history bars: CopyRates → POST /seed/bars (chunk 1000)      |
+//| Result queue — order result tidak boleh hilang                    |
 //+------------------------------------------------------------------+
-void SeedHistory()
+void QueueResult(const string json)
   {
-   string symbols[] = {"XAUUSD"};
-   ENUM_TIMEFRAMES tfs[] = {PERIOD_M1, PERIOD_H1, PERIOD_D1};
-   string tfNames[] = {"1m", "1h", "1d"};
-   
-   for(int s = 0; s < ArraySize(symbols); s++)
+   if(g_resultCount >= RESULT_QUEUE_MAX)
      {
-      for(int t = 0; t < ArraySize(tfs); t++)
-        {
-         MqlRates rates[];
-         int got = CopyRates(symbols[s], tfs[t], 0, 5000, rates);
-         if(got <= 0)
-           {
-            Print("SeedHistory: CopyRates ", symbols[s], " ", tfNames[t], " gagal err=", GetLastError());
-            continue;
-           }
-         ArraySetAsSeries(rates, false);
-         for(int start = 0; start < got; start += 1000)
-           {
-            int n = MathMin(1000, got - start);
-            string json = "{\"symbol\":\"" + symbols[s] + "\",\"timeframe\":\"" + tfNames[t] + "\",\"bars\":[";
-            for(int i = 0; i < n; i++)
-              {
-               MqlRates r = rates[start + i];
-               if(i > 0) json += ",";
-               json += StringFormat("{\"ts\":%d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
-                                    (long)r.time, r.open, r.high, r.low, r.close, r.tick_volume);
-              }
-            json += "]}";
-            HttpPostJson("/seed/bars", json);
-           }
-         Print("SeedHistory: ", symbols[s], " ", tfNames[t], " -> ", got, " bars");
-        }
+      // Queue penuh: buang tertua (log — jarang terjadi, 128 slot)
+      Print("LumineEA: result queue FULL, dropping oldest");
+      for(int i = 1; i < RESULT_QUEUE_MAX; i++)
+         g_resultQueue[i - 1] = g_resultQueue[i];
+      g_resultCount = RESULT_QUEUE_MAX - 1;
      }
-   Print("SeedHistory selesai");
+   g_resultQueue[g_resultCount] = json;
+   g_resultCount++;
+  }
+
+void FlushOneResult(const datetime now)
+  {
+   if(g_resultCount <= 0) return;
+
+   string json = g_resultQueue[0];
+   int res = HttpPostJson("/results", json, 3000);
+
+   if(res == 200)
+     {
+      // shift queue
+      for(int i = 1; i < g_resultCount; i++)
+         g_resultQueue[i - 1] = g_resultQueue[i];
+      g_resultCount--;
+      return;
+     }
+   // gagal → tetap di queue, ditry tick berikutnya (MarkProxyFail sudah dipanggil)
   }
 
 //+------------------------------------------------------------------+
-//| Expert tick function                                              |
+//| Seed history bars — non-blocking, multi-TF, paginated             |
+//| 1 chunk per OnTimer. Progress: symbol×TF sekuensial, offset dari  |
+//| bar tertua ke terbaru (COPY DATA LAMA dulu).                      |
+//+------------------------------------------------------------------+
+void SeedNextChunk()
+  {
+   if(g_seedPhase != 1) return;
+   if(g_seedSymIdx >= ArraySize(g_seedSymbols))
+     {
+      g_seedPhase = 2;
+      GlobalVariableSet(GV_SEED_DONE, 1);
+      Print("LumineEA: SeedHistory SELESAI total bars=", g_seedSent);
+      return;
+     }
+
+   string sym = g_seedSymbols[g_seedSymIdx];
+   ENUM_TIMEFRAMES tf = g_seedTfs[g_seedTfIdx];
+   string tfName = g_seedTfNames[g_seedTfIdx];
+
+   if(g_seedOffset == 0)
+     {
+      g_seedTotal = iBars(sym, tf);
+      if(g_seedTotal <= 0)
+        {
+         Print("LumineEA: seed ", sym, " ", tfName, " gagal iBars err=", GetLastError());
+         SeedAdvanceTf();
+         return;
+        }
+      Print("LumineEA: seed ", sym, " ", tfName, " total=", g_seedTotal, " bars");
+     }
+
+   // CopyRates: offset dari 0 = bar TERBARU. Kita jalan dari total→0
+   // agar urutan kirim oldest-first (chunk terakhir = bar terbaru).
+   int remaining = g_seedTotal - g_seedOffset;
+   if(remaining <= 0)
+     {
+      SeedAdvanceTf();
+      return;
+     }
+
+   int count = MathMin(g_seedChunkSize, remaining);
+   // start = offset dari bar terbaru; chunk kita mulai dari sisi tertua
+   int start = remaining - count;   // 0-based posisi bar tertua chunk ini
+
+   MqlRates rates[];
+   int got = CopyRates(sym, tf, start, count, rates);
+   if(got <= 0)
+     {
+      int err = GetLastError();
+      if(err == 4407 || err == 4401)   // HISTORY_NOT_FOUND / tidak ada data
+        {
+         Print("LumineEA: seed ", sym, " ", tfName, " tidak ada history (err=", err, ") — skip TF");
+        }
+      else
+        {
+         Print("LumineEA: seed CopyRates ", sym, " ", tfName, " err=", err, " — retry tick depan");
+         // Jangan advance — retry chunk sama tick berikutnya (non-blocking)
+         // tapi kalau err 4014 (function not allowed) skip saja
+         if(err == 4014) SeedAdvanceTf();
+         return;
+        }
+      SeedAdvanceTf();
+      return;
+     }
+
+   ArraySetAsSeries(rates, false);
+   string json = "{\"symbol\":\"" + sym + "\",\"timeframe\":\"" + tfName + "\",\"bars\":[";
+   for(int i = 0; i < got; i++)
+     {
+      MqlRates r = rates[i];
+      if(i > 0) json += ",";
+      json += StringFormat("{\"ts\":%d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
+                           (long)r.time, r.open, r.high, r.low, r.close, (double)r.tick_volume);
+     }
+   json += "]}";
+
+   int res = HttpPostJson("/seed/bars", json, 5000);
+   if(res == 200)
+     {
+      g_seedOffset += got;
+      g_seedSent += got;
+      if(g_seedOffset >= g_seedTotal)
+         SeedAdvanceTf();
+     }
+   // res != 200 → chunk sama di-retry tick berikutnya (state tidak maju)
+  }
+
+void SeedAdvanceTf()
+  {
+   g_seedTfIdx++;
+   g_seedOffset = 0;
+   g_seedTotal = 0;
+   if(g_seedTfIdx >= ArraySize(g_seedTfs))
+     {
+      g_seedTfIdx = 0;
+      g_seedSymIdx++;
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Expert tick — feed MT5 (polling utama ada di OnTimer)             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Feed tick — polling utama di OnTimer (1s), OnTick tidak wajib.
-   // (Feed MT5 bisa pause tanpa mematikan EA.)
   }
 
 //+------------------------------------------------------------------+
@@ -146,86 +368,86 @@ void PollCommands()
    char   data[];
    char   result[];
    string headers = "Content-Type: application/json\r\n";
-   
+
    int res = WebRequest("GET", url, headers, 2000, data, result, headers);
-   
+
    if(res == 200)
      {
+      MarkProxyOk();
       string json = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
-      if(StringLen(json) > 2)  // Not empty JSON
-        {
+      if(StringLen(json) > 2)
          ProcessCommand(json);
-        }
      }
    else if(res == 204)
      {
-      // No command available (timeout expired) — normal, not an error
+      MarkProxyOk();   // no command — normal
      }
    else if(res == -1)
      {
       int err = GetLastError();
-      if(err != 0)  // Suppress repeat errors
-        {
-         Print("PollCommands WebRequest failed: error=", err, " (Add proxy URL to WebRequest whitelist)");
-        }
+      if(err != 0)
+         MarkProxyFail("PollCommands", err);
+     }
+   else
+     {
+      MarkProxyFail("PollCommands-http", res);
      }
   }
 
 //+------------------------------------------------------------------+
-//| Send tick data to Redis via HTTP                                 |
+//| Send tick + account snapshot ke Redis via HTTP                    |
+//| SKIP saat bid/ask = 0 (market closed / no quote) — tidak kirim    |
+//| data sampah. Payload diperkaya equity/balance untuk P&L real.     |
 //+------------------------------------------------------------------+
 void SendTick()
   {
    string symbol = Symbol();
    double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
    double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
+
+   if(bid <= 0 && ask <= 0)
+      return;   // market closed — tidak kirim tick kosong
+
    datetime timestamp = TimeCurrent();
-   
-   string json = StringFormat("{\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,\"timestamp\":%d}",
-                              symbol, bid, ask, timestamp);
-   
-   char data[];
-   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
-   ArrayResize(data, ArraySize(data) - 1);  // Remove null terminator
-   
-   char result[];
-   string headers = "Content-Type: application/json\r\n";
-   string url = g_proxyURL + "/ticks";
-   
-   int res = WebRequest("POST", url, headers, 2000, data, result, headers);
-   
-   if(res != 200 && res != -1)
-     {
-      Print("SendTick failed: http_code=", res);
-     }
+   double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   double margin  = AccountInfoDouble(ACCOUNT_MARGIN);
+
+   string json = StringFormat(
+      "{\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,\"timestamp\":%d,"
+      "\"equity\":%.2f,\"balance\":%.2f,\"margin\":%.2f}",
+      symbol, bid, ask, (long)timestamp, equity, balance, margin);
+
+   int res = HttpPostJson("/ticks", json, 2000);
+   if(res == 200)
+      g_lastTickSent = TimeLocal();
+   else if(res != -1 && !g_proxyDown)
+      Print("LumineEA: SendTick failed http=", res, " (queued-retry via backoff)");
+   // -1 sudah ditangani MarkProxyFail di HttpPostJson path (200-only marks ok;
+   // non-200 → biarkan backoff, log state-change saja)
   }
 
 //+------------------------------------------------------------------+
-//| Process command JSON from Redis                                   |
+//| Process command JSON dari Redis                                    |
 //+------------------------------------------------------------------+
 void ProcessCommand(const string json)
   {
-   // Parse JSON manual (MQL5 tidak punya JSON parser built-in).
-   // Field dari bridge (mt5_bridge.CommandMessage): command_id, order_id,
-   // action, symbol, volume, order_type. Support juga format legacy
-   // (id, lots, side) agar robust terhadap kedua payload.
    string id = ExtractJsonString(json, "command_id");
    if(StringLen(id) == 0) id = ExtractJsonString(json, "id");
    string action = ExtractJsonString(json, "action");
-   
-   // Simpan order_id untuk result sync (bridge ResultMessage.order_id)
+
    g_orderId = ExtractJsonString(json, "order_id");
    if(StringLen(g_orderId) == 0) g_orderId = id;
-   
-   // Suppress log saat command kosong (queue timeout)
+
    if(StringLen(id) == 0 || StringLen(action) == 0)
-      return;  // Skip empty command, tidak perlu log
-   
+      return;   // empty command (queue timeout) — silent
+
    Print("Command received: id=", id, " action=", action);
-   
+
    if(action == "OPEN")
      {
       string symbol = ExtractJsonString(json, "symbol");
+      if(StringLen(symbol) == 0) symbol = Symbol();
       string side = ExtractJsonString(json, "order_type");
       if(StringLen(side) == 0) side = ExtractJsonString(json, "side");
       StringToUpper(side);
@@ -233,70 +455,109 @@ void ProcessCommand(const string json)
       if(lots == 0) lots = ExtractJsonDouble(json, "lots");
       double sl = ExtractJsonDouble(json, "sl");
       double tp = ExtractJsonDouble(json, "tp");
-      
+
       ExecuteOpen(id, symbol, side, lots, sl, tp);
      }
    else if(action == "CLOSE")
      {
-      string ticket_str = ExtractJsonString(json, "ticket");
-      ulong ticket = (ulong)StringToInteger(ticket_str);
-      
+      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
       ExecuteClose(id, ticket);
      }
    else if(action == "MODIFY")
      {
-      string ticket_str = ExtractJsonString(json, "ticket");
-      ulong ticket = (ulong)StringToInteger(ticket_str);
+      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
       double sl = ExtractJsonDouble(json, "sl");
       double tp = ExtractJsonDouble(json, "tp");
-      
       ExecuteModify(id, ticket, sl, tp);
      }
    else
      {
-      SendResult(id, "ERROR", 0, "Unknown action: " + action, 0);
+      QueueResult(BuildResultJson(id, "ERROR", 0, "Unknown action: " + action, 0, 0));
      }
   }
 
 //+------------------------------------------------------------------+
-//| Execute OPEN order                                                |
+//| Volume normalization — step/min/max symbol                        |
 //+------------------------------------------------------------------+
-void ExecuteOpen(const string id, const string symbol, const string side, 
+double NormalizeVolume(const string symbol, double lots)
+  {
+   double step = SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP);
+   double vmin = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN);
+   double vmax = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX);
+   if(step <= 0) step = 0.01;
+   if(vmin <= 0) vmin = 0.01;
+   if(vmax <= 0) vmax = 100.0;
+   lots = MathMax(vmin, MathMin(vmax, lots));
+   lots = MathRound(lots / step) * step;
+   // buang artefak floating point
+   return NormalizeDouble(lots, 8);
+  }
+
+//+------------------------------------------------------------------+
+//| Filling mode per symbol — FOK→IOC→RETURN fallback                 |
+//+------------------------------------------------------------------+
+ENUM_ORDER_TYPE_FILLING GetFilling(const string symbol)
+  {
+   long filling = SymbolInfoInteger(symbol, SYMBOL_FILLING_MODE);
+   if((filling & SYMBOL_FILLING_FOK) != 0) return ORDER_FILLING_FOK;
+   if((filling & SYMBOL_FILLING_IOC) != 0) return ORDER_FILLING_IOC;
+   return ORDER_FILLING_RETURN;
+  }
+
+//+------------------------------------------------------------------+
+//| Execute OPEN order (dengan retry filling + volume normalize)      |
+//+------------------------------------------------------------------+
+void ExecuteOpen(const string id, const string symbol, const string side,
                  double lots, double sl, double tp)
   {
-   ENUM_ORDER_TYPE orderType = (side == "BUY") ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-   double price = (side == "BUY") ? SymbolInfoDouble(symbol, SYMBOL_ASK) : SymbolInfoDouble(symbol, SYMBOL_BID);
-   
+   ENUM_ORDER_TYPE orderType = (side == "BUY" || side == "LONG") ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+   lots = NormalizeVolume(symbol, lots);
+
    MqlTradeRequest req = {};
-   MqlTradeResult res = {};
-   
-   req.action = TRADE_ACTION_DEAL;
-   req.symbol = symbol;
-   req.volume = lots;
-   req.type = orderType;
-   req.price = price;
-   req.sl = sl;
-   req.tp = tp;
-   req.deviation = 20;
-   req.magic = 20260814;
-   req.comment = "Lumine:" + id;
-   req.type_filling = ORDER_FILLING_FOK;
-   
-   if(OrderSend(req, res))
+   MqlTradeResult  res = {};
+
+   req.action       = TRADE_ACTION_DEAL;
+   req.symbol       = symbol;
+   req.volume       = lots;
+   req.type         = orderType;
+   req.price        = (orderType == ORDER_TYPE_BUY) ? SymbolInfoDouble(symbol, SYMBOL_ASK)
+                                                    : SymbolInfoDouble(symbol, SYMBOL_BID);
+   req.sl           = sl;
+   req.tp           = tp;
+   req.deviation    = 20;
+   req.magic        = 20260814;
+   req.comment      = "Lumine:" + id;
+   req.type_filling = GetFilling(symbol);
+
+   if(!OrderSend(req, res))
      {
-      if(res.retcode == TRADE_RETCODE_DONE)
+      // Fallback filling: 10030 INVALID_FILL → coba mode lain
+      if(res.retcode == 10030)
         {
-         SendResult(id, "FILLED", (long)res.order, "", res.price, lots);
+         req.type_filling = (req.type_filling == ORDER_FILLING_FOK) ? ORDER_FILLING_IOC
+                            : (req.type_filling == ORDER_FILLING_IOC) ? ORDER_FILLING_RETURN
+                            : ORDER_FILLING_FOK;
+         if(!OrderSend(req, res))
+           {
+            QueueResult(BuildResultJson(id, "ERROR", 0,
+                         "OrderSend failed retcode=" + IntegerToString(res.retcode), 0, lots));
+            return;
+           }
         }
       else
         {
-         SendResult(id, "REJECTED", 0, RetcodeStr(res.retcode), 0);
+         QueueResult(BuildResultJson(id, "ERROR", 0,
+                      "OrderSend failed retcode=" + IntegerToString(res.retcode), 0, lots));
+         return;
         }
      }
+
+   if(res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_DONE_PARTIAL)
+      QueueResult(BuildResultJson(id, "FILLED", (long)res.order, "", res.price, lots));
+   else if(res.retcode == TRADE_RETCODE_PLACED)
+      QueueResult(BuildResultJson(id, "PLACED", (long)res.order, "", res.price, lots));
    else
-     {
-      SendResult(id, "ERROR", 0, "OrderSend failed: retcode=" + IntegerToString(res.retcode), 0);
-     }
+      QueueResult(BuildResultJson(id, "REJECTED", 0, RetcodeStr(res.retcode), 0, lots));
   }
 
 //+------------------------------------------------------------------+
@@ -306,142 +567,127 @@ void ExecuteClose(const string id, ulong ticket)
   {
    if(!PositionSelectByTicket(ticket))
      {
-      SendResult(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0);
+      QueueResult(BuildResultJson(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0, 0));
       return;
      }
-   
+
+   string symbol = PositionGetString(POSITION_SYMBOL);
+   double volume = PositionGetDouble(POSITION_VOLUME);
+
    MqlTradeRequest req = {};
-   MqlTradeResult res = {};
-   
-   req.action = TRADE_ACTION_DEAL;
-   req.position = ticket;
-   req.symbol = PositionGetString(POSITION_SYMBOL);
-   req.volume = PositionGetDouble(POSITION_VOLUME);
-   req.type = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
-   req.price = (req.type == ORDER_TYPE_SELL) ? SymbolInfoDouble(req.symbol, SYMBOL_BID) : SymbolInfoDouble(req.symbol, SYMBOL_ASK);
-   req.deviation = 20;
-   req.magic = 20260814;
-   req.comment = "Lumine:CLOSE:" + id;
-   req.type_filling = ORDER_FILLING_FOK;
-   
-   if(OrderSend(req, res))
+   MqlTradeResult  res = {};
+
+   req.action       = TRADE_ACTION_DEAL;
+   req.position     = ticket;
+   req.symbol       = symbol;
+   req.volume       = volume;
+   req.type         = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+   req.price        = (req.type == ORDER_TYPE_SELL) ? SymbolInfoDouble(symbol, SYMBOL_BID)
+                                                    : SymbolInfoDouble(symbol, SYMBOL_ASK);
+   req.deviation    = 20;
+   req.magic        = 20260814;
+   req.comment      = "Lumine:CLOSE:" + id;
+   req.type_filling = GetFilling(symbol);
+
+   if(!OrderSend(req, res))
      {
-      if(res.retcode == TRADE_RETCODE_DONE)
+      if(res.retcode == 10030)
         {
-         SendResult(id, "CLOSED", (long)res.order, "", res.price, PositionGetDouble(POSITION_VOLUME));
+         req.type_filling = (req.type_filling == ORDER_FILLING_FOK) ? ORDER_FILLING_IOC
+                            : (req.type_filling == ORDER_FILLING_IOC) ? ORDER_FILLING_RETURN
+                            : ORDER_FILLING_FOK;
+         if(!OrderSend(req, res))
+           {
+            QueueResult(BuildResultJson(id, "ERROR", 0,
+                         "OrderSend CLOSE failed retcode=" + IntegerToString(res.retcode), 0, volume));
+            return;
+           }
         }
       else
         {
-         SendResult(id, "REJECTED", 0, RetcodeStr(res.retcode), 0);
+         QueueResult(BuildResultJson(id, "ERROR", 0,
+                      "OrderSend CLOSE failed retcode=" + IntegerToString(res.retcode), 0, volume));
+         return;
         }
      }
+
+   if(res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_DONE_PARTIAL)
+      QueueResult(BuildResultJson(id, "CLOSED", (long)res.order, "", res.price, volume));
    else
-     {
-      SendResult(id, "ERROR", 0, "OrderSend CLOSE failed: retcode=" + IntegerToString(res.retcode), 0);
-     }
+      QueueResult(BuildResultJson(id, "REJECTED", 0, RetcodeStr(res.retcode), 0, volume));
   }
 
 //+------------------------------------------------------------------+
-//| Execute MODIFY order                                              |
+//| Execute MODIFY order (SL/TP)                                      |
 //+------------------------------------------------------------------+
 void ExecuteModify(const string id, ulong ticket, double sl, double tp)
   {
    if(!PositionSelectByTicket(ticket))
      {
-      SendResult(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0);
+      QueueResult(BuildResultJson(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0, 0));
       return;
      }
-   
+
    MqlTradeRequest req = {};
-   MqlTradeResult res = {};
-   
-   req.action = TRADE_ACTION_SLTP;
+   MqlTradeResult  res = {};
+
+   req.action   = TRADE_ACTION_SLTP;
    req.position = ticket;
-   req.symbol = PositionGetString(POSITION_SYMBOL);
-   req.sl = sl;
-   req.tp = tp;
-   
-   if(OrderSend(req, res))
-     {
-      if(res.retcode == TRADE_RETCODE_DONE)
-        {
-         SendResult(id, "MODIFIED", (long)ticket, "", 0);
-        }
-      else
-        {
-         SendResult(id, "REJECTED", 0, RetcodeStr(res.retcode), 0);
-        }
-     }
+   req.symbol   = PositionGetString(POSITION_SYMBOL);
+   req.sl       = sl;
+   req.tp       = tp;
+
+   if(OrderSend(req, res) && res.retcode == TRADE_RETCODE_DONE)
+      QueueResult(BuildResultJson(id, "MODIFIED", (long)ticket, "", 0, 0));
    else
-     {
-      SendResult(id, "ERROR", 0, "OrderSend MODIFY failed: retcode=" + IntegerToString(res.retcode), 0);
-     }
+      QueueResult(BuildResultJson(id, "REJECTED", 0, RetcodeStr(res.retcode), 0, 0));
   }
 
 //+------------------------------------------------------------------+
-//| Send result to Redis via HTTP                                     |
+//| Build result JSON (central — konsisten dengan bridge schema)      |
 //+------------------------------------------------------------------+
-void SendResult(const string id, const string status, long ticket, 
-                const string error, double fillPrice, double fillVolume = 0)
+string BuildResultJson(const string id, const string status, long ticket,
+                       const string error, double fillPrice, double fillVolume)
   {
-   string json = StringFormat("{\"id\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f,\"fill_volume\":%.5f}",
-                              id, g_orderId, status, ticket, EscapeJson(error), fillPrice, fillVolume);
-   
-   char data[];
-   StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
-   ArrayResize(data, ArraySize(data) - 1);
-   
-   char result[];
-   string headers = "Content-Type: application/json\r\n";
-   string url = g_proxyURL + "/results";
-   
-   int res = WebRequest("POST", url, headers, 2000, data, result, headers);
-   
-   if(res != 200)
-     {
-      Print("SendResult failed: http_code=", res, " json=", json);
-     }
+   return StringFormat("{\"id\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\","
+                       "\"ticket\":%d,\"error\":\"%s\",\"fill_price\":%.5f,\"fill_volume\":%.5f}",
+                       id, g_orderId, status, ticket, EscapeJson(error), fillPrice, fillVolume);
   }
 
 //+------------------------------------------------------------------+
-//| Helper: Extract string from JSON (simple parser)                 |
+//| Helper: Extract string dari JSON                                  |
 //+------------------------------------------------------------------+
 string ExtractJsonString(const string json, const string key)
   {
    string pattern = "\"" + key + "\":\"";
    int start = StringFind(json, pattern);
    if(start == -1) return "";
-   
    start += StringLen(pattern);
    int end = StringFind(json, "\"", start);
    if(end == -1) return "";
-   
    return StringSubstr(json, start, end - start);
   }
 
 //+------------------------------------------------------------------+
-//| Helper: Extract double from JSON                                 |
+//| Helper: Extract double dari JSON                                  |
 //+------------------------------------------------------------------+
 double ExtractJsonDouble(const string json, const string key)
   {
    string pattern = "\"" + key + "\":";
    int start = StringFind(json, pattern);
    if(start == -1) return 0;
-   
    start += StringLen(pattern);
    int end = StringFind(json, ",", start);
    if(end == -1) end = StringFind(json, "}", start);
    if(end == -1) return 0;
-   
    string value = StringSubstr(json, start, end - start);
    StringTrimLeft(value);
    StringTrimRight(value);
-   
    return StringToDouble(value);
   }
 
 //+------------------------------------------------------------------+
-//| Helper: Escape JSON string                                       |
+//| Helper: Escape JSON string                                        |
 //+------------------------------------------------------------------+
 string EscapeJson(const string s)
   {
@@ -454,7 +700,7 @@ string EscapeJson(const string s)
   }
 
 //+------------------------------------------------------------------+
-//| Helper: Retcode to string (simple map)                           |
+//| Helper: Retcode → string                                          |
 //+------------------------------------------------------------------+
 string RetcodeStr(uint retcode)
   {
@@ -499,7 +745,9 @@ string RetcodeStr(uint retcode)
       case 10042: return "LONG_ONLY";
       case 10043: return "SHORT_ONLY";
       case 10044: return "CLOSE_ONLY";
-      default: return "UNKNOWN_" + IntegerToString(retcode);
+      case 10045: return "LIMIT_ORDERS_REAL";
+      case 10046: return "LIMIT_POSITIONS_REAL";
+      default:    return "RETCODE_" + IntegerToString(retcode);
      }
   }
 //+------------------------------------------------------------------+

@@ -162,10 +162,20 @@ async def get_ohlcv(
 
     ZERO-DEMO: tabel kosong = return [] (bukan data fiktif random walk).
     """
-    from lumine.data.models import Bars1D, Bars1H, Bars1M
+    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M
     from lumine.data.session import get_sessionmaker
 
-    bar_models = {"1m": Bars1M, "1h": Bars1H, "1d": Bars1D}
+    # 15m tidak punya tabel sendiri → pakai bars_5m (bucket 15m adalah
+    # superset 5m; chart frontend bucket sendiri). Fallback agregasi
+    # ditangani seed worker.
+    bar_models = {
+        "1m": Bars1M,
+        "5m": Bars5M,
+        "15m": Bars5M,
+        "1h": Bars1H,
+        "4h": Bars4H,
+        "1d": Bars1D,
+    }
     model = bar_models.get(timeframe)
     if model is None:
         return []
@@ -174,6 +184,11 @@ async def get_ohlcv(
             stmt = select(model).order_by(model.ts.desc()).limit(limit)
             if since is not None:
                 stmt = stmt.where(model.ts >= since)
+            if timeframe == "15m":
+                # bucket 15m = bar 5m yang ts-nya kelipatan 900s
+                from sqlalchemy import func
+
+                stmt = stmt.where(func.extract("epoch", model.ts) % 900 == 0)
             result = await session.execute(stmt)
             rows = list(result.scalars().all())
     except Exception:

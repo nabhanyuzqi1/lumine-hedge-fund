@@ -121,11 +121,11 @@ async def _seed_worker() -> None:
     """Seed history worker: consume mt5:seed_bars (EA CopyRates)
     → insert ke tabel bars_* (B-08 fondasi: TCA backfill butuh history).
     """
-    from lumine.data.models import Bars1D, Bars1H, Bars1M
+    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M
     from lumine.data.session import get_sessionmaker
     from lumine.shared.config import get_settings as _gs
 
-    bar_models = {"1m": Bars1M, "5m": None, "1h": Bars1H, "4h": None, "1d": Bars1D}
+    bar_models = {"1m": Bars1M, "5m": Bars5M, "1h": Bars1H, "4h": Bars4H, "1d": Bars1D}
     try:
         r = await redis.from_url(_gs().redis_url)
     except Exception:
@@ -155,7 +155,28 @@ async def _seed_worker() -> None:
                     for b in data.get("bars", [])
                 ]
                 if rows:
-                    session.add_all(rows)
+                    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+                    table = model.__table__
+                    stmt = pg_insert(table).values(
+                        [
+                            {
+                                "ts": r.ts,
+                                "symbol": r.symbol,
+                                "open": r.open,
+                                "high": r.high,
+                                "low": r.low,
+                                "close": r.close,
+                                "volume": r.volume,
+                                "source": "mt5",
+                            }
+                            for r in rows
+                        ]
+                    )
+                    stmt = stmt.on_conflict_do_nothing(
+                        index_elements=[c.name for c in table.primary_key.columns]
+                    )
+                    await session.execute(stmt)
                     await session.commit()
                     print(
                         f"[SEED] {data.get('symbol')} {data.get('timeframe')} +{len(rows)} bars",
