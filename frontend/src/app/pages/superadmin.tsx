@@ -150,7 +150,11 @@ function ServicesTab({ data, isError }: { data: SystemInfo | undefined; isError:
 function OverviewTab({ data, isError }: { data: SystemInfo | undefined; isError: boolean }) {
   if (isError) return <ErrorBanner message="system-info" />;
   if (!data) return <p className="text-xs text-ink-faint">Loading…</p>;
-  const healthy = data.services.filter((s) => s.health === "healthy").length;
+  // B2 fix: hitung konsisten dengan ServicesTab — service running tanpa
+  // health (docker tidak expose healthcheck) tetap dianggap healthy.
+  const healthy = data.services.filter(
+    (s) => s.health === "healthy" || (s.status === "running" && !s.health)
+  ).length;
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <Card>

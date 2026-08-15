@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 // Landing page components
+import { InteractiveHeroNetwork } from "@/components/landing/interactive-hero-network";
 import { SystemTelemetry } from "@/components/landing/system-telemetry";
 import { AgentNetwork } from "@/components/landing/agent-network";
 import { MasterDecision } from "@/components/landing/master-decision";
 import { RiskEngine } from "@/components/landing/risk-engine";
+import { AnimatedRiskValidation } from "@/components/landing/animated-risk-validation";
 import { BreakEvenVisualization } from "@/components/landing/breakeven-visualization";
 import { ResearchPipeline } from "@/components/landing/research-pipeline";
 import { ValidationPipeline } from "@/components/landing/validation-pipeline";
@@ -86,36 +89,62 @@ function NavBar() {
 
 function Hero() {
   return (
-    <section className="relative min-h-[80vh] overflow-hidden border-b border-line bg-abyss">
-      {/* System telemetry overlay */}
-      <SystemTelemetry />
+    <section className="relative min-h-screen overflow-hidden border-b border-line bg-abyss">
+      {/* System telemetry overlay — repositioned top-right */}
+      <div className="absolute right-6 top-20 z-10">
+        <SystemTelemetry />
+      </div>
 
-      {/* Hero content */}
-      <div className="relative mx-auto flex min-h-[80vh] w-full max-w-7xl flex-col items-center justify-center px-6 py-20 text-center">
+      {/* Hero content — asymmetric layout, left-aligned */}
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col items-start justify-center px-6 py-32">
         {/* System status badge */}
-        <div className="mb-8 inline-flex items-center gap-2 rounded-chip border border-line-soft bg-raised/50 px-4 py-2 backdrop-blur">
+        <motion.div
+          className="mb-8 inline-flex items-center gap-2 rounded-chip border border-line-soft bg-raised/50 px-4 py-2 backdrop-blur"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           <div className="h-2 w-2 animate-pulse rounded-full bg-up" />
           <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink">
             Lumine Intelligence System — Online
           </span>
-        </div>
+        </motion.div>
 
-        {/* Main headline */}
-        <h1 className="mb-6 font-display text-4xl font-bold leading-tight text-ink md:text-6xl lg:text-7xl">
-          AI-Native
-          <br />
-          Quantitative Intelligence.
-        </h1>
+        {/* Main headline — asymmetric typography, split alignment */}
+        <motion.div
+          className="mb-12 max-w-4xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <h1 className="font-display text-5xl font-bold leading-[1.1] tracking-tight text-ink md:text-6xl lg:text-7xl xl:text-8xl">
+            AI-Native
+            <br />
+            <span className="text-ink-dim">Quantitative</span>
+            <br />
+            Intelligence.
+          </h1>
+        </motion.div>
 
         {/* Supporting text */}
-        <p className="mb-10 max-w-2xl text-base leading-relaxed text-ink-dim md:text-lg">
+        <motion.p
+          className="mb-16 max-w-2xl text-base leading-relaxed text-ink-dim md:text-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
           A multi-agent intelligence system engineered to research, evaluate,
           and execute systematic trading strategies under disciplined risk
           controls.
-        </p>
+        </motion.p>
 
         {/* CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-4">
+        <motion.div
+          className="mb-20 flex flex-wrap items-center gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+        >
           <a href="#intelligence">
             <Button
               size="lg"
@@ -128,35 +157,42 @@ function Hero() {
             <Button
               size="lg"
               variant="secondary"
-              className="border-line font-mono text-xs uppercase tracking-widest text-ink hover:border-accent hover:bg-accent/10"
+              className="border-line font-mono text-xs uppercase tracking-widest text-ink hover:bg-raised"
             >
               View Research
             </Button>
           </a>
-        </div>
+        </motion.div>
 
-        {/* Small telemetry */}
-        <div className="mt-16 grid grid-cols-3 gap-8 border-t border-line-soft pt-8 font-mono text-xs">
-          <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-widest text-ink-faint">
-              Markets
-            </div>
-            <div className="font-semibold text-ink">XAUUSD · FX · EQUITIES</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-widest text-ink-faint">
-              Mode
-            </div>
-            <div className="font-semibold text-accent">RESEARCH / PAPER</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-widest text-ink-faint">
-              Engine
-            </div>
-            <div className="font-semibold text-ink">Multi-Agent</div>
-          </div>
-        </div>
+        {/* Interactive intelligence network */}
+        <motion.div
+          className="w-full"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.8 }}
+        >
+          <InteractiveHeroNetwork />
+        </motion.div>
       </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1.2 }}
+      >
+        <motion.div
+          className="flex flex-col items-center gap-2"
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+        >
+          <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            Scroll
+          </span>
+          <div className="h-6 w-[1px] bg-gradient-to-b from-ink-faint to-transparent" />
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
@@ -203,7 +239,25 @@ export function LandingPublicPage() {
 
       {/* Section 10: Risk Engine */}
       <section id="risk" className="border-b border-line bg-bg py-20 md:py-32">
-        <div className="mx-auto flex w-full max-w-7xl justify-center px-6">
+        <div className="mx-auto w-full max-w-7xl px-6">
+          <div className="mb-16 text-center">
+            <h2 className="mb-4 font-display text-3xl font-bold text-ink md:text-4xl lg:text-5xl">
+              Intelligence Decides.
+              <br />
+              <span className="text-ink-dim">Risk Controls Execution.</span>
+            </h2>
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-ink-dim md:text-lg">
+              AI can propose a trade. It cannot override the system's risk boundaries.
+              Every proposal passes through deterministic validation gates.
+            </p>
+          </div>
+
+          {/* Animated validation sequence */}
+          <div className="mb-16">
+            <AnimatedRiskValidation />
+          </div>
+
+          {/* Original risk engine component */}
           <RiskEngine />
         </div>
       </section>
