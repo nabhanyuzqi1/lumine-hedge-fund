@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth/role-context";
 import { motion } from "framer-motion";
 import { LumineIcon } from "@/components/landing/agent-icons";
@@ -170,6 +170,34 @@ export function LoginPage() {
           }}
         />
       </div>
+
+      {/* Back to landing */}
+      <motion.div
+        className="absolute left-5 top-5 z-10 md:left-8 md:top-8"
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Link
+          to="/"
+          className="group flex items-center gap-2 rounded-chip border border-line-soft bg-abyss/80 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim backdrop-blur transition-colors hover:border-line hover:text-ink"
+        >
+          <svg
+            className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 12H5m0 0l6 6m-6-6l6-6"
+            />
+          </svg>
+          Back to Home
+        </Link>
+      </motion.div>
 
       <div className="relative grid w-full max-w-4xl items-center gap-10 px-6 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
         {/* LEFT — brand + system terminal (desktop) */}
