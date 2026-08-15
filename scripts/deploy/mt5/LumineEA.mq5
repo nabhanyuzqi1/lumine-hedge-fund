@@ -229,7 +229,7 @@ void MarkProxyFail(const string where, const int code)
 //+------------------------------------------------------------------+
 //| HTTP POST JSON (WebRequest wrapper, tahan banting)                |
 //+------------------------------------------------------------------+
-int HttpPostJson(const string path, const string json, const int timeoutMs = 3000)
+int HttpPostJson(const string path, const string json, const int timeoutMs)
   {
    char data[];
    StringToCharArray(json, data, 0, WHOLE_ARRAY, CP_UTF8);
@@ -242,6 +242,12 @@ int HttpPostJson(const string path, const string json, const int timeoutMs = 300
    int res = WebRequest("POST", url, headers, timeoutMs, data, result, headers);
    if(res == 200)
       MarkProxyOk();
+   else if(res == -1)
+     {
+      int err = GetLastError();
+      if(err != 0)
+         MarkProxyFail(path, err);
+     }
    return res;
   }
 
