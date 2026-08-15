@@ -290,6 +290,7 @@ export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) return [];
       return generateEquity();
     },
     staleTime: 60_000,
@@ -314,6 +315,7 @@ export function useExposure(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) return [];
       return generateExposure();
     },
     staleTime: 60_000,
@@ -353,6 +355,7 @@ export function useSignals(symbol: string) {
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) return [];
       return generateSignals();
     },
     staleTime: 30_000,
@@ -418,6 +421,9 @@ export function useCorrelation() {
         }
       } catch {
         // fall through to fixture
+      }
+      if (USE_REAL_DATA) {
+        return { symbols: CORRELATION_SYMBOLS, matrix: [] };
       }
       return {
         symbols: CORRELATION_SYMBOLS,
@@ -497,6 +503,11 @@ export function useOrder(orderId: string) {
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) {
+        const err = new Error(`order not found: ${orderId}`);
+        err.name = "NotFoundError";
+        throw err;
+      }
       return generateOrder(orderId);
     },
     staleTime: 30_000,
@@ -513,6 +524,11 @@ export function useRun(runId: string) {
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) {
+        const err = new Error(`run not found: ${runId}`);
+        err.name = "NotFoundError";
+        throw err;
+      }
       return generateRun(runId);
     },
     staleTime: 30_000,
@@ -528,6 +544,11 @@ export function useLineage(lineageId: string) {
         if (typeof lineage?.lineage_id === "string") return toLineageFixture(lineage);
       } catch {
         // fall through to fixture
+      }
+      if (USE_REAL_DATA) {
+        const err = new Error(`lineage not found: ${lineageId}`);
+        err.name = "NotFoundError";
+        throw err;
       }
       return generateLineage(lineageId);
     },
@@ -562,6 +583,7 @@ export function useJournal(filters: JournalFilters = {}) {
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) return { entries: [], cursor: null, has_more: false };
       return generateJournalEntries();
     },
     staleTime: 15_000,
@@ -593,6 +615,7 @@ export function useJournalPage(cursor: string | null, filters: JournalFilters = 
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) return { entries: [], cursor: null, has_more: false };
       return generateJournalEntries(cursor);
     },
     staleTime: 15_000,
@@ -610,6 +633,7 @@ export function useApiKeys() {
       } catch {
         // fall through to fixture
       }
+      if (USE_REAL_DATA) return [];
       return generateApiKeys();
     },
     staleTime: 30_000,
