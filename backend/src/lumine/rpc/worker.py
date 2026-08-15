@@ -30,24 +30,179 @@ from lumine.shared.config import Settings
 logger = logging.getLogger(__name__)
 
 
-async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPublisher) -> dict[str, Any]:
-    """Deterministic demo decision cycle (LLM gateway not wired in demo)."""
+async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPublisher) -> dict[str, Any]:  # noqa: PLR0915 — fixed LLM stage sequence
+    """Run a REAL LLM decision cycle (technical analyst → IC forum) via 9router.
+
+    Sebelumnya demo-only (run_id demo-*). Sekarang:
+    1. Load bars terakhir dari DB (bars_5m/bars_1h) → hitung indikator
+       (atr_14, ema_20/50, rsi_14, ohlc) via lumine.features.indicators
+    2. Technical Analyst: LLM call (9router, oc/deepseek-v4-flash-free)
+    3. IC Forum: LLM call → verdict (approved/rejected/noop)
+    4. Publish SSE events: analyst-outputs + ic-decisions
+
+    Macro/news/smc analyst di-skip (data feeds eksternal belum tersedia);
+    technical + IC sudah cukup untuk committee feed LIVE yang bermakna.
+    """
+    from pathlib import Path
+    from uuid import uuid4
+
+    from sqlalchemy import select, text
+
+    from lumine.autogen_pipeline.agents.technical_analyst import run_technical_analyst
+    from lumine.autogen_pipeline.ic_forum import run_ic_forum
+    from lumine.data.models import ModelVersion
+    from lumine.data.session import get_sessionmaker
+    from lumine.features.indicators import atr, rsi
+    from lumine.llm_gateway.budget import BudgetGate
+    from lumine.llm_gateway.client import RouterClient
+    from lumine.llm_gateway.gateway import Gateway
+    from lumine.llm_gateway.registry import ModelRegistry
+    from lumine.prompts.registry import Registry
+
     symbol = payload.get("symbol", "XAUUSD")
-    decision = payload.get("decision", "hold")
-    result = {
-        "run_id": "demo-run-" + symbol.lower(),
+    settings = Settings()
+    now = datetime.now(UTC)
+    result: dict[str, Any] = {
+        "run_id": f"cycle-{uuid4().hex[:8]}",
         "symbol": symbol,
-        "decision": decision,
-        "status": "completed",
-        "finished_at": datetime.now(UTC).isoformat(),
+        "status": "failed",
     }
-    await publisher.publish(
-        SSEEvent(
-            event_type="decision_cycle_completed",
-            channel="ic-decisions",
-            data=result,
-        )
-    )
+
+    async def _run() -> dict[str, Any]:
+        """Execute the LLM cycle; raises on failure (caught by caller)."""
+        # ── Gateway + prompt registry ──────────────────────────────────────
+        client = RouterClient(url=settings.llm_gateway_url, api_key=settings.llm_gateway_api_key)
+        gateway = Gateway(registry=ModelRegistry({}), budget=BudgetGate({}), client=client)
+        prompt_registry = Registry(base_path=Path("/app/docs/prompts"))
+
+        async with get_sessionmaker()() as session:
+            # model_version + prompt_version production
+            mv = (
+                await session.execute(
+                    select(ModelVersion).where(ModelVersion.status == "production").limit(1)
+                )
+            ).scalar_one_or_none()
+            if mv is None:
+                msg = "no production model_versions row"
+                raise RuntimeError(msg)
+
+            # Indikator dari bars_5m (terakhir 60 bar)
+            rows = (
+                await session.execute(
+                    text(
+                        "SELECT ts, open, high, low, close, volume FROM bars_5m "
+                        "WHERE symbol = :s ORDER BY ts DESC LIMIT 60"
+                    ),
+                    {"s": symbol},
+                )
+            ).all()
+            bars = [
+                {
+                    "high": float(r.high),
+                    "low": float(r.low),
+                    "close": float(r.close),
+                }
+                for r in reversed(rows)
+            ]
+            if len(bars) < 15:
+                msg = f"insufficient bars_5m for {symbol}: {len(bars)}"
+                raise RuntimeError(msg)
+
+            closes = [b["close"] for b in bars]
+            atr_14 = float(atr(bars, period=14))
+            rsi_14 = float(rsi(bars, period=14))
+            ema_20 = sum(closes[-20:]) / 20
+            ema_50 = sum(closes[-50:]) / min(50, len(closes))
+            last = bars[-1]
+            ohlc = f"[{last['close']}, {max(b['high'] for b in bars[-5:])}, {min(b['low'] for b in bars[-5:])}, {closes[-1]}]"
+
+            variables: dict[str, object] = {
+                "symbol": symbol,
+                "decision_ts": now.isoformat(),
+                "atr_14": atr_14,
+                "ema_20": round(ema_20, 2),
+                "ema_50": round(ema_50, 2),
+                "rsi_14": round(rsi_14, 2),
+                "ohlc": ohlc,
+                "swing_structure": "unknown",
+            }
+
+            lineage_id = uuid4()
+            # Technical analyst (LLM real)
+            analyst = await run_technical_analyst(
+                gateway=gateway,
+                registry=prompt_registry,
+                lineage_id=lineage_id,
+                workflow_run_id=result["run_id"],
+                stage_run_id="technical_analyst",
+                model_version_id=mv.id,
+                idempotency_key=f"{lineage_id}:technical_analyst",
+                variables=variables,
+                session=session,
+            )
+            await publisher.publish(
+                SSEEvent(
+                    event_type="analyst_output",
+                    channel="analyst-outputs",
+                    data={
+                        "portfolio_id": "default",
+                        "symbol": symbol,
+                        "analyst_name": "Technical Analyst",
+                        "recommendation": str(analyst.parsed.get("recommendation", "hold")),
+                        "confidence": float(analyst.parsed.get("confidence", 0.5)),
+                        "reasoning": str(analyst.parsed.get("reasoning", ""))[:500],
+                        "timestamp": now.isoformat(),
+                    },
+                )
+            )
+
+            # IC Forum (LLM real) — konsumsi analyst output
+            ic = await run_ic_forum(
+                gateway=gateway,
+                registry=prompt_registry,
+                lineage_id=lineage_id,
+                workflow_run_id=result["run_id"],
+                stage_run_id="ic_forum",
+                model_version_id=mv.id,
+                idempotency_key=f"{lineage_id}:ic_forum",
+                symbol=symbol,
+                decision_ts=now.isoformat(),
+                analyst_inputs=[analyst.parsed],
+                session=session,
+            )
+            action = str(ic.parsed.get("action", "HOLD"))
+            confidence = float(ic.parsed.get("confidence", 0.5))
+            await publisher.publish(
+                SSEEvent(
+                    event_type="ic_decision",
+                    channel="ic-decisions",
+                    data={
+                        "decision_id": str(uuid4()),
+                        "portfolio_id": "default",
+                        "action": action,
+                        "positions": [],
+                        "confidence": confidence,
+                        "reasoning": str(ic.parsed.get("reasoning", ""))[:500],
+                        "timestamp": now.isoformat(),
+                    },
+                )
+            )
+
+            return {
+                "status": "completed",
+                "decision": action.lower(),
+                "confidence": confidence,
+                "analyst_recommendation": str(analyst.parsed.get("recommendation", "hold")),
+                "finished_at": datetime.now(UTC).isoformat(),
+            }
+
+    try:
+        result.update(await _run())
+    except Exception as exc:  # RPC handler reports, never crashes worker
+        logger.exception("decision cycle failed")
+        result["error"] = str(exc)[:300]
+        result["finished_at"] = datetime.now(UTC).isoformat()
+
     return result
 
 

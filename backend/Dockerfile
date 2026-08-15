@@ -41,6 +41,9 @@ COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini ./
 COPY scripts/ scripts/
+# Prompt registry (registry.yaml + schemas) — dibutuhkan pipeline LLM
+# (analyst/ic/cio/risk stages). Jangan copy docs/ penuh (hanya prompts/).
+COPY docs/prompts/ docs/prompts/
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1

@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lumine.local/schemas/risk_assessment.json",
+  "title": "RiskAssessmentOutput",
+  "description": "Advisory output of the LLM risk assessor (D8-7, ADR-0016). The LLM may veto and name a regime bucket, but never produces a volume — final_volume is always computed deterministically.",
+  "type": "object",
+  "required": ["veto", "regime_bucket", "risk_notes"],
+  "additionalProperties": false,
+  "properties": {
+    "veto": {
+      "type": "boolean",
+      "description": "Hard veto. true rejects the proposal outright; conservative by design."
+    },
+    "regime_bucket": {
+      "type": "string",
+      "enum": ["trending", "ranging", "volatile", "calm"],
+      "description": "Regime classification used to look up the deterministic risk-adjustment multiplier."
+    },
+    "risk_notes": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Free-form risk observations; advisory only, never a sizing input."
+    }
+  }
+}
