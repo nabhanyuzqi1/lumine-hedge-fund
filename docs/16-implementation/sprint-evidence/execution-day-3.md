@@ -79,6 +79,34 @@
   (`frontend/src/lib/api/core.ts:165`, `frontend/Dockerfile`, `docker-compose.vps.yml`)
 - Backend: fallback `_last_close` (bars_1h) saat market closed — simulate tetap
   berguna weekend, harga real bukan fiktif (`backend/src/lumine/api/routers/portfolio.py:59`)
+- **Verified**: `POST /portfolio/default/simulate` → projected_nav 1980.13 (fallback last close)
+
+### ✓ Terminal Positions — Real Data dari MT5
+- `/portfolio/positions` sebelumnya HARDCODED fixture (XAUUSD 1.50 @ 2420.30)
+- Fix: `PositionRepository.list_open()` dari tabel positions (data MT5 real)
+  - Mark-to-market: live MarketService → fallback last_close bars_1h → avg_entry
+  - `unrealized_pnl = (current - avg_entry) * size`
+- **Verified**: `{"symbol": "XAUUSD", "direction": "long", "volume": "0.0500",
+  "entry_price": "4302.50", "current_price": "4376.43" (LIVE tick EA), "unrealized_pnl": "3.70"}`
+- Orders sudah DB-backed (19 filled orders, mt5_ticket real)
+
+### ✓ Risk Gauges — Zero-Demo Real
+- Sebelumnya fixture hardcoded (Exposure 8.2%, Leverage 2.1x, dll)
+- Fix: `usePortfolioSummary` + `usePositionList` (backend real)
+  - Exposure % = gross notional / NAV
+  - Leverage = notional / NAV
+  - Margin used = margin_used / NAV
+  - Net P&L session = open_pnl + closed_pnl
+- Data tidak tersedia → tampil "—" (bukan angka fiktif)
+- (`frontend/src/components/terminal/risk-gauges.tsx`)
+
+### ✓ Frontend Zero-Demo — Semua Hooks Buang Fixture Fallback
+- `useEquityCurve`/`useExposure`/`useSignals`: return [] saat API kosong
+  (sebelumnya generateEquity/generateExposure/generateSignals fiktif)
+- `useOrder`/`useRun`/`useLineage`: throw NotFoundError (bukan generate)
+- `useJournal`/`useJournalPage`: return empty page
+- `useApiKeys`: return [] / `useCorrelation`: matrix kosong
+- (`frontend/src/api/hooks.ts`)
 
 ## Issues Encountered & Resolved
 
