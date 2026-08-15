@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { SIMULATED_EQUITY_CURVE } from "@/data/landing/performance";
-import { useMemo } from "react";
 
 /**
  * EquityCurve — Section 15 of master prompt.
@@ -16,6 +16,19 @@ interface EquityCurveProps {
 
 export function EquityCurve({ className, showHeader = true }: EquityCurveProps) {
   const data = SIMULATED_EQUITY_CURVE;
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  const handleMove = (e: React.MouseEvent) => {
+    const el = chartRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const ratio = (e.clientX - r.left) / r.width;
+    const index = Math.round(ratio * (data.length - 1));
+    setHoverIndex(Math.max(0, Math.min(data.length - 1, index)));
+  };
+
+  const hoverPoint = hoverIndex !== null ? data[hoverIndex] : null;
 
   // Calculate SVG path and dimensions
   const { path, minEquity, maxEquity, width, height } = useMemo(() => {
@@ -85,11 +98,17 @@ export function EquityCurve({ className, showHeader = true }: EquityCurveProps) 
       >
         <div className="p-6 md:p-8">
           <div className="overflow-x-auto">
-            <svg
-              viewBox={`0 0 ${width} ${height}`}
-              className="w-full"
-              style={{ minWidth: "600px" }}
+            <div
+              ref={chartRef}
+              className="relative"
+              onMouseMove={handleMove}
+              onMouseLeave={() => setHoverIndex(null)}
             >
+              <svg
+                viewBox={`0 0 ${width} ${height}`}
+                className="w-full"
+                style={{ minWidth: "600px" }}
+              >
               {/* Grid lines */}
               <defs>
                 <pattern
@@ -178,7 +197,43 @@ export function EquityCurve({ className, showHeader = true }: EquityCurveProps) 
               >
                 {data[data.length - 1].date}
               </text>
-            </svg>
+              </svg>
+
+              {/* Hover tooltip */}
+              {hoverPoint && hoverIndex !== null && (
+                <div
+                  className="pointer-events-none absolute top-2 z-10 -translate-x-1/2 rounded-chip border border-line bg-abyss/95 px-3 py-2 backdrop-blur"
+                  style={{
+                    left: `${(hoverIndex / (data.length - 1)) * 100}%`,
+                  }}
+                >
+                  <div className="font-mono text-[9px] uppercase tracking-widest text-ink-faint">
+                    {hoverPoint.date}
+                  </div>
+                  <div className="mt-1 font-mono text-xs font-bold text-ink">
+                    ${hoverPoint.equity.toLocaleString()}
+                  </div>
+                  <div
+                    className={cn(
+                      "font-mono text-[10px] font-semibold",
+                      hoverPoint.drawdown < 0 ? "text-down" : "text-up"
+                    )}
+                  >
+                    DD {hoverPoint.drawdown.toFixed(1)}%
+                  </div>
+                </div>
+              )}
+
+              {/* Hover guide line */}
+              {hoverIndex !== null && (
+                <div
+                  className="pointer-events-none absolute inset-y-2 w-px bg-accent/40"
+                  style={{
+                    left: `${(hoverIndex / (data.length - 1)) * 100}%`,
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
 

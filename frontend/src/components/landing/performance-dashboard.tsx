@@ -1,15 +1,27 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { motion, AnimatePresence, useInView, animate } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { SIMULATED_METRICS } from "@/data/landing/performance";
 import type { PerformanceMetrics } from "@/data/landing/performance";
 
-/**
- * PerformanceDashboard — Section 23 of UI/UX Rebuild V2.
- * Interactive analytics laboratory: BACKTEST / PAPER tabs switch
- * metric sets; LIVE is disabled with COMING SOON. All data is
- * ILLUSTRATIVE and clearly labeled.
- */
+/** Count-up hook: animates 0 → target when the element scrolls into view. */
+function useCountUp(target: number, duration = 1.4) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    const controls = animate(0, target, {
+      duration,
+      ease: "easeOut",
+      onUpdate: (v) => setDisplay(v),
+    });
+    return () => controls.stop();
+  }, [inView, target, duration]);
+
+  return { ref, display };
+}
 
 interface MetricCardProps {
   label: string;
@@ -18,17 +30,19 @@ interface MetricCardProps {
 }
 
 function MetricCard({ label, value, format = "number" }: MetricCardProps) {
-  const formatValue = () => {
+  const numeric = typeof value === "number" ? value : parseFloat(value);
+  const { ref, display } = useCountUp(numeric);
+
+  const renderValue = () => {
     if (format === "percent") {
-      const num = typeof value === "number" ? value : parseFloat(value);
       return (
-        <span className={cn(num < 0 ? "text-down" : "text-up")}>
-          {num > 0 ? "+" : ""}
-          {num.toFixed(1)}%
+        <span className={cn(numeric < 0 ? "text-down" : "text-up")}>
+          {display > 0 ? "+" : ""}
+          {display.toFixed(1)}%
         </span>
       );
     }
-    return <span className="text-ink">{value}</span>;
+    return <span className="text-ink">{display.toFixed(2)}</span>;
   };
 
   return (
@@ -43,7 +57,9 @@ function MetricCard({ label, value, format = "number" }: MetricCardProps) {
         <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           {label}
         </div>
-        <div className="font-mono text-lg font-bold">{formatValue()}</div>
+        <div className="font-mono text-lg font-bold tabular-nums">
+          <span ref={ref}>{renderValue()}</span>
+        </div>
       </div>
     </motion.div>
   );

@@ -17,6 +17,7 @@ import { RegimeEngine } from "@/components/landing/regime-engine";
 import { AuditLog } from "@/components/landing/audit-log";
 import { PhilosophySection } from "@/components/landing/philosophy-section";
 import { RoadmapSection } from "@/components/landing/roadmap-section";
+import { TickerTape } from "@/components/landing/ticker-tape";
 import { LumineIcon } from "@/components/landing/agent-icons";
 
 /**
@@ -270,6 +271,31 @@ function Hero() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Magnetic button — CTA follows cursor subtly (Section 28)             */
+/* ------------------------------------------------------------------ */
+
+function MagneticButton({ children }: { children: ReactNode }) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  return (
+    <motion.div
+      className="inline-block"
+      style={{ x: offset.x, y: offset.y }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const dx = (e.clientX - r.left - r.width / 2) * 0.18;
+        const dy = (e.clientY - r.top - r.height / 2) * 0.18;
+        setOffset({ x: dx, y: dy });
+      }}
+      onMouseLeave={() => setOffset({ x: 0, y: 0 })}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* PAGE                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -281,8 +307,11 @@ export function LandingPublicPage() {
       {/* HERO — dense split */}
       <Hero />
 
+      {/* Ticker tape — simulated market strip */}
+      <TickerTape />
+
       {/* INTELLIGENCE — visual network (Section 17-18) */}
-      <section id="intelligence" className="border-b border-line bg-bg py-24 md:py-32">
+      <section id="intelligence" className="border-b border-line bg-bg py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
             kicker="Intelligence Network"
@@ -294,7 +323,7 @@ export function LandingPublicPage() {
               </>
             }
             description="Four specialized agents evaluate independent dimensions of the market. Their signals converge on Lumine Core, which assembles a single directional thesis."
-            className="mb-16"
+            className="mb-10"
           />
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -307,24 +336,11 @@ export function LandingPublicPage() {
         </div>
       </section>
 
-      {/* MASTER DECISION — dense data (Section 19) */}
-      <section className="border-b border-line bg-raised py-24 md:py-32">
+      {/* DECISION & RISK — satu alur: thesis → validation → approved (S19-20) */}
+      <section id="risk" className="border-b border-line bg-raised py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
-            kicker="Master Intelligence"
-            title="Signals converge into a single decision."
-            description="Each agent contributes a weighted thesis. Lumine Core assembles them into one directional view with explicit confidence."
-            className="mb-16"
-          />
-          <MasterDecision className="mx-auto" showHeader={false} variant="compact" />
-        </div>
-      </section>
-
-      {/* RISK — technical (Section 20) */}
-      <section id="risk" className="border-b border-line bg-abyss py-24 md:py-32">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Risk Engine"
+            kicker="Decision & Risk"
             align="center"
             title={
               <>
@@ -333,51 +349,54 @@ export function LandingPublicPage() {
                 <span className="text-ink-dim">Risk decides.</span>
               </>
             }
-            description="AI can suggest a trade. It cannot override the system's risk boundaries. Every proposal passes through deterministic validation gates."
-            className="mb-20"
+            description="Agent signals converge into one thesis. The thesis passes through deterministic validation gates before execution is approved."
+            className="mb-10"
           />
-          <AnimatedRiskValidation />
+          <MasterDecision className="mx-auto" showHeader={false} variant="compact" />
           <div className="mt-16">
+            <AnimatedRiskValidation />
+          </div>
+          <div className="mt-14">
             <RiskEngine showHeader={false} variant="compact" />
           </div>
         </div>
       </section>
 
       {/* BREAKEVEN — interactive (Section 21) */}
-      <section className="border-b border-line bg-bg py-24 md:py-32">
+      <section className="border-b border-line bg-bg py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
             kicker="Structure-Based Breakeven"
             title="Break-even is a decision, not a price."
             description="Lumine evaluates whether to hold or move stop-loss to break-even based on market structure and momentum — not arbitrary price levels."
-            className="mb-16"
+            className="mb-10"
           />
           <BreakEvenVisualization showHeader={false} />
         </div>
       </section>
 
       {/* RESEARCH — editorial (Section 22) */}
-      <section id="research" className="border-b border-line bg-raised py-24 md:py-32">
+      <section id="research" className="border-b border-line bg-raised py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
             kicker="Research Pipeline"
             title="From observation to deployment."
             description="Every strategy moves through a disciplined lifecycle. Nothing reaches execution without out-of-sample validation."
-            className="mb-16"
+            className="mb-10"
           />
           <ResearchPipeline showHeader={false} />
         </div>
       </section>
 
       {/* PERFORMANCE — data-dense (Section 23) */}
-      <section id="performance" className="border-b border-line bg-bg py-24 md:py-32">
+      <section id="performance" className="border-b border-line bg-bg py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
             kicker="Performance"
             align="center"
             title="An analytics laboratory, not a scoreboard."
             description="Illustrative data showing how Lumine evaluates strategy quality across backtest, paper, and live phases."
-            className="mb-16"
+            className="mb-10"
           />
           <PerformanceDashboard showHeader={false} />
           <div className="mt-16">
@@ -387,51 +406,51 @@ export function LandingPublicPage() {
       </section>
 
       {/* REGIME — full-width visual (Section 24) */}
-      <section className="border-b border-line bg-raised py-24 md:py-32">
+      <section className="border-b border-line bg-raised py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
             kicker="Market Regime"
             title="The system adapts to the market's current state."
             description="Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
-            className="mb-16"
+            className="mb-10"
           />
           <RegimeEngine showHeader={false} />
         </div>
       </section>
 
       {/* AUDIT — terminal-style stream (Section 25) */}
-      <section className="border-b border-line bg-abyss py-24 md:py-32">
+      <section className="border-b border-line bg-abyss py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
             kicker="Audit Trail"
             title="Every decision, logged."
             description="A complete, inspectable record of how each thesis was assembled, validated, and executed. Pause the stream to read it."
-            className="mb-16"
+            className="mb-10"
           />
           <AuditLog showHeader={false} />
         </div>
       </section>
 
       {/* PHILOSOPHY — minimal editorial (Section 41) */}
-      <section className="border-b border-line bg-abyss py-24 md:py-36">
+      <section className="border-b border-line bg-abyss py-16 md:py-24">
         <PhilosophySection />
       </section>
 
       {/* ROADMAP — timeline (Section 42) */}
-      <section id="roadmap" className="border-b border-line bg-bg py-24 md:py-32">
+      <section id="roadmap" className="border-b border-line bg-bg py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
             kicker="Roadmap"
             align="center"
             title="Built in phases. Verified at every step."
-            className="mb-16"
+            className="mb-10"
           />
           <RoadmapSection showHeader={false} />
         </div>
       </section>
 
       {/* CTA — quiet (Section 42) */}
-      <section className="border-b border-line bg-raised py-24 md:py-32">
+      <section className="border-b border-line bg-raised py-16 md:py-24">
         <div className="mx-auto w-full max-w-4xl px-6">
           <motion.div
             className="flex flex-col items-center gap-8 text-center"
@@ -453,17 +472,20 @@ export function LandingPublicPage() {
               See how specialized agents form a thesis, how risk governs every
               decision, and how validation keeps the pipeline honest.
             </p>
-            <Link to="/login">
-              <Button
-                size="lg"
-                className="group bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
-              >
-                Enter the System
-                <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">
-                  →
-                </span>
-              </Button>
-            </Link>
+            {/* Magnetic CTA */}
+            <MagneticButton>
+              <Link to="/login">
+                <Button
+                  size="lg"
+                  className="group bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
+                >
+                  Enter the System
+                  <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">
+                    →
+                  </span>
+                </Button>
+              </Link>
+            </MagneticButton>
           </motion.div>
         </div>
       </section>

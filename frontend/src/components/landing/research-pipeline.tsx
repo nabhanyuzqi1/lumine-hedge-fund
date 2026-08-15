@@ -1,10 +1,10 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * ResearchPipeline — Section 12 of master prompt.
- * "From Hypothesis to Capital."
- * Shows the complete research lifecycle before strategies reach production.
+ * ResearchPipeline — Section 22 of UI/UX Rebuild V2.
+ * Interactive stepper: click a stage to inspect its detail.
  */
 
 interface PipelineStageProps {
@@ -12,43 +12,6 @@ interface PipelineStageProps {
   title: string;
   description: string;
   status?: "complete" | "in-progress" | "pending";
-}
-
-function PipelineStage({
-  number,
-  title,
-  description,
-  status = "pending",
-}: PipelineStageProps) {
-  const statusColors = {
-    complete: "border-up bg-up/10",
-    "in-progress": "border-accent bg-accent/10 animate-pulse",
-    pending: "border-line-soft bg-raised/30",
-  };
-
-  return (
-    <div className="flex gap-4">
-      {/* Number badge */}
-      <div className="flex shrink-0 flex-col items-center gap-2">
-        <div
-          className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-full border-2 font-mono text-sm font-bold transition-all",
-            statusColors[status]
-          )}
-        >
-          {number}
-        </div>
-        {/* Connector line */}
-        <div className="h-full w-px bg-gradient-to-b from-line via-line-soft to-transparent" />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 space-y-2 pb-8">
-        <h4 className="font-display text-base font-bold text-ink">{title}</h4>
-        <p className="text-sm leading-relaxed text-ink-dim">{description}</p>
-      </div>
-    </div>
-  );
 }
 
 const PIPELINE_STAGES: PipelineStageProps[] = [
@@ -102,6 +65,9 @@ interface ResearchPipelineProps {
 }
 
 export function ResearchPipeline({ className, showHeader = true }: ResearchPipelineProps) {
+  const [active, setActive] = useState(0);
+  const stage = PIPELINE_STAGES[active];
+
   return (
     <div className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
@@ -119,12 +85,12 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
           </h3>
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
             Every strategy must earn the right to reach production through a
-            rigorous research and validation lifecycle.
+            rigorous research and validation lifecycle. Click a stage to inspect it.
           </p>
         </div>
       )}
 
-      {/* Pipeline stages */}
+      {/* Interactive stepper */}
       <motion.div
         className="rounded-panel border border-line bg-raised shadow-panel"
         initial={{ opacity: 0, y: 28 }}
@@ -133,17 +99,101 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
         transition={{ duration: 0.7, ease: "easeOut" }}
       >
         <div className="p-6 md:p-8">
-          {PIPELINE_STAGES.map((stage, i) => (
+          {/* Stage chips */}
+          <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
+            {PIPELINE_STAGES.map((s, i) => {
+              const isActive = active === i;
+              const isDone = i < active;
+              return (
+                <motion.button
+                  key={s.number}
+                  type="button"
+                  className="flex cursor-pointer flex-col items-center gap-1.5 rounded-chip border px-2 py-3 transition-all duration-200"
+                  style={{
+                    borderColor: isActive
+                      ? "var(--color-accent)"
+                      : isDone
+                        ? "var(--color-up)"
+                        : "var(--color-line-soft)",
+                    backgroundColor: isActive
+                      ? "rgba(77,141,255,0.12)"
+                      : isDone
+                        ? "rgba(52,211,153,0.06)"
+                        : "var(--color-raised)",
+                  }}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.35, delay: i * 0.06 }}
+                  onClick={() => setActive(i)}
+                  aria-pressed={isActive}
+                >
+                  <span
+                    className={cn(
+                      "font-mono text-[10px] font-bold",
+                      isActive
+                        ? "text-accent"
+                        : isDone
+                          ? "text-up"
+                          : "text-ink-faint"
+                    )}
+                  >
+                    {s.number}
+                  </span>
+                  <span
+                    className={cn(
+                      "font-display text-[10px] font-semibold uppercase tracking-wider md:text-xs",
+                      isActive ? "text-ink" : "text-ink-dim"
+                    )}
+                  >
+                    {s.title}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Active stage detail */}
+          <AnimatePresence mode="wait">
             <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -16 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.45, delay: i * 0.08 }}
+              key={stage.number}
+              className="mt-6 rounded-chip border border-line-soft bg-abyss/40 p-5"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
             >
-              <PipelineStage {...stage} />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-sm font-bold text-accent">
+                    {stage.number}
+                  </span>
+                  <h4 className="font-display text-lg font-bold text-ink">
+                    {stage.title}
+                  </h4>
+                </div>
+                <span
+                  className={cn(
+                    "rounded-chip border px-2 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-widest",
+                    stage.status === "complete"
+                      ? "border-up/30 bg-up/10 text-up"
+                      : stage.status === "in-progress"
+                        ? "border-accent/30 bg-accent/10 text-accent"
+                        : "border-line-soft bg-raised/30 text-ink-faint"
+                  )}
+                >
+                  {stage.status === "complete"
+                    ? "Complete"
+                    : stage.status === "in-progress"
+                      ? "In Progress"
+                      : "Pending"}
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-ink-dim">
+                {stage.description}
+              </p>
             </motion.div>
-          ))}
+          </AnimatePresence>
         </div>
 
         {/* Footer notice */}

@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { AGENTS } from "@/data/landing/agents";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   TechnicalIcon,
   MacroIcon,
@@ -79,6 +81,8 @@ export function IntelligenceField() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [mouse, setMouse] = useState({ nx: 0, ny: 0 }); // normalized -1..1
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedAgent = AGENTS.find((a) => a.id === selectedId) ?? null;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -235,8 +239,9 @@ export function IntelligenceField() {
               whileTap={{ scale: 0.95 }}
               onHoverStart={() => setHovered(node.id)}
               onHoverEnd={() => setHovered(null)}
+              onClick={() => setSelectedId(node.id)}
               role="button"
-              aria-label={`${node.name} intelligence agent`}
+              aria-label={`${node.name} intelligence agent — inspect`}
             >
               {/* Node disc */}
               <div
@@ -385,6 +390,85 @@ export function IntelligenceField() {
           </div>
         ))}
       </div>
+
+      {/* Agent Inspector Dialog */}
+      <Dialog open={!!selectedAgent} onOpenChange={(open) => !open && setSelectedId(null)}>
+        <DialogContent className="border-line bg-raised">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 font-display text-xl text-ink">
+              {selectedAgent && (
+                <>
+                  <span
+                    className="flex h-10 w-10 items-center justify-center rounded-full border"
+                    style={{
+                      borderColor: selectedAgent.color,
+                      color: selectedAgent.color,
+                    }}
+                  >
+                    {selectedAgent.id === "technical" ? (
+                      <TechnicalIcon size={20} />
+                    ) : selectedAgent.id === "macro" ? (
+                      <MacroIcon size={20} />
+                    ) : selectedAgent.id === "news" ? (
+                      <NewsIcon size={20} />
+                    ) : (
+                      <StructureIcon size={20} />
+                    )}
+                  </span>
+                  <span>
+                    {selectedAgent.name}
+                    <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint">
+                      Intelligence
+                    </span>
+                  </span>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedAgent && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
+                  Role
+                </h4>
+                <p className="mt-1 text-sm text-ink">{selectedAgent.role}</p>
+              </div>
+              <div>
+                <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
+                  Mandate
+                </h4>
+                <p className="mt-1 text-sm leading-relaxed text-ink-dim">
+                  {selectedAgent.description}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
+                  Status
+                </h4>
+                <div
+                  className="mt-2 inline-flex items-center gap-2 rounded-chip border px-3 py-1.5"
+                  style={{
+                    borderColor: `${selectedAgent.color}55`,
+                    backgroundColor: `${selectedAgent.color}14`,
+                  }}
+                >
+                  <span
+                    className="h-1.5 w-1.5 animate-pulse rounded-full"
+                    style={{ backgroundColor: selectedAgent.color }}
+                  />
+                  <span
+                    className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em]"
+                    style={{ color: selectedAgent.color }}
+                  >
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
