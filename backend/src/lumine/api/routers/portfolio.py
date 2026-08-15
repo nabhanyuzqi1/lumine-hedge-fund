@@ -58,6 +58,29 @@ async def _live_mid(symbol: str) -> Decimal | None:
     return Decimal(str(tick.bid)) if tick else None
 
 
+async def _last_close(symbol: str) -> Decimal | None:
+    """Last close real dari bars_1h (fallback saat market libur/weekend).
+
+    Bukan harga fiktif — harga penutupan bar terakhir yang benar terjadi
+    (ZERO-DEMO: data riwayat real dari DB).
+    """
+    from sqlalchemy import text
+
+    from lumine.data.session import get_sessionmaker
+
+    async with get_sessionmaker()() as session:
+        row = (
+            await session.execute(
+                text(
+                    "SELECT close FROM bars_1h WHERE symbol = :s "
+                    "ORDER BY ts DESC LIMIT 1"
+                ),
+                {"s": symbol},
+            )
+        ).scalar_one_or_none()
+        return Decimal(str(row)) if row is not None else None
+
+
 async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
     """Portfolio summary computed from live PostgreSQL state (B-05).
 
@@ -317,6 +340,11 @@ async def simulate_trade(
     if portfolio_id not in {"default", "portfolio-demo"}:
         raise HTTPException(status_code=404, detail=f"unknown portfolio: {portfolio_id}")
     mid = await _live_mid(request.symbol)
+    if mid is None:
+        # Feed kosong (market libur) — fallback ke last close real dari
+        # bars_1h (bukan harga fiktif; harga terakhir yang benar terjadi).
+        # Simulate tetap berguna saat weekend; note disertakan via price_source.
+        mid = await _last_close(request.symbol)
     if mid is None:
         raise HTTPException(
             status_code=503, detail=f"no live price for {request.symbol} (market closed)"

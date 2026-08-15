@@ -2829,7 +2829,14 @@ paths:
       tags:
       - admin
       summary: Get System Info
-      description: Snapshot status seluruh sistem — untuk superadmin control center.
+      description: 'Snapshot status seluruh sistem — untuk superadmin control center.
+
+
+        Baca status container via Docker API socket (docker CLI tidak ada di
+
+        image; SDK `docker` baca /containers/json langsung). Fallback graceful
+
+        ke [unknown] jika socket tidak di-mount (dev/local).'
       operationId: get_system_info_api_v1_admin_system_info_get
       parameters:
       - name: X-Lumine-API-Key

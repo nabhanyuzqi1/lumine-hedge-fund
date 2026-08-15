@@ -159,7 +159,10 @@ export async function http<T>(
   options: RequestOptions = {}
 ): Promise<ResponseResult<T>> {
   const { timeout = DEFAULT_TIMEOUT, skipValidate = false, ...fetchOptions } = options;
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  // VITE_API_URL kosong → relative path → resolve ke origin halaman
+  // (Caddy proxy /api/v1 → backend). JANGAN default localhost:8000 di
+  // production — itu alamat browser user, bukan backend.
+  const baseUrl = import.meta.env.VITE_API_URL || '';
   const url = buildUrl(baseUrl, path);
 
   // Merge common headers with user-provided options

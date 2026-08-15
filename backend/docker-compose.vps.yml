@@ -145,7 +145,7 @@ services:
         # Base relatif — resolve ke origin halaman (https://lumine.biz.id/api/v1
         # di prod). Tanpa IP/domain: origin server tidak terekspos, no CORS.
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
-        VITE_API_URL: ${VITE_API_URL:-http://166.88.227.177}
+        VITE_API_URL: ${VITE_API_URL:-}
         VITE_LUMINE_API_KEY: ${VITE_LUMINE_API_KEY:-}
         VITE_LUMINE_API_SECRET: ${VITE_LUMINE_API_SECRET:-}
     expose:

@@ -208,12 +208,32 @@ class _FakeStreamRequest:
         self.state = type(
             "State",
             (),
-            {"principal": AuthenticatedPrincipal(key_id="unit", scopes=frozenset())},
+            {
+                "principal": AuthenticatedPrincipal(key_id="unit", scopes=frozenset()),
+                # _event_stream sekarang subscribe ke SSEPublisher queue —
+                # fake publisher agar tidak crash (None.subscribe).
+                "sse_publisher": _FakePublisher(),
+            },
         )()
         self.headers = {"Last-Event-ID": "0"}
 
     async def is_disconnected(self) -> bool:
         return False
+
+
+class _FakePublisher:
+    """In-memory SSEPublisher substitute with subscribe/unsubscribe."""
+
+    def __init__(self) -> None:
+        """Create an unbounded asyncio queue."""
+        self._queue: asyncio.Queue = asyncio.Queue()
+
+    async def subscribe(self) -> asyncio.Queue:
+        """Return the shared queue (events never arrive in tests)."""
+        return self._queue
+
+    async def unsubscribe(self, _queue: asyncio.Queue) -> None:
+        """No-op (queue is shared)."""
 
 
 def _run(awaitable: Awaitable[object]) -> str:

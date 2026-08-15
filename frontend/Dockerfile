@@ -11,7 +11,10 @@ COPY . .
 # origin server tidak terekspos, zero CORS.
 ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-ARG VITE_API_URL=http://localhost:8000
+# VITE_API_URL kosong → relative path → origin halaman (Caddy proxy).
+# Jangan default localhost:8000 (alamat browser user) atau IP HTTP
+# (mixed content di HTTPS) — keduanya bikin "Network request failed".
+ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
 # HMAC credentials (getHmacCredentials) — wajib di-declare + ENV agar Vite
 # meng-inline import.meta.env.VITE_LUMINE_* saat build.
