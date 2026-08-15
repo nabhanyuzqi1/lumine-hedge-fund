@@ -44,6 +44,18 @@ class FakeGateway:
         spend: dict[str, float] | None = None,
     ) -> GatewayResult:
         """Record ``request`` and return a scripted GatewayResponse."""
+        return self._record(request)
+
+    async def complete_async(
+        self,
+        request: RouterRequest,
+        spend: dict[str, float] | None = None,
+    ) -> GatewayResult:
+        """Async variant (pipeline calls this from a running loop)."""
+        return self._record(request)
+
+    def _record(self, request: RouterRequest) -> GatewayResult:
+        """Shared record-and-respond logic."""
         self.calls.append(request)
         content = self.handler(request)
         response = GatewayResponse(

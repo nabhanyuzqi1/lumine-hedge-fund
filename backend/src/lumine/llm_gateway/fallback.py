@@ -99,14 +99,40 @@ def run_chain(
     exist; ``FallbackExhaustedError`` when every route (including
     retries) failed. Auth failures never retry — they fall through to
     the next hop so the circuit can open at the client layer.
+
+    Sync wrapper: drives the async chain via ``asyncio.run`` — only
+    safe outside a running event loop. Async callers MUST use
+    :func:`run_chain_async`.
     """
+    # Detect a running loop BEFORE asyncio.run (FallbackExhaustedError
+    # etc. subclass RuntimeError — a bare except would swallow them).
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        pass  # no running loop — safe to drive via asyncio.run
+    else:
+        msg = "run_chain() called from a running event loop; use run_chain_async()"
+        raise RuntimeError(msg)
+    return asyncio.run(
+        run_chain_async(primary=primary, hops=hops, call=call, request=request)
+    )
+
+
+async def run_chain_async(
+    *,
+    primary: dict[str, Any] | FallbackHop,
+    hops: Sequence[dict[str, Any] | FallbackHop] = (),
+    call: Callable[[dict[str, Any]], Coroutine[Any, Any, GatewayResponse]],
+    request: RouterRequest,
+) -> GatewayResponse:
+    """Async chain runner (same semantics as :func:`run_chain`)."""
     chain = FallbackChain(primary=primary, hops=hops)
     routes = [chain.primary, *chain.hops]
     last_error: RouterClientError | None = None
     for route in routes:
         for attempt in range(_TRANSIENT_RETRIES + 1):
             try:
-                return asyncio.run(call(route))
+                return await call(route)
             except RouterClientError as exc:
                 last_error = exc
                 kind = _classify(exc)

@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from lumine.llm_gateway.fallback import run_chain
+from lumine.llm_gateway.fallback import run_chain_async
 from lumine.llm_gateway.registry import ModelRegistry, resolve_model
 from lumine.llm_gateway.usage import write_usage
 
@@ -119,6 +119,22 @@ class Gateway:
             FallbackExhaustedError / NoFallbacksConfiguredError: every
                 route (including retries) failed.
 
+        Safe only outside a running event loop; async callers use
+        :meth:`complete_async`.
+
+        """
+        return asyncio.run(self.complete_async(request, spend=spend))
+
+    async def complete_async(
+        self,
+        request: RouterRequest,
+        *,
+        spend: Mapping[str, float] | None = None,
+    ) -> GatewayResult:
+        """Async variant of :meth:`complete` (event-loop safe).
+
+        Pipeline stages (run_llm_stage) call this from a running loop;
+        the sync wrapper above exists for tests/CLI.
         """
         decision = self._budget.check(
             spend=dict(spend or self._spend),
@@ -126,7 +142,7 @@ class Gateway:
             role=request.role,
         )
         primary, hops = self._routes_for(request)
-        response = run_chain(
+        response = await run_chain_async(
             primary=primary,
             hops=hops,
             call=self._call_for(request),
@@ -141,23 +157,21 @@ class Gateway:
             )
             # D6-7: llm_usage.model_version_id is the actual model used
             # (post-fallback) — the request is re-pinned to the used route.
-            usage = asyncio.run(
-                write_usage(
-                    self._session,
-                    request=request.model_copy(
-                        update={
-                            "model_version_id": used["model_version_id"],
-                            "model": used["model"],
-                        }
-                    ),
-                    response=response,
-                    prompt_version_id=self._prompt_version_id,
-                    price_per_1k_in=price_in,
-                    price_per_1k_out=price_out,
-                    fallback_hops=fallback_hops,
-                    degraded=decision.degraded,
-                    lane=self._lane,
-                )
+            usage = await write_usage(
+                self._session,
+                request=request.model_copy(
+                    update={
+                        "model_version_id": used["model_version_id"],
+                        "model": used["model"],
+                    }
+                ),
+                response=response,
+                prompt_version_id=self._prompt_version_id,
+                price_per_1k_in=price_in,
+                price_per_1k_out=price_out,
+                fallback_hops=fallback_hops,
+                degraded=decision.degraded,
+                lane=self._lane,
             )
         return GatewayResult(
             response=response,
