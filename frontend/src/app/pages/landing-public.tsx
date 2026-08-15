@@ -330,7 +330,7 @@ export function LandingPublicPage() {
       {/* Ticker tape — simulated market strip */}
       <TickerTape />
 
-      {/* DECISION & RISK — flow 3 langkah: sinyal → tesis → gerbang risiko */}
+      {/* DECISION & RISK — 3-step flow: signals → thesis → risk gates */}
       <section id="risk" className="border-b border-line bg-raised py-16 md:py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <SectionHeader
@@ -343,7 +343,7 @@ export function LandingPublicPage() {
                 <span className="text-ink-dim">Risk decides.</span>
               </>
             }
-            description="Tiga langkah sederhana: empat analis mengirim sinyal, master merumuskan satu tesis, lalu tesis melewati gerbang risiko sebelum dieksekusi."
+            description="Three simple steps: four analysts send signals, the master forms a single thesis, then the thesis passes through risk gates before execution."
             className="mb-10"
           />
           <DecisionFlow className="mx-auto" />

@@ -75,7 +75,7 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.5 }}
       >
-        <StepLabel n="1" label="Empat analis mengirim sinyal" />
+        <StepLabel n="1" label="Four analysts send signals" />
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           {decision.analyses.map((analysis, i) => {
             const agent = AGENTS.find((a) => a.name === analysis.agent);
@@ -119,7 +119,7 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <StepLabel n="2" label="Master Intelligence merumuskan tesis" />
+        <StepLabel n="2" label="Master Intelligence forms a thesis" />
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
@@ -160,7 +160,7 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
         viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <StepLabel n="3" label="Tesis melewati gerbang risiko" />
+        <StepLabel n="3" label="Thesis passes through risk gates" />
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {GATES.map((gate, i) => (
             <motion.div
@@ -208,7 +208,7 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
             />
           </svg>
           <span className="font-mono text-xs font-bold uppercase tracking-[0.22em] text-up">
-            Approved — siap dieksekusi
+            Approved — ready for execution
           </span>
         </motion.div>
       </motion.div>
