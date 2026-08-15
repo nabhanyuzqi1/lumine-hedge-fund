@@ -388,6 +388,8 @@ class Fill(Base):
     slippage: Mapped[Decimal] = mapped_column(Numeric(20, 5), nullable=False)
     book: Mapped[str] = mapped_column(Text, nullable=False)
     strategy_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    # B1: deal MT5 → fills (migrasi c02228f00014); dedupe snapshot deals.
+    mt5_ticket: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -456,6 +458,8 @@ class Position(Base):
     # MT5 ticket (sync B1: posisi open dari MT5 di-identifikasi via ticket;
     # posisi dari fills tidak punya ticket — nullable).
     mt5_ticket: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # B8: unrealized P&L real dari MT5 (broker contract spec) per snapshot.
+    mt5_profit: Mapped[Decimal | None] = mapped_column(Numeric(20, 2), nullable=True)
 
     __table_args__ = (
         Index(
@@ -599,6 +603,33 @@ Bars5M = _make_bar_table("bars_5m", partitioned=True)
 Bars1H = _make_bar_table("bars_1h", partitioned=False)
 Bars4H = _make_bar_table("bars_4h", partitioned=False)
 Bars1D = _make_bar_table("bars_1d", partitioned=False)
+
+
+class Signal(Base):
+    """Analyst signal dari decision cycle LLM (B5 — migrasi c02228f00015).
+
+    Dipersist setiap cycle selesai (analyst output + IC decision) agar
+    dashboard AI committee confidence / signals panel terisi real data.
+    """
+
+    __tablename__ = "signals"
+
+    signal_id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    run_id: Mapped[str] = mapped_column(Text, nullable=False)
+    symbol: Mapped[str] = mapped_column(Text, nullable=False)
+    analyst: Mapped[str] = mapped_column(Text, nullable=False)
+    direction: Mapped[str] = mapped_column(Text, nullable=False)  # bullish/bearish/neutral
+    confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False)
+    rationale: Mapped[str | None] = mapped_column(Text)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_signals_symbol_generated", "symbol", "generated_at"),
+        Index("ix_signals_run", "run_id"),
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

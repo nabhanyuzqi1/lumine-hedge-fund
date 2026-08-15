@@ -40,7 +40,7 @@ import {
   generateSignals,
 } from "@/data/fixtures";
 
-export const DEFAULT_PORTFOLIO_ID = "portfolio-demo";
+export const DEFAULT_PORTFOLIO_ID = "default";
 
 const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
   "5m": 300,
@@ -77,6 +77,7 @@ interface RestJournalEntry {
   reflection: string;
   lesson: string;
   created_at: string;
+  symbol?: string | null;
 }
 
 interface RestLineageRecord {
@@ -231,6 +232,7 @@ function toJournalEntry(entry: RestJournalEntry): JournalPage["entries"][number]
     kind: entry.agent_name.includes("risk") ? "risk" : "note",
     actor: entry.agent_name,
     summary: entry.reflection || entry.lesson,
+    symbol: entry.symbol ?? undefined,
   };
 }
 

@@ -8,7 +8,7 @@ import secrets
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.api.middleware.rate_limit import rate_limit_dependency
@@ -18,6 +18,7 @@ from lumine.api.schemas.api import (
     CreateKeyRequest,
     KillSwitchRequest,
     KillSwitchStatus,
+    LLMUsageEntry,
     ServiceStatus,
     SystemConfigUpdate,
     SystemInfo,
@@ -215,6 +216,12 @@ async def get_system_info(
         client = docker.from_env()
         out: list[ServiceStatus] = []
         for c in client.containers.list(all=True):
+            name = (c.name or "unknown").removeprefix("/")
+            # B2: one-shot container (migrate) — bukan service runtime.
+            # Exclude agar health count akurat (bukan "unhealthy" padahal
+            # memang wajar sudah selesai & berhenti).
+            if name == "backend-migrate-1":
+                continue
             status_raw = c.status or "unknown"
             health = None
             if c.attrs.get("State", {}).get("Health", {}).get("Status"):
@@ -246,6 +253,20 @@ async def get_system_info(
         log.error("docker_list_containers_failed", exc_type=type(exc).__name__, exc_msg=str(exc)[:300])
         services = [ServiceStatus(name="unknown", status="unknown")]
 
+    # B9: enabled_symbols dari Redis config (default ["XAUUSD"]).
+    enabled_symbols = ["XAUUSD"]
+    try:
+        import json as _json
+
+        r = await get_redis()
+        raw = await r.hget(_SYSCONFIG_KEY, "enabled_symbols")
+        if raw:
+            parsed = _json.loads(raw)
+            if isinstance(parsed, list) and parsed:
+                enabled_symbols = [str(s).upper() for s in parsed]
+    except Exception:
+        pass  # Redis down → default XAUUSD
+
     return SystemInfo(
         services=services,
         llm_gateway_url=settings.llm_gateway_url,
@@ -253,6 +274,7 @@ async def get_system_info(
         demo_data=settings.demo_data,
         environment=getattr(settings, "environment", "production"),
         version="1.0.0",
+        enabled_symbols=enabled_symbols,
     )
 
 
@@ -261,8 +283,52 @@ async def get_system_info(
 _SYSCONFIG_KEY = "lumine:system_config"
 
 
+@router.get("/llm-usage", response_model=list[LLMUsageEntry])
+async def list_llm_usage(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> list[LLMUsageEntry]:
+    """B10: recent LLM calls — untuk LLM routing diagram superadmin.
+
+    Data real dari tabel llm_usage (append-only cost-accounting log).
+    """
+    from sqlalchemy import select
+
+    from lumine.data.models import LLMUsage, ModelVersion
+    from lumine.data.session import get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            rows = (
+                await session.execute(
+                    select(LLMUsage, ModelVersion.model_id)
+                    .join(ModelVersion, LLMUsage.model_version_id == ModelVersion.id, isouter=True)
+                    .order_by(LLMUsage.ts.desc())
+                    .limit(limit)
+                )
+            ).all()
+            return [
+                LLMUsageEntry(
+                    id=row.LLMUsage.id,
+                    ts=row.LLMUsage.ts,
+                    role=row.LLMUsage.role,
+                    tier=row.LLMUsage.tier,
+                    model=row.model_id,
+                    tokens_in=row.LLMUsage.tokens_in,
+                    tokens_out=row.LLMUsage.tokens_out,
+                    cost_usd=row.LLMUsage.cost_usd,
+                    fallback_hops=row.LLMUsage.fallback_hops,
+                    degraded=row.LLMUsage.degraded,
+                    lane=row.LLMUsage.lane,
+                )
+                for row in rows
+            ]
+    except Exception:
+        return []
+
+
 @router.put("/system-config", response_model=dict)
-async def update_system_config(
+async def update_system_config(  # noqa: C901 — fixed field list
     request: SystemConfigUpdate,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> dict:
@@ -289,6 +355,13 @@ async def update_system_config(
         updates["risk_per_trade"] = str(request.risk_per_trade)
     if request.max_daily_loss_pct is not None:
         updates["max_daily_loss_pct"] = str(request.max_daily_loss_pct)
+    if request.enabled_symbols is not None:
+        # B9: enable/disable currency — simpan sebagai JSON di Redis.
+        import json as _json
+
+        updates["enabled_symbols"] = _json.dumps(
+            [s.upper() for s in request.enabled_symbols]
+        )
 
     if updates:
         await r.hset(_SYSCONFIG_KEY, mapping=updates)

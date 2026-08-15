@@ -4,6 +4,7 @@ import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/api/hooks";
 import { get, put } from "@/api/client";
 import { ApiKeyTable } from "@/components/admin/api-key-table";
 import { CreateKeyModal } from "@/components/admin/create-key-modal";
+import { LLMRoutingTab } from "@/components/superadmin/llm-routing-tab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ interface SystemInfo {
   demo_data: boolean;
   environment: string;
   version: string;
+  enabled_symbols: string[];
 }
 
 interface ConfigForm {
@@ -48,17 +50,22 @@ interface ConfigForm {
   demo_data: boolean;
 }
 
+// B9: kandidat symbol untuk enable/disable (multicurrency). Default fokus
+// XAUUSD — matangkan 1 stream dulu sebelum multi-stream.
+const SYMBOL_CANDIDATES = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTCUSD"];
+
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs";
+type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "services", label: "Services" },
   { id: "config", label: "System Config" },
   { id: "keys", label: "API Keys" },
+  { id: "llm", label: "LLM Routing" },
   { id: "mt5", label: "MT5 Desktop" },
-  { id: "logs", label: "Logs (Dozzle)" },
+  { id: "logs", label: "Logs" },
 ];
 
 // ── Hooks (real backend calls — no demo fallback) ───────────────────────────
@@ -150,7 +157,11 @@ function ServicesTab({ data, isError }: { data: SystemInfo | undefined; isError:
 function OverviewTab({ data, isError }: { data: SystemInfo | undefined; isError: boolean }) {
   if (isError) return <ErrorBanner message="system-info" />;
   if (!data) return <p className="text-xs text-ink-faint">Loading…</p>;
-  const healthy = data.services.filter((s) => s.health === "healthy").length;
+  // B2 fix: hitung konsisten dengan ServicesTab — service running tanpa
+  // health (docker tidak expose healthcheck) tetap dianggap healthy.
+  const healthy = data.services.filter(
+    (s) => s.health === "healthy" || (s.status === "running" && !s.health)
+  ).length;
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <Card>
@@ -212,6 +223,13 @@ function OverviewTab({ data, isError }: { data: SystemInfo | undefined; isError:
 function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: boolean }) {
   const { toast } = useToast();
   const update = useUpdateConfig();
+  // B9: enabled_symbols dari system-info (default XAUUSD).
+  const [enabledSymbols, setEnabledSymbols] = React.useState<string[]>(
+    data?.enabled_symbols ?? ["XAUUSD"]
+  );
+  React.useEffect(() => {
+    if (data?.enabled_symbols) setEnabledSymbols(data.enabled_symbols);
+  }, [data?.enabled_symbols]);
   const [form, setForm] = React.useState<ConfigForm>({
     llm_gateway_api_key: "",
     llm_gateway_url: data?.llm_gateway_url ?? "http://9router:20128",
@@ -236,6 +254,8 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
       max_exposure_per_trade: parseFloat(form.max_exposure_per_trade),
       risk_per_trade: parseFloat(form.risk_per_trade),
       max_daily_loss_pct: parseFloat(form.max_daily_loss_pct),
+      // B9: enabled symbols (enable/disable currency)
+      enabled_symbols: enabledSymbols,
     };
     update.mutate(payload, {
       onSuccess: (result) => {
@@ -284,6 +304,44 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
             />
             Demo Data Mode (router pakai in-memory, bukan PostgreSQL)
           </label>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+          Active Symbols (B9 — enable/disable currency)
+        </h3>
+        <p className="text-xs text-ink-faint">
+          Fokus matangkan 1 stream XAUUSD dulu; aktifkan symbol lain setelah
+          multi-stream siap. Perubahan berlaku setelah restart api.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {SYMBOL_CANDIDATES.map((sym) => {
+            const checked = enabledSymbols.includes(sym);
+            return (
+              <label
+                key={sym}
+                className={`flex cursor-pointer items-center justify-between rounded-chip border px-3 py-2 text-xs ${
+                  checked
+                    ? "border-accent/60 bg-accent/10 text-ink"
+                    : "border-line bg-bg text-ink-dim"
+                }`}
+              >
+                <span className="font-mono">{sym}</span>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) =>
+                    setEnabledSymbols((prev) =>
+                      e.target.checked
+                        ? [...prev, sym]
+                        : prev.filter((s) => s !== sym)
+                    )
+                  }
+                  className="accent-accent"
+                />
+              </label>
+            );
+          })}
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -414,6 +472,7 @@ export function SuperadminPage() {
         {tab === "overview" && <OverviewTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "services" && <ServicesTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "config" && <ConfigTab data={systemInfo.data} isError={systemInfo.isError} />}
+        {tab === "llm" && <LLMRoutingTab />}
         {tab === "mt5" && <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />}
         {tab === "logs" && <EmbedTab url="/dozzle/" title="Dozzle — Container Log Viewer (session-protected)" />}
         {tab === "keys" && (

@@ -71,12 +71,43 @@ async def list_symbol_signals(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     pagination: Annotated[Pagination, Depends()],
 ) -> PaginatedList[Signal]:
-    """Return recent analyst signals for one symbol (B-06).
+    """Return recent analyst signals for one symbol (B-05/B5).
 
-    ZERO-DEMO: analyst signals dari pipeline agent — kosong sampai
-    committee live menghasilkan sinyal (tidak ada sinyal fiktif).
+    ZERO-DEMO: sinyal real dari decision cycle LLM (tabel signals) —
+    kosong hanya jika committee belum pernah menghasilkan sinyal.
     """
-    return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
+    from lumine.data.models import Signal as SignalRow
+    from lumine.data.session import get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            result = await session.execute(
+                select(SignalRow)
+                .where(SignalRow.symbol == symbol.upper())
+                .order_by(SignalRow.generated_at.desc())
+                .limit(pagination.limit)
+                .offset(pagination.offset)
+            )
+            rows = list(result.scalars().all())
+            return PaginatedList(
+                items=[
+                    Signal(
+                        signal_id=row.signal_id,
+                        symbol=row.symbol,
+                        analyst=row.analyst,
+                        direction=row.direction,  # type: ignore[arg-type]
+                        confidence=row.confidence,
+                        rationale=row.rationale,
+                        generated_at=row.generated_at,
+                    )
+                    for row in rows
+                ],
+                total=len(rows),
+                limit=pagination.limit,
+                offset=pagination.offset,
+            )
+    except Exception:
+        return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/signals", response_model=PaginatedList[Signal])
@@ -84,8 +115,38 @@ async def list_signals(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     pagination: Annotated[Pagination, Depends()],
 ) -> PaginatedList[Signal]:
-    """Return recent analyst signals (ZERO-DEMO: kosong sampai pipeline live)."""
-    return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
+    """Return recent analyst signals (semua symbol; real dari tabel signals)."""
+    from lumine.data.models import Signal as SignalRow
+    from lumine.data.session import get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            result = await session.execute(
+                select(SignalRow)
+                .order_by(SignalRow.generated_at.desc())
+                .limit(pagination.limit)
+                .offset(pagination.offset)
+            )
+            rows = list(result.scalars().all())
+            return PaginatedList(
+                items=[
+                    Signal(
+                        signal_id=row.signal_id,
+                        symbol=row.symbol,
+                        analyst=row.analyst,
+                        direction=row.direction,  # type: ignore[arg-type]
+                        confidence=row.confidence,
+                        rationale=row.rationale,
+                        generated_at=row.generated_at,
+                    )
+                    for row in rows
+                ],
+                total=len(rows),
+                limit=pagination.limit,
+                offset=pagination.offset,
+            )
+    except Exception:
+        return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
 
 
 # ── Market cluster (frontend marketClient.ts contract) ───────────────────

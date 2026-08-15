@@ -190,6 +190,46 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 )
             )
 
+            # B5: persist signals → dashboard AI confidence / signals panel.
+            # Analyst output (direction dari recommendation) + IC decision.
+            from lumine.data.models import Signal as SignalRow
+
+            rec = str(analyst.parsed.get("recommendation", "hold")).lower()
+            direction = (
+                "bullish" if rec in ("buy", "long", "bullish")
+                else "bearish" if rec in ("sell", "short", "bearish")
+                else "neutral"
+            )
+            session.add(
+                SignalRow(
+                    run_id=result["run_id"],
+                    symbol=symbol,
+                    analyst="Technical Analyst",
+                    direction=direction,
+                    confidence=Decimal(str(float(analyst.parsed.get("confidence", 0.5)))),
+                    rationale=str(analyst.parsed.get("reasoning", ""))[:500],
+                    generated_at=now,
+                )
+            )
+            ic_action = action.lower()
+            ic_direction = (
+                "bullish" if ic_action in ("buy", "long")
+                else "bearish" if ic_action in ("sell", "short")
+                else "neutral"
+            )
+            session.add(
+                SignalRow(
+                    run_id=result["run_id"],
+                    symbol=symbol,
+                    analyst="Investment Committee",
+                    direction=ic_direction,
+                    confidence=Decimal(str(confidence)),
+                    rationale=str(ic.parsed.get("reasoning", ""))[:500],
+                    generated_at=now,
+                )
+            )
+            await session.commit()
+
             return {
                 "status": "completed",
                 "decision": action.lower(),

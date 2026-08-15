@@ -1,6 +1,7 @@
+import { motion } from "framer-motion";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { SIMULATED_EQUITY_CURVE } from "@/data/landing/performance";
-import { useMemo } from "react";
 
 /**
  * EquityCurve — Section 15 of master prompt.
@@ -10,10 +11,24 @@ import { useMemo } from "react";
 
 interface EquityCurveProps {
   className?: string;
+  showHeader?: boolean;
 }
 
-export function EquityCurve({ className }: EquityCurveProps) {
+export function EquityCurve({ className, showHeader = true }: EquityCurveProps) {
   const data = SIMULATED_EQUITY_CURVE;
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  const handleMove = (e: React.MouseEvent) => {
+    const el = chartRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const ratio = (e.clientX - r.left) / r.width;
+    const index = Math.round(ratio * (data.length - 1));
+    setHoverIndex(Math.max(0, Math.min(data.length - 1, index)));
+  };
+
+  const hoverPoint = hoverIndex !== null ? data[hoverIndex] : null;
 
   // Calculate SVG path and dimensions
   const { path, minEquity, maxEquity, width, height } = useMemo(() => {
@@ -52,34 +67,48 @@ export function EquityCurve({ className }: EquityCurveProps) {
   };
 
   return (
-    <div className={cn("w-full max-w-4xl space-y-6", className)}>
+    <div className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
-      <div className="space-y-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            Equity Curve
-          </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+      {showHeader && (
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Equity Curve
+            </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+            Simulated Equity Growth
+          </h3>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+            Realistic equity curve showing drawdowns, recovery periods, and sideways
+            consolidation. Not a perfect upward line.
+          </p>
         </div>
-        <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-          Simulated Equity Growth
-        </h3>
-        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-          Realistic equity curve showing drawdowns, recovery periods, and sideways
-          consolidation. Not a perfect upward line.
-        </p>
-      </div>
+      )}
 
       {/* Chart */}
-      <div className="rounded-panel border border-line bg-raised shadow-panel">
+      <motion.div
+        className="rounded-panel border border-line bg-raised shadow-panel"
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
         <div className="p-6 md:p-8">
           <div className="overflow-x-auto">
-            <svg
-              viewBox={`0 0 ${width} ${height}`}
-              className="w-full"
-              style={{ minWidth: "600px" }}
+            <div
+              ref={chartRef}
+              className="relative"
+              onMouseMove={handleMove}
+              onMouseLeave={() => setHoverIndex(null)}
             >
+              <svg
+                viewBox={`0 0 ${width} ${height}`}
+                className="w-full"
+                style={{ minWidth: "600px" }}
+              >
               {/* Grid lines */}
               <defs>
                 <pattern
@@ -99,13 +128,17 @@ export function EquityCurve({ className }: EquityCurveProps) {
               <rect width={width} height={height} fill="url(#grid)" />
 
               {/* Equity curve */}
-              <path
+              <motion.path
                 d={path}
                 fill="none"
                 stroke="url(#equity-gradient)"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                initial={{ pathLength: 0, opacity: 0 }}
+                whileInView={{ pathLength: 1, opacity: 1 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 1.8, ease: "easeInOut", delay: 0.3 }}
               />
 
               {/* Gradient definition */}
@@ -164,7 +197,43 @@ export function EquityCurve({ className }: EquityCurveProps) {
               >
                 {data[data.length - 1].date}
               </text>
-            </svg>
+              </svg>
+
+              {/* Hover tooltip */}
+              {hoverPoint && hoverIndex !== null && (
+                <div
+                  className="pointer-events-none absolute top-2 z-10 -translate-x-1/2 rounded-chip border border-line bg-abyss/95 px-3 py-2 backdrop-blur"
+                  style={{
+                    left: `${(hoverIndex / (data.length - 1)) * 100}%`,
+                  }}
+                >
+                  <div className="font-mono text-[9px] uppercase tracking-widest text-ink-faint">
+                    {hoverPoint.date}
+                  </div>
+                  <div className="mt-1 font-mono text-xs font-bold text-ink">
+                    ${hoverPoint.equity.toLocaleString()}
+                  </div>
+                  <div
+                    className={cn(
+                      "font-mono text-[10px] font-semibold",
+                      hoverPoint.drawdown < 0 ? "text-down" : "text-up"
+                    )}
+                  >
+                    DD {hoverPoint.drawdown.toFixed(1)}%
+                  </div>
+                </div>
+              )}
+
+              {/* Hover guide line */}
+              {hoverIndex !== null && (
+                <div
+                  className="pointer-events-none absolute inset-y-2 w-px bg-accent/40"
+                  style={{
+                    left: `${(hoverIndex / (data.length - 1)) * 100}%`,
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -189,7 +258,7 @@ export function EquityCurve({ className }: EquityCurveProps) {
             ILLUSTRATIVE / SIMULATED DATA
           </span>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

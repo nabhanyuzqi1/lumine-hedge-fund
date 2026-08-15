@@ -138,7 +138,12 @@ class PositionSyncWorker:
                 except (TypeError, ValueError):
                     continue
                 tickets.add(ticket)
-                await self._upsert_one(session, item, ticket)
+                # B9: normalize symbol prefix broker (XAUUSDc → XAUUSD)
+                normalized_item = {
+                    **item,
+                    "symbol": _normalize_symbol(str(item.get("symbol", "XAUUSD"))),
+                }
+                await self._upsert_one(session, normalized_item, ticket)
 
             # Tutup posisi MT5 yang tidak ada di snapshot terbaru
             existing = (
@@ -176,7 +181,6 @@ class PositionSyncWorker:
         current = await self._live_price(symbol)
         if current is None:
             current = await self._last_close(symbol) or price_open
-        _ = profit  # profit MT5 (referensi; P&L API dihitung ulang live)
 
         existing = (
             await session.execute(
@@ -193,6 +197,7 @@ class PositionSyncWorker:
             existing.tp = Decimal(str(tp)) if tp not in (None, 0, "0") else None
             existing.opened_at = opened_at or existing.opened_at
             existing.status = "open"
+            existing.mt5_profit = profit  # B8: P&L real dari broker
             session.add(existing)
         else:
             # Posisi MT5 baru — strategy_id deterministik per ticket (unik,
@@ -214,6 +219,7 @@ class PositionSyncWorker:
                     opened_lineage=None,
                     status="open",
                     mt5_ticket=ticket,
+                    mt5_profit=profit,  # B8: P&L real dari broker
                 )
             )
         logger.debug("position sync upsert ticket=%s symbol=%s side=%s vol=%s", ticket, symbol, side, volume)
@@ -271,3 +277,13 @@ def _lineage_for_ticket(ticket: int) -> UUID:
 
     digest = hashlib.sha256(f"mt5-sync:{ticket}".encode()).digest()[:16]
     return UUID(bytes=digest)
+
+
+def _normalize_symbol(raw: str) -> str:
+    """B9: broker symbol prefix → base (XAUUSDc → XAUUSD, XAUUSD.stp → XAUUSD)."""
+    s = raw.upper()
+    if "." in s:
+        s = s.split(".", 1)[0]
+    if len(s) > 4 and s[-1] in ("C", "M", "X", "I", "Z"):
+        s = s[:-1]
+    return s

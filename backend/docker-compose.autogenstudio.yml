@@ -24,7 +24,9 @@ services:
       - autogenstudio_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      # python:3.12-slim tidak punya curl — pakai urllib agar healthcheck
+      # valid (sebelumnya selalu unhealthy → superadmin stack health merah).
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -79,6 +79,7 @@ void     PollCommands();
 void     SendTick();
 void     SendPositionsSnapshot();
 void     SendDealsSnapshot();
+string   NormalizeSymbol(const string raw);
 void     ProcessCommand(const string json);
 double   NormalizeVolume(const string symbol, double lots);
 ENUM_ORDER_TYPE_FILLING GetFilling(const string symbol);
@@ -455,7 +456,7 @@ void PollCommands()
 //+------------------------------------------------------------------+
 void SendTick()
   {
-   string symbol = Symbol();
+   string symbol = NormalizeSymbol(Symbol());
    double bid = SymbolInfoDouble(symbol, SYMBOL_BID);
    double ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
 
@@ -482,6 +483,28 @@ void SendTick()
   }
 
 //+------------------------------------------------------------------+
+//| Normalize broker symbol → base (B9 multicurrency prefix)          |
+//| XAUUSDc (cent) → XAUUSD; XAUUSD.stp / XAUUSD.m / XAUUSDx → XAUUSD |
+//+------------------------------------------------------------------+
+string NormalizeSymbol(const string raw)
+  {
+   string s = raw;
+   // hapus bagian setelah '.' (XAUUSD.stp → XAUUSD)
+   int dot = StringFind(s, ".");
+   if(dot > 0) s = StringSubstr(s, 0, dot);
+   // hapus suffix lowercase 1-char di akhir (XAUUSDc → XAUUSD)
+   int len = StringLen(s);
+   if(len > 4)
+     {
+      string last = StringSubstr(s, len - 1);
+      if(last == "c" || last == "m" || last == "x" || last == "i" || last == "z")
+         s = StringSubstr(s, 0, len - 1);
+     }
+   StringToUpper(s);
+   return s;
+  }
+
+//+------------------------------------------------------------------+
 //| Send snapshot open positions (B1 sync → /positions → mt5:positions |
 //| → PositionSyncWorker upsert DB). Tiap InpPositionsInterval detik.  |
 //+------------------------------------------------------------------+
@@ -497,7 +520,7 @@ void SendPositionsSnapshot()
       if(ticket == 0) continue;
       if(!PositionSelectByTicket(ticket)) continue;
 
-      string symbol = PositionGetString(POSITION_SYMBOL);
+      string symbol = NormalizeSymbol(PositionGetString(POSITION_SYMBOL));
       long   type   = PositionGetInteger(POSITION_TYPE);
       double volume = PositionGetDouble(POSITION_VOLUME);
       double open   = PositionGetDouble(POSITION_PRICE_OPEN);
@@ -544,7 +567,7 @@ void SendDealsSnapshot()
      }
 
    int total = HistoryDealsTotal();
-   string json = "{\"symbol\":\"" + Symbol() + "\",\"deals\":[";
+   string json = "{\"symbol\":\"" + NormalizeSymbol(Symbol()) + "\",\"deals\":[";
 
    int count = 0;
    // Kirim 50 deal terbaru saja per snapshot (batch; backend dedupe by ticket)

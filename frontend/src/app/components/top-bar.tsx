@@ -8,7 +8,9 @@ import { useUiStore } from "@/stores/uiStore";
 import { StreamStatusList } from "@/components/streams/stream-status-list";
 import { useAuth } from "@/lib/auth/role-context";
 
-const TOTAL_STREAMS = 6;
+// 5 stream aktif: market-data/XAUUSD + analyst-outputs + ic-decisions +
+// cio-proposals + risk-assessments (committee, diregister useCommitteeStreams).
+const TOTAL_STREAMS = 5;
 
 function formatUTC(date: Date): string {
   return date.toISOString().replace("T", " ").slice(0, 19);
@@ -54,18 +56,20 @@ export function TopBar() {
             tidak menduplikasi symbol/price per halaman. */}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {isAuthenticated && username && (
-          <span className="text-text-secondary text-xs">
+          <span className="hidden text-text-secondary text-xs sm:inline">
             {username}
           </span>
         )}
         {killSwitchActive ? (
           <Badge tone="danger" label="KILL SWITCH ACTIVE" />
         ) : (
-          <Badge tone="ok" label="Kill standby" />
+          <span className="hidden md:inline-flex">
+            <Badge tone="ok" label="Kill standby" />
+          </span>
         )}
-        <span className="font-mono text-text-secondary" data-testid="utc-clock">
+        <span className="hidden font-mono text-text-secondary sm:inline" data-testid="utc-clock">
           {utc} UTC
         </span>
         <button

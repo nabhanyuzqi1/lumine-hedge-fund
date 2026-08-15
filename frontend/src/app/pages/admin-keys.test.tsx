@@ -28,35 +28,56 @@ function renderPage() {
 
 describe("AdminKeysPage", () => {
   beforeEach(() => {
-    // Query hooks fall back to fixtures when GETs reject; create/revoke
-    // mutations hit the live admin router and resolve with envelopes.
+    // ZERO-DEMO: GET /admin/keys → real shape (envelope) agar tabel terisi;
+    // create/revoke mutations hit the live admin router.
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
-        if (init?.method === "POST") {
-          return Promise.resolve(
+        const envelope = (data: unknown, status = 200) =>
+          Promise.resolve(
             new Response(
               JSON.stringify({
-                data: {
-                  key_id: "key-abc123",
-                  secret: "sk-live-secret-abc",
-                  scopes: ["market.read", "portfolio.read"],
-                  created_at: new Date().toISOString(),
-                },
+                meta: { api_version: "v1", timestamp: new Date().toISOString(), request_id: "test", status: "ok" },
+                data,
+                error: null,
               }),
-              { status: 201, headers: { "Content-Type": "application/json" } }
+              { status, headers: { "Content-Type": "application/json" } }
             )
+          );
+        if (!init?.method || init.method === "GET") {
+          return envelope([
+            {
+              key_id: "key-001",
+              scopes: ["market.read", "portfolio.read"],
+              created_at: new Date().toISOString(),
+              revoked: false,
+            },
+            {
+              key_id: "key-002",
+              scopes: ["admin"],
+              created_at: new Date().toISOString(),
+              revoked: false,
+            },
+          ]);
+        }
+        if (init?.method === "POST") {
+          return envelope(
+            {
+              key_id: "key-abc123",
+              secret: "sk-test-secret",
+              scopes: ["market.read", "portfolio.read"],
+              created_at: new Date().toISOString(),
+            },
+            201
           );
         }
         if (init?.method === "DELETE") {
-          return Promise.resolve(
-            new Response(
-              JSON.stringify({
-                data: { key_id: "key-001", scopes: [], revoked: true, created_at: new Date().toISOString() },
-              }),
-              { status: 200, headers: { "Content-Type": "application/json" } }
-            )
-          );
+          return envelope({
+            key_id: "key-001",
+            scopes: [],
+            revoked: true,
+            created_at: new Date().toISOString(),
+          });
         }
         return Promise.reject(new Error("backend offline"));
       })

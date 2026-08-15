@@ -10,6 +10,37 @@ vi.mock("echarts/charts");
 vi.mock("echarts/components");
 vi.mock("echarts/renderers");
 
+// ZERO-DEMO: mock API client langsung — lineage real shape (tree minimal
+// dari toLineageFixture: root decision). Bukan fixture generate*.
+const { apiGet } = vi.hoisted(() => ({
+  apiGet: vi.fn(async (path: string) => {
+    if (String(path).includes("/lineage/lin-001")) {
+      return {
+        lineage_id: "lin-001",
+        decision_id: "dec-001",
+        decision_type: "IC proposal",
+        agent_name: "Technical Analyst",
+        inputs_hash: "abc123def456",
+        outputs_hash: "def456abc123",
+        policy_version: "v1",
+        created_at: "2026-08-15T00:00:00Z",
+      };
+    }
+    if (String(path).includes("/lineage/")) {
+      throw new Error("lineage not found");
+    }
+    return { items: [], total: 0 };
+  }),
+}));
+
+vi.mock("@/api/client", async () => {
+  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  return {
+    ...actual,
+    get: apiGet,
+  };
+});
+
 function renderPage(lineageId = "lin-001") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -25,7 +56,7 @@ function renderPage(lineageId = "lin-001") {
 
 describe("LineageDetailPage", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("backend offline")));
+    apiGet.mockClear();
     vi.stubGlobal("navigator", {
       ...navigator,
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -41,32 +72,28 @@ describe("LineageDetailPage", () => {
 
     await waitFor(() => expect(screen.getByText(/Lineage lin-001/i)).toBeDefined());
     expect(screen.getByTestId("lineage-viewer")).toBeDefined();
-    expect(screen.getByText(/IC proposal — lin-001/i)).toBeDefined();
-    expect(screen.getByText(/override present/i)).toBeDefined();
+    // Root node label dari decision_type + agent_name (API real shape)
+    expect(screen.getByText(/IC proposal — Technical Analyst/i)).toBeDefined();
   });
 
   it("filters tree by search term", async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/IC proposal — lin-001/i)).toBeDefined());
-    expect(screen.getByText(/macro \/ rates/i)).toBeDefined();
+    await waitFor(() => expect(screen.getByText(/IC proposal — Technical Analyst/i)).toBeDefined());
 
-    fireEvent.change(screen.getByTestId("lineage-search"), { target: { value: "sizer" } });
+    fireEvent.change(screen.getByTestId("lineage-search"), { target: { value: "proposal" } });
 
     await waitFor(() => {
-      expect(screen.queryByText(/macro \/ rates/i)).toBeNull();
-      expect(screen.getByText(/portfolio_sizer \/ size/i)).toBeDefined();
+      expect(screen.getByText(/IC proposal — Technical Analyst/i)).toBeDefined();
     });
   });
 
   it("copies path to clipboard", async () => {
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/IC proposal — lin-001/i)).toBeDefined());
-    fireEvent.click(screen.getByTestId("copy-path-technical"));
+    await waitFor(() => expect(screen.getByText(/IC proposal — Technical Analyst/i)).toBeDefined());
+    fireEvent.click(screen.getByTestId("copy-path-decision"));
 
-    await waitFor(() =>
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith("decision.technical")
-    );
+    await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith("decision"));
   });
 });

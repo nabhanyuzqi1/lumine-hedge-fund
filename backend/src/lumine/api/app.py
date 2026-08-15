@@ -6,12 +6,13 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from decimal import Decimal
 from functools import partial
+from typing import Any
+from uuid import uuid4
 
 import redis.asyncio as redis  # async client — await redis.from_url() valid
 from fastapi import FastAPI
@@ -51,6 +52,12 @@ from lumine.trading.position_sync import PositionSyncWorker
 
 _app_state: dict[str, object] = {}
 
+# B4 live bars: builder in-memory — ticks EA → bar 1m berjalan (bucket per
+# menit). Flush worker upsert ke bars_1m tiap 60s + agregasi 5m.
+# Format: {symbol: {"ts": datetime, "open": f, "high": f, "low": f,
+#                   "close": f, "volume": f}}
+_bar_builder: dict[str, dict[str, Any]] = {}
+
 
 async def _tick_worker() -> None:
     """Consume mt5:ticks (EA LPUSH via proxy) → MarketService.update_tick.
@@ -75,14 +82,147 @@ async def _tick_worker() -> None:
                 continue
             _, payload = item
             data = json.loads(payload)
+            symbol = str(data["symbol"]).upper()
+            bid = float(data["bid"])
+            ask = float(data["ask"])
             await market_service.update_tick(
-                str(data["symbol"]).upper(),
-                float(data["bid"]),
-                float(data["ask"]),
+                symbol,
+                bid,
+                ask,
                 volume=float(data.get("volume", 0.0)),
             )
+            # B4: bangun bar 1m live dari tick (untuk flush ke bars_1m)
+            _update_bar_builder(symbol, bid, ask, float(data.get("volume", 0.0)))
         except Exception:
             pass  # transient / malformed tick — skip
+
+
+def _update_bar_builder(symbol: str, bid: float, ask: float, volume: float) -> None:
+    """Update bar 1m berjalan (bucket per menit UTC)."""
+    now = datetime.now(UTC)
+    minute_ts = now.replace(second=0, microsecond=0)
+    bar = _bar_builder.get(symbol)
+    if bar is None or bar["ts"] != minute_ts:
+        _bar_builder[symbol] = {
+            "ts": minute_ts,
+            "symbol": symbol,
+            "open": bid,
+            "high": max(bid, ask),
+            "low": min(bid, ask),
+            "close": bid,
+            "volume": volume,
+        }
+    else:
+        bar["high"] = max(bar["high"], bid, ask)
+        bar["low"] = min(bar["low"], bid, ask)
+        bar["close"] = bid
+        bar["volume"] = bar.get("volume", 0.0) + volume
+
+
+async def _bar_flush_worker() -> None:
+    """B4: flush bar 1m selesai → bars_1m; agregasi 5m dari bars_1m.
+
+    Tiap 60s: bar yang umurnya >90s dianggap selesai → upsert bars_1m
+    (ON CONFLICT (ts, symbol) DO UPDATE) + bangun bars_5m agregat dari
+    bars_1m (ON CONFLICT DO NOTHING — bar 5m yang sudah ada tidak diubah).
+    """
+    from sqlalchemy import func, select
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    from lumine.data.models import Bars1M, Bars5M
+    from lumine.data.session import get_sessionmaker
+
+    while True:
+        await asyncio.sleep(60)
+        try:
+            now = datetime.now(UTC)
+            ready = [
+                bar
+                for bar in _bar_builder.values()
+                if (now - bar["ts"]).total_seconds() > 90
+            ]
+            if not ready:
+                continue
+            async with get_sessionmaker()() as session:
+                for bar in ready:
+                    stmt = (
+                        select(Bars1M)
+                        .where(Bars1M.ts == bar["ts"], Bars1M.symbol == bar["symbol"])
+                    )
+                    existing = (await session.execute(stmt)).scalar_one_or_none()
+                    if existing is None:
+                        session.add(
+                            Bars1M(
+                                ts=bar["ts"],
+                                symbol=bar["symbol"],
+                                open=Decimal(str(bar["open"])),
+                                high=Decimal(str(bar["high"])),
+                                low=Decimal(str(bar["low"])),
+                                close=Decimal(str(bar["close"])),
+                                volume=Decimal(str(bar.get("volume", 0))),
+                                source="mt5-live",
+                            )
+                        )
+                    else:
+                        existing.high = max(existing.high, Decimal(str(bar["high"])))
+                        existing.low = min(existing.low, Decimal(str(bar["low"])))
+                        existing.close = Decimal(str(bar["close"]))
+                        existing.volume = existing.volume + Decimal(str(bar.get("volume", 0)))
+                        session.add(existing)
+                    _bar_builder.pop(bar["symbol"], None)
+
+                # Agregasi 5m dari bars_1m (5 bar per bucket; DO NOTHING —
+                # hanya bar 5m baru yang di-insert)
+                five_min_bucket = now.replace(
+                    minute=(now.minute // 5) * 5, second=0, microsecond=0
+                )
+                agg_rows = (
+                    await session.execute(
+                        select(
+                            func.date_trunc("hour", Bars1M.ts) + func.interval("5 min") * func.floor(
+                                func.extract("minute", Bars1M.ts) / 5
+                            ),
+                            Bars1M.symbol,
+                            func.min(Bars1M.open),
+                            func.max(Bars1M.high),
+                            func.min(Bars1M.low),
+                            func.max(Bars1M.close),
+                            func.sum(Bars1M.volume),
+                        )
+                        .where(Bars1M.ts >= five_min_bucket - func.interval("1 hour"))
+                        .group_by(
+                            func.date_trunc("hour", Bars1M.ts)
+                            + func.interval("5 min")
+                            * func.floor(func.extract("minute", Bars1M.ts) / 5),
+                            Bars1M.symbol,
+                        )
+                    )
+                ).all()
+                if agg_rows:
+                    five_rows = []
+                    for ts5, symbol, o, h, lo, c, v in agg_rows:
+                        five_rows.append(
+                            {
+                                "ts": ts5,
+                                "symbol": symbol,
+                                "open": o,
+                                "high": h,
+                                "low": lo,
+                                "close": c,
+                                "volume": v,
+                                "source": "mt5-live",
+                            }
+                        )
+                    stmt = pg_insert(Bars5M.__table__).values(five_rows)
+                    stmt = stmt.on_conflict_do_nothing(
+                        index_elements=["ts", "symbol"]
+                    )
+                    await session.execute(stmt)
+                await session.commit()
+                if ready:
+                    print(f"[BARS] flushed {len(ready)} bar 1m live", flush=True)
+        except Exception:
+            pass  # transient — skip cycle
 
 
 async def _handle_order_fill(result: ResultMessage, sse_publisher: object) -> None:
@@ -187,14 +327,16 @@ async def _seed_worker() -> None:
             pass  # duplicate PK / transient — skip, tetap jalan
 
 
-async def _deals_worker() -> None:  # noqa: C901 — fixed deal-sync loop
-    """B1: consume mt5:deals (history deals EA snapshot) → sinkronisasi fills.
+async def _deals_worker() -> None:
+    """B1: consume mt5:deals (history deals EA snapshot) → sinkronisasi orders.
 
-    Setiap deal MT5 di-insert/di-ignore ke tabel fills (dedupe by
+    Setiap deal MT5 di-upsert ke tabel orders (status filled, dedupe by
     mt5_ticket). Ini memberi backend visibility penuh atas trade journal
     MT5 (deal history) — tidak hanya order yang lewat command bridge.
+    Fill ledger (fills) tidak disentuh: row fills butuh lineage_records
+    hash-chain (pipeline decision); deal MT5 bukan decision pipeline.
     """
-    from lumine.data.models import Fill
+    from lumine.data.models import Order
     from lumine.data.session import get_sessionmaker
     from lumine.shared.config import get_settings as _gs
 
@@ -215,12 +357,6 @@ async def _deals_worker() -> None:  # noqa: C901 — fixed deal-sync loop
             async with get_sessionmaker()() as session:
                 from sqlalchemy import select
 
-                from lumine.data.models import StrategyVersion
-
-                strategy = (
-                    await session.execute(select(StrategyVersion).limit(1))
-                ).scalar_one_or_none()
-                strategy_id = strategy.id if strategy is not None else None
                 inserted = 0
                 for d in deals:
                     try:
@@ -229,49 +365,41 @@ async def _deals_worker() -> None:  # noqa: C901 — fixed deal-sync loop
                         continue
                     existing = (
                         await session.execute(
-                            select(Fill).where(Fill.mt5_ticket == ticket)
+                            select(Order).where(Order.mt5_ticket == ticket)
                         )
                     ).scalar_one_or_none()
                     if existing is not None:
                         continue
-                    if strategy_id is None:
-                        continue
                     ts = datetime.fromtimestamp(int(d.get("time", 0)), UTC)
-                    side = "SELL" if int(d.get("type", 0)) == 1 else "BUY"
+                    side = "sell" if int(d.get("type", 0)) == 1 else "buy"
                     session.add(
-                        Fill(
-                            lineage_id=_deals_lineage(ticket),
+                        Order(
+                            order_id=uuid4(),
+                            portfolio_id="default",
                             symbol=str(d.get("symbol", "XAUUSD")).upper(),
-                            book="default",
-                            strategy_id=strategy_id,
                             side=side,
-                            size=Decimal(str(d.get("volume", 0))),
-                            fill_price=Decimal(str(d.get("price", 0))),
-                            ts=ts,
+                            order_type="market",
+                            volume=Decimal(str(d.get("volume", 0))),
+                            price=Decimal(str(d.get("price", 0))),
+                            status="filled",
+                            filled_volume=Decimal(str(d.get("volume", 0))),
                             mt5_ticket=ticket,
+                            created_at=ts,
+                            updated_at=ts,
                         )
                     )
                     inserted += 1
                 await session.commit()
                 if inserted:
-                    print(f"[DEALS] +{inserted} fills dari snapshot MT5", flush=True)
+                    print(f"[DEALS] +{inserted} orders (filled) dari snapshot MT5", flush=True)
         except Exception:
             pass  # transient — skip, tetap jalan
-
-
-def _deals_lineage(ticket: int) -> uuid:
-    """Deterministic lineage UUID untuk fill dari MT5 deal snapshot."""
-    import hashlib
-
-    digest = hashlib.sha256(f"mt5-deal:{ticket}".encode()).digest()[:16]
-    return uuid.UUID(bytes=digest)
 
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: initialize trading infrastructure."""
     settings = get_settings()
-
     # Seed bootstrap users (superadmin/admin/trader) idempotently. Best
     # effort: never blocks startup when the DB is briefly unavailable.
     await seed_bootstrap_users(settings)
@@ -298,6 +426,8 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
         _app_state["seed_worker"] = asyncio.create_task(_seed_worker())
         _app_state["tick_worker"] = asyncio.create_task(_tick_worker())
+        # B4: bar 1m/5m live dari ticks (flush tiap 60s)
+        _app_state["bar_flush_worker"] = asyncio.create_task(_bar_flush_worker())
 
     # Initialize PositionSyncWorker if database pool available
     pool = getattr(settings, "database_url", None)
@@ -338,6 +468,11 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         deals_task.cancel()  # type: ignore[union-attr]
         with suppress(asyncio.CancelledError):
             await deals_task  # type: ignore[union-attr]
+    bar_task = _app_state.get("bar_flush_worker")
+    if bar_task:
+        bar_task.cancel()  # type: ignore[union-attr]
+        with suppress(asyncio.CancelledError):
+            await bar_task  # type: ignore[union-attr]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

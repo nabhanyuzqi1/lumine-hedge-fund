@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
@@ -107,9 +107,15 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
         mid = await _live_mid(pos.symbol)
         if mid is None:
             mid = pos.avg_entry  # market libur → P&L flat di entry price
-        pnl = (mid - pos.avg_entry) * pos.size
-        if pos.side == "SHORT":
-            pnl = -pnl
+        # B8: pakai P&L real MT5 bila ada; fallback mark-to-market
+        # (side lowercase "buy"/"sell" dari sync MT5, atau "BUY"/"SHORT"
+        # dari pipeline lama — handle keduanya).
+        if pos.mt5_profit is not None:
+            pnl = pos.mt5_profit
+        else:
+            pnl = (mid - pos.avg_entry) * pos.size
+            if str(pos.side).upper() == "SHORT":
+                pnl = -pnl
         open_pnl += pnl
         margin_used += mid * abs(pos.size) * _MARGIN_RATE
 
@@ -270,7 +276,6 @@ async def get_equity_curve(
     mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
     atau belum ada posisi (bukan demo — lihat _real_equity_series).
     """
-    now = datetime.now(UTC)
     total = 240
     real_items = await _real_equity_series(total, pagination.offset, pagination.limit)
     if real_items is not None:
@@ -281,26 +286,10 @@ async def get_equity_curve(
             offset=pagination.offset,
         )
 
-    # Fallback: series deterministik (DB down / tests tanpa DB).
-    visible = min(pagination.limit, max(total - pagination.offset, 0))
-    items: list[EquityPoint] = []
-    for i in range(visible):
-        idx = pagination.offset + i
-        frac = idx / total
-        drift = Decimal(1) + Decimal(str(round(frac * 0.06, 6)))
-        drawdown = Decimal(0)
-        if 0.55 < frac < 0.75:
-            drawdown = Decimal("-0.038")
-        nav = (_DEMO_NAV * drift).quantize(Decimal("0.01"))
-        items.append(
-            EquityPoint(
-                ts=now - timedelta(seconds=idx * 3600),
-                nav=nav,
-                equity=(nav + Decimal("8450.00")).quantize(Decimal("0.01")),
-                drawdown=drawdown,
-            )
-        )
-    return PaginatedList(items=items, total=total, limit=pagination.limit, offset=pagination.offset)
+    # ZERO-DEMO (B5): DB tidak tersedia → kosong, BUKAN series fiktif.
+    # Sebelumnya fallback deterministik (_DEMO_NAV drift 6% + drawdown
+    # sintetis) — angka palsu di dashboard, dihapus.
+    return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
 
 
 @router.delete(
@@ -382,7 +371,13 @@ async def list_positions(
             current = await _live_mid(pos.symbol)
             if current is None:
                 current = await _last_close(pos.symbol) or pos.avg_entry
-            unrealized = (current - pos.avg_entry) * pos.size
+            # B8: pakai unrealized P&L REAL dari MT5 bila ada (broker
+            # menghitung contract spec + spread aktual); fallback hitung
+            # mark-to-market (current - avg_entry) * size.
+            if pos.mt5_profit is not None:
+                unrealized = pos.mt5_profit
+            else:
+                unrealized = (current - pos.avg_entry) * pos.size
             items.append(
                 Position(
                     position_id=pos.position_id,
@@ -423,7 +418,11 @@ async def get_position(
         current = await _live_mid(pos.symbol)
         if current is None:
             current = await _last_close(pos.symbol) or pos.avg_entry
-        unrealized = (current - pos.avg_entry) * pos.size
+        # B8: P&L real MT5 bila ada; fallback mark-to-market
+        if pos.mt5_profit is not None:
+            unrealized = pos.mt5_profit
+        else:
+            unrealized = (current - pos.avg_entry) * pos.size
         return Position(
             position_id=pos.position_id,
             portfolio_id="default",

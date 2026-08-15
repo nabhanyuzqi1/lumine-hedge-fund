@@ -32,6 +32,7 @@ export function DataTable<T>({
   getRowId,
   rowHeight = 40,
   emptyMessage = "No data",
+  className,
 }: DataTableProps<T>) {
   const parentRef = React.useRef<HTMLDivElement>(null);
 
@@ -51,7 +52,7 @@ export function DataTable<T>({
   return (
     <div
       ref={parentRef}
-      className="w-full overflow-hidden rounded-panel border border-border-subtle"
+      className={`w-full overflow-hidden rounded-panel border border-border-subtle ${className ?? ""}`.trim()}
       data-testid="data-table-scroll"
     >
       <Table>

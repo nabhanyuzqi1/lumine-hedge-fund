@@ -241,7 +241,7 @@ async def _event_stream(
             while not await request.is_disconnected():
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=interval_s)
-                except (asyncio.TimeoutError, TimeoutError):
+                except TimeoutError:
                     yield ": heartbeat\n\n"
                     continue
                 # Relay event yang sesuai channel stream ini.

@@ -29,11 +29,14 @@ describe('API Integration', () => {
   const mockEnv = { VITE_API_URL: 'http://localhost:8000' };
 
   beforeEach(() => {
-    vi.stubGlobal('import.meta', { env: mockEnv });
+    // PITFALL: vi.stubGlobal('import.meta') tidak bekerja — import.meta
+    // adalah object spesial. Gunakan vi.stubEnv (Vitest native env stub).
+    vi.stubEnv('VITE_API_URL', mockEnv.VITE_API_URL);
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
     cancelAllRequests('test cleanup');
   });

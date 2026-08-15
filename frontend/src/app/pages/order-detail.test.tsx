@@ -29,18 +29,39 @@ function renderPage(orderId = "ord-001") {
 
 describe("OrderDetailPage", () => {
   beforeEach(() => {
-    // Query hooks fall back to fixtures when GETs reject, while the cancel
-    // mutation now hits the live DELETE /api/v1/orders/{id} endpoint.
+    // ZERO-DEMO: GET /orders/{id} → order real shape (envelope); cancel
+    // mutation hits live DELETE /api/v1/orders/{id}.
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
-        if (init?.method === "DELETE") {
-          return Promise.resolve(
+        const envelope = (data: unknown, status = 200) =>
+          Promise.resolve(
             new Response(
-              JSON.stringify({ data: { order_id: "ord-001", status: "cancelled" } }),
-              { status: 200, headers: { "Content-Type": "application/json" } }
+              JSON.stringify({
+                meta: { api_version: "v1", timestamp: new Date().toISOString(), request_id: "test", status: "ok" },
+                data,
+                error: null,
+              }),
+              { status, headers: { "Content-Type": "application/json" } }
             )
           );
+        if (!init?.method || init.method === "GET") {
+          return envelope({
+            order_id: "ord-001",
+            portfolio_id: "default",
+            symbol: "XAUUSD",
+            side: "buy",
+            order_type: "market",
+            volume: "0.01",
+            price: "4374.21",
+            status: "pending",
+            filled_volume: "0.00",
+            created_at: "2026-08-15T00:00:00Z",
+            updated_at: "2026-08-15T00:00:00Z",
+          });
+        }
+        if (init?.method === "DELETE") {
+          return envelope({ order_id: "ord-001", status: "cancelled" });
         }
         return Promise.reject(new Error("backend offline"));
       })

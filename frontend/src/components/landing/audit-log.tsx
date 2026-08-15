@@ -1,132 +1,193 @@
+import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { SAMPLE_TRADE_AUDIT } from "@/data/landing/trades";
 
-interface AuditRowProps {
-  label: string;
-  value: string | number;
-  valueColor?: string;
+/**
+ * AuditLog — Section 25 of UI/UX Rebuild V2.
+ * Terminal-style audit stream. Entries appear live; the user can
+ * pause/resume. Every decision leaves a trace.
+ * SIMULATED data.
+ */
+
+interface StreamEntry {
+  ts: string;
+  source: string;
+  signal: string;
+  kind: "agent" | "master" | "risk" | "exec";
 }
 
-function AuditRow({ label, value, valueColor = "text-ink" }: AuditRowProps) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-line-soft py-2 last:border-0">
-      <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-        {label}
-      </span>
-      <span className={cn("font-mono text-xs font-semibold", valueColor)}>
-        {value}
-      </span>
-    </div>
-  );
-}
+const STREAM: StreamEntry[] = [
+  { ts: "14:32:08", source: "TECHNICAL", signal: "BULLISH", kind: "agent" },
+  { ts: "14:32:08", source: "MACRO", signal: "BULLISH", kind: "agent" },
+  { ts: "14:32:09", source: "NEWS", signal: "NEUTRAL", kind: "agent" },
+  { ts: "14:32:09", source: "STRUCTURE", signal: "BULLISH", kind: "agent" },
+  { ts: "14:32:10", source: "MASTER", signal: "LONG", kind: "master" },
+  { ts: "14:32:10", source: "RISK", signal: "APPROVED", kind: "risk" },
+  { ts: "14:32:11", source: "EXECUTION", signal: "READY", kind: "exec" },
+  { ts: "14:32:12", source: "POSITION", signal: "OPEN @ 3350.20", kind: "exec" },
+  { ts: "14:32:14", source: "TECHNICAL", signal: "MOMENTUM: STRONG", kind: "agent" },
+  { ts: "14:32:15", source: "RISK", signal: "EXPOSURE: 1.2%", kind: "risk" },
+  { ts: "14:32:18", source: "STRUCTURE", signal: "HOLD SL", kind: "agent" },
+  { ts: "14:32:22", source: "MASTER", signal: "THESIS: BULLISH", kind: "master" },
+];
+
+const KIND_COLORS: Record<StreamEntry["kind"], string> = {
+  agent: "#A7B3C5",
+  master: "#4D8DFF",
+  risk: "#FFB020",
+  exec: "#34D399",
+};
 
 interface AuditLogProps {
   className?: string;
+  showHeader?: boolean;
 }
 
-export function AuditLog({ className }: AuditLogProps) {
+export function AuditLog({ className, showHeader = true }: AuditLogProps) {
   const audit = SAMPLE_TRADE_AUDIT;
+  const [count, setCount] = useState(7);
+  const [playing, setPlaying] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const formatTimestamp = (iso: string) => {
-    const date = new Date(iso);
-    return date.toISOString().replace("T", " ").slice(0, 19) + " UTC";
-  };
+  useEffect(() => {
+    if (playing) {
+      timerRef.current = setInterval(() => {
+        setCount((c) => (c >= STREAM.length ? 4 : c + 1));
+      }, 900);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [playing]);
 
   const getBiasColor = (bias: string) => {
-    if (bias === "BULLISH") return "text-up";
+    if (bias === "BULLISH" || bias === "LONG" || bias === "APPROVED" || bias === "READY" || bias === "HOLD SL") return "text-up";
     if (bias === "BEARISH") return "text-down";
     return "text-ink-dim";
   };
 
   return (
-    <div className={cn("w-full max-w-4xl space-y-6", className)}>
-      <div className="space-y-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            Auditability
-          </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
-        </div>
-        <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-          Every Decision Leaves a Trace.
-        </h3>
-        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-          From signal to execution, every decision is logged with complete context.
-        </p>
-      </div>
-
-      <div className="rounded-panel border border-line bg-raised shadow-panel">
-        <div className="border-b border-line-soft bg-abyss/50 p-4 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                Trade ID
-              </div>
-              <div className="font-mono text-lg font-bold text-accent">
-                {audit.tradeId}
-              </div>
-            </div>
-            <div className="rounded-chip border border-accent/30 bg-accent/10 px-3 py-1.5">
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-accent">
-                {audit.side}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-6 p-4 md:grid-cols-2 md:p-6">
-          <div className="space-y-4">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Trade Context
-            </div>
-            <div className="space-y-0">
-              <AuditRow label="Timestamp" value={formatTimestamp(audit.timestamp)} />
-              <AuditRow label="Asset" value={audit.asset} valueColor="text-accent" />
-              <AuditRow label="Regime" value={audit.regime} />
-              <AuditRow label="Confidence" value={`${audit.confidence.toFixed(1)}%`} valueColor="text-accent" />
-              <AuditRow label="Risk %" value={`${audit.riskPercent.toFixed(2)}%`} />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Agent Analyses
-            </div>
-            <div className="space-y-0">
-              <AuditRow label="Technical" value={audit.technical} valueColor={getBiasColor(audit.technical)} />
-              <AuditRow label="Macro" value={audit.macro} valueColor={getBiasColor(audit.macro)} />
-              <AuditRow label="News" value={audit.news} valueColor={getBiasColor(audit.news)} />
-              <AuditRow label="Structure" value={audit.structure} valueColor={getBiasColor(audit.structure)} />
-              <AuditRow label="Master Thesis" value={audit.masterThesis} valueColor={getBiasColor(audit.masterThesis)} />
-            </div>
-          </div>
-
-          <div className="space-y-4 md:col-span-2">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Execution Parameters
-            </div>
-            <div className="grid gap-0 sm:grid-cols-3">
-              <AuditRow label="Entry" value={audit.entry.toFixed(2)} />
-              <AuditRow label="Stop" value={audit.stop.toFixed(2)} />
-              <AuditRow label="Target" value={audit.target.toFixed(2)} />
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-line-soft bg-abyss/50 px-4 py-3 md:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Status
+    <div className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
+      {showHeader && (
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Auditability
             </span>
-            <div className="rounded-chip border border-warn/30 bg-warn/10 px-2.5 py-1">
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-warn">
-                {audit.status}
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+            Every Decision Leaves a Trace.
+          </h3>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+            From signal to execution, every decision is logged with complete context.
+            Pause the stream to read it.
+          </p>
+        </div>
+      )}
+
+      {/* Terminal window */}
+      <motion.div
+        className="overflow-hidden rounded-panel border border-line bg-[#070b12] shadow-panel"
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        {/* Terminal header */}
+        <div className="flex items-center justify-between border-b border-line-soft bg-raised/60 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-down/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-warn/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-up/70" />
+            <span className="ml-3 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              lumine://audit-trail
+            </span>
+          </div>
+          {/* Pause / Resume */}
+          <button
+            type="button"
+            onClick={() => setPlaying((p) => !p)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-widest transition-colors",
+              playing
+                ? "border-line-soft bg-abyss text-ink-dim hover:text-ink"
+                : "border-accent/40 bg-accent/10 text-accent"
+            )}
+          >
+            <span className="text-[10px] leading-none">{playing ? "❚❚" : "▶"}</span>
+            {playing ? "Pause" : "Resume"}
+          </button>
+        </div>
+
+        {/* Stream body */}
+        <div className="h-[300px] overflow-hidden p-4 font-mono text-xs md:p-5">
+          <div className="flex items-center gap-2 border-b border-line-soft/50 pb-2">
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                playing ? "animate-pulse bg-up" : "bg-warn"
+              )}
+            />
+            <span
+              className={cn(
+                "text-[9px] font-semibold uppercase tracking-[0.2em]",
+                playing ? "text-up" : "text-warn"
+              )}
+            >
+              {playing ? "● Live" : "❚❚ Paused"}
+            </span>
+          </div>
+
+          <div className="mt-3 space-y-1.5">
+            {STREAM.slice(0, count).map((entry, i) => {
+              const isNew = i >= STREAM.slice(0, count).length - 1;
+              return (
+                <motion.div
+                  key={`${entry.ts}-${entry.source}-${i}`}
+                  className="flex items-center gap-3 whitespace-nowrap"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <span className="text-ink-faint">{entry.ts}</span>
+                  <span style={{ color: KIND_COLORS[entry.kind] }} className="w-24 shrink-0">
+                    {entry.source}
+                  </span>
+                  <span className={cn("font-semibold", getBiasColor(entry.signal))}>
+                    {entry.signal}
+                  </span>
+                  {isNew && playing && (
+                    <span className="ml-1 h-1 w-1 animate-ping rounded-full bg-accent" />
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer: trade fingerprint */}
+        <div className="border-t border-line-soft bg-raised/40 px-4 py-3 md:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              Trade <span className="text-accent">{audit.tradeId}</span>
+            </div>
+            <div className="flex gap-4 font-mono text-[10px] text-ink-dim">
+              <span>
+                Entry <span className="text-ink">{audit.entry.toFixed(2)}</span>
+              </span>
+              <span>
+                Stop <span className="text-ink">{audit.stop.toFixed(2)}</span>
+              </span>
+              <span>
+                Target <span className="text-ink">{audit.target.toFixed(2)}</span>
               </span>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="rounded-chip border border-accent/30 bg-accent/5 p-4 backdrop-blur">
         <p className="text-center text-xs leading-relaxed text-ink-dim">

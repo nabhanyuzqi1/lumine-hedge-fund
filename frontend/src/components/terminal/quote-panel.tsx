@@ -16,7 +16,13 @@ export function QuotePanel({ symbol }: { symbol: string }) {
   const bid = liveTick?.bid ?? quote.data?.bid;
   const ask = liveTick?.ask ?? quote.data?.ask;
   const last = liveTick?.last ?? quote.data?.last;
-  const spread = bid !== undefined && ask !== undefined ? ask - bid : undefined;
+  // B3: spread NaN guard — bid/ask mungkin 0/undefined saat market closed
+  // atau tick malformed; Number.isFinite menangani NaN/Infinity.
+  const spread =
+    typeof bid === "number" && typeof ask === "number" &&
+    Number.isFinite(bid) && Number.isFinite(ask) && bid > 0 && ask > 0
+      ? ask - bid
+      : undefined;
   const high = liveTick ? Math.max(...history.map((t) => t.ask), liveTick.ask) : undefined;
   const low = liveTick ? Math.min(...history.map((t) => t.bid), liveTick.bid) : undefined;
 
