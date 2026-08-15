@@ -1,0 +1,42 @@
+# AutoGen Studio - Visual Agent Management UI
+# Runs alongside Lumine backend stack
+
+services:
+  autogenstudio:
+    image: python:3.12-slim
+    container_name: lumine-autogenstudio
+    working_dir: /app
+    environment:
+      - OPENAI_API_KEY=${NINEROUTER_API_KEY:-}
+      - AUTOGENSTUDIO_DATABASE_URL=postgresql://lumine:password@postgres:5432/lumine
+      - AUTOGENSTUDIO_APP_DIR=/app/data
+      - PORT=8081
+    volumes:
+      - autogenstudio_data:/app/data
+    command: >
+      bash -c "
+        pip install --no-cache-dir autogenstudio &&
+        autogenstudio ui --port 8081 --appdir /app/data
+      "
+    ports:
+      - "8081:8081"
+    networks:
+      - lumine_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "com.lumine.service=autogenstudio"
+      - "com.lumine.description=AutoGen Studio Visual Agent Management"
+
+volumes:
+  autogenstudio_data:
+    name: lumine_autogenstudio_data
+
+networks:
+  lumine_default:
+    external: true
