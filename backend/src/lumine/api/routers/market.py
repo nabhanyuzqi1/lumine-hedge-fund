@@ -3,25 +3,14 @@
 
 from __future__ import annotations
 
-import math
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 
-from lumine.api.demo_data import (
-    INSTRUMENTS,
-    TIMEFRAME_SECONDS,
-    features_for,
-    mid_price,
-    quote_for,
-    round_price,
-    session_at,
-    spread_units,
-)
+from lumine.api.demo_data import INSTRUMENTS
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.api.schemas.api import (
     FeatureSet,
@@ -82,27 +71,12 @@ async def list_symbol_signals(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     pagination: Annotated[Pagination, Depends()],
 ) -> PaginatedList[Signal]:
-    """Return recent analyst signals for one symbol (B-06)."""
-    now = datetime.now(UTC)
-    analysts = ["technical_analyst", "news_analyst", "smc_analyst"]
-    directions = ["bullish", "bearish", "neutral"]
-    seed = sum(ord(c) for c in symbol)
-    items = [
-        Signal(
-            signal_id=uuid4(),
-            symbol=symbol,
-            analyst=analysts[(seed + i) % len(analysts)],
-            direction=directions[(seed + i) % len(directions)],
-            confidence=round(0.5 + ((seed + i) % 40) / 100, 2),
-            rationale=f"deterministic demo signal {i + 1} for {symbol}",
-            generated_at=now - timedelta(seconds=i * 300),
-        )
-        for i in range(3)
-    ]
-    visible = items[pagination.offset : pagination.offset + pagination.limit]
-    return PaginatedList(
-        items=visible, total=len(items), limit=pagination.limit, offset=pagination.offset
-    )
+    """Return recent analyst signals for one symbol (B-06).
+
+    ZERO-DEMO: analyst signals dari pipeline agent — kosong sampai
+    committee live menghasilkan sinyal (tidak ada sinyal fiktif).
+    """
+    return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
 
 
 @router.get("/signals", response_model=PaginatedList[Signal])
@@ -110,25 +84,8 @@ async def list_signals(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     pagination: Annotated[Pagination, Depends()],
 ) -> PaginatedList[Signal]:
-    """Return recent analyst signals."""
-    now = datetime.now(UTC)
-    items: list[Signal] = [
-        Signal(
-            signal_id=uuid4(),
-            symbol="XAUUSD",
-            analyst="technical_analyst",
-            direction="bullish",
-            confidence=0.78,
-            rationale="breakout above resistance",
-            generated_at=now,
-        ),
-    ]
-    return PaginatedList(
-        items=items,
-        total=len(items),
-        limit=pagination.limit,
-        offset=pagination.offset,
-    )
+    """Return recent analyst signals (ZERO-DEMO: kosong sampai pipeline live)."""
+    return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
 
 
 # ── Market cluster (frontend marketClient.ts contract) ───────────────────
@@ -139,8 +96,30 @@ async def get_quote(
     symbol: str,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
 ) -> MarketQuote:
-    """Return the current bid/ask/last quote for a symbol."""
-    return MarketQuote(**quote_for(symbol))
+    """Return the current bid/ask/last quote (live dari MarketService/Redis ticks).
+
+    ZERO-DEMO: tanpa tick live (market libur / feed kosong) → 404,
+    bukan harga sintetis.
+    """
+    from lumine.api.routers.streams import get_market_service
+
+    market_service = get_market_service()
+    tick = await market_service.get_quote(symbol) if market_service else None
+    if tick is None:
+        raise HTTPException(
+            status_code=404, detail=f"no live quote for {symbol} (market closed or feed empty)"
+        )
+    return MarketQuote(
+        symbol=symbol.upper(),
+        bid=Decimal(str(tick.bid)),
+        ask=Decimal(str(tick.ask)),
+        mid=Decimal(str(round((tick.bid + tick.ask) / 2, 5))),
+        last=Decimal(str(tick.bid)),
+        volume_24h=Decimal(0),
+        change_24h=Decimal(0),
+        change_pct_24h=Decimal(0),
+        timestamp=tick.timestamp,
+    )
 
 
 @router.get("/quotes")
@@ -148,8 +127,27 @@ async def get_quotes(
     symbols: Annotated[list[str], Query(min_length=1, max_length=50)],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
 ) -> dict[str, MarketQuote]:
-    """Batch fetch quotes for multiple symbols (map of symbol → quote)."""
-    return {s.upper(): MarketQuote(**quote_for(s)) for s in symbols}
+    """Batch fetch quotes (live dari MarketService). Symbol tanpa tick di-skip."""
+    from lumine.api.routers.streams import get_market_service
+
+    market_service = get_market_service()
+    result: dict[str, MarketQuote] = {}
+    for s in symbols:
+        tick = await market_service.get_quote(s) if market_service else None
+        if tick is None:
+            continue
+        result[s.upper()] = MarketQuote(
+            symbol=s.upper(),
+            bid=Decimal(str(tick.bid)),
+            ask=Decimal(str(tick.ask)),
+            mid=Decimal(str(round((tick.bid + tick.ask) / 2, 5))),
+            last=Decimal(str(tick.bid)),
+            volume_24h=Decimal(0),
+            change_24h=Decimal(0),
+            change_pct_24h=Decimal(0),
+            timestamp=tick.timestamp,
+        )
+    return result
 
 
 @router.get("/ohlcv/{symbol}")
@@ -162,71 +160,38 @@ async def get_ohlcv(
 ) -> list[MarketBar]:
     """Return OHLCV bars for a symbol (DB-backed via bars_*; seed dari MT5).
 
-    Fallback: demo deterministic random walk HANYA kalau tabel kosong
-    (agar UI tetap hidup sebelum seed pertama).
+    ZERO-DEMO: tabel kosong = return [] (bukan data fiktif random walk).
     """
     from lumine.data.models import Bars1D, Bars1H, Bars1M
     from lumine.data.session import get_sessionmaker
 
     bar_models = {"1m": Bars1M, "1h": Bars1H, "1d": Bars1D}
     model = bar_models.get(timeframe)
-    if model is not None:
-        try:
-            async with get_sessionmaker()() as session:
-                stmt = select(model).order_by(model.ts.desc()).limit(limit)
-                if since is not None:
-                    stmt = stmt.where(model.ts >= since)
-                result = await session.execute(stmt)
-                rows = list(result.scalars().all())
-            if rows:
-                rows.reverse()
-                return [
-                    MarketBar(
-                        symbol=row.symbol,
-                        timeframe=timeframe,
-                        timestamp=row.ts,
-                        open=row.open,
-                        high=row.high,
-                        low=row.low,
-                        close=row.close,
-                        volume=row.volume,
-                    )
-                    for row in rows
-                ]
-        except Exception:
-            pass  # DB transient → fallback demo
-
-    # ── Fallback: deterministic demo random walk (sebelum seed) ──────────
-    step = TIMEFRAME_SECONDS[timeframe]
-    now = datetime.now(UTC)
-    end = now if since is None else min(now, since + timedelta(seconds=step * limit))
-
-    seed = sum(ord(c) for c in symbol.upper())
-    bars: list[MarketBar] = []
-    ts = end - timedelta(seconds=step * limit)
-    prev_close = mid_price(symbol, ts) * (1 - 0.001)
-    for i in range(limit):
-        ts = ts + timedelta(seconds=step)
-        drift = math.sin(seed + i * 0.35) * 0.0012 + (seed % 5) * 0.0001
-        open_ = prev_close
-        close = round_price(open_ * (1 + drift), symbol)
-        high = round_price(max(open_, close) * (1 + 0.0004), symbol)
-        low = round_price(min(open_, close) * (1 - 0.0004), symbol)
-        volume = 200 + int((seed * 97 + i * 131) % 8_000)
-        bars.append(
-            MarketBar(
-                symbol=symbol.upper(),
-                timeframe=timeframe,
-                timestamp=ts,
-                open=Decimal(str(open_)),
-                high=Decimal(str(high)),
-                low=Decimal(str(low)),
-                close=Decimal(str(close)),
-                volume=volume,
-            )
+    if model is None:
+        return []
+    try:
+        async with get_sessionmaker()() as session:
+            stmt = select(model).order_by(model.ts.desc()).limit(limit)
+            if since is not None:
+                stmt = stmt.where(model.ts >= since)
+            result = await session.execute(stmt)
+            rows = list(result.scalars().all())
+    except Exception:
+        return []
+    rows.reverse()
+    return [
+        MarketBar(
+            symbol=row.symbol,
+            timeframe=timeframe,
+            timestamp=row.ts,
+            open=row.open,
+            high=row.high,
+            low=row.low,
+            close=row.close,
+            volume=row.volume,
         )
-        prev_close = close
-    return bars
+        for row in rows
+    ]
 
 
 @router.get("/symbol/{symbol}", response_model=SymbolConfig)
@@ -293,10 +258,33 @@ async def get_volatility(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     window: Annotated[int, Query(ge=1, le=365)] = 14,
 ) -> VolatilityResponse:
-    """Return rolling volatility (fraction) for a symbol."""
-    seed = sum(ord(c) for c in symbol.upper())
-    volatility = 0.06 + (seed % 13) / 100.0 + math.sin(window) * 0.01
-    return VolatilityResponse(volatility=round(max(0.01, volatility), 4))
+    """Return rolling volatility (fraction) — dihitung dari bars_1h real.
+
+    ZERO-DEMO: tanpa data bars → 0.0 (bukan formula sintetis).
+    """
+    from lumine.data.models import Bars1H
+    from lumine.data.session import get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            result = await session.execute(
+                select(Bars1H)
+                .where(Bars1H.symbol == symbol.upper())
+                .order_by(Bars1H.ts.desc())
+                .limit(window + 1)
+            )
+            rows = list(result.scalars().all())
+    except Exception:
+        rows = []
+    if len(rows) < 2:
+        return VolatilityResponse(volatility=0.0)
+    rows.reverse()
+    closes = [float(r.close) for r in rows]
+    returns = [(closes[i] / closes[i - 1] - 1.0) for i in range(1, len(closes))]
+    mean = sum(returns) / len(returns)
+    var = sum((r - mean) ** 2 for r in returns) / len(returns)
+    vol = var**0.5
+    return VolatilityResponse(volatility=round(max(0.0, vol), 4))
 
 
 @router.get("/correlation")
@@ -305,21 +293,56 @@ async def get_correlation(
     symbols: Annotated[list[str] | None, Query()] = None,
     window: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict[str, dict[str, float]]:
-    """Return a symmetric correlation matrix for the requested symbols."""
-    universe = [s.upper() for s in (symbols or list(INSTRUMENTS))]
-    matrix: dict[str, dict[str, float]] = {}
-    for i, a in enumerate(universe):
-        row: dict[str, float] = {}
-        for j, b in enumerate(universe):
-            if i == j:
-                row[b] = 1.0
-            elif j < i:
-                row[b] = matrix[b][a]
-            else:
-                raw = math.sin(
-                    (sum(ord(c) for c in a) + sum(ord(c) for c in b)) / 40.0 + window / 30.0 * 0.1
+    """Return a symmetric correlation matrix dari returns bars real.
+
+    ZERO-DEMO: hanya symbol dengan data bars yang muncul; tanpa data →
+    diagonal 1.0 untuk symbol yang diminta, sisanya di-skip.
+    """
+    from lumine.data.models import Bars1H
+    from lumine.data.session import get_sessionmaker
+
+    universe = [s.upper() for s in (symbols or ["XAUUSD"])]
+    series: dict[str, list[float]] = {}
+    try:
+        async with get_sessionmaker()() as session:
+            for sym in universe:
+                result = await session.execute(
+                    select(Bars1H)
+                    .where(Bars1H.symbol == sym)
+                    .order_by(Bars1H.ts.desc())
+                    .limit(window + 1)
                 )
-                row[b] = round(max(-0.85, min(0.95, raw)), 4)
+                rows = list(result.scalars().all())
+                if len(rows) >= 2:
+                    rows.reverse()
+                    closes = [float(r.close) for r in rows]
+                    series[sym] = [closes[i] / closes[i - 1] - 1.0 for i in range(1, len(closes))]
+    except Exception:
+        series = {}
+    matrix: dict[str, dict[str, float]] = {}
+    for a in universe:
+        row: dict[str, float] = {}
+        for b in universe:
+            if a not in series or b not in series:
+                row[b] = 1.0 if a == b else 0.0
+                continue
+            if a == b:
+                row[b] = 1.0
+                continue
+            if b < a:
+                row[b] = matrix[b][a]
+                continue
+            ra, rb = series[a], series[b]
+            n = min(len(ra), len(rb))
+            if n < 2:
+                row[b] = 0.0
+                continue
+            ma, mb = sum(ra[:n]) / n, sum(rb[:n]) / n
+            cov = sum((ra[i] - ma) * (rb[i] - mb) for i in range(n)) / n
+            va = sum((x - ma) ** 2 for x in ra[:n]) / n
+            vb = sum((x - mb) ** 2 for x in rb[:n]) / n
+            denom = (va * vb) ** 0.5
+            row[b] = round(cov / denom, 4) if denom else 0.0
         matrix[a] = row
     return matrix
 
@@ -330,15 +353,29 @@ async def get_spread(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     period: Annotated[int, Query(ge=1, le=86_400)] = 60,
 ) -> SpreadMetrics:
-    """Return spread statistics for a symbol over a period."""
-    spread = spread_units(symbol)
-    mid = mid_price(symbol)
-    wiggle = 1 + 0.2 * math.sin(period / 17.0)
+    """Return spread statistics — live dari MarketService (bid/ask EA).
+
+    ZERO-DEMO: tanpa tick live → 0 (bukan wiggle sintetis).
+    """
+    from lumine.api.routers.streams import get_market_service
+
+    market_service = get_market_service()
+    tick = await market_service.get_quote(symbol) if market_service else None
+    if tick is None:
+        return SpreadMetrics(
+            avg_spread=Decimal(0),
+            avg_pct_spread=Decimal(0),
+            min_spread=Decimal(0),
+            max_spread=Decimal(0),
+        )
+    spread = Decimal(str(round(tick.ask - tick.bid, 5)))
+    mid = Decimal(str(tick.bid))
+    pct = (spread / mid * 100).quantize(Decimal("0.0001")) if mid else Decimal(0)
     return SpreadMetrics(
-        avg_spread=Decimal(str(round(spread * wiggle, 4))),
-        avg_pct_spread=Decimal(str(round(spread / mid * 100, 4))),
-        min_spread=Decimal(str(round(spread * 0.8, 4))),
-        max_spread=Decimal(str(round(spread * 1.2, 4))),
+        avg_spread=spread,
+        avg_pct_spread=pct,
+        min_spread=spread,
+        max_spread=spread,
     )
 
 
@@ -347,10 +384,19 @@ async def get_session(
     symbol: str,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
 ) -> SessionInfo:
-    """Return current trading session state for a symbol."""
+    """Return current trading session state (real market calendar, ADR-0037)."""
+    from lumine.api.routers.streams import _market_status
+
     if symbol.upper() not in INSTRUMENTS:
         raise HTTPException(status_code=404, detail=f"unknown symbol: {symbol}")
-    return SessionInfo(**session_at())
+    status = _market_status()
+    session_state = "off" if not status["open"] else "asian"
+    return SessionInfo(
+        current_session=session_state,
+        next_session="asian",
+        time_until_next=0,
+        is_trading_open=status["open"],
+    )
 
 
 @router.get("/features/{symbol}", response_model=FeatureSet)
@@ -358,9 +404,42 @@ async def get_features(
     symbol: str,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
 ) -> FeatureSet:
-    """Return computed technical features for a symbol (FeaturePanel contract)."""
+    """Return computed technical features — dihitung dari bars real.
+
+    ZERO-DEMO: tanpa data bars → dict kosong (bukan fitur sintetis).
+    """
+    from lumine.data.models import Bars1H
+    from lumine.data.session import get_sessionmaker
+
+    features: dict[str, float] = {}
+    try:
+        async with get_sessionmaker()() as session:
+            result = await session.execute(
+                select(Bars1H)
+                .where(Bars1H.symbol == symbol.upper())
+                .order_by(Bars1H.ts.desc())
+                .limit(30)
+            )
+            rows = list(result.scalars().all())
+        if len(rows) >= 2:
+            rows.reverse()
+            closes = [float(r.close) for r in rows]
+            last = closes[-1]
+            sma20 = sum(closes[-20:]) / min(20, len(closes))
+            returns = [closes[i] / closes[i - 1] - 1.0 for i in range(1, len(closes))]
+            vol = (
+                sum((r - sum(returns) / len(returns)) ** 2 for r in returns) / len(returns)
+            ) ** 0.5
+            features = {
+                "last_price": round(last, 2),
+                "sma20": round(sma20, 2),
+                "volatility": round(vol, 4),
+                "trend_slope": round((closes[-1] / closes[0] - 1.0) * 100, 4),
+            }
+    except Exception:
+        features = {}
     return FeatureSet(
         symbol=symbol.upper(),
-        features=features_for(symbol),
+        features=features,
         computed_at=datetime.now(UTC),
     )

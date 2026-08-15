@@ -8,9 +8,9 @@ paths:
     get:
       tags:
       - portfolio
-      summary: Get Portfolio Summary
-      description: 'Return the current portfolio summary (B-05: live from PostgreSQL).'
-      operationId: get_portfolio_summary_api_v1_portfolio_summary_get
+      summary: Get Summary
+      description: Return the single (default) portfolio summary (live DB + MTM).
+      operationId: get_summary_api_v1_portfolio_summary_get
       parameters:
       - name: X-Lumine-API-Key
         in: header
@@ -98,7 +98,7 @@ paths:
       tags:
       - portfolio
       summary: Create Portfolio
-      description: Create a portfolio — single-portfolio v1 returns the default book.
+      description: 'Create a portfolio — single-portfolio v1: default book sudah ada.'
       operationId: create_portfolio_api_v1_portfolio_post
       parameters:
       - name: X-Lumine-API-Key
@@ -149,7 +149,8 @@ paths:
       tags:
       - portfolio
       summary: Update Portfolio
-      description: Rename/update the portfolio (demo echo; single-portfolio v1).
+      description: 'Rename/update the portfolio — v1 single-portfolio: tidak ada demo
+        echo.'
       operationId: update_portfolio_api_v1_portfolio__portfolio_id__put
       parameters:
       - name: portfolio_id
@@ -380,7 +381,11 @@ paths:
       tags:
       - portfolio
       summary: Simulate Trade
-      description: Project portfolio impact of a hypothetical trade (what-if, no execution).
+      description: 'Project portfolio impact of a hypothetical trade (what-if, no
+        execution).
+
+
+        ZERO-DEMO: harga live dari MarketService; NAV basis dari summary real.'
       operationId: simulate_trade_api_v1_portfolio__portfolio_id__simulate_post
       parameters:
       - name: portfolio_id
@@ -1354,7 +1359,12 @@ paths:
       tags:
       - market
       summary: List Symbol Signals
-      description: Return recent analyst signals for one symbol (B-06).
+      description: 'Return recent analyst signals for one symbol (B-06).
+
+
+        ZERO-DEMO: analyst signals dari pipeline agent — kosong sampai
+
+        committee live menghasilkan sinyal (tidak ada sinyal fiktif).'
       operationId: list_symbol_signals_api_v1_market_signals__symbol__get
       parameters:
       - name: symbol
@@ -1422,7 +1432,8 @@ paths:
       tags:
       - market
       summary: List Signals
-      description: Return recent analyst signals.
+      description: 'Return recent analyst signals (ZERO-DEMO: kosong sampai pipeline
+        live).'
       operationId: list_signals_api_v1_market_signals_get
       parameters:
       - name: limit
@@ -1484,7 +1495,13 @@ paths:
       tags:
       - market
       summary: Get Quote
-      description: Return the current bid/ask/last quote for a symbol.
+      description: 'Return the current bid/ask/last quote (live dari MarketService/Redis
+        ticks).
+
+
+        ZERO-DEMO: tanpa tick live (market libur / feed kosong) → 404,
+
+        bukan harga sintetis.'
       operationId: get_quote_api_v1_market_quote__symbol__get
       parameters:
       - name: symbol
@@ -1535,7 +1552,8 @@ paths:
       tags:
       - market
       summary: Get Quotes
-      description: Batch fetch quotes for multiple symbols (map of symbol → quote).
+      description: Batch fetch quotes (live dari MarketService). Symbol tanpa tick
+        di-skip.
       operationId: get_quotes_api_v1_market_quotes_get
       parameters:
       - name: symbols
@@ -1597,9 +1615,7 @@ paths:
         MT5).
 
 
-        Fallback: demo deterministic random walk HANYA kalau tabel kosong
-
-        (agar UI tetap hidup sebelum seed pertama).'
+        ZERO-DEMO: tabel kosong = return [] (bukan data fiktif random walk).'
       operationId: get_ohlcv_api_v1_market_ohlcv__symbol__get
       parameters:
       - name: symbol
@@ -1801,7 +1817,10 @@ paths:
       tags:
       - market
       summary: Get Volatility
-      description: Return rolling volatility (fraction) for a symbol.
+      description: 'Return rolling volatility (fraction) — dihitung dari bars_1h real.
+
+
+        ZERO-DEMO: tanpa data bars → 0.0 (bukan formula sintetis).'
       operationId: get_volatility_api_v1_market_volatility__symbol__get
       parameters:
       - name: symbol
@@ -1861,7 +1880,12 @@ paths:
       tags:
       - market
       summary: Get Correlation
-      description: Return a symmetric correlation matrix for the requested symbols.
+      description: 'Return a symmetric correlation matrix dari returns bars real.
+
+
+        ZERO-DEMO: hanya symbol dengan data bars yang muncul; tanpa data →
+
+        diagonal 1.0 untuk symbol yang diminta, sisanya di-skip.'
       operationId: get_correlation_api_v1_market_correlation_get
       parameters:
       - name: symbols
@@ -1930,7 +1954,10 @@ paths:
       tags:
       - market
       summary: Get Spread
-      description: Return spread statistics for a symbol over a period.
+      description: 'Return spread statistics — live dari MarketService (bid/ask EA).
+
+
+        ZERO-DEMO: tanpa tick live → 0 (bukan wiggle sintetis).'
       operationId: get_spread_api_v1_market_spread__symbol__get
       parameters:
       - name: symbol
@@ -1990,7 +2017,7 @@ paths:
       tags:
       - market
       summary: Get Session
-      description: Return current trading session state for a symbol.
+      description: Return current trading session state (real market calendar, ADR-0037).
       operationId: get_session_api_v1_market_session__symbol__get
       parameters:
       - name: symbol
@@ -2041,7 +2068,10 @@ paths:
       tags:
       - market
       summary: Get Features
-      description: Return computed technical features for a symbol (FeaturePanel contract).
+      description: 'Return computed technical features — dihitung dari bars real.
+
+
+        ZERO-DEMO: tanpa data bars → dict kosong (bukan fitur sintetis).'
       operationId: get_features_api_v1_market_features__symbol__get
       parameters:
       - name: symbol

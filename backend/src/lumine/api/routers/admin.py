@@ -195,6 +195,7 @@ async def set_kill_switch(
 
 # ── Superadmin endpoints ───────────────────────────────────────────────────
 
+
 @router.get("/system-info", response_model=SystemInfo)
 async def get_system_info(
     settings: Annotated[Settings, Depends(get_settings)],
@@ -228,13 +229,15 @@ async def get_system_info(
             elif "(health: starting)" in status_raw:
                 health = "starting"
             running = "Up" in status_raw
-            services.append(ServiceStatus(
-                name=name,
-                status="running" if running else "stopped",
-                health=health,
-                image=image,
-                uptime=status_raw,
-            ))
+            services.append(
+                ServiceStatus(
+                    name=name,
+                    status="running" if running else "stopped",
+                    health=health,
+                    image=image,
+                    uptime=status_raw,
+                )
+            )
     except Exception:
         services = [ServiceStatus(name="unknown", status="unknown")]
 

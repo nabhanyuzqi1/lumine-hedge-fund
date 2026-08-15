@@ -11,7 +11,6 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 
-from lumine.api.demo_data import mid_price
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.api.middleware.rate_limit import rate_limit_dependency
 from lumine.api.schemas.api import (
@@ -35,62 +34,73 @@ _DEMO_NAV = Decimal("100000.00")
 _MARGIN_RATE = Decimal("0.02")
 
 
-def _demo_summary(*, portfolio_id: str = "default", nav: Decimal = _DEMO_NAV) -> PortfolioSummary:
-    """Deterministic portfolio snapshot (single-portfolio v1)."""
+def _zero_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
+    """Snapshot kosong (ZERO-DEMO): tidak ada data real = angka 0, bukan fiktif."""
     return PortfolioSummary(
         portfolio_id=portfolio_id,
-        nav=nav,
-        cash=Decimal("75000.00"),
-        margin_used=Decimal("25000.00"),
-        open_pnl=Decimal("1200.50"),
-        closed_pnl=Decimal("8450.00"),
+        nav=Decimal("0.00"),
+        cash=Decimal("0.00"),
+        margin_used=Decimal("0.00"),
+        open_pnl=Decimal("0.00"),
+        closed_pnl=Decimal("0.00"),
         timestamp=datetime.now(UTC),
     )
 
 
-async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary | None:
+async def _live_mid(symbol: str) -> Decimal | None:
+    """Harga live dari MarketService (tick EA). None saat feed kosong."""
+    from lumine.api.routers.streams import get_market_service
+
+    market_service = get_market_service()
+    if market_service is None:
+        return None
+    tick = await market_service.get_quote(symbol)
+    return Decimal(str(tick.bid)) if tick else None
+
+
+async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
     """Portfolio summary computed from live PostgreSQL state (B-05).
 
-    - open_pnl  : mark-to-market dari posisi terbuka (mid price live)
-    - margin    : 2% notional per posisi
-    - nav       : 100_000 (modal awal v1) + open_pnl
-    - closed_pnl: 0 — atribusi realized memerlukan B-08 backfill fills
-    Returns None saat DB tidak tersedia (caller fallback ke _demo_summary).
+    ZERO-DEMO: tanpa posisi real → summary 0 (bukan angka fiktif).
+    Mark-to-market pakai harga live MarketService (tick EA); kalau feed
+    kosong (market libur) fallback ke avg_entry → P&L flat.
     """
+    from lumine.data.repositories import PositionRepository
+    from lumine.data.session import get_sessionmaker
+
     try:
-
-        from lumine.data.repositories import PositionRepository
-        from lumine.data.session import get_sessionmaker
-
         async with get_sessionmaker()() as session:
             repo = PositionRepository(session)
             positions = await repo.list_open()
-            if not positions:
-                return _demo_summary(portfolio_id=portfolio_id, nav=_DEMO_NAV)
-
-            open_pnl = Decimal(0)
-            margin_used = Decimal(0)
-            for pos in positions:
-                mid = mid_price(pos.symbol)
-                pnl = (mid - pos.avg_entry) * pos.size
-                if pos.side == "SHORT":
-                    pnl = -pnl
-                open_pnl += pnl
-                margin_used += mid * abs(pos.size) * _MARGIN_RATE
-
-            nav = (_DEMO_NAV + open_pnl).quantize(Decimal("0.01"))
-            cash = (nav - margin_used).quantize(Decimal("0.01"))
-            return PortfolioSummary(
-                portfolio_id=portfolio_id,
-                nav=nav,
-                cash=cash,
-                margin_used=margin_used.quantize(Decimal("0.01")),
-                open_pnl=open_pnl.quantize(Decimal("0.01")),
-                closed_pnl=Decimal("0.00"),
-                timestamp=datetime.now(UTC),
-            )
     except Exception:
-        return None
+        raise HTTPException(status_code=503, detail="portfolio source unavailable (DB)") from None
+
+    if not positions:
+        return _zero_summary(portfolio_id=portfolio_id)
+
+    open_pnl = Decimal(0)
+    margin_used = Decimal(0)
+    for pos in positions:
+        mid = await _live_mid(pos.symbol)
+        if mid is None:
+            mid = pos.avg_entry  # market libur → P&L flat di entry price
+        pnl = (mid - pos.avg_entry) * pos.size
+        if pos.side == "SHORT":
+            pnl = -pnl
+        open_pnl += pnl
+        margin_used += mid * abs(pos.size) * _MARGIN_RATE
+
+    nav = (open_pnl).quantize(Decimal("0.01"))
+    cash = (nav - margin_used).quantize(Decimal("0.01"))
+    return PortfolioSummary(
+        portfolio_id=portfolio_id,
+        nav=nav,
+        cash=cash,
+        margin_used=margin_used.quantize(Decimal("0.01")),
+        open_pnl=open_pnl.quantize(Decimal("0.01")),
+        closed_pnl=Decimal("0.00"),
+        timestamp=datetime.now(UTC),
+    )
 
 
 async def _real_equity_series(total: int, offset: int, limit: int) -> list[EquityPoint] | None:
@@ -106,17 +116,23 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
 
         async with get_sessionmaker()() as session:
             rows = (
-                await session.execute(
-                    select(Position).where(Position.status == "open").order_by(Position.opened_at)
+                (
+                    await session.execute(
+                        select(Position)
+                        .where(Position.status == "open")
+                        .order_by(Position.opened_at)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
 
             if not rows:
                 return [
                     EquityPoint(
                         ts=datetime.now(UTC),
-                        nav=_DEMO_NAV,
-                        equity=_DEMO_NAV,
+                        nav=Decimal(0),
+                        equity=Decimal(0),
                         drawdown=Decimal(0),
                     )
                 ]
@@ -124,14 +140,16 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
             now = datetime.now(UTC)
             points: list[EquityPoint] = []
             running_pnl = Decimal(0)
-            peak = _DEMO_NAV
+            peak = Decimal(0)
             for pos in rows:
-                mid = mid_price(pos.symbol)
+                mid = await _live_mid(pos.symbol)
+                if mid is None:
+                    mid = pos.avg_entry  # market libur → P&L flat
                 pnl = (mid - pos.avg_entry) * pos.size
                 if pos.side == "SHORT":
                     pnl = -pnl
                 running_pnl += pnl
-                nav = _DEMO_NAV + running_pnl
+                nav = running_pnl
                 peak = max(peak, nav)
                 drawdown = (nav / peak - Decimal(1)) if peak else Decimal(0)
                 points.append(
@@ -143,7 +161,7 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                     )
                 )
             # Titik akhir: posisi terkini (sekali saja).
-            nav_now = (_DEMO_NAV + running_pnl).quantize(Decimal("0.01"))
+            nav_now = running_pnl.quantize(Decimal("0.01"))
             points.append(
                 EquityPoint(
                     ts=now,
@@ -161,12 +179,11 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
 
 
 @router.get("/summary", response_model=PortfolioSummary)
-async def get_portfolio_summary(
+async def get_summary(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
 ) -> PortfolioSummary:
-    """Return the current portfolio summary (B-05: live from PostgreSQL)."""
-    real = await _real_summary()
-    return real if real is not None else _demo_summary()
+    """Return the single (default) portfolio summary (live DB + MTM)."""
+    return await _real_summary()
 
 
 @router.get("", response_model=PortfolioSummary)
@@ -174,8 +191,7 @@ async def get_portfolio(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
 ) -> PortfolioSummary:
     """Return the single (default) portfolio (B-06 portfolio CRUD)."""
-    real = await _real_summary()
-    return real if real is not None else _demo_summary()
+    return await _real_summary()
 
 
 @router.post(
@@ -188,8 +204,8 @@ async def create_portfolio(
     _request: CreatePortfolioRequest,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:portfolio")],
 ) -> PortfolioSummary:
-    """Create a portfolio — single-portfolio v1 returns the default book."""
-    return _demo_summary()
+    """Create a portfolio — single-portfolio v1: default book sudah ada."""
+    return await _real_summary()
 
 
 @router.put(
@@ -202,8 +218,8 @@ async def update_portfolio(
     _request: CreatePortfolioRequest,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:portfolio")],
 ) -> PortfolioSummary:
-    """Rename/update the portfolio (demo echo; single-portfolio v1)."""
-    return _demo_summary(portfolio_id=portfolio_id)
+    """Rename/update the portfolio — v1 single-portfolio: tidak ada demo echo."""
+    return await _real_summary(portfolio_id=portfolio_id)
 
 
 @router.delete(
@@ -216,7 +232,9 @@ async def delete_portfolio(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:portfolio")],
 ) -> PortfolioSummary:
     """Delete a portfolio — v1 refuses the only book (safe default)."""
-    raise HTTPException(status_code=409, detail="single-portfolio v1: the default portfolio cannot be deleted")
+    raise HTTPException(
+        status_code=409, detail="single-portfolio v1: the default portfolio cannot be deleted"
+    )
 
 
 @router.get("/{portfolio_id}/equity", response_model=PaginatedList[EquityPoint])
@@ -273,15 +291,13 @@ async def cancel_all_orders(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("write:orders")],
 ) -> CancelAllResult:
     """Cancel every open order in the portfolio (B-06 cancel-all)."""
-    if not settings.demo_data:
-        from lumine.data.repositories import OrderRepository
-        from lumine.data.session import get_sessionmaker
+    from lumine.data.repositories import OrderRepository
+    from lumine.data.session import get_sessionmaker
 
-        async with get_sessionmaker()() as session:
-            repo = OrderRepository(session)
-            cancelled = await repo.cancel_all_pending()
-            return CancelAllResult(cancelled=cancelled, portfolio_id=portfolio_id)
-    return CancelAllResult(cancelled=3, portfolio_id=portfolio_id)
+    async with get_sessionmaker()() as session:
+        repo = OrderRepository(session)
+        cancelled = await repo.cancel_all_pending()
+        return CancelAllResult(cancelled=cancelled, portfolio_id=portfolio_id)
 
 
 @router.post(
@@ -294,15 +310,24 @@ async def simulate_trade(
     request: SimulateTradeRequest,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
 ) -> SimulateTradeResult:
-    """Project portfolio impact of a hypothetical trade (what-if, no execution)."""
+    """Project portfolio impact of a hypothetical trade (what-if, no execution).
+
+    ZERO-DEMO: harga live dari MarketService; NAV basis dari summary real.
+    """
     if portfolio_id not in {"default", "portfolio-demo"}:
         raise HTTPException(status_code=404, detail=f"unknown portfolio: {portfolio_id}")
-    mid = mid_price(request.symbol)
+    mid = await _live_mid(request.symbol)
+    if mid is None:
+        raise HTTPException(
+            status_code=503, detail=f"no live price for {request.symbol} (market closed)"
+        )
     direction = 1.0 if request.side == "buy" else -1.0
-    pnl_change = (mid - float(request.price)) * float(request.volume) * direction
-    margin_required = float(request.price) * float(request.volume) * 0.01
+    pnl_change = (float(mid) - float(request.price)) * float(request.volume) * direction
+    margin_required = float(request.price) * float(request.volume) * float(_MARGIN_RATE)
+    current = await _real_summary(portfolio_id=portfolio_id)
+    projected = (current.nav + Decimal(str(round(pnl_change, 2)))).quantize(Decimal("0.01"))
     return SimulateTradeResult(
-        projected_nav=_DEMO_NAV + Decimal(str(round(pnl_change, 2))),
+        projected_nav=projected,
         margin_required=Decimal(str(round(margin_required, 2))),
         pnl_change=Decimal(str(round(pnl_change, 2))),
     )

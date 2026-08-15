@@ -55,7 +55,13 @@ const TIMEFRAME_KEYS: Partial<Record<string, Timeframe>> = {
 };
 
 interface MarketDataEvent {
-  tick: MarketTick;
+  tick?: MarketTick;
+  /** Market libur (weekend/holiday) — stream hidup tanpa ticks. */
+  market_closed?: {
+    reason: string;
+    next_open: string;
+    message: string;
+  };
 }
 
 function PositionsTable({ positions }: { positions: PositionFixture[] }) {
@@ -323,6 +329,11 @@ function TradingWorkspace() {
     onEvent: (envelope) => {
       if (envelope.data?.tick) {
         upsertTick(envelope.data.tick);
+      }
+      // Market libur (weekend/holiday) — stream hidup tapi tanpa ticks.
+      if (envelope.data?.market_closed) {
+        setStreamState(streamKey, { status: "closed", error: envelope.data.message });
+        appendLog({ stream: "market", message: `Market closed: ${envelope.data.message}`, level: "warn" });
       }
     },
     onLifecycle: (event) => {

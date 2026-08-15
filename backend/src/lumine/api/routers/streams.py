@@ -35,7 +35,7 @@ import time
 import uuid
 from collections import deque
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -99,6 +99,34 @@ def _iso_utc_ms(dt: datetime) -> str:
     naive/aware subtraction errors.
     """
     return dt.astimezone(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+# ── Market calendar (ADR-0037): XAUUSD via broker HFM = forex 24x5 ──────────
+# Pasar forex tutup akhir pekan: Sabtu 00:00 UTC s/d Senin 21:00 UTC
+# (weekend gap). Feed broker berhenti push tick → SSE harus tandai
+# market_closed, bukan stream kosong tanpa penjelasan.
+_WEEKEND_CLOSE_WDAY = 5  # Sabtu (ISO: 5)
+_WEEKEND_REOPEN_HOUR = 21  # Senin 21:00 UTC
+
+
+def _market_status(now: datetime | None = None) -> dict[str, Any]:
+    """Return market session status for XAUUSD (forex 24x5).
+
+    Returns dict dengan `open` (bool) + `reason`/`next_open` — dipakai
+    SSE market-data untuk emit event `market_closed` saat libur.
+    """
+    now = now or datetime.now(UTC)
+    wday = now.weekday()  # ISO: 0=Senin .. 6=Minggu
+    if wday >= _WEEKEND_CLOSE_WDAY or (wday == 0 and now.hour < _WEEKEND_REOPEN_HOUR):
+        # Weekend gap: Sabtu (5) + Minggu (6), dan Senin sebelum 21:00 UTC
+        days_until = (0 - wday) % 7
+        if days_until == 0:
+            days_until = 7
+        next_open = now.replace(
+            hour=_WEEKEND_REOPEN_HOUR, minute=0, second=0, microsecond=0
+        ) + timedelta(days=days_until)
+        return {"open": False, "reason": "weekend", "next_open": _iso_utc_ms(next_open)}
+    return {"open": True, "reason": "open", "next_open": None}
 
 
 def _frame(
@@ -255,6 +283,28 @@ async def stream_market_data(
                 "stream_open",
                 {"stream_id": stream_id, "started_at": started_at},
             )
+
+            # Market calendar: kalau pasar libur (weekend/holiday), emit
+            # `market_closed` — UI tampilkan status, koneksi tetap hidup
+            # (auto-resume saat market buka, tanpa refresh browser).
+            status = _market_status()
+            if not status["open"]:
+                yield _emit(
+                    f"market:{symbol}",
+                    stream_id,
+                    "market_closed",
+                    {
+                        "reason": status["reason"],
+                        "next_open": status["next_open"],
+                        "message": f"Market closed ({status['reason']}) — live ticks resume at {status['next_open']}",
+                    },
+                )
+                interval_s = _HEARTBEAT_MARKET_S
+                while not await request.is_disconnected():
+                    yield ": heartbeat\n\n"
+                    with contextlib.suppress(TimeoutError):
+                        await asyncio.wait_for(request.is_disconnected(), timeout=interval_s)
+                return
 
             last_tick_time = time.time()
             while not await request.is_disconnected():

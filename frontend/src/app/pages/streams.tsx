@@ -10,7 +10,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 interface MarketDataEvent {
-  tick: MarketTick;
+  tick?: MarketTick;
+  /** Market libur (weekend/holiday) — stream hidup tanpa ticks. */
+  market_closed?: {
+    reason: string;
+    next_open: string;
+    message: string;
+  };
 }
 
 // VITE_API_BASE_URL mengandung /api/v1 (client.ts convention) — strip suffix
@@ -55,6 +61,10 @@ export function StreamsPage() {
     onEvent: (envelope) => {
       if (envelope.data?.tick) {
         upsertTick(envelope.data.tick);
+      }
+      // Market libur (weekend/holiday) — stream hidup tapi tanpa ticks.
+      if (envelope.data?.market_closed) {
+        setStreamState("market-data/XAUUSD", { status: "closed", error: envelope.data.message });
       }
     },
     onLifecycle: (event) => {

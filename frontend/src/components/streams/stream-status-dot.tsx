@@ -18,6 +18,11 @@ const STATUS_LABEL: Record<StreamState["status"], string> = {
   closed: "closed",
 };
 
+/** Market libur (weekend/holiday) — stream hidup tapi pasar tutup. */
+function isMarketClosed(state: StreamState): boolean {
+  return state.status === "closed" && state.error?.startsWith("Market closed") === true;
+}
+
 interface StreamStatusDotProps {
   state: StreamState;
   /** Show the stream key label next to the dot (default: false). */
@@ -29,16 +34,16 @@ interface StreamStatusDotProps {
  * health number with one dot per SSE channel, color-coded by status.
  */
 export function StreamStatusDot({ state, showLabel = false }: StreamStatusDotProps) {
+  const marketClosed = isMarketClosed(state);
+  const label = marketClosed ? "market closed" : STATUS_LABEL[state.status];
   return (
     <span
       className="inline-flex items-center gap-1.5"
       data-testid={`stream-dot-${state.key}`}
-      title={`${state.key}: ${STATUS_LABEL[state.status]}${
-        state.error ? ` — ${state.error}` : ""
-      }`}
+      title={`${state.key}: ${label}${state.error ? ` — ${state.error}` : ""}`}
     >
       <span
-        className={`h-2 w-2 rounded-full ${STATUS_COLOR[state.status]}`}
+        className={`h-2 w-2 rounded-full ${marketClosed ? "bg-amber-400" : STATUS_COLOR[state.status]}`}
         aria-hidden="true"
       />
       {showLabel && (

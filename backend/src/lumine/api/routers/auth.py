@@ -149,9 +149,7 @@ def _bootstrap_user(username: str, settings: Settings) -> dict[str, str] | None:
             # Deterministic per-deploy salt: stable within a deployment so
             # repeated logins compare against the same hash, but unique per
             # (deployment, user) and never stored as plaintext.
-            salt = hashlib.sha256(
-                f"{settings.hmac_secret_key}:{name}".encode()
-            ).hexdigest()[:32]
+            salt = hashlib.sha256(f"{settings.hmac_secret_key}:{name}".encode()).hexdigest()[:32]
             return {
                 "username": name,
                 "role": role,
@@ -228,7 +226,9 @@ async def login(
     """Authenticate and set the ``lumine_session`` HttpOnly cookie."""
     username = body.username.strip().lower()
     user = await _find_user(username, settings)
-    if user is None or not verify_password(body.password, user["password_salt"], user["password_hash"]):
+    if user is None or not verify_password(
+        body.password, user["password_salt"], user["password_hash"]
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid credentials",
@@ -302,4 +302,11 @@ async def verify(
 
 
 # Re-export for the envelope/lifespan wiring tests.
-__all__ = ["hash_password", "issue_token", "parse_token", "router", "seed_bootstrap_users", "verify_password"]
+__all__ = [
+    "hash_password",
+    "issue_token",
+    "parse_token",
+    "router",
+    "seed_bootstrap_users",
+    "verify_password",
+]

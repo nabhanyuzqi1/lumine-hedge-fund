@@ -8,9 +8,6 @@ vi.mock("echarts/core");
 vi.mock("echarts/charts");
 vi.mock("echarts/components");
 vi.mock("echarts/renderers");
-vi.mock("@/hooks/useDemoStreams", () => ({
-  useDemoStreams: () => ({ lastTick: null, pnlSeries: [] }),
-}));
 vi.mock("@/app/components/top-bar", () => ({
   TopBar: () => null,
 }));

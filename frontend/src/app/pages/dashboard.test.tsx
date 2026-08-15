@@ -7,9 +7,6 @@ vi.mock("echarts/core");
 vi.mock("echarts/charts");
 vi.mock("echarts/components");
 vi.mock("echarts/renderers");
-vi.mock("@/hooks/useDemoStreams", () => ({
-  useDemoStreams: () => ({ lastTick: null, pnlSeries: [] }),
-}));
 
 import * as echarts from "echarts/core";
 

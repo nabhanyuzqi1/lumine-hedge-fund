@@ -10,7 +10,7 @@ import hmac
 import json
 import time
 from collections import deque
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
@@ -30,6 +30,80 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
 
 _TEST_HMAC_SECRET = "bootstrap-secret-for-tests"
+
+
+# ── Fake DB session + market service (ZERO-DEMO: endpoint real tanpa DB) ──
+
+
+class FakeScalars(list[object]):
+    def all(self) -> list[object]:
+        return list(self)
+
+
+class FakeResult:
+    def __init__(self, rows: list[object]) -> None:
+        self.rows = rows
+
+    def scalars(self) -> FakeScalars:
+        return FakeScalars(self.rows)
+
+
+class FakeSession:
+    """Minimal async SQLAlchemy session stand-in (query kosong default)."""
+
+    def __init__(self, rows: list[object] | None = None) -> None:
+        self.rows = rows or []
+
+    async def __aenter__(self) -> FakeSession:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        pass
+
+    async def execute(self, stmt: object) -> FakeResult:
+        return FakeResult(self.rows)
+
+    async def get(self, model: object, pk: object) -> None:
+        return None
+
+    async def commit(self) -> None:
+        pass
+
+
+class FakeMarketService:
+    """MarketService stand-in: quote live untuk semua symbol."""
+
+    async def get_quote(self, symbol: str) -> object:
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            symbol=symbol.upper(),
+            bid=4300.0,
+            ask=4301.0,
+            timestamp=datetime.now(UTC),
+        )
+
+
+@pytest.fixture
+def mock_db_session(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Redirect get_sessionmaker ke FakeSession (query kosong)."""
+
+    def _maker() -> Callable[[], FakeSession]:
+        return FakeSession
+
+    import lumine.data.session as sess_module
+
+    monkeypatch.setattr(sess_module, "get_sessionmaker", _maker)
+
+
+@pytest.fixture
+def mock_market_service(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Redirect get_market_service ke FakeMarketService (quote live)."""
+    from lumine.api.routers import streams as streams_module
+
+    monkeypatch.setattr(
+        streams_module, "get_market_service", lambda: FakeMarketService(), raising=False
+    )
 
 
 class FakeRedis:
@@ -225,7 +299,7 @@ def test_hmac_invalid_signature_is_401(settings: Settings) -> None:
     assert response.status_code == 401
 
 
-def test_hmac_valid_bootstrap_key_succeeds(settings: Settings) -> None:
+def test_hmac_valid_bootstrap_key_succeeds(settings: Settings, mock_db_session: None) -> None:
     app = create_app(settings)
     unauthenticated_client = TestClient(app)
 
@@ -246,7 +320,7 @@ def test_hmac_valid_bootstrap_key_succeeds(settings: Settings) -> None:
     assert payload["data"]["portfolio_id"] == "default"
 
 
-def test_hmac_signature_covers_query_string(settings: Settings) -> None:
+def test_hmac_signature_covers_query_string(settings: Settings, mock_db_session: None) -> None:
     """Request path in the signature includes the query string (auth.md)."""
     app = create_app(settings)
     unauthenticated_client = TestClient(app)
@@ -282,7 +356,7 @@ def test_hmac_signature_covers_query_string(settings: Settings) -> None:
     assert tampered.json()["error"]["code"] == "INVALID_SIGNATURE"
 
 
-def test_hmac_replay_is_rejected(settings: Settings) -> None:
+def test_hmac_replay_is_rejected(settings: Settings, mock_db_session: None) -> None:
     """An identical signed request within the window is rejected (auth.md)."""
     app = create_app(settings)
     unauthenticated_client = TestClient(app)
@@ -312,11 +386,11 @@ def test_404_uses_error_contract(client: TestClient) -> None:
     assert payload["error"]["code"] == "NOT_FOUND"
 
 
-def test_portfolio_endpoint_envelope(client: TestClient) -> None:
+def test_portfolio_endpoint_envelope(client: TestClient, mock_db_session: None) -> None:
     response = client.get("/api/v1/portfolio/summary")
     assert response.status_code == 200
     assert "meta" in response.json()
-    assert response.json()["data"]["nav"] == "100000.00"
+    assert response.json()["data"]["nav"] == "0.00"
 
 
 def test_orders_endpoint_envelope(client: TestClient) -> None:
@@ -418,20 +492,21 @@ def test_rpc_command_status_endpoint(client: TestClient, monkeypatch: pytest.Mon
     assert response.status_code == 404
 
 
-def test_b06_portfolio_and_orders_endpoints(client: TestClient) -> None:
+def test_b06_portfolio_and_orders_endpoints(client: TestClient, mock_db_session: None) -> None:
     """B-06 additions: equity curve, cancel-all, history, bulk, signals/symbol."""
-    # Equity curve (paginated)
+    # Equity curve (paginated) — ZERO-DEMO: tanpa posisi = 1 titik 0
     response = client.get("/api/v1/portfolio/default/equity?limit=5")
     assert response.status_code == 200
     equity = response.json()["data"]
-    assert equity["total"] == 240
-    assert len(equity["items"]) == 5
+    assert equity["total"] == 1
+    assert len(equity["items"]) == 1
     assert set(equity["items"][0]) == {"ts", "nav", "equity", "drawdown"}
+    assert float(equity["items"][0]["nav"]) == 0.0
 
-    # Cancel-all
+    # Cancel-all — ZERO-DEMO: DB kosong = 0 dibatalkan (bukan 3 fiktif)
     response = client.delete("/api/v1/portfolio/default/orders")
     assert response.status_code == 200
-    assert response.json()["data"] == {"cancelled": 3, "portfolio_id": "default"}
+    assert response.json()["data"] == {"cancelled": 0, "portfolio_id": "default"}
 
     # Order history
     order_id = "11111111-2222-3333-4444-555555555555"
@@ -451,12 +526,12 @@ def test_b06_portfolio_and_orders_endpoints(client: TestClient) -> None:
     assert bulk["total"] == 2
     assert bulk["statuses"][order_id] == "filled"
 
-    # Signals per symbol
+    # Signals per symbol — ZERO-DEMO: pipeline agent belum live → kosong
     response = client.get("/api/v1/market/signals/XAUUSD")
     assert response.status_code == 200
     signals = response.json()["data"]
-    assert signals["total"] == 3
-    assert all(item["symbol"] == "XAUUSD" for item in signals["items"])
+    assert signals["total"] == 0
+    assert signals["items"] == []
 
     # Portfolio CRUD (single-portfolio v1)
     response = client.get("/api/v1/portfolio")
@@ -728,9 +803,7 @@ def test_pagination_limit_parameter(client: TestClient) -> None:
 def test_sse_stream_open_and_heartbeat_frames() -> None:
     """Live SSE frames: stream_open first, then a heartbeat comment line."""
     request = _FakeStreamRequest()
-    stream = streams._event_stream(
-        request, "unit-test-channel", 0.05
-    )
+    stream = streams._event_stream(request, "unit-test-channel", 0.05)
 
     first = stream.__anext__()
     opened = _run(first)
@@ -746,9 +819,7 @@ def test_sse_stream_open_and_heartbeat_frames() -> None:
 
 def test_sse_frame_timestamp_has_utc_z_suffix() -> None:
     """SSE envelope timestamps carry ISO 8601 ms + Z (sse-api.md Freshness)."""
-    frame = streams._emit(
-        "unit-test-z", "s1", "market_data", {"symbol": "XAUUSD"}
-    )
+    frame = streams._emit("unit-test-z", "s1", "market_data", {"symbol": "XAUUSD"})
     assert frame.startswith("id: 1\n")
     payload = json.loads(frame.split("data: ", 1)[1].strip())
     stamp = payload["meta"]["timestamp"]
@@ -778,9 +849,7 @@ def test_sse_replay_resumes_with_gap_detected() -> None:
     )
     streams._next_ids[channel] = 7
     req.headers = {"Last-Event-ID": "3"}
-    stream = streams._event_stream(
-        req, channel, 0.1
-    )
+    stream = streams._event_stream(req, channel, 0.1)
 
     opened = _run(stream.__anext__())
     assert "event: stream_open" in opened
@@ -835,7 +904,7 @@ def test_orders_patch_rejects_empty_body(client: TestClient) -> None:
 # ── Market cluster (marketClient.ts contract) ────────────────────────────
 
 
-def test_market_quote_endpoint(client: TestClient) -> None:
+def test_market_quote_endpoint(client: TestClient, mock_market_service: None) -> None:
     response = client.get("/api/v1/market/quote/XAUUSD")
     assert response.status_code == 200
     data = response.json()["data"]
@@ -844,22 +913,19 @@ def test_market_quote_endpoint(client: TestClient) -> None:
     assert float(data["last"]) > 0
 
 
-def test_market_quotes_batch_endpoint(client: TestClient) -> None:
+def test_market_quotes_batch_endpoint(client: TestClient, mock_market_service: None) -> None:
     response = client.get("/api/v1/market/quotes?symbols=XAUUSD&symbols=EURUSD")
     assert response.status_code == 200
     data = response.json()["data"]
     assert set(data) == {"XAUUSD", "EURUSD"}
 
 
-def test_market_ohlcv_endpoint(client: TestClient) -> None:
+def test_market_ohlcv_endpoint(client: TestClient, mock_db_session: None) -> None:
+    # ZERO-DEMO: DB kosong → [] (bukan random walk fiktif)
     response = client.get("/api/v1/market/ohlcv/XAUUSD?timeframe=1h&limit=5")
     assert response.status_code == 200
     bars = response.json()["data"]
-    assert len(bars) == 5
-    assert bars[0]["symbol"] == "XAUUSD"
-    assert bars[0]["timeframe"] == "1h"
-    stamps = [b["timestamp"] for b in bars]
-    assert stamps == sorted(stamps)
+    assert bars == []
 
 
 def test_market_ohlcv_rejects_bad_timeframe(client: TestClient) -> None:
@@ -884,14 +950,15 @@ def test_market_symbol_and_symbols_endpoints(client: TestClient) -> None:
     assert missing.status_code == 404
 
 
-def test_market_volatility_endpoint(client: TestClient) -> None:
+def test_market_volatility_endpoint(client: TestClient, mock_db_session: None) -> None:
+    # ZERO-DEMO: tanpa bars → 0.0 (bukan formula sintetis)
     response = client.get("/api/v1/market/volatility/XAUUSD?window=14")
     assert response.status_code == 200
     volatility = response.json()["data"]["volatility"]
-    assert 0.0 < volatility < 1.0
+    assert volatility == 0.0
 
 
-def test_market_correlation_endpoint(client: TestClient) -> None:
+def test_market_correlation_endpoint(client: TestClient, mock_db_session: None) -> None:
     response = client.get("/api/v1/market/correlation?symbols=XAUUSD&symbols=EURUSD")
     assert response.status_code == 200
     matrix = response.json()["data"]
@@ -899,11 +966,12 @@ def test_market_correlation_endpoint(client: TestClient) -> None:
     assert matrix["EURUSD"]["XAUUSD"] == matrix["XAUUSD"]["EURUSD"]
 
 
-def test_market_spread_endpoint(client: TestClient) -> None:
+def test_market_spread_endpoint(client: TestClient, mock_market_service: None) -> None:
     response = client.get("/api/v1/market/spread/XAUUSD?period=60")
     assert response.status_code == 200
     data = response.json()["data"]
     assert float(data["min_spread"]) <= float(data["avg_spread"]) <= float(data["max_spread"])
+    assert float(data["avg_spread"]) > 0
 
 
 def test_market_session_endpoint(client: TestClient) -> None:
@@ -915,19 +983,21 @@ def test_market_session_endpoint(client: TestClient) -> None:
     assert isinstance(data["is_trading_open"], bool)
 
 
-def test_market_features_endpoint(client: TestClient) -> None:
+def test_market_features_endpoint(client: TestClient, mock_db_session: None) -> None:
+    # ZERO-DEMO: tanpa bars → features kosong (bukan fitur sintetis)
     response = client.get("/api/v1/market/features/XAUUSD")
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["symbol"] == "XAUUSD"
-    assert "rsi_14" in data["features"]
-    assert "ema_20" in data["features"]
+    assert data["features"] == {}
 
 
 # ── Portfolio simulate (simulateTrade contract) ──────────────────────────
 
 
-def test_portfolio_simulate_endpoint(client: TestClient) -> None:
+def test_portfolio_simulate_endpoint(
+    client: TestClient, mock_db_session: None, mock_market_service: None
+) -> None:
     response = client.post(
         "/api/v1/portfolio/default/simulate",
         json={"symbol": "XAUUSD", "side": "buy", "volume": "0.40", "price": "2420.00"},

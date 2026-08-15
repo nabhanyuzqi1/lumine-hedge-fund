@@ -249,7 +249,9 @@ async def order_history(
         for i, (prev, next_state, actor, reason) in enumerate(demo_transitions)
     ]
     visible = items[pagination.offset : pagination.offset + pagination.limit]
-    return PaginatedList(items=visible, total=len(items), limit=pagination.limit, offset=pagination.offset)
+    return PaginatedList(
+        items=visible, total=len(items), limit=pagination.limit, offset=pagination.offset
+    )
 
 
 @router.post(
