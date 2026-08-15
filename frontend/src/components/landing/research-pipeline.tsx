@@ -99,61 +99,62 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
         transition={{ duration: 0.7, ease: "easeOut" }}
       >
         <div className="p-6 md:p-8">
-          {/* Stage chips */}
-          <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
-            {PIPELINE_STAGES.map((s, i) => {
-              const isActive = active === i;
-              const isDone = i < active;
-              return (
-                <motion.button
-                  key={s.number}
-                  type="button"
-                  className="flex cursor-pointer flex-col items-center gap-1.5 rounded-chip border px-2 py-3 transition-all duration-200"
-                  style={{
-                    borderColor: isActive
-                      ? "var(--color-accent)"
-                      : isDone
-                        ? "var(--color-up)"
-                        : "var(--color-line-soft)",
-                    backgroundColor: isActive
-                      ? "rgba(77,141,255,0.12)"
-                      : isDone
-                        ? "rgba(52,211,153,0.06)"
-                        : "var(--color-raised)",
-                  }}
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: 0.35, delay: i * 0.06 }}
-                  onClick={() => setActive(i)}
-                  aria-pressed={isActive}
-                >
-                  <span
-                    className={cn(
-                      "font-mono text-[10px] font-bold",
-                      isActive
-                        ? "text-accent"
-                        : isDone
-                          ? "text-up"
-                          : "text-ink-faint"
-                    )}
+          {/* Horizontal timeline: dots + connecting line */}
+          <div className="relative">
+            {/* Connecting line */}
+            <div className="absolute left-0 right-0 top-[11px] h-px bg-line" />
+            <motion.div
+              className="absolute left-0 top-[11px] h-px bg-accent"
+              initial={{ width: 0 }}
+              whileInView={{ width: `${(active / (PIPELINE_STAGES.length - 1)) * 100}%` }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+            {/* Stage dots */}
+            <div className="relative grid grid-cols-6">
+              {PIPELINE_STAGES.map((s, i) => {
+                const isActive = active === i;
+                const isDone = i < active;
+                return (
+                  <motion.button
+                    key={s.number}
+                    type="button"
+                    className="group flex cursor-pointer flex-col items-center gap-2"
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.3, delay: i * 0.05 }}
+                    onClick={() => setActive(i)}
+                    aria-pressed={isActive}
+                    aria-label={`Stage ${s.number}: ${s.title}`}
                   >
-                    {s.number}
-                  </span>
-                  <span
-                    className={cn(
-                      "font-display text-[10px] font-semibold uppercase tracking-wider md:text-xs",
-                      isActive ? "text-ink" : "text-ink-dim"
-                    )}
-                  >
-                    {s.title}
-                  </span>
-                </motion.button>
-              );
-            })}
+                    <span
+                      className={cn(
+                        "flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 font-mono text-[9px] font-bold transition-all duration-200",
+                        isActive
+                          ? "scale-110 border-accent bg-accent text-white"
+                          : isDone
+                            ? "border-up bg-up/10 text-up"
+                            : "border-line bg-raised text-ink-faint group-hover:border-ink-faint"
+                      )}
+                    >
+                      {isDone ? "✓" : s.number}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-display text-[9px] font-semibold uppercase tracking-wider transition-colors md:text-[10px]",
+                        isActive ? "text-accent" : isDone ? "text-ink-dim" : "text-ink-faint"
+                      )}
+                    >
+                      {s.title}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Active stage detail */}
+          {/* Active stage detail — satu deskripsi saja */}
           <AnimatePresence mode="wait">
             <motion.div
               key={stage.number}

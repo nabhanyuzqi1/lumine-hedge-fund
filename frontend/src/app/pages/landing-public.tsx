@@ -7,7 +7,6 @@ import { useState, type ReactNode } from "react";
 import { IntelligenceField } from "@/components/landing/intelligence-field";
 import { AgentNetwork } from "@/components/landing/agent-network";
 import { MasterDecision } from "@/components/landing/master-decision";
-import { AnimatedRiskValidation } from "@/components/landing/animated-risk-validation";
 import { RiskEngine } from "@/components/landing/risk-engine";
 import { BreakEvenVisualization } from "@/components/landing/breakeven-visualization";
 import { ResearchPipeline } from "@/components/landing/research-pipeline";
@@ -353,10 +352,7 @@ export function LandingPublicPage() {
             className="mb-10"
           />
           <MasterDecision className="mx-auto" showHeader={false} variant="compact" />
-          <div className="mt-16">
-            <AnimatedRiskValidation />
-          </div>
-          <div className="mt-14">
+          <div className="mt-12">
             <RiskEngine showHeader={false} variant="compact" />
           </div>
         </div>

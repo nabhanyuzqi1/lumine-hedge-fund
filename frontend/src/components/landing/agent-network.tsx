@@ -90,18 +90,11 @@ export function AgentNetwork({ className, showHeader = true }: AgentNetworkProps
                   style={{ backgroundColor: agent.color }}
                 />
               </div>
-              {/* Label */}
+              {/* Label — nama saja (role dilihat di Dialog) */}
               <div className="text-center">
                 <div className="font-display text-xs font-semibold text-ink">
                   {agent.name}
                 </div>
-                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink-faint">
-                  {agent.role}
-                </div>
-              </div>
-              {/* Hover hint */}
-              <div className="font-mono text-[8px] uppercase tracking-[0.2em] text-ink-faint opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                Inspect →
               </div>
             </motion.button>
           );

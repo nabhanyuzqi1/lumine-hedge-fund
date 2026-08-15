@@ -189,28 +189,47 @@ export function StructureIcon({ className, size = 24 }: IconProps) {
 }
 
 /**
- * Lumine Core Icon
- * Represents: master intelligence, decision engine
+ * Lumine Mark — dynamic signal-in-orbit logo (v2).
+ * Core intelligence inside an orbit ring, with an ascending signal
+ * line breaking out to the top-right. Represents: signal, light,
+ * intelligence moving within a contained system.
+ * Updated 2026-08 — redesigned per UI/UX V2 (dynamic, institutional).
  */
 export function LumineIcon({ className, size = 24 }: IconProps) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 24 24"
+      viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <path
-        d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+      {/* Orbit ring (dashed → dynamic rotation feel) */}
+      <circle
+        cx="16"
+        cy="16"
+        r="13.5"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.8"
+        strokeDasharray="68 17"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      {/* Inner halo */}
+      <circle cx="16" cy="16" r="7.5" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+      {/* Core */}
+      <circle cx="16" cy="16" r="3.6" fill="currentColor" />
+      {/* Ascending signal */}
+      <path
+        d="M4.5 23 L10 17.5 L14 20.5 L19.5 12 L24 8.5"
+        stroke="currentColor"
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill="currentColor"
-        fillOpacity="0.1"
       />
+      {/* Signal head */}
+      <circle cx="24" cy="8.5" r="2.6" fill="currentColor" />
     </svg>
   );
 }
