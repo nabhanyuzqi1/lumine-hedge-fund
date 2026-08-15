@@ -43,6 +43,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     Macro/news/smc analyst di-skip (data feeds eksternal belum tersedia);
     technical + IC sudah cukup untuk committee feed LIVE yang bermakna.
     """
+    from decimal import Decimal
     from pathlib import Path
     from uuid import uuid4
 
@@ -58,8 +59,6 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     from lumine.llm_gateway.gateway import Gateway
     from lumine.llm_gateway.registry import ModelRegistry
     from lumine.prompts.registry import Registry
-
-    from decimal import Decimal
 
     symbol = payload.get("symbol", "XAUUSD")
     settings = Settings()
