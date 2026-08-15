@@ -383,6 +383,8 @@ class SystemInfo(BaseModel):
     demo_data: bool
     environment: str
     version: str
+    # B9: symbol aktif (enable/disable currency via superadmin).
+    enabled_symbols: list[str] = ["XAUUSD"]
 
 
 class SystemConfigUpdate(BaseModel):
@@ -396,3 +398,6 @@ class SystemConfigUpdate(BaseModel):
     max_exposure_per_trade: float | None = None
     risk_per_trade: float | None = None
     max_daily_loss_pct: float | None = None
+    # B9: daftar symbol aktif (multicurrency enable/disable). Default
+    # ["XAUUSD"] — fokus matangkan 1 stream sebelum multi-stream.
+    enabled_symbols: list[str] | None = None

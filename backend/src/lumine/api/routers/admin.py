@@ -252,6 +252,20 @@ async def get_system_info(
         log.error("docker_list_containers_failed", exc_type=type(exc).__name__, exc_msg=str(exc)[:300])
         services = [ServiceStatus(name="unknown", status="unknown")]
 
+    # B9: enabled_symbols dari Redis config (default ["XAUUSD"]).
+    enabled_symbols = ["XAUUSD"]
+    try:
+        import json as _json
+
+        r = await get_redis()
+        raw = await r.hget(_SYSCONFIG_KEY, "enabled_symbols")
+        if raw:
+            parsed = _json.loads(raw)
+            if isinstance(parsed, list) and parsed:
+                enabled_symbols = [str(s).upper() for s in parsed]
+    except Exception:
+        pass  # Redis down → default XAUUSD
+
     return SystemInfo(
         services=services,
         llm_gateway_url=settings.llm_gateway_url,
@@ -259,6 +273,7 @@ async def get_system_info(
         demo_data=settings.demo_data,
         environment=getattr(settings, "environment", "production"),
         version="1.0.0",
+        enabled_symbols=enabled_symbols,
     )
 
 
@@ -268,7 +283,7 @@ _SYSCONFIG_KEY = "lumine:system_config"
 
 
 @router.put("/system-config", response_model=dict)
-async def update_system_config(
+async def update_system_config(  # noqa: C901 — fixed field list
     request: SystemConfigUpdate,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> dict:
@@ -295,6 +310,13 @@ async def update_system_config(
         updates["risk_per_trade"] = str(request.risk_per_trade)
     if request.max_daily_loss_pct is not None:
         updates["max_daily_loss_pct"] = str(request.max_daily_loss_pct)
+    if request.enabled_symbols is not None:
+        # B9: enable/disable currency — simpan sebagai JSON di Redis.
+        import json as _json
+
+        updates["enabled_symbols"] = _json.dumps(
+            [s.upper() for s in request.enabled_symbols]
+        )
 
     if updates:
         await r.hset(_SYSCONFIG_KEY, mapping=updates)

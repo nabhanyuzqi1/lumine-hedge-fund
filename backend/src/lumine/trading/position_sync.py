@@ -138,7 +138,12 @@ class PositionSyncWorker:
                 except (TypeError, ValueError):
                     continue
                 tickets.add(ticket)
-                await self._upsert_one(session, item, ticket)
+                # B9: normalize symbol prefix broker (XAUUSDc → XAUUSD)
+                normalized_item = {
+                    **item,
+                    "symbol": _normalize_symbol(str(item.get("symbol", "XAUUSD"))),
+                }
+                await self._upsert_one(session, normalized_item, ticket)
 
             # Tutup posisi MT5 yang tidak ada di snapshot terbaru
             existing = (
@@ -272,3 +277,13 @@ def _lineage_for_ticket(ticket: int) -> UUID:
 
     digest = hashlib.sha256(f"mt5-sync:{ticket}".encode()).digest()[:16]
     return UUID(bytes=digest)
+
+
+def _normalize_symbol(raw: str) -> str:
+    """B9: broker symbol prefix → base (XAUUSDc → XAUUSD, XAUUSD.stp → XAUUSD)."""
+    s = raw.upper()
+    if "." in s:
+        s = s.split(".", 1)[0]
+    if len(s) > 4 and s[-1] in ("C", "M", "X", "I", "Z"):
+        s = s[:-1]
+    return s
