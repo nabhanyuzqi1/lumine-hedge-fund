@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from decimal import Decimal
 from functools import partial
+from uuid import uuid4
 
 import redis.asyncio as redis  # async client — await redis.from_url() valid
 from fastapi import FastAPI
@@ -233,6 +234,7 @@ async def _deals_worker() -> None:
                     side = "sell" if int(d.get("type", 0)) == 1 else "buy"
                     session.add(
                         Order(
+                            order_id=uuid4(),
                             portfolio_id="default",
                             symbol=str(d.get("symbol", "XAUUSD")).upper(),
                             side=side,
