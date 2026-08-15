@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ROADMAP } from "@/data/landing/roadmap";
 
@@ -88,31 +89,42 @@ function PhaseCard({ phase, title, subtitle, description, status, milestones }: 
 
 interface RoadmapSectionProps {
   className?: string;
+  showHeader?: boolean;
 }
 
-export function RoadmapSection({ className }: RoadmapSectionProps) {
+export function RoadmapSection({ className, showHeader = true }: RoadmapSectionProps) {
   return (
     <div className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
-      <div className="space-y-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            Roadmap
-          </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+      {showHeader && (
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Roadmap
+            </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+            From Research to
+            <br />
+            Autonomous Intelligence.
+          </h3>
         </div>
-        <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-          From Research to
-          <br />
-          Autonomous Intelligence.
-        </h3>
-      </div>
+      )}
 
       {/* Phases */}
       <div className="space-y-6">
-        {ROADMAP.map((phase) => (
-          <PhaseCard key={phase.phase} {...phase} />
+        {ROADMAP.map((phase, i) => (
+          <motion.div
+            key={phase.phase}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.5, delay: (i % 3) * 0.1 }}
+          >
+            <PhaseCard {...phase} />
+          </motion.div>
         ))}
       </div>
 

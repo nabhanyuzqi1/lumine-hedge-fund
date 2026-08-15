@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -97,34 +98,51 @@ const PIPELINE_STAGES: PipelineStageProps[] = [
 
 interface ResearchPipelineProps {
   className?: string;
+  showHeader?: boolean;
 }
 
-export function ResearchPipeline({ className }: ResearchPipelineProps) {
+export function ResearchPipeline({ className, showHeader = true }: ResearchPipelineProps) {
   return (
     <div className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
-      <div className="space-y-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            Research Pipeline
-          </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+      {showHeader && (
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Research Pipeline
+            </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+            From Hypothesis to Capital.
+          </h3>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+            Every strategy must earn the right to reach production through a
+            rigorous research and validation lifecycle.
+          </p>
         </div>
-        <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-          From Hypothesis to Capital.
-        </h3>
-        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-          Every strategy must earn the right to reach production through a
-          rigorous research and validation lifecycle.
-        </p>
-      </div>
+      )}
 
       {/* Pipeline stages */}
-      <div className="rounded-panel border border-line bg-raised shadow-panel">
+      <motion.div
+        className="rounded-panel border border-line bg-raised shadow-panel"
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
         <div className="p-6 md:p-8">
           {PIPELINE_STAGES.map((stage, i) => (
-            <PipelineStage key={i} {...stage} />
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -16 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.45, delay: i * 0.08 }}
+            >
+              <PipelineStage {...stage} />
+            </motion.div>
           ))}
         </div>
 
@@ -137,7 +155,7 @@ export function ResearchPipeline({ className }: ResearchPipelineProps) {
             A strategy is not an edge until it survives validation.
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

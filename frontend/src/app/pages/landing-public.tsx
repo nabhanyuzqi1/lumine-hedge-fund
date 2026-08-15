@@ -323,7 +323,7 @@ export function LandingPublicPage() {
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.8 }}
           >
-            <AgentNetwork className="mx-auto" />
+            <AgentNetwork className="mx-auto" showHeader={false} />
           </motion.div>
         </div>
       </section>
@@ -337,7 +337,7 @@ export function LandingPublicPage() {
             description="Each agent contributes a weighted thesis. Lumine Core assembles them into one directional view with explicit confidence."
             className="mb-16"
           />
-          <MasterDecision className="mx-auto" />
+          <MasterDecision className="mx-auto" showHeader={false} />
         </div>
       </section>
 
@@ -359,7 +359,7 @@ export function LandingPublicPage() {
           />
           <AnimatedRiskValidation />
           <div className="mt-20">
-            <RiskEngine />
+            <RiskEngine showHeader={false} />
           </div>
         </div>
       </section>
@@ -373,7 +373,7 @@ export function LandingPublicPage() {
             description="Lumine evaluates whether to hold or move stop-loss to break-even based on market structure and momentum — not arbitrary price levels."
             className="mb-16"
           />
-          <BreakEvenVisualization />
+          <BreakEvenVisualization showHeader={false} />
         </div>
       </section>
 
@@ -386,9 +386,9 @@ export function LandingPublicPage() {
             description="Every strategy moves through a disciplined lifecycle. Nothing reaches execution without out-of-sample validation."
             className="mb-16"
           />
-          <ResearchPipeline />
+          <ResearchPipeline showHeader={false} />
           <div className="mt-16">
-            <ValidationPipeline />
+            <ValidationPipeline showHeader={false} />
           </div>
         </div>
       </section>
@@ -403,9 +403,9 @@ export function LandingPublicPage() {
             description="Illustrative data showing how Lumine evaluates strategy quality across backtest, paper, and live phases."
             className="mb-16"
           />
-          <PerformanceDashboard />
+          <PerformanceDashboard showHeader={false} />
           <div className="mt-16">
-            <EquityCurve />
+            <EquityCurve showHeader={false} />
           </div>
         </div>
       </section>
@@ -419,7 +419,7 @@ export function LandingPublicPage() {
             description="Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
             className="mb-16"
           />
-          <RegimeEngine />
+          <RegimeEngine showHeader={false} />
         </div>
       </section>
 
@@ -432,7 +432,7 @@ export function LandingPublicPage() {
             description="A complete, inspectable record of how each thesis was assembled, validated, and executed. Pause the stream to read it."
             className="mb-16"
           />
-          <AuditLog />
+          <AuditLog showHeader={false} />
         </div>
       </section>
 
@@ -445,7 +445,7 @@ export function LandingPublicPage() {
             description="Hover each layer to see its inputs and outputs, and how components connect through the full loop."
             className="mb-16"
           />
-          <ArchitectureDiagram />
+          <ArchitectureDiagram showHeader={false} />
         </div>
       </section>
 
@@ -463,7 +463,7 @@ export function LandingPublicPage() {
             title="Built in phases. Verified at every step."
             className="mb-16"
           />
-          <RoadmapSection />
+          <RoadmapSection showHeader={false} />
         </div>
       </section>
 

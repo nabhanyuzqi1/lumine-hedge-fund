@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -8,36 +9,46 @@ import { cn } from "@/lib/utils";
 
 interface BreakEvenVisualizationProps {
   className?: string;
+  showHeader?: boolean;
 }
 
 export function BreakEvenVisualization({
   className,
+  showHeader = true,
 }: BreakEvenVisualizationProps) {
   return (
     <div className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
-      <div className="space-y-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            Signature Feature
-          </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+      {showHeader && (
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Signature Feature
+            </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+            Break-Even Should
+            <br />
+            Understand Structure.
+          </h3>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+            A profitable position does not automatically justify moving its stop
+            to entry. Lumine evaluates market structure, momentum, volatility, and
+            nearby levels before adjusting risk.
+          </p>
         </div>
-        <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-          Break-Even Should
-          <br />
-          Understand Structure.
-        </h3>
-        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-          A profitable position does not automatically justify moving its stop
-          to entry. Lumine evaluates market structure, momentum, volatility, and
-          nearby levels before adjusting risk.
-        </p>
-      </div>
+      )}
 
       {/* Visualization card */}
-      <div className="rounded-panel border border-line bg-raised shadow-panel">
+      <motion.div
+        className="rounded-panel border border-line bg-raised shadow-panel"
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
         <div className="space-y-6 p-6 md:p-8">
           {/* Decision tree */}
           <div className="space-y-4">
@@ -191,7 +202,7 @@ export function BreakEvenVisualization({
             structure-aware trade management philosophy.
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

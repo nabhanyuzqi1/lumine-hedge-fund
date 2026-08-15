@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -89,31 +90,41 @@ const VALIDATION_CHECKS = [
 
 interface ValidationPipelineProps {
   className?: string;
+  showHeader?: boolean;
 }
 
-export function ValidationPipeline({ className }: ValidationPipelineProps) {
+export function ValidationPipeline({ className, showHeader = true }: ValidationPipelineProps) {
   return (
     <div className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
-      <div className="space-y-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            Validation Pipeline
-          </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+      {showHeader && (
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Validation Pipeline
+            </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+            A Strategy Is Not an Edge
+            <br />
+            Until It Survives Validation.
+          </h3>
         </div>
-        <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-          A Strategy Is Not an Edge
-          <br />
-          Until It Survives Validation.
-        </h3>
-      </div>
+      )}
 
       {/* Validation flow */}
       <div className="space-y-3">
         {VALIDATION_STAGES.map((stage, i) => (
-          <div key={i} className="space-y-2">
+          <motion.div
+            key={i}
+            className="space-y-2"
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4, delay: i * 0.08 }}
+          >
             <ValidationStage {...stage} />
             {i < VALIDATION_STAGES.length - 1 && (
               <div className="flex justify-center">
@@ -132,7 +143,7 @@ export function ValidationPipeline({ className }: ValidationPipelineProps) {
                 </svg>
               </div>
             )}
-          </div>
+          </motion.div>
         ))}
       </div>
 

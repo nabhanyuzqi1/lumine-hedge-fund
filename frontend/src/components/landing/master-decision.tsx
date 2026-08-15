@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SAMPLE_MASTER_DECISION } from "@/data/landing/agents";
 import type { AgentAnalysis } from "@/data/landing/agents";
@@ -67,33 +68,42 @@ function AgentAnalysisRow({ analysis }: AgentAnalysisRowProps) {
 
 interface MasterDecisionProps {
   className?: string;
+  showHeader?: boolean;
 }
 
-export function MasterDecision({ className }: MasterDecisionProps) {
+export function MasterDecision({ className, showHeader = true }: MasterDecisionProps) {
   const decision = SAMPLE_MASTER_DECISION;
 
   return (
     <div className={cn("w-full max-w-4xl space-y-6", className)}>
       {/* Header */}
-      <div className="space-y-3 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            Lumine Decision
-          </span>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+      {showHeader && (
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Lumine Decision
+            </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+            Many Signals. One Decision.
+          </h3>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+            The Master Agent evaluates agreement, disagreement, confidence, and
+            market regime before deciding. It does not blindly follow one analyst.
+          </p>
         </div>
-        <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-          Many Signals. One Decision.
-        </h3>
-        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-          The Master Agent evaluates agreement, disagreement, confidence, and
-          market regime before deciding. It does not blindly follow one analyst.
-        </p>
-      </div>
+      )}
 
       {/* Decision card */}
-      <div className="rounded-panel border border-line bg-raised shadow-panel">
+      <motion.div
+        className="rounded-panel border border-line bg-raised shadow-panel"
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
         {/* Decision header */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line-soft p-4 md:p-6">
           <div className="flex items-center gap-3">
@@ -104,11 +114,18 @@ export function MasterDecision({ className }: MasterDecisionProps) {
               {decision.asset}
             </div>
           </div>
-          <BiasIndicator
-            bias={decision.bias}
-            confidence={decision.confidence}
-            size="lg"
-          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <BiasIndicator
+              bias={decision.bias}
+              confidence={decision.confidence}
+              size="lg"
+            />
+          </motion.div>
         </div>
 
         {/* Agent analyses */}
@@ -117,8 +134,16 @@ export function MasterDecision({ className }: MasterDecisionProps) {
             Agent Analyses
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            {decision.analyses.map((analysis) => (
-              <AgentAnalysisRow key={analysis.agent} analysis={analysis} />
+            {decision.analyses.map((analysis, i) => (
+              <motion.div
+                key={analysis.agent}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.45, delay: i * 0.1 }}
+              >
+                <AgentAnalysisRow analysis={analysis} />
+              </motion.div>
             ))}
           </div>
         </div>
@@ -147,7 +172,7 @@ export function MasterDecision({ className }: MasterDecisionProps) {
             SIMULATED DATA
           </span>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
