@@ -153,6 +153,30 @@ When Phase 10 becomes active, `docs/10-frontend/` must define:
 
 Phase 10 remains architecture and design documentation only. No frontend code or component scaffolding is allowed before Phase 14 is approved and Phase 15 begins.
 
+## Git & Collaboration Workflow
+
+Metode kolaborasi standar untuk semua perubahan di repo ini.
+
+### Alur dasar
+
+```
+main (production, hanya via PR dari dev)
+  └── dev (integration branch — semua kerja masuk ke sini)
+        ├── feat/<nama-fitur>   ← WAJIB untuk fitur major
+        └── fix/<nama-fix>      ← opsional untuk fix minor
+```
+
+### Aturan
+
+1. **Fitur major** — WAJIB bikin branch baru dari `dev` (nama: `feat/<deskripsi-singkat>`), kerjakan di sana, lalu buka **Pull Request ke `dev`**. Jangan commit langsung ke `dev` untuk fitur baru.
+2. **Fix minor** (bug kecil, typo, polish kecil, deploy fix) — boleh langsung ke `dev`, atau via branch `fix/<nama>` jika lebih aman. Gunakan penilaian baik: jika fix menyentuh banyak file atau mengubah perilaku, pakai branch + PR.
+3. **`main` hanya menerima via Pull Request dari `dev`** — tidak pernah commit langsung ke `main`.
+4. Sebelum buka PR: jalankan quality gate (backend: pytest + ruff; frontend: vitest + tsc + build), pastikan hijau.
+5. Deskripsikan perubahan di PR dengan jelas: apa, kenapa, bukti gate, dan test yang dijalankan.
+6. Untuk perubahan besar, update dokumen terkait (checkpoint, gap inventory, CLAUDE.md) di commit yang sama sebelum PR.
+7. Setelah PR ke `dev` di-merge, sync `dev` ke `main` via PR terpisah saat dianggap rilis-ready.
+8. Jangan push langsung ke branch `dev` dari mesin lain tanpa `git pull` terlebih dahulu.
+
 ## Mandatory Rules
 
 1. Always ask: **"Which phase are we currently working on?"**
