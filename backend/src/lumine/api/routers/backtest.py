@@ -5,8 +5,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.backtest.engine import BacktestResult, run_backtest
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
@@ -17,6 +18,7 @@ async def run_backtest_endpoint(
     symbol: str = "XAUUSD",
     timeframe: str = "1h",
     stop_pct: float = 0.02,
+    _principal: AuthenticatedPrincipal = Depends(require_scope("backtest:read")),
 ) -> dict:
     """Run backtest and return equity curve + trades + metrics.
 
