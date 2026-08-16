@@ -433,7 +433,15 @@ function TradingWorkspace() {
             <CardDescription>{t("terminal.positionsDescription", { count: positions.data?.length ?? 0 })}</CardDescription>
           </CardHeader>
           <CardContent>
-            <PositionsTable positions={positions.data ?? []} />
+            {positions.isLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-8 animate-pulse rounded bg-raised" />
+                ))}
+              </div>
+            ) : (
+              <PositionsTable positions={positions.data ?? []} />
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -442,7 +450,15 @@ function TradingWorkspace() {
             <CardDescription>{t("terminal.ordersDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <OrdersTable orders={orders.data ?? []} onModify={setModifyTarget} />
+            {orders.isLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-8 animate-pulse rounded bg-raised" />
+                ))}
+              </div>
+            ) : (
+              <OrdersTable orders={orders.data ?? []} onModify={setModifyTarget} />
+            )}
           </CardContent>
         </Card>
       </div>
