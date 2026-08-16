@@ -58,6 +58,17 @@
     "resumeStream": "Resume",
     "terminalTitle": "audit.log"
   },
+  "regime": {
+    "sectionKicker": "Market Regime",
+    "sectionTitle": "The system adapts to the market's current state.",
+    "description": "Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
+  },
+  "cta": {
+    "label": "Research Environment",
+    "title": "Explore the system.",
+    "description": "See how specialized agents form a thesis, how risk governs every decision, and how validation keeps the pipeline honest.",
+    "button": "Access Research Environment"
+  },
   "philosophy": {
     "sectionKicker": "Philosophy",
     "sectionTitle": "Built on First Principles",
