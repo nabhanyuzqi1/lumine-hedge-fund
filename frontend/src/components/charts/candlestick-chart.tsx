@@ -129,7 +129,7 @@ export function CandlestickChart({
   return (
     <ChartCard
       title="XAUUSD — Price Action"
-      description={`${timeframe} candlesticks · volume overlay`}
+      description={`${timeframe} candlesticks · volume overlay${isStale && bars.length > 0 ? ` · last bar: ${new Date((bars[bars.length - 1]!.time) * 1000).toLocaleDateString()}` : ""}`}
       toolbar={
         <div
           role="group"
