@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { SAMPLE_MASTER_DECISION, AGENTS } from "@/data/landing/agents";
 import {
   TechnicalIcon,
@@ -83,6 +84,7 @@ interface DecisionFlowProps {
 }
 
 export function DecisionFlow({ className }: DecisionFlowProps) {
+  const { t } = useTranslation();
   const decision = SAMPLE_MASTER_DECISION;
 
   return (
@@ -90,11 +92,11 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
       {/* Pipeline header */}
       <div className="mb-4 flex items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-ink-faint">
-          Decision Pipeline
+          {t("decision.pipelineTitle")}
         </span>
         <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-up">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-up" />
-          Live
+          {t("decision.live")}
         </span>
       </div>
 
