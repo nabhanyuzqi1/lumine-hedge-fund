@@ -370,7 +370,7 @@ export function IntelligenceField() {
           onHoverStart={() => setHovered("core")}
           onHoverEnd={() => setHovered(null)}
           role="button"
-          aria-label="Lumine core intelligence"
+          aria-label={t("intelligence.coreAria")}
         >
           {/* Glow */}
           <motion.div

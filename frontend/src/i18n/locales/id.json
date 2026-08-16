@@ -67,7 +67,8 @@
     "telemetryAgents": "Agen",
     "telemetryMode": "Mode",
     "telemetryResearch": "Riset",
-    "coreLabel": "Inti Lumine"
+    "coreLabel": "Inti Lumine",
+    "coreAria": "Intelijen inti Lumine"
   },
   "decision": {
     "sectionKicker": "Keputusan & Risiko",
@@ -96,7 +97,8 @@
     "structure": "Struktur",
     "momentum": "Momentum",
     "decision": "Keputusan",
-    "disclaimer": "Fitur konseptual. Bukan jaminan return yang lebih baik. Ini mendemonstrasikan filosofi manajemen trading yang sadar struktur dari Lumine."
+    "disclaimer": "Fitur konseptual. Bukan jaminan return yang lebih baik. Ini mendemonstrasikan filosofi manajemen trading yang sadar struktur dari Lumine.",
+    "simulatedProgress": "Progres harga simulasi"
   },
   "research": {
     "sectionKicker": "Riset",

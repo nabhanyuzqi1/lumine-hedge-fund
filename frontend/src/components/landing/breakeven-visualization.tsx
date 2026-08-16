@@ -224,18 +224,18 @@ export function BreakEvenVisualization({
           {/* Slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              <span>Simulated price progress</span>
-              <span className="text-ink">{pos}%</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={pos}
-              onChange={(e) => setPos(Number(e.target.value))}
-              className="w-full cursor-pointer accent-[#4d8dff]"
-              aria-label="Simulate price progress"
-            />
+              <span>{t("breakeven.simulatedProgress")}</span>
+                            <span className="text-ink">{pos}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={pos}
+                            onChange={(e) => setPos(Number(e.target.value))}
+                            className="w-full cursor-pointer accent-[#4d8dff]"
+                            aria-label={t("breakeven.simulatedProgress")}
+                          />
           </div>
 
           {/* Decision readout */}

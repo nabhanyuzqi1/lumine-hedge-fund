@@ -67,7 +67,8 @@
     "telemetryAgents": "Agents",
     "telemetryMode": "Mode",
     "telemetryResearch": "Research",
-    "coreLabel": "Lumine Core"
+    "coreLabel": "Lumine Core",
+    "coreAria": "Lumine core intelligence"
   },
   "decision": {
     "sectionKicker": "Decision & Risk",
@@ -96,7 +97,8 @@
     "structure": "Structure",
     "momentum": "Momentum",
     "decision": "Decision",
-    "disclaimer": "Conceptual feature. Not a guarantee of better returns. This demonstrates Lumine's structure-aware trade management philosophy."
+    "disclaimer": "Conceptual feature. Not a guarantee of better returns. This demonstrates Lumine's structure-aware trade management philosophy.",
+    "simulatedProgress": "Simulated price progress"
   },
   "research": {
     "sectionKicker": "Research",
