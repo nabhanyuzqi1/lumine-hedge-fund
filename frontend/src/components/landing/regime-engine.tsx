@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { MARKET_REGIME } from "@/data/landing/performance";
 
 /**
@@ -58,12 +59,38 @@ const REGIME_COLORS: Record<string, string> = {
   "NEWS RISK": "#F0555B",
 };
 
+const REGIME_DESC_KEYS: Record<string, string> = {
+  TRENDING: "regime.descTrending",
+  RANGING: "regime.descRanging",
+  "HIGH VOL": "regime.descHighVol",
+  "LOW VOL": "regime.descLowVol",
+  "RISK-ON": "regime.descRiskOn",
+  "NEWS RISK": "regime.descNewsRisk",
+};
+
+const REGIME_PREF_KEYS: Record<string, string> = {
+  TRENDING: "regime.prefTrending",
+  RANGING: "regime.prefRanging",
+  "HIGH VOL": "regime.prefHighVol",
+  "LOW VOL": "regime.prefLowVol",
+  "RISK-ON": "regime.prefRiskOn",
+  "NEWS RISK": "regime.prefNewsRisk",
+};
+
+const REGIME_ADJ_KEYS: Record<string, string> = {
+  NORMAL: "regime.adjNormal",
+  REDUCED: "regime.adjReduced",
+  TIGHTENED: "regime.adjTightened",
+  RESTRICTED: "regime.adjRestricted",
+};
+
 interface RegimeEngineProps {
   className?: string;
   showHeader?: boolean;
 }
 
 export function RegimeEngine({ className, showHeader = true }: RegimeEngineProps) {
+  const { t } = useTranslation();
   const regimes = MARKET_REGIME;
   const [active, setActive] = useState<string | null>("TRENDING");
   const detail = active ? REGIME_DETAILS[active] : null;
@@ -76,19 +103,16 @@ export function RegimeEngine({ className, showHeader = true }: RegimeEngineProps
           <div className="flex items-center justify-center gap-2">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
             <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-              Market Regime Engine
-            </span>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
-          </div>
-          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-            Markets Change.
-            <br />
-            Lumine Adapts.
-          </h3>
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-            Markets transition between trending, ranging, high volatility, and risk
-            regimes. Hover each regime to see how Lumine responds.
-          </p>
+                          {t("regime.engineTitle")}
+                        </span>
+                        <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+                      </div>
+                      <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+                        {t("regime.adaptTitle")}
+                      </h3>
+                      <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+                        {t("regime.adaptDescription")}
+                      </p>
         </div>
       )}
 
@@ -103,8 +127,8 @@ export function RegimeEngine({ className, showHeader = true }: RegimeEngineProps
           {/* Regime bars */}
           <div className="space-y-5 p-6 md:p-8">
             <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Current Market Regime
-            </div>
+                          {t("regime.currentRegime")}
+                        </div>
             {regimes.map((regime, i) => {
               const isActive = active === regime.regime;
               const color = REGIME_COLORS[regime.regime];
@@ -142,13 +166,13 @@ export function RegimeEngine({ className, showHeader = true }: RegimeEngineProps
                     />
                   </div>
                   <p
-                    className={cn(
-                      "mt-1 text-[11px] leading-relaxed transition-colors duration-200",
-                      isActive ? "text-ink-dim" : "text-ink-faint"
-                    )}
-                  >
-                    {regime.description}
-                  </p>
+                                      className={cn(
+                                        "mt-1 text-[11px] leading-relaxed transition-colors duration-200",
+                                        isActive ? "text-ink-dim" : "text-ink-faint"
+                                      )}
+                                    >
+                                      {t(REGIME_DESC_KEYS[regime.regime] ?? "regime.descTrending")}
+                                    </p>
                 </button>
               );
             })}
@@ -164,60 +188,62 @@ export function RegimeEngine({ className, showHeader = true }: RegimeEngineProps
               className="space-y-5"
             >
               <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                Current Regime
-              </div>
+                              {t("regime.currentRegimeShort")}
+                            </div>
 
-              <div>
-                <div
-                  className="font-display text-2xl font-bold md:text-3xl"
-                  style={{ color: activeColor }}
-                >
-                  {active}
-                </div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                  {detail?.confidence}% confidence
-                </div>
-              </div>
+                            <div>
+                              <div
+                                className="font-display text-2xl font-bold md:text-3xl"
+                                style={{ color: activeColor }}
+                              >
+                                {active}
+                              </div>
+                              <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                                {detail?.confidence}% {t("regime.confidence")}
+                              </div>
+                            </div>
 
-              <div className="h-px bg-line" />
+                            <div className="h-px bg-line" />
 
-              <div className="space-y-1.5">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                  Preferred behavior
-                </div>
-                <div className="text-sm text-ink">{detail?.preferred}</div>
-              </div>
+                            <div className="space-y-1.5">
+                              <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                                {t("regime.preferredBehavior")}
+                              </div>
+                              <div className="text-sm text-ink">
+                                {t(REGIME_PREF_KEYS[active ?? ""] ?? "regime.prefTrending")}
+                              </div>
+                            </div>
 
-              <div className="space-y-1.5">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                  Risk adjustment
-                </div>
-                <div
-                  className="inline-flex items-center gap-2 rounded-chip border px-2.5 py-1"
-                  style={{
-                    borderColor: `${activeColor}55`,
-                    backgroundColor: `${activeColor}14`,
-                    color: activeColor,
-                  }}
-                >
-                  <span
-                    className="h-1.5 w-1.5 animate-pulse rounded-full"
-                    style={{ backgroundColor: activeColor }}
-                  />
-                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em]">
-                    {detail?.riskAdjustment}
-                  </span>
-                </div>
-              </div>
+                            <div className="space-y-1.5">
+                              <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                                {t("regime.riskAdjustment")}
+                              </div>
+                              <div
+                                className="inline-flex items-center gap-2 rounded-chip border px-2.5 py-1"
+                                style={{
+                                  borderColor: `${activeColor}55`,
+                                  backgroundColor: `${activeColor}14`,
+                                  color: activeColor,
+                                }}
+                              >
+                                <span
+                                  className="h-1.5 w-1.5 animate-pulse rounded-full"
+                                  style={{ backgroundColor: activeColor }}
+                                />
+                                <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em]">
+                                  {t(REGIME_ADJ_KEYS[detail?.riskAdjustment ?? ""] ?? "regime.adjNormal")}
+                                </span>
+                              </div>
+                            </div>
             </motion.div>
           </div>
         </div>
 
         <div className="border-t border-warn/20 bg-warn/5 px-4 py-2 md:px-6">
-          <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-warn">
-            SIMULATED DATA
-          </span>
-        </div>
+                  <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-warn">
+                    {t("regime.simulatedData")}
+                  </span>
+                </div>
       </motion.div>
     </div>
   );

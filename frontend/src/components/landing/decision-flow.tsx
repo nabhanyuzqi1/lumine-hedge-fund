@@ -239,16 +239,16 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
                 />
               </svg>
               <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-up">
-                Approved
-              </span>
+                              {t("decision.approved")}
+                            </span>
             </motion.div>
           </div>
         </motion.div>
       </div>
 
       <p className="mt-4 text-center font-mono text-[9px] uppercase tracking-[0.2em] text-warn">
-        SIMULATED DATA
-      </p>
+              {t("decision.simulatedData")}
+            </p>
     </div>
   );
 }

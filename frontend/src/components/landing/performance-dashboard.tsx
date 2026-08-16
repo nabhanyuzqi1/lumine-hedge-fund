@@ -1,6 +1,7 @@
 import { motion, AnimatePresence, useInView, animate } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { SIMULATED_METRICS } from "@/data/landing/performance";
 import type { PerformanceMetrics } from "@/data/landing/performance";
 
@@ -87,6 +88,7 @@ interface PerformanceDashboardProps {
 }
 
 export function PerformanceDashboard({ className, showHeader = true }: PerformanceDashboardProps) {
+  const { t } = useTranslation();
   const [source, setSource] = useState<DataSource>("backtest");
   const metrics = source === "backtest" ? SIMULATED_METRICS : PAPER_METRICS;
 
@@ -97,17 +99,16 @@ export function PerformanceDashboard({ className, showHeader = true }: Performan
           <div className="flex items-center justify-center gap-2">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
             <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-              Performance Analytics
-            </span>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
-          </div>
-          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-            Performance Metrics
-          </h3>
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-            Illustrative analytics showing how Lumine evaluates strategy quality.
-            Switch between backtest and paper views.
-          </p>
+                          {t("performance.analyticsTitle")}
+                        </span>
+                        <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+                      </div>
+                      <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+                        {t("performance.metricsTitle")}
+                      </h3>
+                      <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+                        {t("performance.analyticsDescription")}
+                      </p>
         </div>
       )}
 
@@ -122,42 +123,42 @@ export function PerformanceDashboard({ className, showHeader = true }: Performan
           {/* Mode selector */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Data Source
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setSource("backtest")}
-                className={cn(
-                  "rounded-chip border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all",
-                  source === "backtest"
-                    ? "border-accent bg-accent/15 text-accent"
-                    : "border-line-soft bg-raised/30 text-ink-dim hover:text-ink"
-                )}
-              >
-                Backtest
-              </button>
-              <button
-                type="button"
-                onClick={() => setSource("paper")}
-                className={cn(
-                  "rounded-chip border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all",
-                  source === "paper"
-                    ? "border-accent bg-accent/15 text-accent"
-                    : "border-line-soft bg-raised/30 text-ink-dim hover:text-ink"
-                )}
-              >
-                Paper
-              </button>
-              <button
-                type="button"
-                disabled
-                className="cursor-not-allowed rounded-chip border border-line-soft bg-raised/30 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-ink-faint opacity-50"
-                title="Coming soon"
-              >
-                Live · Coming Soon
-              </button>
-            </div>
+                          {t("performance.dataSource")}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSource("backtest")}
+                            className={cn(
+                              "rounded-chip border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all",
+                              source === "backtest"
+                                ? "border-accent bg-accent/15 text-accent"
+                                : "border-line-soft bg-raised/30 text-ink-dim hover:text-ink"
+                            )}
+                          >
+                            {t("performance.backtest")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSource("paper")}
+                            className={cn(
+                              "rounded-chip border px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all",
+                              source === "paper"
+                                ? "border-accent bg-accent/15 text-accent"
+                                : "border-line-soft bg-raised/30 text-ink-dim hover:text-ink"
+                            )}
+                          >
+                            {t("performance.paper")}
+                          </button>
+                          <button
+                            type="button"
+                            disabled
+                            className="cursor-not-allowed rounded-chip border border-line-soft bg-raised/30 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-ink-faint opacity-50"
+                            title={t("performance.comingSoon")}
+                          >
+                            {t("performance.liveComingSoon")}
+                          </button>
+                        </div>
           </div>
 
           {/* Metrics — animate on tab switch */}
@@ -171,28 +172,28 @@ export function PerformanceDashboard({ className, showHeader = true }: Performan
               className="space-y-4"
             >
               {/* Primary metrics */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <MetricCard label="CAGR" value={metrics.cagr} format="percent" />
-                <MetricCard label="Max Drawdown" value={metrics.maxDrawdown} format="percent" />
-                <MetricCard label="Sharpe Ratio" value={metrics.sharpe.toFixed(2)} format="ratio" />
-              </div>
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              <MetricCard label="CAGR" value={metrics.cagr} format="percent" />
+                              <MetricCard label={t("performance.maxDrawdown")} value={metrics.maxDrawdown} format="percent" />
+                              <MetricCard label={t("performance.sharpeRatio")} value={metrics.sharpe.toFixed(2)} format="ratio" />
+                            </div>
 
-              {/* Secondary metrics */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <MetricCard label="Profit Factor" value={metrics.profitFactor.toFixed(2)} format="ratio" />
-                <MetricCard label="Win Rate" value={metrics.winRate} format="percent" />
-                <MetricCard label="Expectancy (R)" value={metrics.expectancy.toFixed(2)} format="ratio" />
-              </div>
+                            {/* Secondary metrics */}
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              <MetricCard label={t("performance.profitFactor")} value={metrics.profitFactor.toFixed(2)} format="ratio" />
+                              <MetricCard label={t("performance.winRate")} value={metrics.winRate} format="percent" />
+                              <MetricCard label={t("performance.expectancy")} value={metrics.expectancy.toFixed(2)} format="ratio" />
+                            </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
         {/* SIMULATED label */}
         <div className="border-t border-warn/20 bg-warn/5 px-4 py-2 md:px-6">
-          <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-warn">
-            ILLUSTRATIVE / SIMULATED DATA — NOT REAL PERFORMANCE
-          </span>
-        </div>
+                  <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-warn">
+                    {t("performance.simulatedLabel")}
+                  </span>
+                </div>
       </motion.div>
     </div>
   );

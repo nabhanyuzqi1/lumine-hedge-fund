@@ -12,48 +12,18 @@ import { useTranslation } from "react-i18next";
 
 interface Stage {
   number: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   state: "complete" | "active" | "pending";
 }
 
 const STAGES: Stage[] = [
-  {
-    number: "01",
-    title: "Observe",
-    description: "Continuous data ingestion and regime detection.",
-    state: "complete",
-  },
-  {
-    number: "02",
-    title: "Research",
-    description: "Strategy hypotheses from observed market patterns.",
-    state: "complete",
-  },
-  {
-    number: "03",
-    title: "Validate",
-    description: "Statistical testing — hypothesis, correlation, stability.",
-    state: "active",
-  },
-  {
-    number: "04",
-    title: "Simulate",
-    description: "Backtesting, walk-forward and out-of-sample runs.",
-    state: "pending",
-  },
-  {
-    number: "05",
-    title: "Paper",
-    description: "Live paper trading with zero capital risk.",
-    state: "pending",
-  },
-  {
-    number: "06",
-    title: "Deploy",
-    description: "Controlled capital with strict risk limits.",
-    state: "pending",
-  },
+  { number: "01", titleKey: "research.stage01Title", descKey: "research.stage01Description", state: "complete" },
+  { number: "02", titleKey: "research.stage02Title", descKey: "research.stage02Description", state: "complete" },
+  { number: "03", titleKey: "research.stage03Title", descKey: "research.stage03Description", state: "active" },
+  { number: "04", titleKey: "research.stage04Title", descKey: "research.stage04Description", state: "pending" },
+  { number: "05", titleKey: "research.stage05Title", descKey: "research.stage05Description", state: "pending" },
+  { number: "06", titleKey: "research.stage06Title", descKey: "research.stage06Description", state: "pending" },
 ];
 
 const STATE_STYLE: Record<Stage["state"], { dot: string; label: string }> = {
@@ -63,9 +33,9 @@ const STATE_STYLE: Record<Stage["state"], { dot: string; label: string }> = {
 };
 
 const STATE_LABEL: Record<Stage["state"], string> = {
-  complete: "Done",
-  active: "Current",
-  pending: "Pending",
+  complete: "research.stateDone",
+  active: "research.stateCurrent",
+  pending: "research.statePending",
 };
 
 interface ResearchPipelineProps {
@@ -131,16 +101,16 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2.5">
                   <span className="font-display text-sm font-semibold text-ink">
-                    {stage.title}
-                  </span>
-                  <span className="flex items-center gap-1.5 font-mono text-[8px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
-                    <span className={cn("h-1 w-1 rounded-full", style.dot)} />
-                    {STATE_LABEL[stage.state]}
-                  </span>
-                </div>
-                <p className="mt-0.5 truncate text-xs leading-relaxed text-ink-dim md:text-[13px]">
-                  {stage.description}
-                </p>
+                                      {t(stage.titleKey)}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 font-mono text-[8px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+                                      <span className={cn("h-1 w-1 rounded-full", style.dot)} />
+                                      {t(STATE_LABEL[stage.state])}
+                                    </span>
+                                  </div>
+                                  <p className="mt-0.5 truncate text-xs leading-relaxed text-ink-dim md:text-[13px]">
+                                    {t(stage.descKey)}
+                                  </p>
               </div>
             </motion.div>
           );
