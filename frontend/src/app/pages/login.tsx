@@ -61,9 +61,16 @@ const SYSTEM_LINES = [
 
 function SystemTerminal() {
   return (
-    <div className="w-full max-w-md overflow-hidden rounded-panel border border-line bg-[#070b12] shadow-panel">
+    <div 
+      className="w-full max-w-md overflow-hidden rounded-panel border shadow-lg backdrop-blur-xl"
+      style={{
+        backgroundColor: "var(--glass-bg)",
+        borderColor: "var(--glass-border)",
+        boxShadow: "var(--glass-shadow)",
+      }}
+    >
       {/* Terminal header */}
-      <div className="flex items-center gap-2 border-b border-line-soft bg-raised/60 px-4 py-2.5">
+      <div className="flex items-center gap-2 border-b border-line-soft bg-raised/40 px-4 py-2.5 backdrop-blur-sm">
         <span className="h-2.5 w-2.5 rounded-full bg-down/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-warn/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-up/70" />
@@ -194,6 +201,16 @@ export function LoginPage() {
         </Link>
       </motion.div>
 
+      {/* Language Switcher - pojok kanan atas (mirror back button) */}
+      <motion.div
+        className="absolute right-5 top-5 z-10 md:right-8 md:top-8"
+        initial={{ opacity: 0, x: 12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <LanguageSwitcher />
+      </motion.div>
+
       <div className="relative grid w-full max-w-4xl items-center gap-10 px-6 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
         {/* LEFT — brand + system terminal (desktop) */}
         <motion.div
@@ -254,10 +271,7 @@ export function LoginPage() {
               </span>
             </div>
 
-            {/* Language Switcher - pojok kanan atas form */}
-            <div className="mb-6 flex items-center justify-end">
-              <LanguageSwitcher />
-            </div>
+            {/* Language Switcher sudah dipindah ke atas */}
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="space-y-1.5">
