@@ -138,8 +138,8 @@ export function OrderDetailPage() {
               <div>
                 <dt className="text-[11px] uppercase tracking-wider text-text-secondary">Qty</dt>
                 <dd className="font-mono text-sm tabular-nums text-text-primary">
-                  {data.quantity.toFixed(2)}
-                </dd>
+                                  {data.quantity != null ? data.quantity.toFixed(2) : "—"}
+                                </dd>
               </div>
               <div>
                 <dt className="text-[11px] uppercase tracking-wider text-text-secondary">Entry</dt>

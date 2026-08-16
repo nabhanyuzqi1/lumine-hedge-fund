@@ -86,7 +86,11 @@ function PositionsTable({ positions }: { positions: PositionFixture[] }) {
         {
           key: "qty",
           header: "Qty",
-          cell: (row) => <span className="font-mono tabular-nums">{row.quantity.toFixed(2)}</span>,
+          cell: (row) => (
+            <span className="font-mono tabular-nums">
+              {row.quantity != null ? row.quantity.toFixed(2) : "—"}
+            </span>
+          ),
         },
         {
           key: "avg",
@@ -158,7 +162,11 @@ function OrdersTable({
         {
           key: "qty",
           header: "Qty",
-          cell: (row) => <span className="font-mono tabular-nums">{row.quantity.toFixed(2)}</span>,
+          cell: (row) => (
+            <span className="font-mono tabular-nums">
+              {row.quantity != null ? row.quantity.toFixed(2) : "—"}
+            </span>
+          ),
         },
         {
           key: "status",

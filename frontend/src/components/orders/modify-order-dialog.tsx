@@ -79,8 +79,8 @@ export function ModifyOrderDialog({ order, open, onOpenChange }: ModifyOrderDial
           <DialogHeader>
             <DialogTitle>Modify order {order.id}</DialogTitle>
             <DialogDescription>
-              Adjust the working limit terms before fill. Current: {order.quantity.toFixed(2)} @{" "}
-              {order.entry_price.toFixed(2)}.
+              Adjust the working limit terms before fill. Current: {order.quantity != null ? order.quantity.toFixed(2) : "—"} @{" "}
+                            {order.entry_price != null ? order.entry_price.toFixed(2) : "—"}.
             </DialogDescription>
           </DialogHeader>
 

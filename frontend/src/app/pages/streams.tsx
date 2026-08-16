@@ -143,12 +143,12 @@ export function StreamsPage() {
                 { key: "symbol", header: "Symbol", cell: (row) => row.symbol },
                 { key: "side", header: "Side", cell: (row) => row.side },
                 { key: "quantity", header: "Qty", cell: (row) => row.quantity },
-                { key: "entry", header: "Entry", cell: (row) => row.avg_entry_price.toFixed(2) },
-                {
-                  key: "pnl",
-                  header: "Unrealized P&L",
-                  cell: (row) => row.unrealized_pnl.toFixed(2),
-                },
+                { key: "entry", header: "Entry", cell: (row) => (row.avg_entry_price != null ? row.avg_entry_price.toFixed(2) : "—") },
+                                {
+                                  key: "pnl",
+                                  header: "Unrealized P&L",
+                                  cell: (row) => (row.unrealized_pnl != null ? row.unrealized_pnl.toFixed(2) : "—"),
+                                },
               ]}
               data={positions}
               getRowId={(row) => row.id}

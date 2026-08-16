@@ -5,6 +5,7 @@ import { AuthProvider, RequireRole } from "@/lib/auth/role-context";
 import { PageShell } from "./components/page-shell";
 import { SuspenseOutlet } from "./components/suspense-outlet";
 import { LoadingScreenSkeleton } from "@/components/ui/skeleton";
+import { RouteErrorBoundary } from "@/components/ui/route-error-boundary";
 
 /**
  * Lumine route table.
@@ -113,15 +114,17 @@ export const router = createBrowserRouter([
   },
 
   // App routes — PageShell + user role required
-  {
-    element: (
-      <AuthProvider>
-        <UserRoute>
-          <PageShell />
-        </UserRoute>
-      </AuthProvider>
-    ),
-    children: [
+    {
+      element: (
+        <AuthProvider>
+          <UserRoute>
+            <RouteErrorBoundary>
+              <PageShell />
+            </RouteErrorBoundary>
+          </UserRoute>
+        </AuthProvider>
+      ),
+      children: [
       // /app/* prefix routes
       { path: "/app/terminal", element: <LazyTerminal /> },
       { path: "/app/dashboard", element: <LazyDashboard /> },

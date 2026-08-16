@@ -95,8 +95,8 @@ export function LineageDetailPage() {
               <div>
                 <dt className="text-[11px] uppercase tracking-wider text-text-secondary">Cost</dt>
                 <dd className="font-mono text-sm tabular-nums text-text-primary">
-                  ${data.cost_usd.toFixed(2)}
-                </dd>
+                                  ${data.cost_usd != null ? data.cost_usd.toFixed(2) : "—"}
+                                </dd>
               </div>
               <div>
                 <dt className="text-[11px] uppercase tracking-wider text-text-secondary">
