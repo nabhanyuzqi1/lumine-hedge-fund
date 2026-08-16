@@ -29,7 +29,18 @@
     "sectionKicker": "Keputusan & Risiko",
     "titleFirst": "Intelijen mengusulkan.",
     "titleSecond": "Risiko memutuskan.",
-    "description": "Tiga langkah sederhana: empat analis mengirim sinyal, master membentuk satu tesis, lalu tesis melewati gerbang risiko sebelum eksekusi."
+    "description": "Tiga langkah sederhana: empat analis mengirim sinyal, master membentuk satu tesis, lalu tesis melewati gerbang risiko sebelum eksekusi.",
+    "pipelineTitle": "Pipeline Keputusan",
+    "live": "Langsung",
+    "signals": "Sinyal",
+    "masterThesis": "Tesis Master",
+    "riskGates": "Gerbang Risiko",
+    "positionSizing": "Ukuran Posisi",
+    "maxExposure": "Eksposur Maksimal",
+    "dailyLossLimit": "Batas Kerugian Harian",
+    "killSwitch": "Tombol Darurat",
+    "approved": "Disetujui",
+    "simulatedData": "DATA SIMULASI"
   },
   "breakeven": {
     "sectionKicker": "Fitur Unggulan",

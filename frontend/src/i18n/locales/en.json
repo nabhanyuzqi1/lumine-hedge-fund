@@ -29,7 +29,18 @@
     "sectionKicker": "Decision & Risk",
     "titleFirst": "Intelligence proposes.",
     "titleSecond": "Risk decides.",
-    "description": "Three simple steps: four analysts send signals, the master forms a single thesis, then the thesis passes through risk gates before execution."
+    "description": "Three simple steps: four analysts send signals, the master forms a single thesis, then the thesis passes through risk gates before execution.",
+    "pipelineTitle": "Decision Pipeline",
+    "live": "Live",
+    "signals": "Signals",
+    "masterThesis": "Master Thesis",
+    "riskGates": "Risk Gates",
+    "positionSizing": "Position Sizing",
+    "maxExposure": "Max Exposure",
+    "dailyLossLimit": "Daily Loss Limit",
+    "killSwitch": "Kill Switch",
+    "approved": "Approved",
+    "simulatedData": "SIMULATED DATA"
   },
   "breakeven": {
     "sectionKicker": "Signature Feature",
@@ -45,7 +56,25 @@
   "research": {
     "sectionKicker": "Research",
     "sectionTitle": "Research Pipeline",
-    "description": "Continuous discovery and validation of systematic strategies."
+    "description": "Continuous discovery and validation of systematic strategies.",
+    "strategyLifecycle": "Strategy Lifecycle",
+    "fromHypothesis": "From Hypothesis to Capital.",
+    "lifecycleDescription": "Every strategy must survive this lifecycle before real capital is deployed.",
+    "stage01Title": "Observe",
+    "stage01Description": "Continuous data ingestion and regime detection.",
+    "stage02Title": "Research",
+    "stage02Description": "Strategy hypotheses from observed market patterns.",
+    "stage03Title": "Validate",
+    "stage03Description": "Statistical testing — hypothesis, correlation, stability.",
+    "stage04Title": "Simulate",
+    "stage04Description": "Backtesting, walk-forward and out-of-sample runs.",
+    "stage05Title": "Paper",
+    "stage05Description": "Live paper trading with zero capital risk.",
+    "stage06Title": "Deploy",
+    "stage06Description": "Controlled capital with strict risk limits.",
+    "stateDone": "Done",
+    "stateCurrent": "Current",
+    "statePending": "Pending"
   },
   "performance": {
     "sectionKicker": "Performance",
