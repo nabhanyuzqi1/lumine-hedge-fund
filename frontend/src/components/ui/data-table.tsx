@@ -39,6 +39,32 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const parentRef = React.useRef<HTMLDivElement>(null);
 
+  // Forward wheel events to the page scroller when the table has reached
+  // its scroll limit (or has no overflow). Prevents table from trapping
+  // wheel events that should scroll the page.
+  React.useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const canScrollDown = e.deltaY > 0 && el.scrollTop < el.scrollHeight - el.clientHeight - 1;
+      const canScrollUp = e.deltaY < 0 && el.scrollTop > 0;
+      if (canScrollDown || canScrollUp) return; // let table scroll
+      // Find main scroller and forward
+      let parent: HTMLElement | null = el.parentElement;
+      while (parent) {
+        const style = window.getComputedStyle(parent);
+        const oy = style.overflowY;
+        if ((oy === "auto" || oy === "scroll") && parent.scrollHeight > parent.clientHeight) {
+          parent.scrollBy({ top: e.deltaY, behavior: "auto" });
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: true });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   const virtualizer = useVirtualizer({
     count: data.length,
     getScrollElement: () => parentRef.current,
