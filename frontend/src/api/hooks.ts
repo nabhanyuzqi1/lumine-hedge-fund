@@ -471,7 +471,7 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryKey: ["positions", portfolioId],
     queryFn: async (): Promise<PositionFixture[]> => {
       try {
-        const page = await get<{ items: RestPosition[] }>(`/portfolio/positions`);
+        const page = await get<{ items: RestPosition[] }>(`/portfolio/${portfolioId}/positions`);
         if (Array.isArray(page?.items)) {
           return page.items.map(toPositionFixture);
         }
