@@ -79,10 +79,91 @@ const TABS: { id: Tab; label: string }[] = [
 
 function useSystemInfo() {
   return useQuery({
-    queryKey: ["admin", "system-info"],
+    queryKey: ["system-info"],
     queryFn: () => get<SystemInfo>("/admin/system-info"),
-    refetchInterval: 15_000,
+    staleTime: 30_000,
   });
+}
+
+interface EAStatus {
+  ea_version: string;
+  ea_build: string;
+  seed_phase: string;
+  seed_done: string;
+  last_tick_ts: string | null;
+  ticks_sent: string;
+  ticks_pending: number;
+  proxy_url: string;
+  connected: boolean;
+  logs: string[];
+  error?: string;
+}
+
+function useEAStatus() {
+  return useQuery({
+    queryKey: ["ea-status"],
+    queryFn: () => get<EAStatus>("/admin/ea-status"),
+    staleTime: 0,
+    refetchInterval: 5_000,
+    retry: 1,
+  });
+}
+
+function EAStatusCard() {
+  const { data, isLoading, isError } = useEAStatus();
+  if (isLoading) return <div className="h-8 animate-pulse rounded bg-raised" />;
+  if (isError || !data) return <p className="text-xs text-danger">EA status unavailable</p>;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Badge tone={data.connected ? "ok" : "warn"} label={data.connected ? "Connected" : "No Status"} />
+        {data.ea_version !== "unknown" && (
+          <span className="font-mono text-xs text-ink-dim">v{data.ea_version}</span>
+        )}
+        {data.ea_build !== "unknown" && (
+          <span className="font-mono text-xs text-ink-faint">build {data.ea_build}</span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-1 text-[11px]">
+        <span className="text-ink-faint">Seed Phase</span>
+        <span className="font-mono text-ink">{data.seed_phase || "—"}</span>
+        <span className="text-ink-faint">Seed Done</span>
+        <span className="font-mono text-ink">{data.seed_done === "1" ? "✅ Yes" : "⏳ No"}</span>
+        <span className="text-ink-faint">Ticks Sent</span>
+        <span className="font-mono text-ink">{data.ticks_sent}</span>
+        <span className="text-ink-faint">Ticks Pending</span>
+        <span className="font-mono text-ink">{data.ticks_pending}</span>
+        {data.last_tick_ts && (
+          <>
+            <span className="text-ink-faint">Last Tick</span>
+            <span className="font-mono text-ink text-[10px]">{new Date(Number(data.last_tick_ts) * 1000).toLocaleTimeString()}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EALogsPanel() {
+  const { data, isLoading } = useEAStatus();
+  return (
+    <div className="rounded-panel border border-line bg-bg-raised p-3">
+      <h3 className="mb-2 font-mono text-xs font-semibold text-ink">EA Logs (live)</h3>
+      {isLoading ? (
+        <div className="space-y-1">{[...Array(3)].map((_, i) => <div key={i} className="h-4 animate-pulse rounded bg-raised" />)}</div>
+      ) : (data?.logs?.length ?? 0) === 0 ? (
+        <p className="text-xs text-ink-faint">No logs in mt5:logs — EA mungkin belum push logs ke Redis</p>
+      ) : (
+        <ul className="max-h-64 space-y-0.5 overflow-auto overscroll-none font-mono text-[10px] text-ink-dim">
+          {(data?.logs ?? []).map((line, i) => (
+            <li key={i} className={`whitespace-pre-wrap rounded px-1 py-0.5 ${line.includes("ERROR") || line.includes("failed") ? "bg-danger/10 text-danger" : line.includes("RECOVERED") || line.includes("OK") ? "bg-ok/10 text-ok" : ""}`}>
+              {line}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function useUpdateConfig() {
@@ -207,6 +288,12 @@ function OverviewTab({ data, isError }: { data: SystemInfo | undefined; isError:
         <CardContent>
           <Badge tone="neutral" label={data.environment} />
           <p className="mt-1 text-xs text-ink-dim">Version: {data.version}</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>EA Status</CardTitle></CardHeader>
+        <CardContent>
+          <EAStatusCard />
         </CardContent>
       </Card>
       <Card>
@@ -518,7 +605,12 @@ export function SuperadminPage() {
         {tab === "services" && <ServicesTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "config" && <ConfigTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "llm" && <LLMRoutingTab />}
-        {tab === "mt5" && <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />}
+        {tab === "mt5" && (
+          <div className="space-y-4">
+            <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />
+            <EALogsPanel />
+          </div>
+        )}
         {tab === "logs" && <EmbedTab url="/dozzle/" title="Dozzle — Container Log Viewer (session-protected)" />}
         {tab === "autogen" && (
           <EmbedTab

@@ -270,10 +270,10 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
       if (USE_REAL_DATA) return [];
       return generateBars({ intervalSec: TIMEFRAME_SECONDS[timeframe] });
     },
-    staleTime: 30_000,
+    staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
-    refetchInterval: 60_000,
+    refetchInterval: 5_000,
   });
 }
 
@@ -486,7 +486,7 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       if (USE_REAL_DATA) return [];
       return generatePositions();
     },
-    staleTime: 30_000,
+    staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
     refetchInterval: 30_000,
@@ -508,7 +508,10 @@ export function useOrders(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       if (USE_REAL_DATA) return [];
       return generateOrders();
     },
-    staleTime: 30_000,
+    staleTime: 0,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
+    refetchInterval: 5_000,
   });
 }
 

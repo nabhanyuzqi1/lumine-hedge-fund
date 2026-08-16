@@ -383,3 +383,34 @@ async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, man
         await r.hset(_SYSCONFIG_KEY, mapping=updates)
 
     return {"updated": list(updates.keys()), "note": "restart api container to apply all changes"}
+
+
+@router.get("/ea-status")
+async def get_ea_status(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    """EA status: version, seed phase, last tick, ticks sent — dari Redis mt5:status hash."""
+    try:
+        r = await get_redis()
+        raw = await r.hgetall("mt5:status")
+        # mt5:ticks queue length → proxy untuk "ticks pending"
+        ticks_pending = await r.llen("mt5:ticks")
+        # mt5:logs — recent EA log lines (LPUSH by EA, newest first)
+        logs_raw = await r.lrange("mt5:logs", 0, 49)
+        logs = [ln.decode() if isinstance(ln, bytes) else str(ln) for ln in logs_raw]
+        status = {k.decode() if isinstance(k, bytes) else k: v.decode() if isinstance(v, bytes) else v
+                  for k, v in raw.items()} if raw else {}
+        return {
+            "ea_version": status.get("ea_version", "unknown"),
+            "ea_build": status.get("ea_build", "unknown"),
+            "seed_phase": status.get("seed_phase", "unknown"),
+            "seed_done": status.get("seed_done", "0"),
+            "last_tick_ts": status.get("last_tick_ts"),
+            "ticks_sent": status.get("ticks_sent", "0"),
+            "ticks_pending": ticks_pending,
+            "proxy_url": status.get("proxy_url", "unknown"),
+            "connected": len(status) > 0,
+            "logs": logs,
+        }
+    except Exception as exc:
+        return {"connected": False, "error": str(exc), "logs": []}
