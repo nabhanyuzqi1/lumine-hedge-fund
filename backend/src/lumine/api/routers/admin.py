@@ -328,7 +328,7 @@ async def list_llm_usage(
 
 
 @router.put("/system-config", response_model=dict)
-async def update_system_config(  # noqa: C901 — fixed field list
+async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, many branches
     request: SystemConfigUpdate,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> dict:
