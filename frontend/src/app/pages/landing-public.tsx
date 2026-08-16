@@ -257,14 +257,14 @@ function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.5 }}
           >
-            <a href="#intelligence">
-              <Button
-                size="lg"
-                className="bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
-              >
-                {t('hero.ctaExplore')}
-              </Button>
-            </a>
+            <a href="#risk">
+                          <Button
+                            size="lg"
+                            className="bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
+                          >
+                            {t('hero.ctaExplore')}
+                          </Button>
+                        </a>
             <a href="#research">
               <Button
                 size="lg"
@@ -366,7 +366,7 @@ export function LandingPublicPage() {
           </Suspense>
 
       {/* DECISION & RISK — 3-step flow: signals → thesis → risk gates */}
-            <section id="risk" className="border-b border-line bg-raised py-16 md:py-24">
+            <section id="risk" className="scroll-mt-24 border-b border-line bg-raised py-16 md:py-24">
               <div className="mx-auto w-full max-w-7xl px-6">
                 <SectionHeader
                   kicker={t('decision.sectionKicker')}
@@ -403,7 +403,7 @@ export function LandingPublicPage() {
                   </section>
 
                   {/* RESEARCH — strategy lifecycle (Section 22) */}
-                  <section id="research" className="border-b border-line bg-raised py-16 md:py-24">
+                  <section id="research" className="scroll-mt-24 border-b border-line bg-raised py-16 md:py-24">
                     <div className="mx-auto w-full max-w-7xl px-6">
                       <SectionHeader
                         kicker={t('research.sectionKicker')}
@@ -418,7 +418,7 @@ export function LandingPublicPage() {
                   </section>
 
                   {/* PERFORMANCE — data-dense (Section 23) */}
-                  <section id="performance" className="border-b border-line bg-bg py-16 md:py-24">
+                  <section id="performance" className="scroll-mt-24 border-b border-line bg-bg py-16 md:py-24">
                     <div className="mx-auto w-full max-w-7xl px-6">
                       <SectionHeader
                         kicker={t('performance.sectionKicker')}
