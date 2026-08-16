@@ -58,6 +58,17 @@
     "resumeStream": "Lanjutkan",
     "terminalTitle": "audit.log"
   },
+  "regime": {
+    "sectionKicker": "Rezim Pasar",
+    "sectionTitle": "Sistem beradaptasi dengan kondisi pasar saat ini.",
+    "description": "Deteksi rezim membentuk pemilihan strategi dan postur risiko. Arahkan kursor ke setiap rezim untuk melihat respons Lumine."
+  },
+  "cta": {
+    "label": "Lingkungan Riset",
+    "title": "Jelajahi sistem.",
+    "description": "Lihat bagaimana agen khusus membentuk tesis, bagaimana risiko mengatur setiap keputusan, dan bagaimana validasi menjaga integritas pipeline.",
+    "button": "Akses Lingkungan Riset"
+  },
   "philosophy": {
     "sectionKicker": "Filosofi",
     "sectionTitle": "Dibangun Atas Prinsip Pertama",

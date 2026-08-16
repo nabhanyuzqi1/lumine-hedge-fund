@@ -442,9 +442,9 @@ export function LandingPublicPage() {
                   <section className="border-b border-line bg-raised py-16 md:py-24">
                     <div className="mx-auto w-full max-w-7xl px-6">
                       <SectionHeader
-                        kicker="Market Regime"
-                        title="The system adapts to the market's current state."
-                        description="Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
+                        kicker={t('regime.sectionKicker')}
+                        title={t('regime.sectionTitle')}
+                        description={t('regime.description')}
                         className="mb-10"
                       />
                       <Suspense fallback={<ChartSkeleton />}>
@@ -488,15 +488,14 @@ export function LandingPublicPage() {
             <div className="flex flex-col items-center gap-2">
               <LumineIcon className="h-10 w-10 text-accent" />
               <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-faint">
-                Research Environment
+                {t('cta.label')}
               </span>
             </div>
             <h2 className="font-display text-3xl font-bold tracking-tight text-ink md:text-5xl">
-              Explore the system.
+              {t('cta.title')}
             </h2>
             <p className="max-w-xl text-base leading-relaxed text-ink-dim">
-              See how specialized agents form a thesis, how risk governs every
-              decision, and how validation keeps the pipeline honest.
+              {t('cta.description')}
             </p>
             {/* Magnetic CTA */}
             <MagneticButton>
@@ -505,7 +504,7 @@ export function LandingPublicPage() {
                   size="lg"
                   className="group bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
                 >
-                  Enter the System
+                  {t('cta.button')}
                   <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">
                     →
                   </span>
