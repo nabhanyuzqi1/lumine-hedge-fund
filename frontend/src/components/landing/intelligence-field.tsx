@@ -170,6 +170,8 @@ export function IntelligenceField() {
                 <motion.circle
                   r={2.4}
                   fill={node.color}
+                  cx={x1}
+                  cy={y1}
                   initial={{ opacity: 0 }}
                   animate={{
                     opacity: active ? 1 : 0.6,
@@ -194,6 +196,8 @@ export function IntelligenceField() {
                   r={active ? 4 : 2.5}
                   fill={node.color}
                   opacity={0.5}
+                  cx={midX}
+                  cy={midY}
                   animate={{
                     cx: [midX, midX],
                     cy: [midY, midY],
