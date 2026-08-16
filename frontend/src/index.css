@@ -118,15 +118,17 @@ html {
 }
 
 /* Smooth transition untuk semua elemen yang terpengaruh theme */
-* {
+*,
+*::before,
+*::after {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-duration: 300ms;
   transition-timing-function: ease;
 }
 
-/* Override untuk animasi yang tidak boleh smooth */
-@keyframes * {
-  transition: none !important;
+/* Exclude animasi dari smooth transition */
+*:where([class*="animate-"], [class*="motion-"]) {
+  transition: none;
 }
 
 

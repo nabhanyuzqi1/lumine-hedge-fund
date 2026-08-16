@@ -38,7 +38,6 @@ const TickerTape = lazy(() =>
 
 import { LumineIcon } from "@/components/landing/agent-icons";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ChartSkeleton, HeroSkeleton } from "@/components/ui/skeleton";
 
 /**
@@ -116,11 +115,8 @@ function NavBar() {
             </span>
           </div>
           
-          {/* Language & Theme Switchers */}
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
+          {/* Language Switcher */}
+          <LanguageSwitcher />
           
           <a
             href="https://github.com/nabhanyuzqi1/lumine-hedge-fund"

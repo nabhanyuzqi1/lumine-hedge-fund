@@ -25,15 +25,18 @@ const ReactQueryDevtools = import.meta.env.DEV
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <TooltipProvider>
-        <ToastProvider>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <ToastViewport />
-            {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-          </QueryClientProvider>
-        </ToastProvider>
-      </TooltipProvider>
+      <SmoothScrollProvider>
+        <TooltipProvider>
+          <ToastProvider>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+              <FloatingThemeToggle />
+              <ToastViewport />
+              {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+            </QueryClientProvider>
+          </ToastProvider>
+        </TooltipProvider>
+      </SmoothScrollProvider>
     </ThemeProvider>
   </StrictMode>
 );

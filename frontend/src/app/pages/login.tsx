@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { LumineIcon } from "@/components/landing/agent-icons";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { LoadingScreenSkeleton } from "@/components/ui/skeleton";
 
 /**
@@ -255,19 +254,19 @@ export function LoginPage() {
               </span>
             </div>
 
-            <div className="mb-4 flex items-center justify-end gap-2">
-                          <LanguageSwitcher />
-                          <ThemeToggle />
-                        </div>
+            {/* Language Switcher - pojok kanan atas form */}
+            <div className="mb-6 flex items-center justify-end">
+              <LanguageSwitcher />
+            </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                          <div className="space-y-1.5">
-                            <label
-                              htmlFor="login-username"
-                              className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint"
-                            >
-                              {t("login.username")}
-                            </label>
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="login-username"
+                  className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint"
+                >
+                  {t("login.username")}
+                </label>
                             <div className="relative">
                               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
                                 <UserIcon />
