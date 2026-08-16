@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { useMarketBars, useOrders, usePositions } from "@/api/hooks";
 import { usePerformanceMetrics } from "@/hooks/usePerformanceMetrics";
@@ -48,16 +49,19 @@ const TERMINAL_ORDER_STATUSES: OrderStatus[] = ["FILLED", "CANCELLED", "REJECTED
 /** Instruments for the ticker tape (Bloomberg-style bottom/top strip). */
 const TICKER_SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTCUSD", "NAS100", "SPX500"];
 
-const TIMEFRAME_KEYS: Partial<Record<string, Timeframe>> = {
+const TIMEFRAME_KEYS: Record<string, Timeframe> = {
   "5": "5m",
+  "1": "5m",
+  "5m": "5m",
   "15": "15m",
   "60": "1H",
   "240": "4H",
+  "1H": "1H",
+  "4H": "4H",
 };
 
 interface MarketDataEvent {
   tick?: MarketTick;
-  /** Market libur (weekend/holiday) — stream hidup tanpa ticks. */
   market_closed?: {
     reason: string;
     next_open: string;
@@ -66,26 +70,28 @@ interface MarketDataEvent {
 }
 
 function PositionsTable({ positions }: { positions: PositionFixture[] }) {
+  const { t } = useTranslation();
   return (
     <DataTable
       data={positions}
       getRowId={(row) => row.id}
       className="data-testid-positions-table"
       maxHeight={400}
+      emptyMessage={t("terminal.emptyPositions")}
       columns={[
         {
           key: "symbol",
-          header: "Symbol",
+          header: t("terminal.colSymbol"),
           cell: (row) => <span className="font-mono text-xs">{row.symbol}</span>,
         },
         {
           key: "side",
-          header: "Side",
+          header: t("terminal.colSide"),
           cell: (row) => <Badge tone={row.side === "LONG" ? "ok" : "danger"} label={row.side} />,
         },
         {
           key: "qty",
-          header: "Qty",
+          header: t("terminal.colQty"),
           cell: (row) => (
             <span className="font-mono tabular-nums">
               {row.quantity != null ? row.quantity.toFixed(2) : "—"}
@@ -94,17 +100,17 @@ function PositionsTable({ positions }: { positions: PositionFixture[] }) {
         },
         {
           key: "avg",
-          header: "Avg entry",
+          header: t("terminal.colAvgEntry"),
           cell: (row) => <NumericText value={row.avg_entry_price} decimals={2} tone="neutral" />,
         },
         {
           key: "current",
-          header: "Current",
+          header: t("terminal.colCurrent"),
           cell: (row) => <NumericText value={row.current_price} decimals={2} tone="neutral" />,
         },
         {
           key: "pnl",
-          header: "U/P&L",
+          header: t("terminal.colPnl"),
           cell: (row) => (
             <NumericText
               value={row.unrealized_pnl}
@@ -128,17 +134,18 @@ function OrdersTable({
 }) {
   const navigate = useNavigate();
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
+  const { t } = useTranslation();
   return (
     <DataTable
       data={orders}
       getRowId={(row) => row.id}
       className="data-testid-orders-table"
-            maxHeight={400}
-            columns={[
-              {
-                key: "id",
-                header: "Order",
-                cell: (row) => (
+      maxHeight={400}
+      columns={[
+        {
+          key: "id",
+          header: t("terminal.colOrder"),
+          cell: (row) => (
             <button
               type="button"
               onClick={() => navigate(`/orders/${row.id}`)}
@@ -151,17 +158,17 @@ function OrdersTable({
         },
         {
           key: "symbol",
-          header: "Symbol",
+          header: t("terminal.colSymbol"),
           cell: (row) => <span className="font-mono text-xs">{row.symbol}</span>,
         },
         {
           key: "side",
-          header: "Side",
+          header: t("terminal.colSide"),
           cell: (row) => <Badge tone={row.side === "BUY" ? "ok" : "danger"} label={row.side} />,
         },
         {
           key: "qty",
-          header: "Qty",
+          header: t("terminal.colQty"),
           cell: (row) => (
             <span className="font-mono tabular-nums">
               {row.quantity != null ? row.quantity.toFixed(2) : "—"}
@@ -170,12 +177,12 @@ function OrdersTable({
         },
         {
           key: "status",
-          header: "Status",
+          header: t("terminal.colStatus"),
           cell: (row) => <Badge tone={ORDER_STATUS_TONE[row.status]} label={row.status} />,
         },
         {
           key: "pnl",
-          header: "P&L",
+          header: t("terminal.colPnl"),
           cell: (row) => (
             <NumericText
               value={row.pnl}
@@ -243,6 +250,7 @@ function CommandBar({
   onSymbolChange: (s: string) => void;
   sseStatus: "open" | "closed" | "error" | "connecting";
 }) {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -267,7 +275,6 @@ function CommandBar({
 
   return (
     <header className="flex flex-wrap items-center gap-3 border-b border-line pb-2">
-      {/* Header inside dihapus (duplikat TopBar) — CommandBar murni fungsional */}
       <div className="flex items-center gap-1.5 rounded-chip border border-line bg-raised px-2 py-1">
         <span className="font-mono text-[10px] text-ink-faint">{"</"}</span>
         <input
@@ -275,15 +282,12 @@ function CommandBar({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="SYMBOL"
-          aria-label="Symbol command line"
+          placeholder={t("terminal.commandSymbol")}
+                    aria-label="Symbol command line"
           className="w-28 bg-transparent font-mono text-[11px] uppercase tracking-wider text-ink outline-none placeholder:text-ink-faint"
         />
       </div>
-      <span className="font-mono text-[10px] text-ink-faint">
-        {/* key hints */}
-        / focus · 5/15/60/240 timeframe · Enter GO
-      </span>
+      <span className="font-mono text-[10px] text-ink-faint">{t("terminal.commandHint")}</span>
       <span
         className="ml-auto h-1.5 w-1.5 rounded-full"
         aria-label={`SSE ${sseStatus}`}
@@ -297,6 +301,7 @@ function CommandBar({
 }
 
 function TradingWorkspace() {
+  const { t } = useTranslation();
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
   const [modifyTarget, setModifyTarget] = useState<OrderFixture | null>(null);
@@ -381,17 +386,17 @@ function TradingWorkspace() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 xl:grid-cols-5">
       <div className="min-w-0 space-y-4 lg:col-span-1 xl:col-span-2">
-        <ChartCard title="Quote" description={selectedSymbol}>
+        <ChartCard title={t("terminal.quote")} description={selectedSymbol}>
           <QuotePanel symbol={selectedSymbol} />
         </ChartCard>
-        <ChartCard title="Risk" description="Session limits">
+        <ChartCard title={t("terminal.risk")} description={t("terminal.riskDescription")}>
           <RiskGauges />
         </ChartCard>
         <WhatIfPanel />
         <Card>
           <CardHeader>
-            <CardTitle>Committee</CardTitle>
-            <CardDescription>Live agent activity</CardDescription>
+            <CardTitle>{t("terminal.committee")}</CardTitle>
+            <CardDescription>{t("terminal.committeeDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <CommitteeFeed />
@@ -399,8 +404,8 @@ function TradingWorkspace() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Activity</CardTitle>
-            <CardDescription>Stream events</CardDescription>
+            <CardTitle>{t("terminal.activity")}</CardTitle>
+            <CardDescription>{t("terminal.activityDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <ActivityLog limit={12} />
@@ -423,8 +428,8 @@ function TradingWorkspace() {
         </Suspense>
         <Card>
           <CardHeader>
-            <CardTitle>Positions</CardTitle>
-            <CardDescription>{positions.data?.length ?? 0} open</CardDescription>
+            <CardTitle>{t("terminal.positions")}</CardTitle>
+            <CardDescription>{t("terminal.positionsDescription", { count: positions.data?.length ?? 0 })}</CardDescription>
           </CardHeader>
           <CardContent>
             <PositionsTable positions={positions.data ?? []} />
@@ -432,8 +437,8 @@ function TradingWorkspace() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Orders</CardTitle>
-            <CardDescription>Click an order to open its lifecycle detail</CardDescription>
+            <CardTitle>{t("terminal.orders")}</CardTitle>
+            <CardDescription>{t("terminal.ordersDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <OrdersTable orders={orders.data ?? []} onModify={setModifyTarget} />

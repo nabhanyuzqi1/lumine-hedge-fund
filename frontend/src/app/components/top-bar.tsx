@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 
 import { Badge } from "@/components/ui/badge";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { useStreamStore } from "@/stores/streamStore";
 import { useUiStore } from "@/stores/uiStore";
 import { StreamStatusList } from "@/components/streams/stream-status-list";
@@ -72,8 +73,11 @@ export function TopBar() {
           </span>
         )}
         <span className="hidden font-mono text-text-secondary sm:inline" data-testid="utc-clock">
-          {utc} UTC
-        </span>
+                  {utc} UTC
+                </span>
+                {/* Language switcher — global, tersedia di semua halaman app
+                    (sebelumnya hanya di landing + login). */}
+                <LanguageSwitcher />
         <button
           type="button"
           onClick={toggleCommandPalette}
