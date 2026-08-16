@@ -45,28 +45,22 @@
   --shadow-panel: 0 0 0 1px rgba(28, 37, 52, 0.8), 0 24px 48px -24px rgba(0, 0, 0, 0.7);
   
   /* Glassmorphism effect untuk dark mode */
-    --glass-bg: rgba(15, 21, 34, 0.7);
-    --glass-border: rgba(28, 37, 52, 0.8);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-    --glass-backdrop: blur(12px);
-  
-    /* Node colors for IntelligenceField - dark mode */
-    --node-technical: #4D8DFF;
-    --node-macro: #A78BFA;
-    --node-news: #F59E0B;
-    --node-structure: #34D399;
-  }
+  --glass-bg: rgba(15, 21, 34, 0.7);
+  --glass-border: rgba(28, 37, 52, 0.8);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  --glass-backdrop: blur(12px);
+
+  /* Node colors for IntelligenceField - dark mode */
+  --node-technical: #4D8DFF;
+  --node-macro: #A78BFA;
+  --node-news: #F59E0B;
+  --node-structure: #34D399;
+}
 
 /* Light mode overrides - SOFTER COLORS */
 :root.light {
   /* Softer backgrounds - tidak terlalu putih */
   --color-abyss: #f5f7fa;
-  
-  /* Node colors for IntelligenceField - darker variants for visibility on light */
-  --node-technical: #1d4ed8;
-  --node-macro: #6d28d9;
-  --node-news: #c2410c;
-  --node-structure: #047857;
   --color-bg: #fafbfd;
   --color-raised: #ffffff;
   --color-overlay: #f0f3f7;
@@ -94,6 +88,12 @@
   --glass-border: rgba(226, 232, 240, 0.8);
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
   --glass-backdrop: blur(12px);
+  
+  /* Node colors for IntelligenceField - lighter variants for visibility on white */
+  --node-technical: #3b82f6;
+  --node-macro: #8b5cf6;
+  --node-news: #f97316;
+  --node-structure: #10b981;
 }
 
 /*
@@ -109,193 +109,39 @@
   --color-text-primary: var(--color-ink);
   --color-text-secondary: var(--color-ink-dim);
   --color-text-muted: var(--color-ink-faint);
-  --color-info: var(--color-cyan);
-  --color-danger: #ff4d5e;
-
-  /* component tokens */
-  --color-table-row-hover: color-mix(in srgb, var(--color-accent) 8%, transparent);
-
-  /* motion */
-    --animate-flash-up: flash-up 150ms ease-out;
-    --animate-flash-down: flash-down 150ms ease-out;
-    --animate-dialog-overlay-in: dialog-overlay-in 250ms ease-out;
-    --animate-dialog-content-in: dialog-content-in 250ms ease-out;
-    --animate-shimmer: shimmer 1.5s ease-in-out infinite;
-  }
-
-html {
-  scroll-behavior: smooth;
-  /* Smooth theme transition */
-  transition: background-color 300ms ease, color 300ms ease;
+  --color-border-default: var(--color-line);
+  --color-accent-default: var(--color-accent);
 }
 
-/* Smooth transition untuk semua elemen yang terpengaruh theme */
+/* Smooth theme transitions */
+* {
+  transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease;
+}
+
+/* Override for Framer Motion animations - exclude from transition */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+}
+
+/* Ensure framer-motion animations don't get the CSS transition */
+*, .motion-div, [class*="motion-"] {
+  transition: none !important;
+}
+
+/* Base reset */
 *,
 *::before,
 *::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 300ms;
-  transition-timing-function: ease;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* Exclude animasi dari smooth transition */
-*:where([class*="animate-"], [class*="motion-"]) {
-  transition: none;
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-feature-settings: "tnum" 1, "cv01" 1;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
-::selection {
-  background-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
-}
-
-/* Keyboard focus visibility — required, not decorative */
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-/* Thin, unobtrusive scrollbar for the console panel */
-.console-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-.console-scroll::-webkit-scrollbar-thumb {
-  background: var(--color-line);
-  border-radius: 3px;
-}
-.console-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Ticker tape: single continuous marquee, pauses for reduced motion */
-@keyframes tape-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.tape-track {
-  animation: tape-scroll 40s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tape-track {
-    animation: none;
-  }
-}
-
-/* Console line reveal — orchestrated load sequence */
-@keyframes line-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.console-line {
-  opacity: 0;
-  animation: line-in 0.4s ease-out forwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .console-line {
-    opacity: 1;
-    animation: none;
-  }
-}
-
-/* Cursor blink on the last console line */
-@keyframes cursor-blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-.console-cursor {
-  animation: cursor-blink 1.1s step-end infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .console-cursor {
-    animation: none;
-    opacity: 1;
-  }
-}
-
-/* ────────────────────────────────────────────────────────────────
- * F-Sprint 2 primitives: numeric flash + dialog motion
- * ─────────────────────────────────────────────────────────────── */
-
-@keyframes flash-up {
-  0% {
-    color: var(--color-up);
-  }
-  100% {
-    color: inherit;
-  }
-}
-
-@keyframes flash-down {
-  0% {
-    color: var(--color-down);
-  }
-  100% {
-    color: inherit;
-  }
-}
-
-@keyframes dialog-overlay-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes dialog-content-in {
-  from {
-    opacity: 0;
-    transform: scale(0.98) translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-flash-up,
-  .animate-flash-down,
-  .animate-dialog-overlay-in,
-  .animate-dialog-content-in,
-  .animate-shimmer {
-    animation: none !important;
-  }
+  -moz-osx-font-smoothing: grayscale;
 }
