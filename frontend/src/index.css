@@ -45,16 +45,28 @@
   --shadow-panel: 0 0 0 1px rgba(28, 37, 52, 0.8), 0 24px 48px -24px rgba(0, 0, 0, 0.7);
   
   /* Glassmorphism effect untuk dark mode */
-  --glass-bg: rgba(15, 21, 34, 0.7);
-  --glass-border: rgba(28, 37, 52, 0.8);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-  --glass-backdrop: blur(12px);
-}
+    --glass-bg: rgba(15, 21, 34, 0.7);
+    --glass-border: rgba(28, 37, 52, 0.8);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    --glass-backdrop: blur(12px);
+  
+    /* Node colors for IntelligenceField - dark mode */
+    --node-technical: #4D8DFF;
+    --node-macro: #A78BFA;
+    --node-news: #F59E0B;
+    --node-structure: #34D399;
+  }
 
 /* Light mode overrides - SOFTER COLORS */
 :root.light {
   /* Softer backgrounds - tidak terlalu putih */
   --color-abyss: #f5f7fa;
+  
+  /* Node colors for IntelligenceField - darker variants for visibility on light */
+  --node-technical: #1d4ed8;
+  --node-macro: #6d28d9;
+  --node-news: #c2410c;
+  --node-structure: #047857;
   --color-bg: #fafbfd;
   --color-raised: #ffffff;
   --color-overlay: #f0f3f7;
