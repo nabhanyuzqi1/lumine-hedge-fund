@@ -251,12 +251,42 @@
     "hidePassword": "Hide password",
     "showPassword": "Show password"
   },
+  "killSwitch": {
+    "releaseTitle": "Release kill switch?",
+    "engageTitle": "Engage kill switch",
+    "releaseDescription": "This resumes order execution. Confirm to release the halt.",
+    "engageDescription": "Immediately halts new orders and cancels pending risk. This is an auditable action.",
+    "reasonLabel": "Reason (audit trail)",
+    "reasonPlaceholder": "Optional context for the release",
+    "scopeLabel": "Scope",
+    "tierGlobal": "Global",
+    "tierGlobalDesc": "Halt all strategies, all books, all accounts",
+    "tierBook": "Book",
+    "tierBookDesc": "Halt a single trading book",
+    "tierStrategy": "Strategy",
+    "tierStrategyDesc": "Halt a single strategy",
+    "reasonDetailPlaceholder": "e.g. news shock, API anomaly, manual override",
+    "engageConfirmText": "Engage kill switch. Type",
+    "engageConfirmSuffix": "to confirm.",
+    "typeConfirmPlaceholder": "Type KILL to confirm",
+    "releaseSwitch": "Release switch",
+    "engagedToast": "Kill switch engaged",
+    "engagedToastDesc": "tier · trading halted (server-confirmed).",
+    "failedToast": "Kill switch failed",
+    "engageFailedDesc": "Backend rejected the engage request — check API connectivity.",
+    "releasedToast": "Kill switch released",
+    "releasedToastDesc": "Trading resumed (server-confirmed).",
+    "releaseFailedToast": "Release failed",
+    "releaseFailedDesc": "Backend rejected the release request — check API connectivity."
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
     "retry": "Retry",
     "close": "Close",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "back": "Back",
+    "continue": "Continue"
   }
 }

@@ -12,11 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { useUiStore } from "@/stores/uiStore";
+import { useTranslation } from "react-i18next";
 
-const TIERS: { id: KillSwitchTier; label: string; description: string }[] = [
-  { id: "global", label: "Global", description: "Halt all strategies, all books, all accounts" },
-  { id: "book", label: "Book", description: "Halt a single trading book" },
-  { id: "strategy", label: "Strategy", description: "Halt a single strategy" },
+const TIERS: { id: KillSwitchTier; labelKey: string; descriptionKey: string }[] = [
+  { id: "global", labelKey: "killSwitch.tierGlobal", descriptionKey: "killSwitch.tierGlobalDesc" },
+  { id: "book", labelKey: "killSwitch.tierBook", descriptionKey: "killSwitch.tierBookDesc" },
+  { id: "strategy", labelKey: "killSwitch.tierStrategy", descriptionKey: "killSwitch.tierStrategyDesc" },
 ];
 
 const CONFIRM_PHRASE = "KILL";
@@ -33,6 +34,7 @@ interface KillSwitchConfirmModalProps {
  * Phase 9 backend implements POST /api/rpc/kill-switch.
  */
 export function KillSwitchConfirmModal({ open, onOpenChange }: KillSwitchConfirmModalProps) {
+  const { t } = useTranslation();
   const killSwitchActive = useUiStore((s) => s.killSwitchActive);
   const killSwitch = useKillSwitch();
   const { toast } = useToast();
@@ -57,18 +59,18 @@ export function KillSwitchConfirmModal({ open, onOpenChange }: KillSwitchConfirm
     try {
       await killSwitch.mutateAsync({ active: true, tier, reason: reason.trim() || undefined });
       onOpenChange(false);
-      toast({
-        variant: "danger",
-        title: "Kill switch engaged",
-        description: `${tier} tier · trading halted (server-confirmed).`,
-      });
-    } catch {
-      toast({
-        variant: "danger",
-        title: "Kill switch failed",
-        description: "Backend rejected the engage request — check API connectivity.",
-      });
-    }
+            toast({
+              variant: "danger",
+              title: t("killSwitch.engagedToast"),
+              description: `${tier} tier · ${t("killSwitch.engagedToastDesc")}`,
+            });
+          } catch {
+            toast({
+              variant: "danger",
+              title: t("killSwitch.failedToast"),
+              description: t("killSwitch.engageFailedDesc"),
+            });
+          }
   };
 
   const handleRelease = async () => {
@@ -79,18 +81,18 @@ export function KillSwitchConfirmModal({ open, onOpenChange }: KillSwitchConfirm
         reason: reason.trim() || undefined,
       });
       onOpenChange(false);
-      toast({
-        variant: "success",
-        title: "Kill switch released",
-        description: "Trading resumed (server-confirmed).",
-      });
-    } catch {
-      toast({
-        variant: "danger",
-        title: "Release failed",
-        description: "Backend rejected the release request — check API connectivity.",
-      });
-    }
+            toast({
+              variant: "success",
+              title: t("killSwitch.releasedToast"),
+              description: t("killSwitch.releasedToastDesc"),
+            });
+          } catch {
+            toast({
+              variant: "danger",
+              title: t("killSwitch.releaseFailedToast"),
+              description: t("killSwitch.releaseFailedDesc"),
+            });
+          }
   };
 
   return (
@@ -98,26 +100,26 @@ export function KillSwitchConfirmModal({ open, onOpenChange }: KillSwitchConfirm
       <DialogContent className="max-w-md" data-testid="kill-switch-confirm-modal">
         <DialogHeader>
           <DialogTitle>
-            {killSwitchActive ? "Release kill switch?" : "Engage kill switch"}
-          </DialogTitle>
-          <DialogDescription>
-            {killSwitchActive
-              ? "This resumes order execution. Confirm to release the halt."
-              : "Immediately halts new orders and cancels pending risk. This is an auditable action."}
-          </DialogDescription>
+                      {killSwitchActive ? t("killSwitch.releaseTitle") : t("killSwitch.engageTitle")}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {killSwitchActive
+                        ? t("killSwitch.releaseDescription")
+                        : t("killSwitch.engageDescription")}
+                    </DialogDescription>
         </DialogHeader>
 
         {killSwitchActive ? (
           <div className="my-2 space-y-3">
             <label className="block space-y-1">
               <span className="text-[11px] font-medium uppercase tracking-wider text-text-secondary">
-                Reason (audit trail)
-              </span>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={2}
-                placeholder="Optional context for the release"
+                              {t("killSwitch.reasonLabel")}
+                            </span>
+                            <textarea
+                              value={reason}
+                              onChange={(e) => setReason(e.target.value)}
+                              rows={2}
+                              placeholder={t("killSwitch.reasonPlaceholder")}
                 className="w-full resize-none rounded-chip border border-border-subtle bg-bg-base p-2 text-xs text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 data-testid="kill-switch-reason"
               />
@@ -127,38 +129,38 @@ export function KillSwitchConfirmModal({ open, onOpenChange }: KillSwitchConfirm
           <div className="my-2 space-y-4">
             <div className="space-y-1">
               <span className="text-[11px] font-medium uppercase tracking-wider text-text-secondary">
-                Scope
-              </span>
-              {TIERS.map((t) => (
-                <label
-                  key={t.id}
-                  className="flex cursor-pointer items-start gap-2 rounded-chip border border-border-subtle bg-bg-base p-2 text-xs text-text-primary has-[:checked]:border-danger/50"
-                >
-                  <input
-                    type="radio"
-                    name="kill-switch-tier"
-                    value={t.id}
-                    checked={tier === t.id}
-                    onChange={() => setTier(t.id)}
-                    className="mt-0.5"
-                    data-testid={`kill-switch-tier-${t.id}`}
-                  />
-                  <span>
-                    <span className="block font-medium">{t.label}</span>
-                    <span className="block text-[11px] text-text-secondary">{t.description}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <label className="block space-y-1">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-text-secondary">
-                Reason (audit trail)
-              </span>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={2}
-                placeholder="e.g. news shock, API anomaly, manual override"
+                              {t("killSwitch.scopeLabel")}
+                            </span>
+                            {TIERS.map((tierOpt) => (
+                              <label
+                                key={tierOpt.id}
+                                className="flex cursor-pointer items-start gap-2 rounded-chip border border-border-subtle bg-bg-base p-2 text-xs text-text-primary has-[:checked]:border-danger/50"
+                              >
+                                <input
+                                  type="radio"
+                                  name="kill-switch-tier"
+                                  value={tierOpt.id}
+                                  checked={tier === tierOpt.id}
+                                  onChange={() => setTier(tierOpt.id)}
+                                  className="mt-0.5"
+                                  data-testid={`kill-switch-tier-${tierOpt.id}`}
+                                />
+                                <span>
+                                  <span className="block font-medium">{t(tierOpt.labelKey)}</span>
+                                  <span className="block text-[11px] text-text-secondary">{t(tierOpt.descriptionKey)}</span>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                          <label className="block space-y-1">
+                            <span className="text-[11px] font-medium uppercase tracking-wider text-text-secondary">
+                              {t("killSwitch.reasonLabel")}
+                            </span>
+                            <textarea
+                              value={reason}
+                              onChange={(e) => setReason(e.target.value)}
+                              rows={2}
+                              placeholder={t("killSwitch.reasonDetailPlaceholder")}
                 className="w-full resize-none rounded-chip border border-border-subtle bg-bg-base p-2 text-xs text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 data-testid="kill-switch-reason"
               />
@@ -167,15 +169,16 @@ export function KillSwitchConfirmModal({ open, onOpenChange }: KillSwitchConfirm
         ) : (
           <div className="my-2 space-y-3">
             <p className="text-xs text-text-secondary">
-              Engage <span className="font-mono font-medium text-text-primary">{tier}</span> kill
-              switch
-              {reason.trim() ? ` — "${reason.trim()}"` : ""}. Type{" "}
-              <span className="font-mono text-danger">KILL</span> to confirm.
-            </p>
-            <input
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={`Type ${CONFIRM_PHRASE} to confirm`}
+                          {t("killSwitch.engageConfirmText")}{" "}
+                          <span className="font-mono font-medium text-text-primary">{tier}</span>{" "}
+                          {t("killSwitch.engageConfirmSuffix")}
+                          {reason.trim() ? ` — "${reason.trim()}"` : ""}. Ketik{" "}
+                          <span className="font-mono text-danger">KILL</span> untuk konfirmasi.
+                        </p>
+                        <input
+                          value={confirmText}
+                          onChange={(e) => setConfirmText(e.target.value)}
+                          placeholder={t("killSwitch.typeConfirmPlaceholder")}
               className="w-full rounded-chip border border-border-subtle bg-bg-base p-2 font-mono text-xs text-text-primary placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               data-testid="kill-switch-phrase-input"
             />
@@ -183,44 +186,44 @@ export function KillSwitchConfirmModal({ open, onOpenChange }: KillSwitchConfirm
         )}
 
         <DialogFooter>
-          <Button variant="secondary" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          {killSwitchActive ? (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleRelease}
-              disabled={killSwitch.isPending}
-              data-testid="kill-switch-release"
-            >
-              Release switch
-            </Button>
-          ) : step === "details" ? (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setStep("confirm")}
-              data-testid="kill-switch-continue"
-            >
-              Continue
-            </Button>
-          ) : (
-            <>
-              <Button variant="secondary" size="sm" onClick={() => setStep("details")}>
-                Back
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleEngage}
-                disabled={!phraseMatches || killSwitch.isPending}
-                data-testid="kill-switch-engage"
-              >
-                Engage switch
-              </Button>
-            </>
-          )}
+                  <Button variant="secondary" size="sm" onClick={() => onOpenChange(false)}>
+                    {t("common.cancel")}
+                  </Button>
+                  {killSwitchActive ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleRelease}
+                      disabled={killSwitch.isPending}
+                      data-testid="kill-switch-release"
+                    >
+                      {t("killSwitch.releaseSwitch")}
+                    </Button>
+                  ) : step === "details" ? (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setStep("confirm")}
+                      data-testid="kill-switch-continue"
+                    >
+                      {t("common.continue")}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="secondary" size="sm" onClick={() => setStep("details")}>
+                        {t("common.back")}
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleEngage}
+                        disabled={!phraseMatches || killSwitch.isPending}
+                        data-testid="kill-switch-engage"
+                      >
+                {t("killSwitch.engageTitle")}
+                              </Button>
+                            </>
+                          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

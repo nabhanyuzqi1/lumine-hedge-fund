@@ -251,12 +251,42 @@
     "hidePassword": "Sembunyikan kata sandi",
     "showPassword": "Tampilkan kata sandi"
   },
+  "killSwitch": {
+    "releaseTitle": "Lepaskan kill switch?",
+    "engageTitle": "Aktifkan kill switch",
+    "releaseDescription": "Ini melanjutkan eksekusi order. Konfirmasi untuk melepaskan penghentian.",
+    "engageDescription": "Menghentikan order baru secara langsung dan membatalkan risiko yang tertunda. Ini adalah tindakan yang dapat diaudit.",
+    "reasonLabel": "Alasan (jejak audit)",
+    "reasonPlaceholder": "Konteks opsional untuk pelepasan",
+    "scopeLabel": "Cakupan",
+    "tierGlobal": "Global",
+    "tierGlobalDesc": "Hentikan semua strategi, semua book, semua akun",
+    "tierBook": "Book",
+    "tierBookDesc": "Hentikan satu buku trading",
+    "tierStrategy": "Strategi",
+    "tierStrategyDesc": "Hentikan satu strategi",
+    "reasonDetailPlaceholder": "mis. kejutan berita, anomali API, override manual",
+    "engageConfirmText": "Aktifkan kill switch. Ketik",
+    "engageConfirmSuffix": "untuk konfirmasi.",
+    "typeConfirmPlaceholder": "Ketik KILL untuk konfirmasi",
+    "releaseSwitch": "Lepaskan switch",
+    "engagedToast": "Kill switch diaktifkan",
+    "engagedToastDesc": "tier · trading dihentikan (dikonfirmasi server).",
+    "failedToast": "Kill switch gagal",
+    "engageFailedDesc": "Backend menolak permintaan aktivasi — periksa konektivitas API.",
+    "releasedToast": "Kill switch dilepaskan",
+    "releasedToastDesc": "Trading dilanjutkan (dikonfirmasi server).",
+    "releaseFailedToast": "Pelepasan gagal",
+    "releaseFailedDesc": "Backend menolak permintaan pelepasan — periksa konektivitas API."
+  },
   "common": {
     "loading": "Memuat...",
     "error": "Terjadi kesalahan",
     "retry": "Coba Lagi",
     "close": "Tutup",
     "save": "Simpan",
-    "cancel": "Batal"
+    "cancel": "Batal",
+    "back": "Kembali",
+    "continue": "Lanjutkan"
   }
 }
