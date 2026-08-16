@@ -3,93 +3,88 @@
     "overview": "Ikhtisar",
     "risk": "Risiko",
     "research": "Riset",
-    "performance": "Kinerja"
+    "performance": "Performa"
   },
   "hero": {
-    "title": "Inteligensi Kuantitatif Berbasis AI",
-    "subtitle": "Trading algoritmik tingkat institusional yang didukung agen otonom",
-    "cta": "Masuk Sistem",
-    "login": "Masuk"
+    "title": "AI-Native",
+    "titleQuantitative": "Kuantitatif",
+    "titleIntelligence": "Intelijen.",
+    "subtitle": "Sistem terkoordinasi dari agen-agen khusus yang meneliti, mengevaluasi, dan mengeksekusi strategi sistematis — setiap keputusan melewati validasi deterministik dan kontrol risiko yang disiplin.",
+    "ctaExplore": "Jelajahi Sistem",
+    "ctaResearch": "Lihat Riset",
+    "scroll": "Gulir"
   },
   "intelligence": {
-    "title": "Bidang Inteligensi",
-    "subtitle": "Orkestrasi multi-agen lintas riset, eksekusi, dan risiko"
+    "sectionKicker": "Jaringan Intelijen",
+    "sectionTitle": "Empat Agen Khusus",
+    "technical": "Teknikal",
+    "macro": "Makro",
+    "news": "Berita",
+    "structure": "Struktur",
+    "core": "Inti"
   },
   "decision": {
-    "title": "Alur Keputusan",
-    "subtitle": "Rantai penalaran yang transparan dan dapat diaudit"
-  },
-  "risk": {
-    "title": "Mesin Risiko",
-    "subtitle": "Pemantauan posisi real-time dan batasan eksposur"
+    "sectionKicker": "Keputusan & Risiko",
+    "sectionTitle": "Intelijen mengusulkan. Risiko memutuskan.",
+    "description": "Setiap sinyal melewati validasi tiga langkah."
   },
   "breakeven": {
-    "title": "Analisis Break-Even",
-    "subtitle": "Visualisasi pemulihan drawdown dinamis"
+    "sectionKicker": "Fitur Unggulan",
+    "sectionTitle": "Breakeven Berbasis Struktur",
+    "description": "Geser slider untuk melihat bagaimana Lumine menyesuaikan stop-loss berdasarkan struktur pasar.",
+    "hold": "TAHAN SL",
+    "moveToBreakeven": "PINDAH → BE",
+    "exit": "KELUAR",
+    "structure": "Struktur",
+    "momentum": "Momentum",
+    "decision": "Keputusan"
   },
   "research": {
-    "title": "Pipeline Riset",
-    "subtitle": "Pengujian hipotesis sistematis dengan data pasar langsung"
+    "sectionKicker": "Riset",
+    "sectionTitle": "Pipeline Riset",
+    "description": "Penemuan dan validasi berkelanjutan dari strategi sistematis."
   },
   "performance": {
-    "title": "Dashboard Kinerja",
-    "subtitle": "Analitik dan atribusi tingkat institusional"
-  },
-  "regime": {
-    "title": "Mesin Regime",
-    "subtitle": "Deteksi kondisi pasar dan perubahan strategi adaptif"
+    "sectionKicker": "Performa",
+    "sectionTitle": "Dashboard Performa",
+    "description": "Metrik langsung di semua strategi dan agen."
   },
   "audit": {
-    "title": "Log Audit",
-    "subtitle": "Setiap keputusan tercatat dengan provenance lengkap"
+    "sectionKicker": "Audit",
+    "sectionTitle": "Setiap Keputusan Meninggalkan Jejak.",
+    "description": "Dari sinyal hingga eksekusi, setiap keputusan dicatat dengan konteks lengkap. Jeda aliran untuk membacanya.",
+    "pauseStream": "Jeda aliran",
+    "resumeStream": "Lanjutkan",
+    "terminalTitle": "audit.log"
   },
   "philosophy": {
-    "title": "Dibangun di Atas Prinsip",
-    "principles": {
-      "evidence": {
-        "title": "Bukti Sebelum Modal",
-        "desc": "Setiap keputusan trading membawa rantai penalaran yang dapat diaudit"
-      },
-      "discipline": {
-        "title": "Disiplin Institusional",
-        "desc": "Kontrol risiko yang bertahan dalam volatilitas pasar"
-      },
-      "reproducibility": {
-        "title": "Dapat Direproduksi",
-        "desc": "Setiap keputusan dapat diputar ulang dan diverifikasi"
-      }
-    }
+    "sectionKicker": "Filosofi",
+    "sectionTitle": "Dibangun Atas Prinsip Pertama",
+    "description": "Tanpa curve-fitting. Tanpa over-optimisasi. Hanya eksekusi disiplin dari strategi sistematis yang tervalidasi."
   },
   "footer": {
-    "tagline": "Trading kuantitatif berbasis AI dengan kontrol risiko yang disiplin",
-    "platform": "Platform",
-    "company": "Perusahaan",
-    "legal": "Legal",
-    "systemOverview": "Ikhtisar Sistem",
-    "riskEngine": "Mesin Risiko",
-    "research": "Riset",
-    "about": "Tentang",
-    "careers": "Karir",
-    "blog": "Blog",
-    "privacy": "Privasi",
-    "terms": "Ketentuan",
-    "security": "Keamanan",
-    "copyright": "© 2026 Lumine — Platform AI-native tingkat institusional"
+    "disclaimer": "Penafian:",
+    "disclaimerText": "Ini adalah demonstrasi sistem trading algoritmik. Kinerja masa lalu tidak menjamin hasil masa depan. Trading melibatkan risiko kerugian yang substansial.",
+    "copyright": "© 2024 Lumine. Hak cipta dilindungi."
   },
   "login": {
-    "title": "Autentikasi Diperlukan",
+    "title": "Masuk",
     "username": "Nama Pengguna",
     "password": "Kata Sandi",
-    "submit": "Masuk Sistem",
-    "submitting": "Mengautentikasi...",
-    "error": "Kredensial tidak valid",
+    "submit": "Masuk",
+    "backToHome": "Kembali ke Beranda",
+    "systemStatus": "Status Sistem",
     "restricted": "Akses terbatas — hanya pengguna resmi",
-    "systemStatus": "Status Sistem"
+    "error": "Kredensial tidak valid",
+    "systemOnline": "Sistem Online",
+    "authReady": "Autentikasi Siap",
+    "secureConnection": "Koneksi Aman",
+    "awaitingCredentials": "Menunggu Kredensial"
   },
   "common": {
     "loading": "Memuat...",
     "error": "Terjadi kesalahan",
-    "retry": "Coba lagi",
+    "retry": "Coba Lagi",
     "close": "Tutup",
     "save": "Simpan",
     "cancel": "Batal"

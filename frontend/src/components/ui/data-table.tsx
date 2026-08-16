@@ -35,6 +35,7 @@ export function DataTable<T>({
   rowHeight = 40,
   emptyMessage = "No data",
   className,
+  maxHeight,
 }: DataTableProps<T>) {
   const parentRef = React.useRef<HTMLDivElement>(null);
 
@@ -52,12 +53,13 @@ export function DataTable<T>({
   const totalSize = virtualizer.getTotalSize();
 
   return (
-    <div
-      ref={parentRef}
-      className={`w-full overflow-hidden rounded-panel border border-border-subtle ${className ?? ""}`.trim()}
-      data-testid="data-table-scroll"
-    >
-      <Table>
+      <div
+        ref={parentRef}
+        className={`w-full overflow-auto rounded-panel border border-border-subtle ${className ?? ""}`.trim()}
+        data-testid="data-table-scroll"
+        style={maxHeight ? { maxHeight } : undefined}
+      >
+        <Table>
           <TableHeader className="sticky top-0 z-10 bg-bg-raised">
           <TableRow className="hover:bg-transparent">
             {columns.map((column) => (

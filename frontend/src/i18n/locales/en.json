@@ -6,85 +6,80 @@
     "performance": "Performance"
   },
   "hero": {
-    "title": "AI-Native Quantitative Intelligence",
-    "subtitle": "Institutional-grade algorithmic trading powered by autonomous agents",
-    "cta": "Enter System",
-    "login": "Log In"
+    "title": "AI-Native",
+    "titleQuantitative": "Quantitative",
+    "titleIntelligence": "Intelligence.",
+    "subtitle": "A coordinated system of specialized agents that research, evaluate, and execute systematic strategies — every decision passing through deterministic validation and disciplined risk controls.",
+    "ctaExplore": "Explore the System",
+    "ctaResearch": "View Research",
+    "scroll": "Scroll"
   },
   "intelligence": {
-    "title": "Intelligence Field",
-    "subtitle": "Multi-agent orchestration across research, execution, and risk"
+    "sectionKicker": "Intelligence Network",
+    "sectionTitle": "Four Specialized Agents",
+    "technical": "Technical",
+    "macro": "Macro",
+    "news": "News",
+    "structure": "Structure",
+    "core": "Core"
   },
   "decision": {
-    "title": "Decision Flow",
-    "subtitle": "Transparent, auditable reasoning chains"
-  },
-  "risk": {
-    "title": "Risk Engine",
-    "subtitle": "Real-time position monitoring and exposure limits"
+    "sectionKicker": "Decision & Risk",
+    "sectionTitle": "Intelligence proposes. Risk decides.",
+    "description": "Every signal passes through a three-step validation."
   },
   "breakeven": {
-    "title": "Break-Even Analysis",
-    "subtitle": "Dynamic drawdown recovery visualization"
+    "sectionKicker": "Signature Feature",
+    "sectionTitle": "Structure-Based Breakeven",
+    "description": "Drag the slider to see how Lumine adapts its stop-loss based on market structure.",
+    "hold": "HOLD SL",
+    "moveToBreakeven": "MOVE → BE",
+    "exit": "EXIT",
+    "structure": "Structure",
+    "momentum": "Momentum",
+    "decision": "Decision"
   },
   "research": {
-    "title": "Research Pipeline",
-    "subtitle": "Systematic hypothesis testing with live market data"
+    "sectionKicker": "Research",
+    "sectionTitle": "Research Pipeline",
+    "description": "Continuous discovery and validation of systematic strategies."
   },
   "performance": {
-    "title": "Performance Dashboard",
-    "subtitle": "Institutional-grade analytics and attribution"
-  },
-  "regime": {
-    "title": "Regime Engine",
-    "subtitle": "Market state detection and adaptive strategy switching"
+    "sectionKicker": "Performance",
+    "sectionTitle": "Performance Dashboard",
+    "description": "Live metrics across all strategies and agents."
   },
   "audit": {
-    "title": "Audit Log",
-    "subtitle": "Every decision captured with full provenance"
+    "sectionKicker": "Audit",
+    "sectionTitle": "Every Decision Leaves a Trace.",
+    "description": "From signal to execution, every decision is logged with complete context. Pause the stream to read it.",
+    "pauseStream": "Pause stream",
+    "resumeStream": "Resume",
+    "terminalTitle": "audit.log"
   },
   "philosophy": {
-    "title": "Built on Principles",
-    "principles": {
-      "evidence": {
-        "title": "Evidence Before Capital",
-        "desc": "Every trade decision carries an auditable chain of reasoning"
-      },
-      "discipline": {
-        "title": "Institutional Discipline",
-        "desc": "Risk controls that survive market volatility"
-      },
-      "reproducibility": {
-        "title": "Reproducibility",
-        "desc": "Every decision is replayable and verifiable"
-      }
-    }
+    "sectionKicker": "Philosophy",
+    "sectionTitle": "Built on First Principles",
+    "description": "No curve-fitting. No over-optimization. Just disciplined execution of validated systematic strategies."
   },
   "footer": {
-    "tagline": "AI-native quantitative trading under disciplined risk controls",
-    "platform": "Platform",
-    "company": "Company",
-    "legal": "Legal",
-    "systemOverview": "System Overview",
-    "riskEngine": "Risk Engine",
-    "research": "Research",
-    "about": "About",
-    "careers": "Careers",
-    "blog": "Blog",
-    "privacy": "Privacy",
-    "terms": "Terms",
-    "security": "Security",
-    "copyright": "© 2026 Lumine — Institutional AI-native platform"
+    "disclaimer": "Disclaimer:",
+    "disclaimerText": "This is a demonstration of an algorithmic trading system. Past performance does not guarantee future results. Trading involves substantial risk of loss.",
+    "copyright": "© 2024 Lumine. All rights reserved."
   },
   "login": {
-    "title": "Authentication Required",
+    "title": "Sign In",
     "username": "Username",
     "password": "Password",
-    "submit": "Enter System",
-    "submitting": "Authenticating...",
-    "error": "Invalid credentials",
+    "submit": "Sign In",
+    "backToHome": "Back to Home",
+    "systemStatus": "System Status",
     "restricted": "Restricted access — authorized users only",
-    "systemStatus": "System Status"
+    "error": "Invalid credentials",
+    "systemOnline": "System Online",
+    "authReady": "Auth Ready",
+    "secureConnection": "Secure Connection",
+    "awaitingCredentials": "Awaiting Credentials"
   },
   "common": {
     "loading": "Loading...",

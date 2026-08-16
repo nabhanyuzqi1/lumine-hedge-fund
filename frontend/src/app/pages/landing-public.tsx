@@ -196,6 +196,8 @@ function SectionHeader({
 /* ------------------------------------------------------------------ */
 
 function Hero() {
+  const { t } = useTranslation();
+  
   return (
     <section className="relative overflow-hidden border-b border-line bg-abyss">
       {/* Ambient background */}
@@ -233,11 +235,11 @@ function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
           >
-            AI-Native
+            {t('hero.title')}
             <br />
-            <span className="text-ink-dim">Quantitative</span>
+            <span className="text-ink-dim">{t('hero.titleQuantitative')}</span>
             <br />
-            <span className="text-accent">Intelligence.</span>
+            <span className="text-accent">{t('hero.titleIntelligence')}</span>
           </motion.h1>
 
           <motion.p
@@ -246,9 +248,7 @@ function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.35 }}
           >
-            A coordinated system of specialized agents that research, evaluate,
-            and execute systematic strategies — every decision passing through
-            deterministic validation and disciplined risk controls.
+            {t('hero.subtitle')}
           </motion.p>
 
           <motion.div
@@ -262,7 +262,7 @@ function Hero() {
                 size="lg"
                 className="bg-accent font-mono text-[11px] uppercase tracking-[0.22em] text-white hover:bg-accent-soft"
               >
-                Explore the System
+                {t('hero.ctaExplore')}
               </Button>
             </a>
             <a href="#research">
@@ -271,7 +271,7 @@ function Hero() {
                 variant="secondary"
                 className="border-line font-mono text-[11px] uppercase tracking-[0.22em] text-ink hover:bg-raised"
               >
-                View Research
+                {t('hero.ctaResearch')}
               </Button>
             </a>
           </motion.div>
@@ -302,7 +302,7 @@ function Hero() {
           animate={{ y: [0, 5, 0] }}
           transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
         >
-          Scroll
+          {t('hero.scroll')}
         </motion.span>
       </motion.div>
     </section>
