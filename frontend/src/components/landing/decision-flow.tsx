@@ -182,9 +182,9 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
               </span>
             </div>
             <p className="text-xs leading-relaxed text-ink-dim">
-              <span className="font-semibold text-accent">{decision.consensus}:</span>{" "}
-              {decision.masterThesis}
-            </p>
+                          <span className="font-semibold text-accent">{decision.consensus}:</span>{" "}
+                          {t("decision.masterThesisText")}
+                        </p>
           </div>
         </motion.div>
 
