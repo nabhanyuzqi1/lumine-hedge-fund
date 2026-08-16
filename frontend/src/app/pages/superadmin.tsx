@@ -56,7 +56,7 @@ const SYMBOL_CANDIDATES = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTC
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm";
+type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -66,6 +66,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "llm", label: "LLM Routing" },
   { id: "mt5", label: "MT5 Desktop" },
   { id: "logs", label: "Logs" },
+  { id: "autogen", label: "AutoGen Studio" },
 ];
 
 // ── Hooks (real backend calls — no demo fallback) ───────────────────────────
@@ -475,6 +476,12 @@ export function SuperadminPage() {
         {tab === "llm" && <LLMRoutingTab />}
         {tab === "mt5" && <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />}
         {tab === "logs" && <EmbedTab url="/dozzle/" title="Dozzle — Container Log Viewer (session-protected)" />}
+        {tab === "autogen" && (
+          <EmbedTab
+            url="/autogen-studio/"
+            title="AutoGen Studio — Visual Agent Management (session-protected)"
+          />
+        )}
         {tab === "keys" && (
           <div className="space-y-4">
             <div className="flex items-baseline justify-between">
