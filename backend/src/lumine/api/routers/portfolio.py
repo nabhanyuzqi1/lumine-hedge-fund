@@ -199,19 +199,27 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                 )
             # Titik akhir: posisi terkini (sekali saja).
             nav_now = running_pnl.quantize(Decimal("0.01"))
+            # PITFALL: peak bisa 0 jika semua posisi flat/rugi → division by zero.
+            final_drawdown = (
+                (nav_now / peak - Decimal(1)).quantize(Decimal("0.0001"))
+                if peak > Decimal(0)
+                else Decimal(0)
+            )
             points.append(
                 EquityPoint(
                     ts=now,
                     nav=nav_now,
                     equity=nav_now,
-                    drawdown=(nav_now / peak - Decimal(1)).quantize(Decimal("0.0001")),
+                    drawdown=final_drawdown,
                 )
             )
             # Pagination (newest first, sesuai kontrak B-06).
             points.reverse()
             visible = points[offset : offset + limit]
             return visible
-    except Exception:
+    except Exception as exc:
+        import logging as _log
+        _log.getLogger(__name__).warning("_real_equity_series error: %s", exc, exc_info=True)
         return None
 
 

@@ -271,6 +271,9 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
       return generateBars({ intervalSec: TIMEFRAME_SECONDS[timeframe] });
     },
     staleTime: 30_000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
+    refetchInterval: 60_000,
   });
 }
 
@@ -298,6 +301,8 @@ export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       return generateEquity();
     },
     staleTime: 60_000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
   });
 }
 
@@ -482,6 +487,9 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       return generatePositions();
     },
     staleTime: 30_000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
+    refetchInterval: 30_000,
   });
 }
 

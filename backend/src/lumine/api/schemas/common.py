@@ -44,7 +44,7 @@ class Envelope[T](BaseModel):
 class Pagination(BaseModel):
     """Pagination cursor helper for list endpoints."""
 
-    limit: int = Field(default=20, ge=1, le=100)
+    limit: int = Field(default=20, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
 
 
