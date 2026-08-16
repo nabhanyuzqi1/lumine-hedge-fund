@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Annotated
 
 from fastapi import APIRouter
 
+from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.backtest.engine import BacktestResult, run_backtest
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
@@ -14,6 +16,7 @@ router = APIRouter(prefix="/backtest", tags=["backtest"])
 
 @router.get("/run")
 async def run_backtest_endpoint(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("backtest:read")],
     symbol: str = "XAUUSD",
     timeframe: str = "1h",
     stop_pct: float = 0.02,
