@@ -24,6 +24,13 @@ const AGENT_ICONS: Record<string, (p: { size?: number }) => ReactNode> = {
   structure: StructureIcon,
 };
 
+const AGENT_NAME_KEYS: Record<string, string> = {
+  technical: "intelligence.technicalName",
+  macro: "intelligence.macroName",
+  news: "intelligence.newsName",
+  structure: "intelligence.structureName",
+};
+
 const GATE_KEYS = ["decision.positionSizing", "decision.maxExposure", "decision.dailyLossLimit", "decision.killSwitch"];
 
 function StepBadge({ n, label }: { n: string; label: string }) {
@@ -132,9 +139,9 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
                   transition={{ duration: 0.3, delay: 0.1 + i * 0.06 }}
                 >
                   <span style={{ color }}>{Icon && <Icon size={14} />}</span>
-                  <span className="font-display text-[9px] font-semibold uppercase tracking-wide text-ink">
-                    {analysis.agent}
-                  </span>
+                                    <span className="font-display text-[9px] font-semibold uppercase tracking-wide text-ink">
+                                      {t(AGENT_NAME_KEYS[agent?.id ?? ""] ?? agent?.name ?? analysis.agent)}
+                                    </span>
                   <span className={cn("font-mono text-[9px] font-bold", biasColor)}>
                     {analysis.bias} {analysis.confidence.toFixed(0)}%
                   </span>

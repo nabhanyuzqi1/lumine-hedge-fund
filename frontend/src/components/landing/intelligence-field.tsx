@@ -100,6 +100,7 @@ const TELEMETRY: TelemetryItem[] = [
 ];
 
 export function IntelligenceField() {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [mouse, setMouse] = useState({ nx: 0, ny: 0 }); // normalized -1..1
@@ -345,8 +346,8 @@ export function IntelligenceField() {
                       className="h-1 w-1 rounded-full"
                       style={{ backgroundColor: node.color }}
                     />
-                    {node.name}
-                  </span>
+                    {t(NODE_NAME_KEYS[node.id])}
+                                      </span>
                 </div>
               </div>
             </motion.div>
@@ -397,8 +398,8 @@ export function IntelligenceField() {
           {/* Core label */}
           <div className="absolute left-1/2 top-full mt-2.5 -translate-x-1/2 whitespace-nowrap">
             <span className="inline-flex items-center gap-1.5 rounded-chip border border-accent/30 bg-abyss/90 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-accent backdrop-blur">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-accent" />
-              Lumine Core
+                          <span className="h-1 w-1 animate-pulse rounded-full bg-accent" />
+                          {t("intelligence.coreLabel")}
             </span>
           </div>
         </motion.div>
@@ -406,25 +407,25 @@ export function IntelligenceField() {
 
       {/* Telemetry strip — Section 15 */}
       <div className="mx-auto mt-8 grid w-full max-w-[460px] grid-cols-4 gap-px overflow-hidden rounded-panel border border-line bg-line">
-        {TELEMETRY.map((t) => (
-          <div
-            key={t.label}
-            className={cn("bg-abyss/90 px-2 py-2.5 text-center backdrop-blur")}
-          >
-            <div className="font-mono text-[8px] uppercase tracking-[0.2em] text-ink-faint">
-              {t.label}
+              {TELEMETRY.map((item) => (
+                <div
+                  key={item.labelKey}
+                  className={cn("bg-abyss/90 px-2 py-2.5 text-center backdrop-blur")}
+                >
+                  <div className="font-mono text-[8px] uppercase tracking-[0.2em] text-ink-faint">
+                    {t(item.labelKey)}
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-0.5 font-mono text-[10px] font-semibold",
+                      item.accent ? "text-accent" : "text-ink"
+                    )}
+                  >
+                    {item.valueKey.startsWith("raw:") ? item.valueKey.slice(4) : t(item.valueKey)}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div
-              className={cn(
-                "mt-0.5 font-mono text-[10px] font-semibold",
-                t.accent ? "text-accent" : "text-ink"
-              )}
-            >
-              {t.value}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Agent Inspector Dialog */}
       <Dialog open={!!selectedAgent} onOpenChange={(open) => !open && setSelectedId(null)}>
@@ -451,11 +452,11 @@ export function IntelligenceField() {
                     )}
                   </span>
                   <span>
-                    {selectedAgent.name}
-                    <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint">
-                      Intelligence
-                    </span>
-                  </span>
+                                      {t(NODE_NAME_KEYS[selectedAgent.id])}
+                                      <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint">
+                                        {t("intelligence.intelligenceSuffix")}
+                                      </span>
+                                    </span>
                 </>
               )}
             </DialogTitle>
@@ -463,44 +464,44 @@ export function IntelligenceField() {
 
           {selectedAgent && (
             <div className="space-y-4">
-              <div>
-                <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
-                  Role
-                </h4>
-                <p className="mt-1 text-sm text-ink">{selectedAgent.role}</p>
-              </div>
-              <div>
-                <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
-                  Mandate
-                </h4>
-                <p className="mt-1 text-sm leading-relaxed text-ink-dim">
-                  {selectedAgent.description}
-                </p>
-              </div>
-              <div>
-                <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
-                  Status
-                </h4>
-                <div
-                  className="mt-2 inline-flex items-center gap-2 rounded-chip border px-3 py-1.5"
-                  style={{
-                    borderColor: `${selectedAgent.color}55`,
-                    backgroundColor: `${selectedAgent.color}14`,
-                  }}
-                >
-                  <span
-                    className="h-1.5 w-1.5 animate-pulse rounded-full"
-                    style={{ backgroundColor: selectedAgent.color }}
-                  />
-                  <span
-                    className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em]"
-                    style={{ color: selectedAgent.color }}
-                  >
-                    Active
-                  </span>
-                </div>
-              </div>
-            </div>
+                          <div>
+                            <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
+                              {t("intelligence.role")}
+                            </h4>
+                            <p className="mt-1 text-sm text-ink">{t(AGENT_ROLE_KEYS[selectedAgent.id])}</p>
+                          </div>
+                          <div>
+                            <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
+                              {t("intelligence.mandate")}
+                            </h4>
+                            <p className="mt-1 text-sm leading-relaxed text-ink-dim">
+                              {t(AGENT_DESC_KEYS[selectedAgent.id])}
+                            </p>
+                          </div>
+                          <div>
+                            <h4 className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
+                              {t("intelligence.status")}
+                            </h4>
+                            <div
+                              className="mt-2 inline-flex items-center gap-2 rounded-chip border px-3 py-1.5"
+                              style={{
+                                borderColor: `${selectedAgent.color}55`,
+                                backgroundColor: `${selectedAgent.color}14`,
+                              }}
+                            >
+                              <span
+                                className="h-1.5 w-1.5 animate-pulse rounded-full"
+                                style={{ backgroundColor: selectedAgent.color }}
+                              />
+                              <span
+                                className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em]"
+                                style={{ color: selectedAgent.color }}
+                              >
+                                {t("intelligence.active")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
           )}
         </DialogContent>
       </Dialog>
