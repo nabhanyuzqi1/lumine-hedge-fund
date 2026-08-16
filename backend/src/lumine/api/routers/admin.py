@@ -363,6 +363,18 @@ async def update_system_config(  # noqa: C901 — fixed field list
             [s.upper() for s in request.enabled_symbols]
         )
 
+    if request.llm_auto_fallback is not None:
+        import json as _json
+
+        updates["llm_auto_fallback"] = "1" if request.llm_auto_fallback else "0"
+        # Chain fallback model (ADR-0042): simpan list JSON.
+        if request.llm_fallback_models is not None:
+            updates["llm_fallback_models"] = _json.dumps(request.llm_fallback_models)
+    elif request.llm_fallback_models is not None:
+        import json as _json
+
+        updates["llm_fallback_models"] = _json.dumps(request.llm_fallback_models)
+
     if updates:
         await r.hset(_SYSCONFIG_KEY, mapping=updates)
 

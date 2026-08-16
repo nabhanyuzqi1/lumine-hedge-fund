@@ -416,5 +416,8 @@ class SystemConfigUpdate(BaseModel):
     risk_per_trade: float | None = None
     max_daily_loss_pct: float | None = None
     # B9: daftar symbol aktif (multicurrency enable/disable). Default
-    # ["XAUUSD"] — fokus matangkan 1 stream sebelum multi-stream.
+        # ["XAUUSD"] — fokus matangkan 1 stream sebelum multi-stream.
     enabled_symbols: list[str] | None = None
+    # ADR-0042: auto-fallback + chain fallback model saat primary gagal/rate-limited.
+    llm_auto_fallback: bool | None = None
+    llm_fallback_models: list[str] | None = None

@@ -71,8 +71,8 @@ export function DashboardPage() {
               <DrawdownChart equity={equity.data ?? []} />
 
         <ChartCard title="Live P&L" description="Equity curve · USD" height={96}>
-          <PnlSparkline points={equity.data ?? []} />
-        </ChartCard>
+                  <PnlSparkline points={equity.data ?? []} waitingLabel="Waiting for live data" />
+                </ChartCard>
 
         <Suspense fallback={<PaneFallback title="Capital Allocation" />}>
           <LazyAllocation items={exposure.data ?? []} />

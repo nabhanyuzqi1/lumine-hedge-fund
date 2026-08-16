@@ -43,6 +43,8 @@ interface ConfigForm {
   llm_gateway_api_key: string;
   llm_gateway_url: string;
   llm_default_model: string;
+  llm_fallback_models: string;
+  llm_auto_fallback: boolean;
   llm_daily_budget_usd: string;
   max_exposure_per_trade: string;
   risk_per_trade: string;
@@ -232,41 +234,49 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
     if (data?.enabled_symbols) setEnabledSymbols(data.enabled_symbols);
   }, [data?.enabled_symbols]);
   const [form, setForm] = React.useState<ConfigForm>({
-    llm_gateway_api_key: "",
-    llm_gateway_url: data?.llm_gateway_url ?? "http://9router:20128",
-    llm_default_model: "deepseek-v4",
-    llm_daily_budget_usd: "50",
-    max_exposure_per_trade: "0.02",
-    risk_per_trade: "0.01",
-    max_daily_loss_pct: "0.03",
-    demo_data: data?.demo_data ?? false,
-  });
+      llm_gateway_api_key: "",
+      llm_gateway_url: data?.llm_gateway_url ?? "http://9router:20128",
+      llm_default_model: "deepseek-v4",
+      llm_fallback_models: "",
+      llm_auto_fallback: true,
+      llm_daily_budget_usd: "50",
+      max_exposure_per_trade: "0.02",
+      risk_per_trade: "0.01",
+      max_daily_loss_pct: "0.03",
+      demo_data: data?.demo_data ?? false,
+    });
 
   if (isError) return <ErrorBanner message="system-info" />;
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload: Record<string, unknown> = {
-      llm_gateway_api_key: form.llm_gateway_api_key || undefined,
-      llm_gateway_url: form.llm_gateway_url,
-      demo_data: form.demo_data,
-      llm_daily_budget_usd: parseFloat(form.llm_daily_budget_usd),
-      llm_default_model: form.llm_default_model,
-      max_exposure_per_trade: parseFloat(form.max_exposure_per_trade),
-      risk_per_trade: parseFloat(form.risk_per_trade),
-      max_daily_loss_pct: parseFloat(form.max_daily_loss_pct),
-      // B9: enabled symbols (enable/disable currency)
-      enabled_symbols: enabledSymbols,
+      e.preventDefault();
+      const payload: Record<string, unknown> = {
+        llm_gateway_api_key: form.llm_gateway_api_key || undefined,
+        llm_gateway_url: form.llm_gateway_url,
+        demo_data: form.demo_data,
+        llm_daily_budget_usd: parseFloat(form.llm_daily_budget_usd),
+        llm_default_model: form.llm_default_model,
+        max_exposure_per_trade: parseFloat(form.max_exposure_per_trade),
+        risk_per_trade: parseFloat(form.risk_per_trade),
+        max_daily_loss_pct: parseFloat(form.max_daily_loss_pct),
+        // B9: enabled symbols (enable/disable currency)
+        enabled_symbols: enabledSymbols,
+      };
+      // ADR-0042: auto-fallback + chain fallback models (comma-separated).
+      payload.llm_auto_fallback = form.llm_auto_fallback;
+      payload.llm_fallback_models = form.llm_fallback_models
+        .split(",")
+        .map((m) => m.trim())
+        .filter(Boolean);
+      update.mutate(payload, {
+        onSuccess: (result) => {
+          toast({ variant: "success", title: "Config saved", description: result.note });
+        },
+        onError: () => {
+          toast({ variant: "danger", title: "Save failed", description: "Periksa session/API key admin." });
+        },
+      });
     };
-    update.mutate(payload, {
-      onSuccess: (result) => {
-        toast({ variant: "success", title: "Config saved", description: result.note });
-      },
-      onError: () => {
-        toast({ variant: "danger", title: "Save failed", description: "Periksa session/API key admin." });
-      },
-    });
-  };
 
   const field = (label: string, key: keyof ConfigForm, type = "text", placeholder = "") => (
     <div>
@@ -285,10 +295,22 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">LLM Gateway (9router)</h3>
-        {field("LLM Gateway URL", "llm_gateway_url")}
-        {field("API Key (kosong = tidak diubah)", "llm_gateway_api_key", "password", "sk-...")}
-        {field("Default Model", "llm_default_model")}
-        {field("Daily Budget (USD)", "llm_daily_budget_usd", "number")}
+                {field("LLM Gateway URL", "llm_gateway_url")}
+                {field("API Key (kosong = tidak diubah)", "llm_gateway_api_key", "password", "sk-...")}
+                {field("Default Model", "llm_default_model")}
+                {field("Fallback Models (comma-separated, ADR-0042)", "llm_fallback_models", "text", "kimi-k3, qwen-3.7, glm-5.2")}
+                <div>
+                  <label className="flex items-center gap-2 text-xs text-ink-dim">
+                    <input
+                      type="checkbox"
+                      checked={form.llm_auto_fallback}
+                      onChange={(e) => setForm((f) => ({ ...f, llm_auto_fallback: e.target.checked }))}
+                      className="accent-accent"
+                    />
+                    Auto-fallback aktif — otomatis pakai model cadangan saat primary gagal/rate-limited
+                  </label>
+                </div>
+                {field("Daily Budget (USD)", "llm_daily_budget_usd", "number")}
       </div>
       <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Trading Parameters</h3>
