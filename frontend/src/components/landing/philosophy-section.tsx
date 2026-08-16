@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 /**
  * PhilosophySection — Section 41 of UI/UX Rebuild V2 master prompt.
@@ -8,28 +9,18 @@ import { useEffect, useState } from "react";
  * 
  * NO cards. NO dashboard. NO gradients. NO decorations.
  * Just large typography, subtle motion, and negative space.
- * 
- * Sequence:
- * > Markets are uncertain.
- * [pause]
- * > Models can be wrong.
- * [pause]
- * > Strategies decay.
- * [pause]
- * > Risk is not optional.
- * [pause]
- * # We engineer systems that adapt to uncertainty.
  */
 
-const PHILOSOPHY_LINES = [
-  { text: "Markets are uncertain.", delay: 0.4 },
-  { text: "Models can be wrong.", delay: 1.4 },
-  { text: "Strategies decay.", delay: 2.4 },
-  { text: "Risk is not optional.", delay: 3.4 },
-];
-
 export function PhilosophySection() {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
+
+  const PHILOSOPHY_LINES = [
+    { key: "philosophy.line1", delay: 0.4 },
+    { key: "philosophy.line2", delay: 1.4 },
+    { key: "philosophy.line3", delay: 2.4 },
+    { key: "philosophy.line4", delay: 3.4 },
+  ];
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -66,7 +57,7 @@ export function PhilosophySection() {
               ease: "easeOut",
             }}
           >
-            {line.text}
+            {t(line.key)}
           </motion.blockquote>
         ))}
       </div>
@@ -83,9 +74,7 @@ export function PhilosophySection() {
         }}
       >
         <h2 className="font-display text-4xl font-bold leading-tight text-ink md:text-5xl lg:text-6xl">
-          We engineer systems
-          <br />
-          that adapt to uncertainty.
+          {t("philosophy.manifestoTitle")}
         </h2>
 
         <motion.p
@@ -97,9 +86,7 @@ export function PhilosophySection() {
             delay: 5.2,
           }}
         >
-          Lumine is built on the assumption that markets will surprise us.
-          Our intelligence layer proposes. Our risk engine decides.
-          Our validation framework ensures we only deploy what we understand.
+          {t("philosophy.manifestoDescription")}
         </motion.p>
       </motion.div>
     </div>

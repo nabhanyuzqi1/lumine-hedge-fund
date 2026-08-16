@@ -111,7 +111,7 @@ function NavBar() {
           <div className="hidden items-center gap-2 lg:flex">
             <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-up" />
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-faint">
-              System Online
+              {t("nav.systemOnline")}
             </span>
           </div>
           

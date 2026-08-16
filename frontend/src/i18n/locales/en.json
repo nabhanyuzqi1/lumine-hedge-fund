@@ -3,7 +3,8 @@
     "overview": "Overview",
     "risk": "Risk",
     "research": "Research",
-    "performance": "Performance"
+    "performance": "Performance",
+    "systemOnline": "System Online"
   },
   "hero": {
     "title": "AI-Native",
@@ -73,7 +74,13 @@
   "philosophy": {
     "sectionKicker": "Philosophy",
     "sectionTitle": "Built on First Principles",
-    "description": "No curve-fitting. No over-optimization. Just disciplined execution of validated systematic strategies."
+    "description": "No curve-fitting. No over-optimization. Just disciplined execution and systematic validation.",
+    "line1": "Markets are uncertain.",
+    "line2": "Models can be wrong.",
+    "line3": "Strategies decay.",
+    "line4": "Risk is not optional.",
+    "manifestoTitle": "We engineer systems that adapt to uncertainty.",
+    "manifestoDescription": "Lumine is built on the assumption that markets will surprise us. Our intelligence layer proposes. Our risk engine decides. Our validation framework ensures we only deploy what we understand."
   },
   "footer": {
     "disclaimer": "Disclaimer:",
