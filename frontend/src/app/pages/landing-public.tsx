@@ -1,23 +1,45 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { useState, type ReactNode } from "react";
+import { useState, lazy, Suspense, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-// Landing components
-import { IntelligenceField } from "@/components/landing/intelligence-field";
-import { DecisionFlow } from "@/components/landing/decision-flow";
-import { BreakEvenVisualization } from "@/components/landing/breakeven-visualization";
-import { ResearchPipeline } from "@/components/landing/research-pipeline";
-import { PerformanceDashboard } from "@/components/landing/performance-dashboard";
-import { EquityCurve } from "@/components/landing/equity-curve";
-import { RegimeEngine } from "@/components/landing/regime-engine";
-import { AuditLog } from "@/components/landing/audit-log";
-import { PhilosophySection } from "@/components/landing/philosophy-section";
-import { TickerTape } from "@/components/landing/ticker-tape";
+// Lazy load heavy visualization components
+const IntelligenceField = lazy(() => 
+  import("@/components/landing/intelligence-field").then(m => ({ default: m.IntelligenceField }))
+);
+const DecisionFlow = lazy(() => 
+  import("@/components/landing/decision-flow").then(m => ({ default: m.DecisionFlow }))
+);
+const BreakEvenVisualization = lazy(() => 
+  import("@/components/landing/breakeven-visualization").then(m => ({ default: m.BreakEvenVisualization }))
+);
+const ResearchPipeline = lazy(() => 
+  import("@/components/landing/research-pipeline").then(m => ({ default: m.ResearchPipeline }))
+);
+const PerformanceDashboard = lazy(() => 
+  import("@/components/landing/performance-dashboard").then(m => ({ default: m.PerformanceDashboard }))
+);
+const EquityCurve = lazy(() => 
+  import("@/components/landing/equity-curve").then(m => ({ default: m.EquityCurve }))
+);
+const RegimeEngine = lazy(() => 
+  import("@/components/landing/regime-engine").then(m => ({ default: m.RegimeEngine }))
+);
+const AuditLog = lazy(() => 
+  import("@/components/landing/audit-log").then(m => ({ default: m.AuditLog }))
+);
+const PhilosophySection = lazy(() => 
+  import("@/components/landing/philosophy-section").then(m => ({ default: m.PhilosophySection }))
+);
+const TickerTape = lazy(() => 
+  import("@/components/landing/ticker-tape").then(m => ({ default: m.TickerTape }))
+);
+
 import { LumineIcon } from "@/components/landing/agent-icons";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ChartSkeleton, HeroSkeleton } from "@/components/ui/skeleton";
 
 /**
  * Lumine Landing Page — UI/UX Rebuild V2 (from scratch).
@@ -266,7 +288,9 @@ function Hero() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, delay: 0.45, ease: "easeOut" }}
         >
-          <IntelligenceField />
+          <Suspense fallback={<HeroSkeleton />}>
+            <IntelligenceField />
+          </Suspense>
         </motion.div>
       </div>
 
@@ -339,7 +363,9 @@ export function LandingPublicPage() {
       <Hero />
 
       {/* Ticker tape — simulated market strip */}
-      <TickerTape />
+      <Suspense fallback={<ChartSkeleton />}>
+            <TickerTape />
+          </Suspense>
 
       {/* DECISION & RISK — 3-step flow: signals → thesis → risk gates */}
       <section id="risk" className="border-b border-line bg-raised py-16 md:py-24">
@@ -357,7 +383,9 @@ export function LandingPublicPage() {
             description="Three simple steps: four analysts send signals, the master forms a single thesis, then the thesis passes through risk gates before execution."
             className="mb-10"
           />
-          <DecisionFlow className="mx-auto" />
+          <Suspense fallback={<ChartSkeleton />}>
+            <DecisionFlow className="mx-auto" />
+          </Suspense>
         </div>
       </section>
 
@@ -370,7 +398,9 @@ export function LandingPublicPage() {
             description="Lumine evaluates whether to hold or move stop-loss to break-even based on market structure and momentum — not arbitrary price levels."
             className="mb-10"
           />
-          <BreakEvenVisualization showHeader={false} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <BreakEvenVisualization showHeader={false} />
+          </Suspense>
         </div>
       </section>
 
@@ -383,7 +413,9 @@ export function LandingPublicPage() {
             description="Lumine only deploys capital on strategies that survive this lifecycle. Every stage is a checkpoint — a strategy is not an edge until it passes all of them."
             className="mb-10"
           />
-          <ResearchPipeline showHeader={false} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <ResearchPipeline showHeader={false} />
+          </Suspense>
         </div>
       </section>
 
@@ -397,9 +429,13 @@ export function LandingPublicPage() {
             description="Illustrative data showing how Lumine evaluates strategy quality across backtest, paper, and live phases."
             className="mb-10"
           />
-          <PerformanceDashboard showHeader={false} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <PerformanceDashboard showHeader={false} />
+          </Suspense>
           <div className="mt-16">
-            <EquityCurve showHeader={false} />
+            <Suspense fallback={<ChartSkeleton />}>
+              <EquityCurve showHeader={false} />
+            </Suspense>
           </div>
         </div>
       </section>
@@ -413,7 +449,9 @@ export function LandingPublicPage() {
             description="Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
             className="mb-10"
           />
-          <RegimeEngine showHeader={false} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <RegimeEngine showHeader={false} />
+          </Suspense>
         </div>
       </section>
 
@@ -426,13 +464,17 @@ export function LandingPublicPage() {
             description="A complete, inspectable record of how each thesis was assembled, validated, and executed. Pause the stream to read it."
             className="mb-10"
           />
-          <AuditLog showHeader={false} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <AuditLog showHeader={false} />
+          </Suspense>
         </div>
       </section>
 
       {/* PHILOSOPHY — minimal editorial (Section 41) */}
       <section className="border-b border-line bg-abyss py-16 md:py-24">
-        <PhilosophySection />
+        <Suspense fallback={<ChartSkeleton />}>
+          <PhilosophySection />
+        </Suspense>
       </section>
 
       {/* CTA — quiet (Section 42) */}

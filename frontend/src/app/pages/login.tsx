@@ -6,6 +6,7 @@ import { LumineIcon } from "@/components/landing/agent-icons";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LoadingScreenSkeleton } from "@/components/ui/skeleton";
 
 /**
  * Lumine Login — first-party internal auth.
@@ -124,16 +125,7 @@ export function LoginPage() {
   const [submitting, setSubmitting] = React.useState(false);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-abyss">
-        <div className="flex items-center gap-3">
-          <LumineIcon className="h-6 w-6 animate-pulse text-accent" />
-          <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-            Verifying session…
-          </span>
-        </div>
-      </div>
-    );
+    return <LoadingScreenSkeleton />;
   }
 
   if (isAuthenticated) {

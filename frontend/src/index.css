@@ -88,11 +88,12 @@
   --color-table-row-hover: color-mix(in srgb, var(--color-accent) 8%, transparent);
 
   /* motion */
-  --animate-flash-up: flash-up 150ms ease-out;
-  --animate-flash-down: flash-down 150ms ease-out;
-  --animate-dialog-overlay-in: dialog-overlay-in 250ms ease-out;
-  --animate-dialog-content-in: dialog-content-in 250ms ease-out;
-}
+    --animate-flash-up: flash-up 150ms ease-out;
+    --animate-flash-down: flash-down 150ms ease-out;
+    --animate-dialog-overlay-in: dialog-overlay-in 250ms ease-out;
+    --animate-dialog-content-in: dialog-content-in 250ms ease-out;
+    --animate-shimmer: shimmer 1.5s ease-in-out infinite;
+  }
 
 html {
   scroll-behavior: smooth;
@@ -239,11 +240,17 @@ body {
   }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-flash-up,
   .animate-flash-down,
   .animate-dialog-overlay-in,
-  .animate-dialog-content-in {
+  .animate-dialog-content-in,
+  .animate-shimmer {
     animation: none !important;
   }
 }

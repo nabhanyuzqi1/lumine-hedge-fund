@@ -4,10 +4,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AuthProvider, RequireRole } from "@/lib/auth/role-context";
 import { PageShell } from "./components/page-shell";
 import { SuspenseOutlet } from "./components/suspense-outlet";
-import { LandingPublicPage } from "./pages/landing-public";
-import { LoginPage } from "./pages/login";
-import { OrderDetailPage } from "./pages/order-detail";
-import { TerminalPage } from "./pages/terminal";
+import { LoadingScreenSkeleton } from "@/components/ui/skeleton";
 
 /**
  * Lumine route table.
@@ -23,6 +20,21 @@ import { TerminalPage } from "./pages/terminal";
  */
 
 // ── Lazy routes ────────────────────────────────────────────────────────────
+// Public pages
+const LazyLandingPublic = React.lazy(() =>
+  import("./pages/landing-public").then((m) => ({ default: m.LandingPublicPage }))
+);
+const LazyLogin = React.lazy(() =>
+  import("./pages/login").then((m) => ({ default: m.LoginPage }))
+);
+
+// Protected pages
+const LazyTerminal = React.lazy(() =>
+  import("./pages/terminal").then((m) => ({ default: m.TerminalPage }))
+);
+const LazyOrderDetail = React.lazy(() =>
+  import("./pages/order-detail").then((m) => ({ default: m.OrderDetailPage }))
+);
 const LazyDashboard = React.lazy(() =>
   import("./pages/dashboard").then((m) => ({ default: m.DashboardPage }))
 );
@@ -83,7 +95,9 @@ export const router = createBrowserRouter([
     path: "/",
     element: (
       <AuthProvider>
-        <LandingPublicPage />
+        <React.Suspense fallback={<LoadingScreenSkeleton />}>
+          <LazyLandingPublic />
+        </React.Suspense>
       </AuthProvider>
     ),
   },
@@ -91,7 +105,9 @@ export const router = createBrowserRouter([
     path: "/login",
     element: (
       <AuthProvider>
-        <LoginPage />
+        <React.Suspense fallback={<LoadingScreenSkeleton />}>
+          <LazyLogin />
+        </React.Suspense>
       </AuthProvider>
     ),
   },
@@ -107,7 +123,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       // /app/* prefix routes
-      { path: "/app/terminal", element: <TerminalPage /> },
+      { path: "/app/terminal", element: <LazyTerminal /> },
       { path: "/app/dashboard", element: <LazyDashboard /> },
       { path: "/app/health", element: <LazyHealth /> },
       { path: "/app/streams", element: <LazyStreams /> },
@@ -125,8 +141,8 @@ export const router = createBrowserRouter([
       {
         element: <SuspenseOutlet />,
         children: [
-          { path: "/app/orders/:orderId", element: <OrderDetailPage /> },
-          { path: "/orders/:orderId", element: <OrderDetailPage /> },
+          { path: "/app/orders/:orderId", element: <LazyOrderDetail /> },
+          { path: "/orders/:orderId", element: <LazyOrderDetail /> },
           {
             path: "/app/workflows/:workflowId/runs/:runId",
             element: <LazyWorkflowRunDetail />,
