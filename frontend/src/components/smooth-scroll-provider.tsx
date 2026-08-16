@@ -17,7 +17,6 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       gestureOrientation: "vertical",
       smoothWheel: true,
       wheelMultiplier: 1,
-      smoothTouch: false, // Disable on touch devices untuk native feel
       touchMultiplier: 2,
       infinite: false,
     });
