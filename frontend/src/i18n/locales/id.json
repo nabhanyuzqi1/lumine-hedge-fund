@@ -56,7 +56,25 @@
   "research": {
     "sectionKicker": "Riset",
     "sectionTitle": "Pipeline Riset",
-    "description": "Penemuan dan validasi berkelanjutan dari strategi sistematis."
+    "description": "Penemuan dan validasi berkelanjutan dari strategi sistematis.",
+    "strategyLifecycle": "Siklus Hidup Strategi",
+    "fromHypothesis": "Dari Hipotesis ke Modal.",
+    "lifecycleDescription": "Setiap strategi harus melewati siklus hidup ini sebelum modal riil diterapkan.",
+    "stage01Title": "Observasi",
+    "stage01Description": "Pengambilan data berkelanjutan dan deteksi rezim.",
+    "stage02Title": "Riset",
+    "stage02Description": "Hipotesis strategi dari pola pasar yang diamati.",
+    "stage03Title": "Validasi",
+    "stage03Description": "Pengujian statistik — hipotesis, korelasi, stabilitas.",
+    "stage04Title": "Simulasi",
+    "stage04Description": "Backtesting, walk-forward dan pengujian out-of-sample.",
+    "stage05Title": "Paper Trading",
+    "stage05Description": "Paper trading langsung tanpa risiko modal.",
+    "stage06Title": "Deploy",
+    "stage06Description": "Modal terkontrol dengan batas risiko yang ketat.",
+    "stateDone": "Selesai",
+    "stateCurrent": "Sedang Berjalan",
+    "statePending": "Menunggu"
   },
   "performance": {
     "sectionKicker": "Performa",
