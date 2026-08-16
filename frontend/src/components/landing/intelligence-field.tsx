@@ -43,10 +43,10 @@ interface NodeDef {
 }
 
 const NODES: NodeDef[] = [
-  { id: "technical", name: "Technical", x: 200, y: 50, color: "#4D8DFF" },
-  { id: "macro", name: "Macro", x: 50, y: 200, color: "#A78BFA" },
-  { id: "news", name: "News", x: 350, y: 200, color: "#F59E0B" },
-  { id: "structure", name: "Structure", x: 200, y: 350, color: "#34D399" },
+  { id: "technical", name: "Technical", x: 200, y: 50, color: "var(--node-technical, #4D8DFF)" },
+  { id: "macro", name: "Macro", x: 50, y: 200, color: "var(--node-macro, #A78BFA)" },
+  { id: "news", name: "News", x: 350, y: 200, color: "var(--node-news, #F59E0B)" },
+  { id: "structure", name: "Structure", x: 200, y: 350, color: "var(--node-structure, #34D399)" },
 ];
 
 /** Line endpoints from node edge to core edge (viewBox coords). */
