@@ -33,6 +33,8 @@ export interface CandlestickChartProps {
   timeframe: Timeframe;
   onTimeframeChange?: (timeframe: Timeframe) => void;
   height?: number;
+  /** Fallback label saat data live belum masuk/stale (market tutup dll). */
+  waitingLabel?: string;
 }
 
 /**
@@ -46,6 +48,7 @@ export function CandlestickChart({
   timeframe,
   onTimeframeChange,
   height = 360,
+  waitingLabel,
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<{
@@ -99,19 +102,29 @@ export function CandlestickChart({
   }, [bars]);
 
   // Debounced live tick → mutate the in-progress bar in place.
-  useEffect(() => {
-    if (!lastTick) return;
-    const timer = setTimeout(() => {
-      const bar = lastBarRef.current;
-      const { candles, volumes } = seriesRef.current;
-      if (!bar || !candles || !volumes) return;
-      const updated = updateBarWithTick(bar, lastTick.last);
-      lastBarRef.current = updated;
-      candles.update(candleFromBar(updated));
-      volumes.update(volumeFromBar(updated));
-    }, TICK_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [lastTick]);
+    useEffect(() => {
+      if (!lastTick) return;
+      const timer = setTimeout(() => {
+        const bar = lastBarRef.current;
+        const { candles, volumes } = seriesRef.current;
+        if (!bar || !candles || !volumes) return;
+        const updated = updateBarWithTick(bar, lastTick.last);
+        lastBarRef.current = updated;
+        candles.update(candleFromBar(updated));
+        volumes.update(volumeFromBar(updated));
+      }, TICK_DEBOUNCE_MS);
+      return () => clearTimeout(timer);
+    }, [lastTick]);
+
+    // Data freshness: bar terakhir lebih tua dari 2× interval terbesar (4H×2
+    // = 8 jam, tapi untuk jendela 5m/15m gunakan 10 menit) → anggap stale.
+    // Pasar tutup (weekend) → bars_1m berhenti → overlay "waiting for live
+    // data" supaya user tahu chart menampilkan data terakhir, bukan live.
+    const isStale =
+      bars.length > 0 &&
+      waitingLabel != null &&
+      Date.now() - (bars[bars.length - 1]!.time + (timeframe === "5m" ? 300 : timeframe === "15m" ? 900 : timeframe === "1H" ? 3600 : 14400)) * 1000 >
+        10 * 60_000;
 
   return (
     <ChartCard
@@ -142,8 +155,15 @@ export function CandlestickChart({
         </div>
       }
       height={height}
-    >
-      <div ref={containerRef} className="h-full w-full" />
-    </ChartCard>
+          >
+            <div ref={containerRef} className="h-full w-full" />
+            {isStale && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="rounded-md border border-amber-500/30 bg-bg-base/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-amber-400 backdrop-blur">
+                  {waitingLabel}
+                </div>
+              </div>
+            )}
+          </ChartCard>
   );
 }

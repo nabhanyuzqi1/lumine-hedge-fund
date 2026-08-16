@@ -57,8 +57,8 @@ export function DataTable<T>({
       data-testid="data-table-scroll"
       style={maxHeight ? { maxHeight } : undefined}
     >
-      <Table>
-        <TableHeader className="sticky top-0 z-10 bg-bg-raised">
+      <Table disableOverflow>
+              <TableHeader className="sticky top-0 z-10 bg-bg-raised">
           <TableRow className="hover:bg-transparent">
             {columns.map((column) => (
               <TableHead

@@ -21,17 +21,17 @@ export function PageShell() {
       >
         Skip to main content
       </a>
-      <div className="flex h-screen flex-col bg-bg-base" data-testid="page-shell">
-        <TopBar />
-        <GapBanner />
-        <KillSwitchBanner />
-        <div className="flex flex-1 flex-col-reverse overflow-hidden md:flex-row">
-          <Rail />
-          <main id="main-content" className="flex-1 overflow-auto" tabIndex={-1}>
-            <Outlet />
-          </main>
-        </div>
-      </div>
+      <div className="flex h-dvh flex-col bg-bg-base" data-testid="page-shell">
+              <TopBar />
+              <GapBanner />
+              <KillSwitchBanner />
+              <div className="flex min-h-0 flex-1 flex-col-reverse overflow-hidden md:flex-row">
+                <Rail />
+                <main id="main-content" className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
+                  <Outlet />
+                </main>
+              </div>
+            </div>
       <CommandPalette />
     </KeyboardProvider>
   );

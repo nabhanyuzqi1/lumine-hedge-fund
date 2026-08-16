@@ -301,7 +301,7 @@
     "activity": "Aktivitas",
     "activityDescription": "Peristiwa stream",
     "positions": "Posisi",
-    "positionsDescription": "{count} terbuka",
+    "positionsDescription": "{{count}} terbuka",
     "orders": "Order",
     "ordersDescription": "Klik order untuk buka detail lifecycle",
     "commandSymbol": "SYMBOL",
@@ -318,10 +318,11 @@
     "colUnrealizedPnl": "P&L Belum Realisasi",
     "emptyPositions": "Tidak ada posisi terbuka",
     "kicker": "Terminal",
-    "modifyDialog": "Ubah order {id}",
-    "modifyDescription": "Sesuaikan limit sebelum terisi. Saat ini: {qty} @ {price}.",
-    "streamOpen": "Stream SSE terbuka: {symbol}",
-    "streamError": "Error SSE: {msg}",
-    "marketClosed": "Pasar tutup: {msg}"
+    "modifyDialog": "Ubah order {{id}}",
+    "modifyDescription": "Sesuaikan limit sebelum terisi. Saat ini: {{qty}} @ {{price}}.",
+    "streamOpen": "Stream SSE terbuka: {{symbol}}",
+    "streamError": "Error SSE: {{msg}}",
+    "marketClosed": "Pasar tutup: {{msg}}",
+    "waitingLiveData": "Menunggu data live — pasar tutup / pembaruan"
   }
 }

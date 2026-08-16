@@ -178,12 +178,25 @@ export function useSSE<T>(options: UseSSEOptions<T>): UseSSEReturn {
         signal: abortRef.current.signal,
       });
 
-      if (response.status === 401 || response.status === 403 || response.status === 404) {
-        setStatus("error");
-        setError(new Error(`SSE terminal status ${response.status}`));
-        callbacksRef.current.onError?.(new Error(`SSE terminal status ${response.status}`));
-        return;
-      }
+      if (response.status === 403 || response.status === 404) {
+              setStatus("error");
+              setError(new Error(`SSE terminal status ${response.status}`));
+              callbacksRef.current.onError?.(new Error(`SSE terminal status ${response.status}`));
+              return;
+            }
+
+            if (response.status === 401) {
+              // 401 bisa TRANSIEN: HMAC signature expired saat deploy/server
+              // restart (client clock ±window 300s, VPS rebuild). Jangan mati
+              // permanen — reconnect dgn backoff; kalau key revoked, ulang
+              // connect juga sia-sia tapi backoff naik sampai 30s (bounded).
+              setStatus("connecting");
+              reconnectTimerRef.current = setTimeout(() => {
+                backoffRef.current = Math.min(backoffRef.current * 2, MAX_BACKOFF_MS);
+                void connect();
+              }, backoffRef.current);
+              return;
+            }
 
       if (response.status === 429) {
         const delay = getRetryAfterMs(response, backoffRef.current);

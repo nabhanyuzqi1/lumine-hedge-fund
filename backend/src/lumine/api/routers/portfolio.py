@@ -103,32 +103,40 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
 
     open_pnl = Decimal(0)
     margin_used = Decimal(0)
+    gross_exposure = Decimal(0)
     for pos in positions:
-        mid = await _live_mid(pos.symbol)
-        if mid is None:
-            mid = pos.avg_entry  # market libur → P&L flat di entry price
-        # B8: pakai P&L real MT5 bila ada; fallback mark-to-market
-        # (side lowercase "buy"/"sell" dari sync MT5, atau "BUY"/"SHORT"
-        # dari pipeline lama — handle keduanya).
-        if pos.mt5_profit is not None:
-            pnl = pos.mt5_profit
-        else:
-            pnl = (mid - pos.avg_entry) * pos.size
-            if str(pos.side).upper() == "SHORT":
-                pnl = -pnl
-        open_pnl += pnl
-        margin_used += mid * abs(pos.size) * _MARGIN_RATE
+            mid = await _live_mid(pos.symbol)
+            if mid is None:
+                mid = pos.avg_entry  # market libur → P&L flat di entry price
+            # B8: pakai P&L real MT5 bila ada; fallback mark-to-market
+            # (side lowercase "buy"/"sell" dari sync MT5, atau "BUY"/"SHORT"
+            # dari pipeline lama — handle keduanya).
+            if pos.mt5_profit is not None:
+                pnl = pos.mt5_profit
+            else:
+                pnl = (mid - pos.avg_entry) * pos.size
+                if str(pos.side).upper() == "SHORT":
+                    pnl = -pnl
+            open_pnl += pnl
+            margin_used += mid * abs(pos.size) * _MARGIN_RATE
+            gross_exposure += mid * abs(pos.size)
 
-    nav = (open_pnl).quantize(Decimal("0.01"))
+    # NAV = equity (modal dasar + P&L terbuka), BUKAN sekadar open_pnl.
+    # PITFALL (terbukti prod): nav=open_pnl menghasilkan leverage 194x /
+    # exposure ribuan % di RiskGauges karena denominator (nav) ≈ $0-4
+    # sedangkan notional posisi ribuan dollar. Basis modal default
+    # konstanta platform (docs/08-trading): $10,000 seed.
+    _BASE_EQUITY = Decimal("10000")
+    nav = (_BASE_EQUITY + open_pnl).quantize(Decimal("0.01"))
     cash = (nav - margin_used).quantize(Decimal("0.01"))
     return PortfolioSummary(
-        portfolio_id=portfolio_id,
-        nav=nav,
-        cash=cash,
-        margin_used=margin_used.quantize(Decimal("0.01")),
-        open_pnl=open_pnl.quantize(Decimal("0.01")),
-        closed_pnl=Decimal("0.00"),
-        timestamp=datetime.now(UTC),
+            portfolio_id=portfolio_id,
+            nav=nav,
+            cash=cash,
+            margin_used=margin_used.quantize(Decimal("0.01")),
+            open_pnl=open_pnl.quantize(Decimal("0.01")),
+            closed_pnl=Decimal("0.00"),
+            timestamp=datetime.now(UTC),
     )
 
 

@@ -301,7 +301,7 @@
     "activity": "Activity",
     "activityDescription": "Stream events",
     "positions": "Positions",
-    "positionsDescription": "{count} open",
+    "positionsDescription": "{{count}} open",
     "orders": "Orders",
     "ordersDescription": "Click an order to open its lifecycle detail",
     "commandSymbol": "SYMBOL",
@@ -318,10 +318,11 @@
     "colUnrealizedPnl": "Unrealized P&L",
     "emptyPositions": "No open positions",
     "kicker": "Terminal",
-    "modifyDialog": "Modify order {id}",
-    "modifyDescription": "Adjust the working limit terms before fill. Current: {qty} @ {price}.",
-    "streamOpen": "SSE stream open: {symbol}",
-    "streamError": "SSE error: {msg}",
-    "marketClosed": "Market closed: {msg}"
+    "modifyDialog": "Modify order {{id}}",
+    "modifyDescription": "Adjust the working limit terms before fill. Current: {{qty}} @ {{price}}.",
+    "streamOpen": "SSE stream open: {{symbol}}",
+    "streamError": "SSE error: {{msg}}",
+    "marketClosed": "Market closed: {{msg}}",
+    "waitingLiveData": "Waiting for live data — market closed / updating"
   }
 }

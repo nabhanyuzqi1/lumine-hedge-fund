@@ -420,11 +420,12 @@ function TradingWorkspace() {
           }
         >
           <LazyCandlestickChart
-            bars={bars.data ?? []}
-            lastTick={lastTick}
-            timeframe={timeframe}
-            onTimeframeChange={setTimeframe}
-          />
+                      bars={bars.data ?? []}
+                      lastTick={lastTick}
+                      timeframe={timeframe}
+                      onTimeframeChange={setTimeframe}
+                      waitingLabel={t("terminal.waitingLiveData")}
+                    />
         </Suspense>
         <Card>
           <CardHeader>
