@@ -8,14 +8,22 @@
 http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
 
     handle /api/* {
-        reverse_proxy api:8000
-    }
-    handle /health {
-        reverse_proxy api:8000
-    }
-    handle /metrics {
-        reverse_proxy api:8000
-    }
+            # flush_interval -1 → SSE frames (stream_open, tick_update, heartbeat)
+            # diteruskan MUTLAK realtime. Tanpa ini Caddy buffer respons dan
+            # client useSSE tidak menerima heartbeat → stale palsu di GapBanner
+            # ("Realtime feed degraded" padahal koneksi sehat).
+            reverse_proxy api:8000 {
+                flush_interval -1
+            }
+        }
+        handle /health {
+            reverse_proxy api:8000 {
+                flush_interval -1
+            }
+        }
+        handle /metrics {
+            reverse_proxy api:8000
+        }
 
     @superadmin {
         path /superadmin*

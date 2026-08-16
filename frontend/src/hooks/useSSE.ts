@@ -121,12 +121,38 @@ export function useSSE<T>(options: UseSSEOptions<T>): UseSSEReturn {
   }, []);
 
   const resetStaleTimer = useCallback(() => {
-    clearStaleTimer();
-    // stale = 2× heartbeat = 60s (STALE_AFTER_MS).
-    staleTimerRef.current = setTimeout(() => {
-      setStale(true);
-    }, STALE_AFTER_MS);
-  }, [clearStaleTimer]);
+      clearStaleTimer();
+      // stale = 2× heartbeat = 60s (STALE_AFTER_MS).
+      staleTimerRef.current = setTimeout(() => {
+        setStale(true);
+      }, STALE_AFTER_MS);
+    }, [clearStaleTimer]);
+
+    // Background-tab throttling: browser pauses fetch reads in hidden tabs,
+    // so heartbeat responses arrive late → stale would be a FALSE POSITIVE.
+    // Freeze staleness while hidden; resume counting on visibility return.
+    // (PITFALL verified: GapBanner flashed "Realtime feed degraded" on
+    //  lumine.biz.id while the tab sat in the background with a healthy pipe.)
+    const visibilityHiddenRef = useRef(false);
+    const hiddenAtRef = useRef<number | null>(null);
+
+    useEffect(() => {
+      const onVis = () => {
+        if (document.hidden) {
+          visibilityHiddenRef.current = true;
+          hiddenAtRef.current = Date.now();
+          clearStaleTimer();
+          setStale(false);
+        } else {
+          visibilityHiddenRef.current = false;
+          hiddenAtRef.current = null;
+          // Connection likely still alive — restart the stale window.
+          resetStaleTimer();
+        }
+      };
+      document.addEventListener("visibilitychange", onVis);
+      return () => document.removeEventListener("visibilitychange", onVis);
+    }, [clearStaleTimer, resetStaleTimer]);
 
   const connect = useCallback(async () => {
     if (!enabled) return;
