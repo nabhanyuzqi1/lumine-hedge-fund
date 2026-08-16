@@ -6,7 +6,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement> & { disableOverflow?: boolean }
 >(({ className, disableOverflow, ...props }, ref) => (
-  <div className={disableOverflow ? "w-full" : "w-full overflow-auto"}>
+  <div className={disableOverflow ? "w-full" : "w-full overflow-auto overscroll-none"}>
     <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
   </div>
 ));

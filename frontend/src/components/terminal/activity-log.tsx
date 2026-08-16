@@ -27,7 +27,7 @@ export function ActivityLog({ limit = 24 }: { limit?: number }) {
   }
 
   return (
-    <ul className="max-h-[320px] space-y-1 overflow-auto" data-testid="activity-log">
+    <ul className="max-h-[320px] space-y-1 overflow-auto overscroll-none" data-testid="activity-log">
       {shown.map((entry) => (
         <li key={entry.id} className="flex items-start gap-2 rounded-md px-1.5 py-1">
           <Badge tone={LEVEL_TONE[entry.level]} label={entry.stream} />

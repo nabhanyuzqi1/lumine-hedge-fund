@@ -53,7 +53,7 @@ export function DataTable<T>({
   return (
     <div
       ref={parentRef}
-      className={`w-full overflow-auto rounded-panel border border-border-subtle ${className ?? ""}`.trim()}
+      className={`w-full overflow-auto overscroll-none rounded-panel border border-border-subtle ${className ?? ""}`.trim()}
       data-testid="data-table-scroll"
       style={maxHeight ? { maxHeight } : undefined}
     >
