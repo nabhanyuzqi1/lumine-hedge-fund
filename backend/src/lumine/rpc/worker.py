@@ -319,11 +319,112 @@ async def _handle_cancel_order(payload: dict[str, Any], publisher: SSEPublisher)
     return result
 
 
+async def _handle_place_order(payload: dict[str, Any], publisher: SSEPublisher, settings: Settings) -> dict[str, Any]:  # noqa: PLR0912
+    """Place order via MT5 bridge (real or paper trading simulation).
+
+    Payload: {order_id, symbol, volume, order_type, stop_loss?, take_profit?}
+    Returns: {order_id, command_id, status, fill_price?, ticket?}
+    """
+    from uuid import UUID
+
+    from lumine.trading.mt5_bridge import MT5Bridge, create_open_order_command
+
+    order_id = payload.get("order_id")
+    symbol = payload.get("symbol", "XAUUSD")
+    volume = float(payload.get("volume", 0.01))
+    order_type = payload.get("order_type", "BUY")
+    stop_loss = payload.get("stop_loss")
+    take_profit = payload.get("take_profit")
+
+    if not order_id:
+        return {"error": "order_id required", "status": "rejected"}
+
+    try:
+        order_uuid = UUID(order_id)
+    except ValueError:
+        return {"error": "invalid order_id", "status": "rejected"}
+
+    # Create command message
+    command = create_open_order_command(
+        order_id=order_uuid,
+        symbol=symbol,
+        volume=volume,
+        order_type=order_type.upper(),
+        stop_loss=float(stop_loss) if stop_loss else None,
+        take_profit=float(take_profit) if take_profit else None,
+    )
+
+    # Paper trading mode: simulate fill without MT5
+    if settings.paper_trading:
+        import random
+
+        # Simulate fill with random slippage
+        base_price = 3350.0 if symbol == "XAUUSD" else 1.1000  # fallback
+        slippage = random.uniform(-0.5, 0.5)  # $0.50 slippage
+        fill_price = base_price + slippage
+
+        result = {
+            "order_id": str(order_id),
+            "command_id": command.command_id,
+            "status": "FILLED",
+            "ticket": random.randint(100000, 999999),
+            "fill_price": round(fill_price, 2),
+            "fill_volume": volume,
+            "paper_trading": True,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+        # Publish SSE event
+        await publisher.publish(
+            SSEEvent(
+                event_type="order_filled",
+                channel="orders",
+                data=result,
+            )
+        )
+
+        return result
+
+    # Real trading mode: send to MT5 via bridge
+    try:
+        bridge = await MT5Bridge.connect(settings)
+        command_id = await bridge.send_command(command)
+
+        result = {
+            "order_id": str(order_id),
+            "command_id": command_id,
+            "status": "PENDING",
+            "paper_trading": False,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+        await publisher.publish(
+            SSEEvent(
+                event_type="order_submitted",
+                channel="orders",
+                data=result,
+            )
+        )
+
+        return result
+
+    except Exception as exc:
+        logger.exception("place_order failed: %s", exc)
+        return {
+            "order_id": str(order_id),
+            "command_id": command.command_id,
+            "status": "ERROR",
+            "error": str(exc),
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+
 HANDLERS: dict[str, Any] = {
     "run_decision_cycle": _handle_run_decision_cycle,
     "halt_trading": _handle_halt_trading,
     "resume_trading": _handle_resume_trading,
     "cancel_order": _handle_cancel_order,
+    "place_order": _handle_place_order,
 }
 
 
@@ -341,6 +442,8 @@ async def _process(
         handler = HANDLERS[command]
         if command in {"halt_trading", "resume_trading"}:
             result = await handler(payload, settings)  # type: ignore[arg-type]
+        elif command in {"place_order"}:
+            result = await handler(payload, publisher, settings)  # type: ignore[arg-type]
         else:
             result = await handler(payload, publisher)  # type: ignore[arg-type]
         await set_result(command_id, "completed", result=result, command=command)

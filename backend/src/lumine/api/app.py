@@ -30,6 +30,7 @@ from lumine.api.middleware.idempotency import IdempotencyMiddleware
 from lumine.api.middleware.logging import RequestLoggingMiddleware
 from lumine.api.routers import (
     admin,
+    backtest,
     journal,
     lineage,
     market,
@@ -581,7 +582,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         streams.router,
         admin.router,
         rpc.router,
-    ):
+        backtest.router,
+            ):
         app.include_router(router, prefix="/api/v1")
 
     # First-party session auth (replaces Authelia/Keycloak). Mounted at

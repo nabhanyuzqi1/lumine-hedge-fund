@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     # False = repositories read/write PostgreSQL (orders/positions).
     demo_data: bool = True
 
+    # Paper trading mode: true = RPC place_order hanya simulasi (tidak kirim ke MT5).
+    # Hasil simulasi: FILLED dengan price dari last bar + random slippage.
+    paper_trading: bool = True
+
     # ── Decision cycle (D3-12) ────────────────────────────────────────────
     decision_cycle_timeout_s: int = 60  # total soft deadline for one cycle
 
