@@ -30,6 +30,7 @@ async def run_backtest_endpoint(
 
     Returns:
         BacktestResult with equity, trades, metrics
+
     """
     result: BacktestResult = run_backtest(
         symbol=symbol,
