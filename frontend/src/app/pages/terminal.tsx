@@ -133,8 +133,8 @@ function OrdersTable({
             columns={[
               {
                 key: "id",
-          header: "Order",
-          cell: (row) => (
+                header: "Order",
+                cell: (row) => (
             <button
               type="button"
               onClick={() => navigate(`/orders/${row.id}`)}

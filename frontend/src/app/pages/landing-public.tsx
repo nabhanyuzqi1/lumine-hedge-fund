@@ -351,7 +351,7 @@ function MagneticButton({ children }: { children: ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export function LandingPublicPage() {
-  const { t } = useTranslation();
+  useTranslation(); // Initialize i18n
   
   return (
     <div className="min-h-screen bg-abyss text-ink">
@@ -366,26 +366,26 @@ export function LandingPublicPage() {
           </Suspense>
 
       {/* DECISION & RISK — 3-step flow: signals → thesis → risk gates */}
-      <section id="risk" className="border-b border-line bg-raised py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Decision & Risk"
-            align="center"
-            title={
-              <>
-                Intelligence proposes.
-                <br />
-                <span className="text-ink-dim">Risk decides.</span>
-              </>
-            }
-            description="Three simple steps: four analysts send signals, the master forms a single thesis, then the thesis passes through risk gates before execution."
-            className="mb-10"
-          />
-          <Suspense fallback={<ChartSkeleton />}>
-            <DecisionFlow className="mx-auto" />
-          </Suspense>
-        </div>
-      </section>
+            <section id="risk" className="border-b border-line bg-raised py-16 md:py-24">
+              <div className="mx-auto w-full max-w-7xl px-6">
+                <SectionHeader
+                  kicker={t('decision.sectionKicker')}
+                  align="center"
+                  title={
+                    <>
+                      {t('decision.titleFirst')}
+                      <br />
+                      <span className="text-ink-dim">{t('decision.titleSecond')}</span>
+                    </>
+                  }
+                  description={t('decision.description')}
+                  className="mb-10"
+                />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <DecisionFlow className="mx-auto" />
+                </Suspense>
+              </div>
+            </section>
 
       {/* BREAKEVEN — interactive (Section 21) */}
       <section className="border-b border-line bg-bg py-16 md:py-24">
