@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 /**
  * Strategy Lifecycle — simple 6-row checklist (V2.5).
@@ -73,6 +74,7 @@ interface ResearchPipelineProps {
 }
 
 export function ResearchPipeline({ className, showHeader = true }: ResearchPipelineProps) {
+  const { t } = useTranslation();
   return (
     <div className={cn("mx-auto w-full max-w-4xl space-y-6", className)}>
       {showHeader && (
@@ -80,15 +82,15 @@ export function ResearchPipeline({ className, showHeader = true }: ResearchPipel
           <div className="flex items-center justify-center gap-2">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
             <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-              Strategy Lifecycle
+              {t("research.strategyLifecycle")}
             </span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
           </div>
           <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-            From Hypothesis to Capital.
+            {t("research.fromHypothesis")}
           </h3>
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-            Every strategy must survive this lifecycle before real capital is deployed.
+            {t("research.lifecycleDescription")}
           </p>
         </div>
       )}
