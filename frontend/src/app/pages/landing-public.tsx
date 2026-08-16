@@ -528,28 +528,27 @@ export function LandingPublicPage() {
                 </span>
               </div>
               <p className="max-w-sm text-sm leading-relaxed text-ink-dim">
-                AI-native quantitative intelligence. A coordinated system of
-                specialized agents under disciplined risk controls.
+                {t("footer.brandDescription")}
               </p>
               <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint">
-                © 2026 Lumine — Institutional AI-native platform
+                {t("footer.copyrightText")}
               </div>
             </div>
 
             {/* Platform */}
             <div className="space-y-3">
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-ink-faint">
-                Platform
+                {t("footer.platformTitle")}
               </div>
               <nav className="flex flex-col gap-2">
                 <a href="#" className="text-sm text-ink-dim transition-colors hover:text-ink">
-                  System Overview
+                  {t("footer.systemOverview")}
                 </a>
                 <a href="#risk" className="text-sm text-ink-dim transition-colors hover:text-ink">
-                  Risk Engine
+                  {t("footer.riskEngine")}
                 </a>
                 <a href="#research" className="text-sm text-ink-dim transition-colors hover:text-ink">
-                  Research Pipeline
+                  {t("footer.researchPipeline")}
                 </a>
               </nav>
             </div>
@@ -557,20 +556,20 @@ export function LandingPublicPage() {
             {/* Connect */}
             <div className="space-y-3">
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-ink-faint">
-                Connect
+                {t("footer.connectTitle")}
               </div>
               <nav className="flex flex-col gap-2">
                 <Link to="/login" className="text-sm text-ink-dim transition-colors hover:text-ink">
-                  System Access
+                  {t("footer.systemAccess")}
                 </Link>
                 <a
                   href="https://github.com/nabhanyuzqi1/lumine-hedge-fund"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-ink-dim transition-colors hover:text-ink"
+                  className="flex items-center gap-1.5 text-sm text-ink-dim transition-colors hover:text-ink"
                 >
                   <GitHubIcon size={14} />
-                  GitHub — Open Source
+                  {t("footer.githubOpenSource")}
                 </a>
               </nav>
             </div>
@@ -579,12 +578,8 @@ export function LandingPublicPage() {
           {/* Disclaimer */}
           <div className="mt-12 rounded-panel border border-warn/25 bg-warn/5 p-4">
             <p className="text-xs leading-relaxed text-ink-dim">
-              <span className="font-semibold text-warn">Disclaimer:</span>{" "}
-              Lumine is a technology and quantitative research platform. Nothing
-              on this website constitutes financial advice or a guarantee of
-              investment performance. Historical, simulated, and backtested
-              results do not guarantee future results. All trading involves
-              risk. All data shown on this page is illustrative and simulated.
+              <span className="font-semibold text-warn">{t("footer.disclaimer")}</span>{" "}
+              {t("footer.disclaimerFull")}
             </p>
           </div>
         </div>

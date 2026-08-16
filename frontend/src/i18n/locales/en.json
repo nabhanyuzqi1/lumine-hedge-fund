@@ -85,7 +85,17 @@
   "footer": {
     "disclaimer": "Disclaimer:",
     "disclaimerText": "This is a demonstration of an algorithmic trading system. Past performance does not guarantee future results. Trading involves substantial risk of loss.",
-    "copyright": "© 2024 Lumine. All rights reserved."
+    "copyright": "© 2024 Lumine. All rights reserved.",
+    "brandDescription": "AI-native quantitative intelligence. A coordinated system of specialized agents under disciplined risk controls.",
+    "copyrightText": "© 2026 Lumine — Institutional AI-native platform",
+    "platformTitle": "Platform",
+    "systemOverview": "System Overview",
+    "riskEngine": "Risk Engine",
+    "researchPipeline": "Research Pipeline",
+    "connectTitle": "Connect",
+    "systemAccess": "System Access",
+    "githubOpenSource": "GitHub — Open Source",
+    "disclaimerFull": "Lumine is a technology and quantitative research platform. Nothing on this website constitutes financial advice or a guarantee of investment performance. Historical, simulated, and backtested results do not guarantee future results. All trading involves risk. All data shown on this page is illustrative and simulated."
   },
   "login": {
     "title": "Sign In",
