@@ -25,7 +25,7 @@ export function PageShell() {
               <TopBar />
               <GapBanner />
               <KillSwitchBanner />
-              <div className="flex min-h-0 flex-1 flex-col-reverse overflow-hidden md:flex-row">
+              <div className="flex min-h-0 flex-1 flex-col-reverse overflow-clip md:flex-row">
                 <Rail />
                 <main id="main-content" className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
                   <Outlet />
