@@ -232,6 +232,89 @@ body {
 }
 
 /* ────────────────────────────────────────────────────────────────
+ * Background texture system — landing page ambient layers
+ * Theme-aware: dark keeps deep navy, light stays soft.
+ * ──────────────────────────────────────────────────────────────── */
+
+.lumine-texture {
+  z-index: 45; /* di bawah navbar (z-50), di atas konten sections */
+}
+
+/* Fine blueprint grid */
+.lumine-texture-grid {
+  background-image:
+    linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 88px 88px;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 25%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 25%, transparent 80%);
+}
+
+/* Dot matrix */
+.lumine-texture-dots {
+  background-image: radial-gradient(var(--color-ink-faint) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+}
+
+/* Film grain noise (SVG turbulence, data-URI) */
+.lumine-texture-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* Scanlines — very subtle CRT cadence */
+.lumine-texture-scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(128, 144, 168, 0.05) 3px,
+    rgba(128, 144, 168, 0.05) 4px
+  );
+}
+
+/* Sparse HUD glyphs */
+.lumine-texture-glyph {
+  color: var(--color-ink-faint);
+  opacity: 0.22;
+  transition: opacity 300ms ease;
+}
+
+.lumine-texture-glyph:hover {
+  opacity: 0.4;
+}
+
+/* Light mode: soften textures so the page stays airy */
+:root.light .lumine-texture-grid {
+  opacity: 0.22;
+}
+
+:root.light .lumine-texture-dots {
+  opacity: 0.1;
+}
+
+:root.light .lumine-texture-noise {
+  opacity: 0.025;
+}
+
+:root.light .lumine-texture-glyph {
+  opacity: 0.16;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lumine-texture-glyph {
+    opacity: 0.14;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
  * F-Sprint 2 primitives: numeric flash + dialog motion
  * ─────────────────────────────────────────────────────────────── */
 

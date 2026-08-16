@@ -39,6 +39,7 @@ const TickerTape = lazy(() =>
 import { LumineIcon } from "@/components/landing/agent-icons";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ChartSkeleton, HeroSkeleton } from "@/components/ui/skeleton";
+import { BackgroundTexture } from "@/components/landing/background-texture";
 
 /**
  * Lumine Landing Page — UI/UX Rebuild V2 (from scratch).
@@ -354,8 +355,10 @@ export function LandingPublicPage() {
   const { t } = useTranslation();
   
   return (
-    <div className="min-h-screen bg-abyss text-ink">
-      <NavBar />
+      <div className="min-h-screen bg-abyss text-ink">
+        {/* Ambient texture layer — grid, noise, glows, HUD glyphs */}
+        <BackgroundTexture />
+        <NavBar />
 
       {/* HERO — dense split */}
       <Hero />
