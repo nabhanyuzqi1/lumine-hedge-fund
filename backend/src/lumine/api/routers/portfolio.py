@@ -126,7 +126,7 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
     # exposure ribuan % di RiskGauges karena denominator (nav) ≈ $0-4
     # sedangkan notional posisi ribuan dollar. Basis modal default
     # konstanta platform (docs/08-trading): $10,000 seed.
-    base_equity = Decimal("10000")
+    base_equity = Decimal(10000)
     nav = (base_equity + open_pnl).quantize(Decimal("0.01"))
     cash = (nav - margin_used).quantize(Decimal("0.01"))
     return PortfolioSummary(
