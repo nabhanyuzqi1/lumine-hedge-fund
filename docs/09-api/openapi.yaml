@@ -4760,6 +4760,18 @@ components:
             type: array
           - type: 'null'
           title: Enabled Symbols
+        llm_auto_fallback:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Llm Auto Fallback
+        llm_fallback_models:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Llm Fallback Models
       type: object
       title: SystemConfigUpdate
       description: Payload untuk memperbarui konfigurasi runtime via superadmin.
