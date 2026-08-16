@@ -12,7 +12,8 @@
     "subtitle": "A coordinated system of specialized agents that research, evaluate, and execute systematic strategies — every decision passing through deterministic validation and disciplined risk controls.",
     "ctaExplore": "Explore the System",
     "ctaResearch": "View Research",
-    "scroll": "Scroll"
+    "scroll": "Scroll",
+    "loginButton": "Sign In"
   },
   "intelligence": {
     "sectionKicker": "Intelligence Network",

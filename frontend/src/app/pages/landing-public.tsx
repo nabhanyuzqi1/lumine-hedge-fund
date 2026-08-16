@@ -135,7 +135,7 @@ function NavBar() {
               size="sm"
               className="bg-accent font-mono text-[10px] uppercase tracking-[0.2em] text-white hover:bg-accent-soft"
             >
-              {t("hero.cta")}
+              {t("hero.loginButton")}
             </Button>
           </Link>
         </div>
