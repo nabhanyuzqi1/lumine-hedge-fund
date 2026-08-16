@@ -89,6 +89,30 @@ export function CandlestickChart({
     };
   }, []);
 
+  // Forward wheel events to the page scroller so the chart doesn't trap
+  // mouse-wheel scroll. lightweight-charts registers a non-passive wheel
+  // listener that swallows events — we capture them first (capture phase)
+  // and mirror the deltaY to the nearest overflow-y-auto ancestor.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const onWheel = (e: WheelEvent) => {
+      // Find the nearest scrollable ancestor outside the chart container
+      let el: HTMLElement | null = container.parentElement;
+      while (el) {
+        const style = window.getComputedStyle(el);
+        const overflow = style.overflowY;
+        if ((overflow === "auto" || overflow === "scroll") && el.scrollHeight > el.clientHeight) {
+          el.scrollBy({ top: e.deltaY, behavior: "auto" });
+          break;
+        }
+        el = el.parentElement;
+      }
+    };
+    container.addEventListener("wheel", onWheel, { passive: true, capture: true });
+    return () => container.removeEventListener("wheel", onWheel, { capture: true });
+  }, []);
+
   useChartResize(chart, containerRef);
 
   // Full re-render when the bar set changes (timeframe switch, refetch).
