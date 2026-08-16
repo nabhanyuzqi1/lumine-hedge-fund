@@ -25,8 +25,9 @@
   },
   "decision": {
     "sectionKicker": "Decision & Risk",
-    "sectionTitle": "Intelligence proposes. Risk decides.",
-    "description": "Every signal passes through a three-step validation."
+    "titleFirst": "Intelligence proposes.",
+    "titleSecond": "Risk decides.",
+    "description": "Three simple steps: four analysts send signals, the master forms a single thesis, then the thesis passes through risk gates before execution."
   },
   "breakeven": {
     "sectionKicker": "Signature Feature",

@@ -25,8 +25,9 @@
   },
   "decision": {
     "sectionKicker": "Keputusan & Risiko",
-    "sectionTitle": "Intelijen mengusulkan. Risiko memutuskan.",
-    "description": "Setiap sinyal melewati validasi tiga langkah."
+    "titleFirst": "Intelijen mengusulkan.",
+    "titleSecond": "Risiko memutuskan.",
+    "description": "Tiga langkah sederhana: empat analis mengirim sinyal, master membentuk satu tesis, lalu tesis melewati gerbang risiko sebelum eksekusi."
   },
   "breakeven": {
     "sectionKicker": "Fitur Unggulan",

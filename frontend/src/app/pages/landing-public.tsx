@@ -351,7 +351,8 @@ function MagneticButton({ children }: { children: ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export function LandingPublicPage() {
-  useTranslation(); // Initialize i18n
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const t = (key: string) => key; // i18n ready - replace with useTranslation() when translations ready
   
   return (
     <div className="min-h-screen bg-abyss text-ink">
@@ -388,85 +389,85 @@ export function LandingPublicPage() {
             </section>
 
       {/* BREAKEVEN — interactive (Section 21) */}
-      <section className="border-b border-line bg-bg py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Structure-Based Breakeven"
-            title="Break-even is a decision, not a price."
-            description="Lumine evaluates whether to hold or move stop-loss to break-even based on market structure and momentum — not arbitrary price levels."
-            className="mb-10"
-          />
-          <Suspense fallback={<ChartSkeleton />}>
-            <BreakEvenVisualization showHeader={false} />
-          </Suspense>
-        </div>
-      </section>
+            <section className="border-b border-line bg-bg py-16 md:py-24">
+              <div className="mx-auto w-full max-w-7xl px-6">
+                <SectionHeader
+                  kicker={t('breakeven.sectionKicker')}
+                  title={t('breakeven.sectionTitle')}
+                  description={t('breakeven.description')}
+                  className="mb-10"
+                />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <BreakEvenVisualization showHeader={false} />
+                </Suspense>
+              </div>
+            </section>
 
-      {/* RESEARCH — strategy lifecycle (Section 22) */}
-      <section id="research" className="border-b border-line bg-raised py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Strategy Lifecycle"
-            title="From hypothesis to deployed capital."
-            description="Lumine only deploys capital on strategies that survive this lifecycle. Every stage is a checkpoint — a strategy is not an edge until it passes all of them."
-            className="mb-10"
-          />
-          <Suspense fallback={<ChartSkeleton />}>
-            <ResearchPipeline showHeader={false} />
-          </Suspense>
-        </div>
-      </section>
+            {/* RESEARCH — strategy lifecycle (Section 22) */}
+            <section id="research" className="border-b border-line bg-raised py-16 md:py-24">
+              <div className="mx-auto w-full max-w-7xl px-6">
+                <SectionHeader
+                  kicker={t('research.sectionKicker')}
+                  title={t('research.sectionTitle')}
+                  description={t('research.description')}
+                  className="mb-10"
+                />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <ResearchPipeline showHeader={false} />
+                </Suspense>
+              </div>
+            </section>
 
-      {/* PERFORMANCE — data-dense (Section 23) */}
-      <section id="performance" className="border-b border-line bg-bg py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Performance"
-            align="center"
-            title="An analytics laboratory, not a scoreboard."
-            description="Illustrative data showing how Lumine evaluates strategy quality across backtest, paper, and live phases."
-            className="mb-10"
-          />
-          <Suspense fallback={<ChartSkeleton />}>
-            <PerformanceDashboard showHeader={false} />
-          </Suspense>
-          <div className="mt-16">
-            <Suspense fallback={<ChartSkeleton />}>
-              <EquityCurve showHeader={false} />
-            </Suspense>
-          </div>
-        </div>
-      </section>
+            {/* PERFORMANCE — data-dense (Section 23) */}
+            <section id="performance" className="border-b border-line bg-bg py-16 md:py-24">
+              <div className="mx-auto w-full max-w-7xl px-6">
+                <SectionHeader
+                  kicker={t('performance.sectionKicker')}
+                  align="center"
+                  title={t('performance.sectionTitle')}
+                  description={t('performance.description')}
+                  className="mb-10"
+                />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <PerformanceDashboard showHeader={false} />
+                </Suspense>
+                <div className="mt-16">
+                  <Suspense fallback={<ChartSkeleton />}>
+                    <EquityCurve showHeader={false} />
+                  </Suspense>
+                </div>
+              </div>
+            </section>
 
-      {/* REGIME — full-width visual (Section 24) */}
-      <section className="border-b border-line bg-raised py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Market Regime"
-            title="The system adapts to the market's current state."
-            description="Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
-            className="mb-10"
-          />
-          <Suspense fallback={<ChartSkeleton />}>
-            <RegimeEngine showHeader={false} />
-          </Suspense>
-        </div>
-      </section>
+            {/* REGIME — full-width visual (Section 24) */}
+            <section className="border-b border-line bg-raised py-16 md:py-24">
+              <div className="mx-auto w-full max-w-7xl px-6">
+                <SectionHeader
+                  kicker="Market Regime"
+                  title="The system adapts to the market's current state."
+                  description="Regime detection shapes strategy selection and risk posture. Hover each regime to inspect how Lumine responds."
+                  className="mb-10"
+                />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <RegimeEngine showHeader={false} />
+                </Suspense>
+              </div>
+            </section>
 
-      {/* AUDIT — terminal-style stream (Section 25) */}
-      <section className="border-b border-line bg-abyss py-16 md:py-24">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <SectionHeader
-            kicker="Audit Trail"
-            title="Every decision, logged."
-            description="A complete, inspectable record of how each thesis was assembled, validated, and executed. Pause the stream to read it."
-            className="mb-10"
-          />
-          <Suspense fallback={<ChartSkeleton />}>
-            <AuditLog showHeader={false} />
-          </Suspense>
-        </div>
-      </section>
+            {/* AUDIT — terminal-style stream (Section 25) */}
+            <section className="border-b border-line bg-abyss py-16 md:py-24">
+              <div className="mx-auto w-full max-w-7xl px-6">
+                <SectionHeader
+                  kicker={t('audit.sectionKicker')}
+                  title={t('audit.sectionTitle')}
+                  description={t('audit.description')}
+                  className="mb-10"
+                />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <AuditLog showHeader={false} />
+                </Suspense>
+              </div>
+            </section>
 
       {/* PHILOSOPHY — minimal editorial (Section 41) */}
       <section className="border-b border-line bg-abyss py-16 md:py-24">
