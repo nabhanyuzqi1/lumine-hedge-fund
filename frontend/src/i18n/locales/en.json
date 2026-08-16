@@ -51,7 +51,8 @@
     "exit": "EXIT",
     "structure": "Structure",
     "momentum": "Momentum",
-    "decision": "Decision"
+    "decision": "Decision",
+    "disclaimer": "Conceptual feature. Not a guarantee of better returns. This demonstrates Lumine's structure-aware trade management philosophy."
   },
   "research": {
     "sectionKicker": "Research",

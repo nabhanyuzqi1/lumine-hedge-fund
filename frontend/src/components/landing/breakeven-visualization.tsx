@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 /**
  * BreakEvenVisualization — Section 21 of UI/UX Rebuild V2.
@@ -66,6 +67,7 @@ export function BreakEvenVisualization({
   className,
   showHeader = true,
 }: BreakEvenVisualizationProps) {
+  const { t } = useTranslation();
   const [pos, setPos] = useState(30);
   const decision = decisionFor(pos);
 
@@ -283,11 +285,7 @@ export function BreakEvenVisualization({
         {/* Footer */}
         <div className="border-t border-line-soft bg-abyss/50 px-6 py-4 md:px-8">
           <p className="text-center text-xs leading-relaxed text-ink-dim">
-            <span className="font-semibold text-accent">
-              Conceptual feature.
-            </span>{" "}
-            Not a guarantee of better returns. This demonstrates Lumine's
-            structure-aware trade management philosophy.
+            {t("breakeven.disclaimer")}
           </p>
         </div>
       </motion.div>
