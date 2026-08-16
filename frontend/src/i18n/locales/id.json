@@ -3,7 +3,8 @@
     "overview": "Ikhtisar",
     "risk": "Risiko",
     "research": "Riset",
-    "performance": "Performa"
+    "performance": "Performa",
+    "systemOnline": "Sistem Online"
   },
   "hero": {
     "title": "AI-Native",
@@ -73,7 +74,13 @@
   "philosophy": {
     "sectionKicker": "Filosofi",
     "sectionTitle": "Dibangun Atas Prinsip Pertama",
-    "description": "Tanpa curve-fitting. Tanpa over-optimisasi. Hanya eksekusi disiplin dari strategi sistematis yang tervalidasi."
+    "description": "Tanpa curve-fitting. Tanpa over-optimisasi. Hanya eksekusi disiplin dan validasi sistematis.",
+    "line1": "Pasar tidak pasti.",
+    "line2": "Model bisa salah.",
+    "line3": "Strategi mengalami penurunan.",
+    "line4": "Risiko bukan pilihan.",
+    "manifestoTitle": "Kami merekayasa sistem yang beradaptasi dengan ketidakpastian.",
+    "manifestoDescription": "Lumine dibangun dengan asumsi bahwa pasar akan mengejutkan kami. Lapisan intelijen kami mengusulkan. Mesin risiko kami memutuskan. Kerangka validasi kami memastikan kami hanya menerapkan apa yang kami pahami."
   },
   "footer": {
     "disclaimer": "Penafian:",
