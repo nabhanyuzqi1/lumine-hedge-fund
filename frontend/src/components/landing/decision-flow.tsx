@@ -24,7 +24,7 @@ const AGENT_ICONS: Record<string, (p: { size?: number }) => ReactNode> = {
   structure: StructureIcon,
 };
 
-const GATES = ["Position Sizing", "Max Exposure", "Daily Loss Limit", "Kill Switch"];
+const GATE_KEYS = ["decision.positionSizing", "decision.maxExposure", "decision.dailyLossLimit", "decision.killSwitch"];
 
 function StepBadge({ n, label }: { n: string; label: string }) {
   return (
@@ -110,7 +110,7 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.5 }}
         >
-          <StepBadge n="1" label="Signals" />
+          <StepBadge n="1" label={t("decision.signals")} />
           <div className="mt-4 flex flex-wrap gap-2">
             {decision.analyses.map((analysis, i) => {
               const agent = AGENTS.find((a) => a.name === analysis.agent);
@@ -155,7 +155,7 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <StepBadge n="2" label="Master Thesis" />
+          <StepBadge n="2" label={t("decision.masterThesis")} />
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-sm font-bold text-ink">
@@ -192,35 +192,35 @@ export function DecisionFlow({ className }: DecisionFlowProps) {
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <StepBadge n="3" label="Risk Gates" />
-          <div className="mt-4 space-y-2">
-            {GATES.map((gate, i) => (
-              <motion.div
-                key={gate}
-                className="flex items-center gap-2 rounded-chip border border-line-soft bg-abyss/40 px-2.5 py-1.5"
-                initial={{ opacity: 0, x: 8 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.3, delay: 0.25 + i * 0.05 }}
-              >
-                <svg
-                  className="h-3 w-3 shrink-0 text-up"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={3}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-ink">
-                  {gate}
-                </span>
-              </motion.div>
-            ))}
+          <StepBadge n="3" label={t("decision.riskGates")} />
+                    <div className="mt-4 space-y-2">
+                      {GATE_KEYS.map((gateKey, i) => (
+                        <motion.div
+                          key={gateKey}
+                          className="flex items-center gap-2 rounded-chip border border-line-soft bg-abyss/40 px-2.5 py-1.5"
+                          initial={{ opacity: 0, x: 8 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true, margin: "-40px" }}
+                          transition={{ duration: 0.3, delay: 0.25 + i * 0.05 }}
+                        >
+                          <svg
+                            className="h-3 w-3 shrink-0 text-up"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-ink">
+                            {t(gateKey)}
+                          </span>
+                        </motion.div>
+                      ))}
 
             {/* Result */}
             <motion.div
