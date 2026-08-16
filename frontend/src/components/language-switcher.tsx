@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { loadLanguage } from "@/i18n";
+import { loadLanguage } from "@/i18n/index";
 
 const languages = [
   { code: "en", label: "EN" },
