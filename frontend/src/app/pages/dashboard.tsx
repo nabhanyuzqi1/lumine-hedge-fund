@@ -58,16 +58,17 @@ export function DashboardPage() {
       {/* Grid scroll alami halaman (bukan bounded per group — user request);
           hanya tabel individu yang dibatasi (signal panel max-h). */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <div className="md:col-span-2 xl:col-span-3">
-          <CandlestickChart
-            bars={bars.data ?? []}
-            timeframe={timeframe}
-            onTimeframeChange={setTimeframe}
-          />
-        </div>
+              <div className="md:col-span-2 xl:col-span-3">
+                <CandlestickChart
+                  bars={bars.data ?? []}
+                  timeframe={timeframe}
+                  onTimeframeChange={setTimeframe}
+                  waitingLabel="Waiting for live data"
+                />
+              </div>
 
-        <EquityChart points={equity.data ?? []} />
-        <DrawdownChart equity={equity.data ?? []} />
+              <EquityChart points={equity.data ?? []} waitingLabel="Waiting for live data" />
+              <DrawdownChart equity={equity.data ?? []} />
 
         <ChartCard title="Live P&L" description="Equity curve · USD" height={96}>
           <PnlSparkline points={equity.data ?? []} />

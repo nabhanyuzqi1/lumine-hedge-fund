@@ -586,6 +586,10 @@ export interface JournalEntry {
   kind: JournalKind;
   actor: string;
   summary: string;
+  /** Alasan AI (reflection backend) — verbose detail pada baris expand. */
+  reason?: string;
+  /** Lesson / follow-up dari evaluasi. */
+  lesson?: string;
   linked_lineage_id?: string;
 }
 

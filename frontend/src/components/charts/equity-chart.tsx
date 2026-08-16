@@ -11,13 +11,15 @@ import { equityToArea } from "@/lib/chart-transform";
 export interface EquityChartProps {
   points: EquityPoint[];
   height?: number;
+  /** Fallback label saat belum ada data live. */
+  waitingLabel?: string;
 }
 
 /**
  * Equity curve pane — area series in accent blue, fed by the portfolio
  * equity history (fixture until the backend equity endpoint lands).
  */
-export function EquityChart({ points, height = 240 }: EquityChartProps) {
+export function EquityChart({ points, height = 240, waitingLabel }: EquityChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
@@ -56,6 +58,13 @@ export function EquityChart({ points, height = 240 }: EquityChartProps) {
   return (
     <ChartCard title="Portfolio Equity" description="Daily equity curve · USD" height={height}>
       <div ref={containerRef} className="h-full w-full" />
+      {points.length === 0 && waitingLabel && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="rounded-md border border-amber-500/30 bg-bg-base/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-amber-400 backdrop-blur">
+            {waitingLabel}
+          </div>
+        </div>
+      )}
     </ChartCard>
   );
 }

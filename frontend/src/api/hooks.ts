@@ -232,6 +232,8 @@ function toJournalEntry(entry: RestJournalEntry): JournalPage["entries"][number]
     kind: entry.agent_name.includes("risk") ? "risk" : "note",
     actor: entry.agent_name,
     summary: entry.reflection || entry.lesson,
+    reason: entry.reflection || undefined,
+    lesson: entry.lesson || undefined,
     symbol: entry.symbol ?? undefined,
   };
 }

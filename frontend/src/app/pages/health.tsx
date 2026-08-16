@@ -39,6 +39,15 @@ const PROBES = [
   { path: "/journal", label: "Journal" },
 ];
 
+interface SystemInfoLite {
+  environment: string;
+  version: string;
+  demo_data: boolean;
+  llm_gateway_configured: boolean;
+  llm_gateway_url: string | null;
+  services: Array<{ name: string; health: string | null; status: string }>;
+}
+
 function formatUTC(date: Date): string {
   return date.toISOString().replace("T", " ").slice(0, 19);
 }
@@ -97,11 +106,22 @@ export function HealthPage() {
   });
 
   const streams = useStreamStore(useShallow((s) => s.getAllStreams()));
-  const openStreams = streams.filter((s) => s.status === "open" && !s.stale);
+    const openStreams = streams.filter((s) => s.status === "open" && !s.stale);
 
-  const status = error ? "degraded" : "ok";
-  const apiError = error instanceof ApiError ? error : null;
-  const okProbes = probes.data?.filter((p) => p.status === "ok").length ?? 0;
+    // AI / system state (admin/system-info — pakai HMAC credentials frontend).
+    const aiState = useQuery({
+      queryKey: ["health", "system-info"],
+      queryFn: async (): Promise<SystemInfoLite> => {
+        const info = await get<SystemInfoLite>("/admin/system-info");
+        return info;
+      },
+      refetchInterval: 30_000,
+      retry: 2,
+    });
+
+    const status = error ? "degraded" : "ok";
+    const apiError = error instanceof ApiError ? error : null;
+    const okProbes = probes.data?.filter((p) => p.status === "ok").length ?? 0;
 
   return (
     <div className="space-y-4 p-3 md:p-4">
@@ -229,8 +249,60 @@ export function HealthPage() {
               </div>
             ))}
           </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
+                  </Card>
+
+                  {/* AI / System state */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center justify-between text-xs uppercase tracking-wider text-ink-faint">
+                        <span>AI & System</span>
+                        {aiState.data ? (
+                          <Badge
+                            tone={aiState.data.llm_gateway_configured ? "ok" : "warn"}
+                            label={aiState.data.llm_gateway_configured ? "LLM READY" : "LLM NO KEY"}
+                          />
+                        ) : aiState.isLoading ? (
+                          <Badge tone="neutral" label="LOADING" />
+                        ) : (
+                          <Badge tone="warn" label="N/A" />
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1 font-mono text-[11px]">
+                      {aiState.isLoading && <p className="text-ink-faint">Reading system state…</p>}
+                      {aiState.error && (
+                        <p className="text-warn">system-info unavailable (auth?)</p>
+                      )}
+                      {aiState.data && (
+                        <>
+                          {[
+                            { label: "ENV", value: aiState.data.environment },
+                            { label: "VER", value: aiState.data.version },
+                            { label: "DATA", value: aiState.data.demo_data ? "DEMO" : "LIVE DB" },
+                            { label: "LLM GW", value: aiState.data.llm_gateway_url ?? "—" },
+                          ].map(({ label, value }) => (
+                            <div
+                              key={label}
+                              className="flex items-center justify-between border-b border-line/30 pb-1"
+                            >
+                              <span className="text-ink-faint">{label}</span>
+                              <span className="truncate pl-3 text-ink">{value}</span>
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between pt-1">
+                                                      <span className="text-ink-faint">SERVICES</span>
+                                                      <span className="tabular-nums text-ink">
+                                                        {(aiState.data.services ?? []).filter(
+                                                          (s) => s.health === "healthy" || (s.status === "running" && !s.health)
+                                                        ).length}
+                                                        /{aiState.data.services?.length ?? 0} healthy
+                                                      </span>
+                                                    </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            );
+          }
