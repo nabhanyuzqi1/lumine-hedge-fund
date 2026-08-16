@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { SAMPLE_TRADE_AUDIT } from "@/data/landing/trades";
 
 /**
@@ -45,6 +46,7 @@ interface AuditLogProps {
 }
 
 export function AuditLog({ className, showHeader = true }: AuditLogProps) {
+  const { t } = useTranslation();
   const audit = SAMPLE_TRADE_AUDIT;
   const [count, setCount] = useState(7);
   const [playing, setPlaying] = useState(true);
@@ -74,17 +76,16 @@ export function AuditLog({ className, showHeader = true }: AuditLogProps) {
           <div className="flex items-center justify-center gap-2">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
             <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-              Auditability
-            </span>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
-          </div>
-          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-            Every Decision Leaves a Trace.
-          </h3>
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-            From signal to execution, every decision is logged with complete context.
-            Pause the stream to read it.
-          </p>
+                          {t("audit.auditability")}
+                        </span>
+                        <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+                      </div>
+                      <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+                        {t("audit.traceTitle")}
+                      </h3>
+                      <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+                        {t("audit.traceDescription")}
+                      </p>
         </div>
       )}
 
@@ -123,8 +124,8 @@ export function AuditLog({ className, showHeader = true }: AuditLogProps) {
             )}
           >
             <span className="text-[10px] leading-none">{playing ? "❚❚" : "▶"}</span>
-            {playing ? "Pause" : "Resume"}
-          </button>
+                        {playing ? t("audit.pause") : t("audit.resume")}
+                      </button>
         </div>
 
         {/* Stream body */}
@@ -142,8 +143,8 @@ export function AuditLog({ className, showHeader = true }: AuditLogProps) {
                 playing ? "text-up" : "text-warn"
               )}
             >
-              {playing ? "● Live" : "❚❚ Paused"}
-            </span>
+              {playing ? t("audit.live") : t("audit.paused")}
+                          </span>
           </div>
 
           <div className="mt-3 space-y-1.5">
@@ -177,31 +178,31 @@ export function AuditLog({ className, showHeader = true }: AuditLogProps) {
         <div className="border-t border-line-soft bg-raised/40 px-4 py-3 md:px-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Trade <span className="text-accent">{audit.tradeId}</span>
-            </div>
-            <div className="flex gap-4 font-mono text-[10px] text-ink-dim">
-              <span>
-                Entry <span className="text-ink">{audit.entry.toFixed(2)}</span>
-              </span>
-              <span>
-                Stop <span className="text-ink">{audit.stop.toFixed(2)}</span>
-              </span>
-              <span>
-                Target <span className="text-ink">{audit.target.toFixed(2)}</span>
-              </span>
-            </div>
+                          {t("audit.trade")} <span className="text-accent">{audit.tradeId}</span>
+                        </div>
+                        <div className="flex gap-4 font-mono text-[10px] text-ink-dim">
+                          <span>
+                            {t("audit.entry")} <span className="text-ink">{audit.entry.toFixed(2)}</span>
+                          </span>
+                          <span>
+                            {t("audit.stop")} <span className="text-ink">{audit.stop.toFixed(2)}</span>
+                          </span>
+                          <span>
+                            {t("audit.target")} <span className="text-ink">{audit.target.toFixed(2)}</span>
+                          </span>
+                        </div>
           </div>
         </div>
       </motion.div>
 
       <div className="rounded-chip border border-accent/30 bg-accent/5 p-4 backdrop-blur">
-        <p className="text-center text-xs leading-relaxed text-ink-dim">
-          <span className="font-semibold text-accent">
-            Institutional-grade auditability.
-          </span>{" "}
-          Every trade links back to the models, prompts, and data that produced it.
-        </p>
-      </div>
+              <p className="text-center text-xs leading-relaxed text-ink-dim">
+                <span className="font-semibold text-accent">
+                  {t("audit.auditNote")}
+                </span>{" "}
+                {t("audit.auditNoteText")}
+              </p>
+            </div>
     </div>
   );
 }

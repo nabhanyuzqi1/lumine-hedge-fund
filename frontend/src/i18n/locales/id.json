@@ -59,7 +59,15 @@
     "role": "Peran",
     "mandate": "Mandat",
     "status": "Status",
-    "active": "Aktif"
+    "active": "Aktif",
+    "intelligenceSuffix": "Intelijen",
+    "telemetrySystem": "Sistem",
+    "telemetryOnline": "Online",
+    "telemetryMarket": "Pasar",
+    "telemetryAgents": "Agen",
+    "telemetryMode": "Mode",
+    "telemetryResearch": "Riset",
+    "coreLabel": "Inti Lumine"
   },
   "decision": {
     "sectionKicker": "Keputusan & Risiko",
@@ -131,7 +139,9 @@
     "winRate": "Win Rate",
     "expectancy": "Expectancy (R)",
     "simulatedLabel": "DATA ILUSTRATIF / SIMULASI — BUKAN KINERJA NYATA",
-    "equityGrowth": "Pertumbuhan Ekuitas"
+    "equityGrowth": "Pertumbuhan Ekuitas",
+    "equityDescription": "Kurva ekuitas realistis yang menunjukkan drawdown, periode pemulihan, dan konsolidasi sideways. Bukan garis naik yang sempurna.",
+    "equityTitle": "Kurva Ekuitas"
   },
   "audit": {
     "sectionKicker": "Audit",
@@ -139,7 +149,20 @@
     "description": "Dari sinyal hingga eksekusi, setiap keputusan dicatat dengan konteks lengkap. Jeda aliran untuk membacanya.",
     "pauseStream": "Jeda aliran",
     "resumeStream": "Lanjutkan",
-    "terminalTitle": "audit.log"
+    "terminalTitle": "audit.log",
+    "auditability": "Keterauditan",
+    "traceTitle": "Setiap Keputusan Meninggalkan Jejak.",
+    "traceDescription": "Dari sinyal hingga eksekusi, setiap keputusan dicatat dengan konteks lengkap. Jeda aliran untuk membacanya.",
+    "live": "● Langsung",
+    "paused": "❚❚ Dijeda",
+    "pause": "Jeda",
+    "resume": "Lanjutkan",
+    "trade": "Trade",
+    "entry": "Entry",
+    "stop": "Stop",
+    "target": "Target",
+    "auditNote": "Keterauditan tingkat institusional.",
+    "auditNoteText": "Setiap trade terhubung kembali ke model, prompt, dan data yang menghasilkannya."
   },
   "regime": {
     "sectionKicker": "Rezim Pasar",

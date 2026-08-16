@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { SIMULATED_EQUITY_CURVE } from "@/data/landing/performance";
 
 /**
@@ -15,6 +16,7 @@ interface EquityCurveProps {
 }
 
 export function EquityCurve({ className, showHeader = true }: EquityCurveProps) {
+  const { t } = useTranslation();
   const data = SIMULATED_EQUITY_CURVE;
   const chartRef = useRef<HTMLDivElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -74,17 +76,16 @@ export function EquityCurve({ className, showHeader = true }: EquityCurveProps) 
           <div className="flex items-center justify-center gap-2">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-accent" />
             <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-              Equity Curve
-            </span>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
-          </div>
-          <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
-            Simulated Equity Growth
-          </h3>
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
-            Realistic equity curve showing drawdowns, recovery periods, and sideways
-            consolidation. Not a perfect upward line.
-          </p>
+                          Equity Curve
+                        </span>
+                        <div className="h-px w-12 bg-gradient-to-l from-transparent to-accent" />
+                      </div>
+                      <h3 className="font-display text-2xl font-bold text-ink md:text-3xl">
+                        {t("performance.equityGrowth")}
+                      </h3>
+                      <p className="mx-auto max-w-2xl text-sm leading-relaxed text-ink-dim">
+                        {t("performance.equityDescription")}
+                      </p>
         </div>
       )}
 
@@ -243,8 +244,8 @@ export function EquityCurve({ className, showHeader = true }: EquityCurveProps) 
             <div className="flex items-center gap-2">
               <div className="h-3 w-12 rounded-sm bg-gradient-to-r from-accent to-up" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-ink-dim">
-                Equity Growth
-              </span>
+                              {t("performance.equityGrowth")}
+                            </span>
             </div>
             <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
               {data[0].date} — {data[data.length - 1].date}

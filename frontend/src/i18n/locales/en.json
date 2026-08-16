@@ -59,7 +59,15 @@
     "role": "Role",
     "mandate": "Mandate",
     "status": "Status",
-    "active": "Active"
+    "active": "Active",
+    "intelligenceSuffix": "Intelligence",
+    "telemetrySystem": "System",
+    "telemetryOnline": "Online",
+    "telemetryMarket": "Market",
+    "telemetryAgents": "Agents",
+    "telemetryMode": "Mode",
+    "telemetryResearch": "Research",
+    "coreLabel": "Lumine Core"
   },
   "decision": {
     "sectionKicker": "Decision & Risk",
@@ -131,7 +139,9 @@
     "winRate": "Win Rate",
     "expectancy": "Expectancy (R)",
     "simulatedLabel": "ILLUSTRATIVE / SIMULATED DATA — NOT REAL PERFORMANCE",
-    "equityGrowth": "Equity Growth"
+    "equityGrowth": "Equity Growth",
+    "equityDescription": "Realistic equity curve showing drawdowns, recovery periods, and sideways consolidation. Not a perfect upward line.",
+    "equityTitle": "Equity Curve"
   },
   "audit": {
     "sectionKicker": "Audit",
@@ -139,7 +149,20 @@
     "description": "From signal to execution, every decision is logged with complete context. Pause the stream to read it.",
     "pauseStream": "Pause stream",
     "resumeStream": "Resume",
-    "terminalTitle": "audit.log"
+    "terminalTitle": "audit.log",
+    "auditability": "Auditability",
+    "traceTitle": "Every Decision Leaves a Trace.",
+    "traceDescription": "From signal to execution, every decision is logged with complete context. Pause the stream to read it.",
+    "live": "● Live",
+    "paused": "❚❚ Paused",
+    "pause": "Pause",
+    "resume": "Resume",
+    "trade": "Trade",
+    "entry": "Entry",
+    "stop": "Stop",
+    "target": "Target",
+    "auditNote": "Institutional-grade auditability.",
+    "auditNoteText": "Every trade links back to the models, prompts, and data that produced it."
   },
   "regime": {
     "sectionKicker": "Market Regime",

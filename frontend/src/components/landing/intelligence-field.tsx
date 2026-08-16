@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { AGENTS } from "@/data/landing/agents";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -49,6 +50,27 @@ const NODES: NodeDef[] = [
   { id: "structure", name: "Structure", x: 200, y: 350, color: "#34D399" },
 ];
 
+const NODE_NAME_KEYS: Record<string, string> = {
+  technical: "intelligence.technicalName",
+  macro: "intelligence.macroName",
+  news: "intelligence.newsName",
+  structure: "intelligence.structureName",
+};
+
+const AGENT_ROLE_KEYS: Record<string, string> = {
+  technical: "intelligence.technicalRole",
+  macro: "intelligence.macroRole",
+  news: "intelligence.newsRole",
+  structure: "intelligence.structureRole",
+};
+
+const AGENT_DESC_KEYS: Record<string, string> = {
+  technical: "intelligence.technicalDescription",
+  macro: "intelligence.macroDescription",
+  news: "intelligence.newsDescription",
+  structure: "intelligence.structureDescription",
+};
+
 /** Line endpoints from node edge to core edge (viewBox coords). */
 function lineEndpoints(node: NodeDef) {
   const dx = CENTER - node.x;
@@ -65,16 +87,16 @@ function lineEndpoints(node: NodeDef) {
 }
 
 interface TelemetryItem {
-  label: string;
-  value: string;
+  labelKey: string;
+  valueKey: string;
   accent?: boolean;
 }
 
 const TELEMETRY: TelemetryItem[] = [
-  { label: "System", value: "Online" },
-  { label: "Market", value: "XAUUSD" },
-  { label: "Agents", value: "04 / 04" },
-  { label: "Mode", value: "Research", accent: true },
+  { labelKey: "intelligence.telemetrySystem", valueKey: "intelligence.telemetryOnline" },
+  { labelKey: "intelligence.telemetryMarket", valueKey: "raw:XAUUSD" },
+  { labelKey: "intelligence.telemetryAgents", valueKey: "raw:04 / 04" },
+  { labelKey: "intelligence.telemetryMode", valueKey: "intelligence.telemetryResearch", accent: true },
 ];
 
 export function IntelligenceField() {
