@@ -43,29 +43,45 @@
   --radius-chip: 4px;
 
   --shadow-panel: 0 0 0 1px rgba(28, 37, 52, 0.8), 0 24px 48px -24px rgba(0, 0, 0, 0.7);
+  
+  /* Glassmorphism effect untuk dark mode */
+  --glass-bg: rgba(15, 21, 34, 0.7);
+  --glass-border: rgba(28, 37, 52, 0.8);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  --glass-backdrop: blur(12px);
 }
 
-/* Light mode overrides */
+/* Light mode overrides - SOFTER COLORS */
 :root.light {
-  --color-abyss: #f8f9fc;
-  --color-bg: #ffffff;
-  --color-raised: #f1f3f8;
-  --color-overlay: #e8ecf4;
-  --color-line: #d4dbe8;
-  --color-line-soft: #eef2f8;
+  /* Softer backgrounds - tidak terlalu putih */
+  --color-abyss: #f5f7fa;
+  --color-bg: #fafbfd;
+  --color-raised: #ffffff;
+  --color-overlay: #f0f3f7;
+  --color-line: #e1e7ef;
+  --color-line-soft: #eef2f7;
 
-  --color-ink: #0f1419;
+  /* Text dengan contrast yang baik tapi tidak terlalu gelap */
+  --color-ink: #1a202c;
   --color-ink-dim: #4a5568;
-  --color-ink-faint: #8899a6;
+  --color-ink-faint: #718096;
 
-  --color-accent: #2563eb;
-  --color-accent-soft: #93c5fd;
-  --color-up: #059669;
-  --color-down: #dc2626;
-  --color-warn: #d97706;
-  --color-cyan: #0891b2;
+  /* Accent colors yang lebih soft */
+  --color-accent: #3b82f6;
+  --color-accent-soft: #60a5fa;
+  --color-up: #10b981;
+  --color-down: #ef4444;
+  --color-warn: #f59e0b;
+  --color-cyan: #06b6d4;
 
-  --shadow-panel: 0 0 0 1px rgba(212, 219, 232, 0.8), 0 8px 24px -8px rgba(0, 0, 0, 0.15);
+  /* Softer shadow untuk light mode */
+  --shadow-panel: 0 0 0 1px rgba(226, 232, 240, 0.8), 0 4px 16px -4px rgba(0, 0, 0, 0.08);
+  
+  /* Glassmorphism effect untuk light mode */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(226, 232, 240, 0.8);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  --glass-backdrop: blur(12px);
 }
 
 /*
@@ -97,7 +113,22 @@
 
 html {
   scroll-behavior: smooth;
+  /* Smooth theme transition */
+  transition: background-color 300ms ease, color 300ms ease;
 }
+
+/* Smooth transition untuk semua elemen yang terpengaruh theme */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 300ms;
+  transition-timing-function: ease;
+}
+
+/* Override untuk animasi yang tidak boleh smooth */
+@keyframes * {
+  transition: none !important;
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   html {

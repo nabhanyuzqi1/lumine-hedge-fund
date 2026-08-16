@@ -9,6 +9,8 @@ import { router } from "./app/router";
 import "./index.css";
 import "./i18n";
 import { ThemeProvider } from "./components/theme-provider";
+import { SmoothScrollProvider } from "./components/smooth-scroll-provider";
+import { FloatingThemeToggle } from "./components/floating-theme-toggle";
 
 // Devtools only in dev: the conditional import is tree-shaken out of the
 // production bundle (keeps ~370 kB of dev-only code off the critical path).
