@@ -1,3 +1,4 @@
+import React from "react";
 import { Outlet } from "react-router-dom";
 
 import { CommandPalette } from "./command-palette";
@@ -13,6 +14,36 @@ import { GapBanner } from "@/components/streams/gap-banner";
  * skip-link, and the main content area.
  */
 export function PageShell() {
+  // Forward wheel events to the main scroller from ANY element on the page.
+  // Nested overflow-auto containers (DataTable, ActivityLog, etc.) consume
+  // wheel events and never bubble them to <main>. This handler attaches to
+  // the window in capture phase and scrolls <main> directly.
+  const mainRef = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    const handler = (e: WheelEvent) => {
+      const main = mainRef.current;
+      if (!main) return;
+      // Only forward if the event target is NOT inside a scrollable child
+      // that can still scroll in the wheel direction.
+      let el = e.target as HTMLElement | null;
+      while (el && el !== main) {
+        const style = window.getComputedStyle(el);
+        const oy = style.overflowY;
+        if (oy === "auto" || oy === "scroll") {
+          const canScrollDown = e.deltaY > 0 && el.scrollTop < el.scrollHeight - el.clientHeight;
+          const canScrollUp = e.deltaY < 0 && el.scrollTop > 0;
+          if (canScrollDown || canScrollUp) return; // let the child handle it
+          // Child is at its limit — fall through and scroll main
+          break;
+        }
+        el = el.parentElement;
+      }
+      main.scrollBy({ top: e.deltaY, behavior: "auto" });
+    };
+    window.addEventListener("wheel", handler, { passive: true, capture: true });
+    return () => window.removeEventListener("wheel", handler, { capture: true });
+  }, []);
+
   return (
     <KeyboardProvider>
       <a
@@ -27,7 +58,7 @@ export function PageShell() {
               <KillSwitchBanner />
               <div className="flex min-h-0 flex-1 flex-col-reverse overflow-clip md:flex-row">
                 <Rail />
-                <main id="main-content" className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
+                <main id="main-content" ref={(el) => { mainRef.current = el; }} className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
                   <Outlet />
                 </main>
               </div>
