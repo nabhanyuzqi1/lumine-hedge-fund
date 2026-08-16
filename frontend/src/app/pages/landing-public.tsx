@@ -351,6 +351,8 @@ function MagneticButton({ children }: { children: ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export function LandingPublicPage() {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen bg-abyss text-ink">
       <NavBar />

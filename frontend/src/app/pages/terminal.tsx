@@ -71,6 +71,7 @@ function PositionsTable({ positions }: { positions: PositionFixture[] }) {
       data={positions}
       getRowId={(row) => row.id}
       className="data-testid-positions-table"
+      maxHeight={400}
       columns={[
         {
           key: "symbol",
@@ -128,9 +129,10 @@ function OrdersTable({
       data={orders}
       getRowId={(row) => row.id}
       className="data-testid-orders-table"
-      columns={[
-        {
-          key: "id",
+            maxHeight={400}
+            columns={[
+              {
+                key: "id",
           header: "Order",
           cell: (row) => (
             <button

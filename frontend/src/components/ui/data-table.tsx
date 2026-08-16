@@ -45,22 +45,20 @@ export function DataTable<T>({
     estimateSize: () => rowHeight,
     overscan: 8,
     getItemKey: (index) => getRowId(data[index]!, index),
-    // Virtualizer reads the data array for keys; keep it in sync.
-    // Row content is rendered by parent; this does not need to be a dep.
   });
 
   const virtualRows = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
 
   return (
-      <div
-        ref={parentRef}
-        className={`w-full overflow-auto rounded-panel border border-border-subtle ${className ?? ""}`.trim()}
-        data-testid="data-table-scroll"
-        style={maxHeight ? { maxHeight } : undefined}
-      >
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-bg-raised">
+    <div
+      ref={parentRef}
+      className={`w-full overflow-auto rounded-panel border border-border-subtle ${className ?? ""}`.trim()}
+      data-testid="data-table-scroll"
+      style={maxHeight ? { maxHeight } : undefined}
+    >
+      <Table>
+        <TableHeader className="sticky top-0 z-10 bg-bg-raised">
           <TableRow className="hover:bg-transparent">
             {columns.map((column) => (
               <TableHead
@@ -81,50 +79,50 @@ export function DataTable<T>({
             </TableRow>
           ) : (
             <tr>
-          <td
-            colSpan={columns.length}
-            style={{ height: `${totalSize}px`, position: "relative" }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualRows[0]?.start ?? 0}px)`,
-              }}
-            >
-              {virtualRows.map((virtualRow) => {
-                const row = data[virtualRow.index]!;
-                return (
-                  <div
-                    key={virtualRow.key}
-                    data-index={virtualRow.index}
-                    ref={virtualizer.measureElement}
-                    className="flex items-center px-3 py-2 text-sm transition-colors hover:bg-table-row-hover"
-                    style={{ height: `${virtualRow.size}px` }}
-                  >
-                    {columns.map((column) => (
+              <td
+                colSpan={columns.length}
+                style={{ height: `${totalSize}px`, position: "relative" }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRows[0]?.start ?? 0}px)`,
+                  }}
+                >
+                  {virtualRows.map((virtualRow) => {
+                    const row = data[virtualRow.index]!;
+                    return (
                       <div
-                        key={column.key}
-                        className={cn(
-                          "px-3 py-2 text-sm",
-                          /qty|avg|current|pnl|price/.test(column.key as string) ? "text-right font-mono tabular-nums" : "text-left"
-                        )}
-                        style={
-                          column.width
-                            ? { width: column.width, minWidth: column.width, flexShrink: 0 }
-                            : { flex: 1, minWidth: 0 }
-                        }
+                        key={virtualRow.key}
+                        data-index={virtualRow.index}
+                        ref={virtualizer.measureElement}
+                        className="flex items-center px-3 py-2 text-sm transition-colors hover:bg-table-row-hover"
+                        style={{ height: `${virtualRow.size}px` }}
                       >
-                        {column.cell(row)}
+                        {columns.map((column) => (
+                          <div
+                            key={column.key}
+                            className={cn(
+                              "px-3 py-2 text-sm",
+                              /qty|avg|current|pnl|price/.test(column.key as string) ? "text-right font-mono tabular-nums" : "text-left"
+                            )}
+                            style={
+                              column.width
+                                ? { width: column.width, minWidth: column.width, flexShrink: 0 }
+                                : { flex: 1, minWidth: 0 }
+                            }
+                          >
+                            {column.cell(row)}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          </td>
+                    );
+                  })}
+                </div>
+              </td>
             </tr>
           )}
         </TableBody>
