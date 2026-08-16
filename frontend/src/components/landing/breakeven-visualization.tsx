@@ -122,9 +122,10 @@ export function BreakEvenVisualization({
                   x2={W - PAD}
                   y1={ENTRY_Y - (ENTRY_Y - TP_Y) * g}
                   y2={ENTRY_Y - (ENTRY_Y - TP_Y) * g}
-                  stroke="rgba(28,37,52,0.5)"
+                  stroke="var(--color-line)"
                   strokeWidth="0.5"
                   strokeDasharray="4 4"
+                  opacity="0.5"
                 />
               ))}
 
@@ -134,13 +135,13 @@ export function BreakEvenVisualization({
               <rect x={x65} y={TP_Y} width={W - PAD - x65} height={ENTRY_Y - TP_Y} fill="rgba(240,85,91,0.05)" />
 
               {/* Zone labels */}
-              <text x={(PAD + x35) / 2} y={H - 12} fontSize="8" fill="#6d7c92" textAnchor="middle" fontFamily="IBM Plex Mono, monospace">
+              <text x={(PAD + x35) / 2} y={H - 12} fontSize="8" fill="var(--color-ink-faint)" textAnchor="middle" fontFamily="IBM Plex Mono, monospace">
                 HOLD
               </text>
-              <text x={(x35 + x65) / 2} y={H - 12} fontSize="8" fill="#6d7c92" textAnchor="middle" fontFamily="IBM Plex Mono, monospace">
+              <text x={(x35 + x65) / 2} y={H - 12} fontSize="8" fill="var(--color-ink-faint)" textAnchor="middle" fontFamily="IBM Plex Mono, monospace">
                 BE
               </text>
-              <text x={(x65 + W - PAD) / 2} y={H - 12} fontSize="8" fill="#6d7c92" textAnchor="middle" fontFamily="IBM Plex Mono, monospace">
+              <text x={(x65 + W - PAD) / 2} y={H - 12} fontSize="8" fill="var(--color-ink-faint)" textAnchor="middle" fontFamily="IBM Plex Mono, monospace">
                 EXIT
               </text>
 

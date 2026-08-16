@@ -90,14 +90,19 @@ export function AuditLog({ className, showHeader = true }: AuditLogProps) {
 
       {/* Terminal window */}
       <motion.div
-        className="overflow-hidden rounded-panel border border-line bg-[#070b12] shadow-panel"
+        className="overflow-hidden rounded-panel border shadow-lg backdrop-blur-xl"
+        style={{
+          backgroundColor: "var(--glass-bg)",
+          borderColor: "var(--glass-border)",
+          boxShadow: "var(--glass-shadow)",
+        }}
         initial={{ opacity: 0, y: 28 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.7, ease: "easeOut" }}
       >
         {/* Terminal header */}
-        <div className="flex items-center justify-between border-b border-line-soft bg-raised/60 px-4 py-2.5">
+        <div className="flex items-center justify-between border-b border-line-soft bg-raised/40 px-4 py-2.5 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-down/70" />
             <span className="h-2.5 w-2.5 rounded-full bg-warn/70" />
