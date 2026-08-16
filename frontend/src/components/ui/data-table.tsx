@@ -17,6 +17,8 @@ export interface DataTableProps<T> {
   rowHeight?: number;
   className?: string;
   emptyMessage?: string;
+  /** Max height in pixels (e.g., 400). Enables scroll overflow. */
+  maxHeight?: number;
 }
 
 /**
