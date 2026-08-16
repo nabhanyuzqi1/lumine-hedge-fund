@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useThemeStore } from "@/stores/theme-store";
+import { loadLanguage } from "@/i18n";
 
 const languages = [
   { code: "en", label: "EN" },
@@ -9,7 +9,9 @@ const languages = [
 export function LanguageSwitcher() {
   const { i18n } = useTranslation();
 
-  const handleLanguageChange = (langCode: string) => {
+  const handleLanguageChange = async (langCode: string) => {
+    // Lazy load bahasa jika belum ada
+    await loadLanguage(langCode);
     i18n.changeLanguage(langCode);
   };
 
