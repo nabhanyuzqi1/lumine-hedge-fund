@@ -381,6 +381,7 @@ class SystemInfo(BaseModel):
     llm_gateway_url: str
     llm_gateway_configured: bool  # True jika API key terisi
     demo_data: bool
+    paper_trading: bool = True  # ADR-0043: paper trading mode
     environment: str
     version: str
     # B9: symbol aktif (enable/disable currency via superadmin).

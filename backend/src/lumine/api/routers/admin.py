@@ -272,6 +272,7 @@ async def get_system_info(
         llm_gateway_url=settings.llm_gateway_url,
         llm_gateway_configured=bool(settings.llm_gateway_api_key),
         demo_data=settings.demo_data,
+        paper_trading=settings.paper_trading,
         environment=getattr(settings, "environment", "production"),
         version="1.0.0",
         enabled_symbols=enabled_symbols,

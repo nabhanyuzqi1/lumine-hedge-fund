@@ -4870,6 +4870,10 @@ components:
         demo_data:
           type: boolean
           title: Demo Data
+        paper_trading:
+          type: boolean
+          title: Paper Trading
+          default: true
         environment:
           type: string
           title: Environment
