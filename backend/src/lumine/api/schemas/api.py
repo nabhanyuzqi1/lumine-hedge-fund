@@ -421,3 +421,5 @@ class SystemConfigUpdate(BaseModel):
     # ADR-0042: auto-fallback + chain fallback model saat primary gagal/rate-limited.
     llm_auto_fallback: bool | None = None
     llm_fallback_models: list[str] | None = None
+    # ADR-0043: paper trading mode — simulate fills, do not send to MT5
+    paper_trading: bool | None = None

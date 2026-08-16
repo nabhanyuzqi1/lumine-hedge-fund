@@ -375,6 +375,9 @@ async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, man
 
         updates["llm_fallback_models"] = _json.dumps(request.llm_fallback_models)
 
+    if request.paper_trading is not None:
+        updates["paper_trading"] = "1" if request.paper_trading else "0"
+
     if updates:
         await r.hset(_SYSCONFIG_KEY, mapping=updates)
 

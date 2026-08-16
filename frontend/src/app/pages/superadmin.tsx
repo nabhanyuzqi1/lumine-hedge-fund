@@ -5,6 +5,7 @@ import { get, put } from "@/api/client";
 import { ApiKeyTable } from "@/components/admin/api-key-table";
 import { CreateKeyModal } from "@/components/admin/create-key-modal";
 import { LLMRoutingTab } from "@/components/superadmin/llm-routing-tab";
+import { BacktestTab } from "@/components/superadmin/backtest-tab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ interface SystemInfo {
   llm_gateway_url: string;
   llm_gateway_configured: boolean;
   demo_data: boolean;
+  paper_trading: boolean;
   environment: string;
   version: string;
   enabled_symbols: string[];
@@ -50,6 +52,7 @@ interface ConfigForm {
   risk_per_trade: string;
   max_daily_loss_pct: string;
   demo_data: boolean;
+  paper_trading: boolean;
 }
 
 // B9: kandidat symbol untuk enable/disable (multicurrency). Default fokus
@@ -58,7 +61,7 @@ const SYMBOL_CANDIDATES = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTC
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen";
+type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen" | "backtest";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -69,6 +72,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "mt5", label: "MT5 Desktop" },
   { id: "logs", label: "Logs" },
   { id: "autogen", label: "AutoGen Studio" },
+  { id: "backtest", label: "Backtest" },
 ];
 
 // ── Hooks (real backend calls — no demo fallback) ───────────────────────────
@@ -237,14 +241,15 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
       llm_gateway_api_key: "",
       llm_gateway_url: data?.llm_gateway_url ?? "http://9router:20128",
       llm_default_model: "deepseek-v4",
-      llm_fallback_models: "",
-      llm_auto_fallback: true,
-      llm_daily_budget_usd: "50",
-      max_exposure_per_trade: "0.02",
-      risk_per_trade: "0.01",
-      max_daily_loss_pct: "0.03",
-      demo_data: data?.demo_data ?? false,
-    });
+            llm_fallback_models: "",
+            llm_auto_fallback: true,
+            llm_daily_budget_usd: "50",
+            max_exposure_per_trade: "0.02",
+            risk_per_trade: "0.01",
+            max_daily_loss_pct: "0.03",
+            demo_data: data?.demo_data ?? false,
+            paper_trading: data?.paper_trading ?? true,
+          });
 
   if (isError) return <ErrorBanner message="system-info" />;
 
@@ -264,10 +269,11 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
       };
       // ADR-0042: auto-fallback + chain fallback models (comma-separated).
       payload.llm_auto_fallback = form.llm_auto_fallback;
-      payload.llm_fallback_models = form.llm_fallback_models
-        .split(",")
-        .map((m) => m.trim())
-        .filter(Boolean);
+            payload.llm_fallback_models = form.llm_fallback_models
+              .split(",")
+              .map((m) => m.trim())
+              .filter(Boolean);
+            payload.paper_trading = form.paper_trading;
       update.mutate(payload, {
         onSuccess: (result) => {
           toast({ variant: "success", title: "Config saved", description: result.note });
@@ -327,6 +333,22 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
             />
             Demo Data Mode (router pakai in-memory, bukan PostgreSQL)
           </label>
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-xs text-ink-dim">
+            <input
+              type="checkbox"
+              checked={form.paper_trading}
+              onChange={(e) => setForm((f) => ({ ...f, paper_trading: e.target.checked }))}
+              className="accent-accent"
+            />
+            Paper Trading Mode — order disimulasikan, TIDAK dikirim ke MT5 broker
+          </label>
+          {!form.paper_trading && (
+            <p className="mt-1 text-[11px] text-danger">
+              ⚠ Real trading aktif — order akan dikirim ke akun MT5 live/demo
+            </p>
+          )}
         </div>
       </div>
       <div className="space-y-3">
@@ -504,6 +526,7 @@ export function SuperadminPage() {
             title="AutoGen Studio — Visual Agent Management (session-protected)"
           />
         )}
+        {tab === "backtest" && <BacktestTab />}
         {tab === "keys" && (
           <div className="space-y-4">
             <div className="flex items-baseline justify-between">

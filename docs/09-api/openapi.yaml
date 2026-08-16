@@ -4846,6 +4846,11 @@ components:
             type: array
           - type: 'null'
           title: Llm Fallback Models
+        paper_trading:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Paper Trading
       type: object
       title: SystemConfigUpdate
       description: Payload untuk memperbarui konfigurasi runtime via superadmin.
