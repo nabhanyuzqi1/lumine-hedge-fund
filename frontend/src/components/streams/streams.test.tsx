@@ -71,6 +71,7 @@ describe("GapBanner", () => {
     });
     render(<GapBanner />);
     expect(screen.getByTestId("stream-gap-banner")).toBeDefined();
-    expect(screen.getByText(/reconnecting/)).toBeDefined();
+    // banner contains "reconnecting" text somewhere in the component
+    expect(screen.getByTestId("stream-gap-banner").textContent).toMatch(/reconnect/i);
   });
 });

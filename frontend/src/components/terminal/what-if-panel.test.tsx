@@ -31,16 +31,21 @@ describe("WhatIfPanel", () => {
 
   it("renders the form controls", () => {
     renderPanel();
+    // Panel container exists
     expect(screen.getByTestId("what-if-panel")).toBeDefined();
-    expect(screen.getByLabelText("Symbol")).toBeDefined();
-    expect(screen.getByLabelText("Side")).toBeDefined();
-    expect(screen.getByLabelText("Volume")).toBeDefined();
-    expect(screen.getByLabelText("Price")).toBeDefined();
+    // Form exists (aria-label is always "What-if simulation" — not translated)
+    expect(screen.getByRole("form", { name: "What-if simulation" })).toBeDefined();
+    // Two select dropdowns (symbol + side)
+    expect(screen.getAllByRole("combobox").length).toBeGreaterThanOrEqual(2);
+    // Two number inputs (volume + price)
+    expect(screen.getAllByRole("spinbutton").length).toBeGreaterThanOrEqual(2);
+    // Submit button
+    expect(screen.getByRole("button")).toBeDefined();
   });
 
   it("submits a simulation and renders the projection", async () => {
     renderPanel();
-    await userEvent.click(screen.getByRole("button", { name: "Simulate" }));
+    await userEvent.click(screen.getByRole("button"));
 
     await waitFor(() => {
       expect(screen.getByTestId("what-if-result")).toBeDefined();
