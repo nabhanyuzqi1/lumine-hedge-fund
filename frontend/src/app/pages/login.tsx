@@ -52,14 +52,15 @@ function EyeIcon({ size = 14, off = false }: { size?: number; off?: boolean }) {
 /* ── System terminal panel (brand side) ──────────────────────────── */
 
 const SYSTEM_LINES = [
-  { ok: true, text: "Auth service — ready" },
-  { ok: true, text: "Session store — Redis" },
-  { ok: true, text: "4 agents — online" },
-  { ok: true, text: "Risk engine — armed" },
-  { ok: false, text: "Market feed — XAUUSD live" },
+  { ok: true, textKey: "login.systemAuthService" },
+  { ok: true, textKey: "login.systemSessionStore" },
+  { ok: true, textKey: "login.systemAgents" },
+  { ok: true, textKey: "login.systemRiskEngine" },
+  { ok: false, textKey: "login.systemMarketFeed" },
 ];
 
 function SystemTerminal() {
+  const { t } = useTranslation();
   return (
     <div 
       className="w-full max-w-md overflow-hidden rounded-panel border shadow-lg backdrop-blur-xl"
@@ -82,19 +83,19 @@ function SystemTerminal() {
       {/* Terminal body */}
       <div className="space-y-2 p-5 font-mono text-xs">
         {SYSTEM_LINES.map((line, i) => (
-          <motion.div
-            key={line.text}
-            className="flex items-center gap-2.5"
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35, delay: 0.3 + i * 0.15 }}
-          >
-            <span className="text-up">[{line.ok ? "OK" : "●"}]</span>
-            <span className={line.ok ? "text-ink-dim" : "text-up"}>
-              {line.text}
-            </span>
-          </motion.div>
-        ))}
+                  <motion.div
+                    key={line.textKey}
+                    className="flex items-center gap-2.5"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.35, delay: 0.3 + i * 0.15 }}
+                  >
+                    <span className="text-up">[{line.ok ? "OK" : "●"}]</span>
+                    <span className={line.ok ? "text-ink-dim" : "text-up"}>
+                      {t(line.textKey)}
+                    </span>
+                  </motion.div>
+                ))}
 
         {/* Blinking cursor */}
         <motion.div
@@ -197,8 +198,8 @@ export function LoginPage() {
               d="M19 12H5m0 0l6 6m-6-6l6-6"
             />
           </svg>
-          Back to Home
-        </Link>
+          {t("login.backToHome")}
+                  </Link>
       </motion.div>
 
       {/* Language Switcher - pojok kanan atas (mirror back button) */}
@@ -226,17 +227,16 @@ export function LoginPage() {
                 LUMINE
               </div>
               <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-faint">
-                AI-Native Quantitative Intelligence
-              </div>
-            </div>
-          </div>
+                              {t("login.brandSubtitle")}
+                            </div>
+                          </div>
+                        </div>
 
-          <SystemTerminal />
+                        <SystemTerminal />
 
-          <p className="max-w-sm text-sm leading-relaxed text-ink-dim">
-            A coordinated system of specialized agents under disciplined risk
-            controls. Every decision is auditable, every execution is gated.
-          </p>
+                        <p className="max-w-sm text-sm leading-relaxed text-ink-dim">
+                          {t("login.systemDescription")}
+                        </p>
         </motion.div>
 
         {/* RIGHT — auth panel */}
@@ -254,22 +254,22 @@ export function LoginPage() {
                 LUMINE
               </div>
               <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-faint">
-                AI-Native Quantitative Intelligence
-              </div>
-            </div>
-          </div>
+                              {t("login.brandSubtitle")}
+                            </div>
+                          </div>
+                        </div>
 
-          <div className="rounded-panel border border-line bg-raised/70 p-6 shadow-panel backdrop-blur">
-            {/* Status strip */}
-            <div className="mb-5 flex items-center justify-between border-b border-line-soft pb-4">
-              <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-up">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-up" />
-                System Online
-              </span>
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-faint">
-                Internal Access
-              </span>
-            </div>
+                        <div className="rounded-panel border border-line bg-raised/70 p-6 shadow-panel backdrop-blur">
+                          {/* Status strip */}
+                          <div className="mb-5 flex items-center justify-between border-b border-line-soft pb-4">
+                            <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-up">
+                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-up" />
+                              {t("login.systemOnline")}
+                            </span>
+                            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-faint">
+                              {t("login.internalAccess")}
+                            </span>
+                          </div>
 
             {/* Language Switcher sudah dipindah ke atas */}
 
