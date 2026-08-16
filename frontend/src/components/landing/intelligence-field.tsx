@@ -57,6 +57,14 @@ const NODE_NAME_KEYS: Record<string, string> = {
   structure: "intelligence.structureName",
 };
 
+/* Short labels for node chips — keeps chips compact, no wrapping */
+const NODE_SHORT_KEYS: Record<string, string> = {
+  technical: "intelligence.technical",
+  macro: "intelligence.macro",
+  news: "intelligence.news",
+  structure: "intelligence.structure",
+};
+
 const AGENT_ROLE_KEYS: Record<string, string> = {
   technical: "intelligence.technicalRole",
   macro: "intelligence.macroRole",
@@ -336,18 +344,18 @@ export function IntelligenceField() {
                 {/* Label — chip solid, presisi 6px dari disc */}
                 <div className={labelAbove ? "mb-1.5" : "mt-1.5"}>
                   <span
-                    className="inline-flex items-center gap-1.5 rounded-chip border border-line-soft bg-abyss/90 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] backdrop-blur transition-colors duration-300"
-                    style={{
-                      color: active ? node.color : "var(--color-ink-dim)",
-                      borderColor: active ? `${node.color}66` : undefined,
-                    }}
-                  >
-                    <span
-                      className="h-1 w-1 rounded-full"
-                      style={{ backgroundColor: node.color }}
-                    />
-                    {t(NODE_NAME_KEYS[node.id])}
-                                      </span>
+                                      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-chip border border-line-soft bg-abyss/90 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] backdrop-blur transition-colors duration-300"
+                                      style={{
+                                        color: active ? node.color : "var(--color-ink-dim)",
+                                        borderColor: active ? `${node.color}66` : undefined,
+                                      }}
+                                    >
+                                      <span
+                                        className="h-1 w-1 shrink-0 rounded-full"
+                                        style={{ backgroundColor: node.color }}
+                                      />
+                                      {t(NODE_SHORT_KEYS[node.id])}
+                                    </span>
                 </div>
               </div>
             </motion.div>
