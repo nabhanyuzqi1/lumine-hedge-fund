@@ -262,7 +262,10 @@ paths:
 
         mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
 
-        atau belum ada posisi (bukan demo — lihat _real_equity_series).'
+        atau belum ada posisi (bukan demo — lihat _real_equity_series).
+
+
+        NOTE: total dihitung sebelum _real_equity_series agar pagination valid.'
       operationId: get_equity_curve_api_v1_portfolio__portfolio_id__equity_get
       parameters:
       - name: portfolio_id

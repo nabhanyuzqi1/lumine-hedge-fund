@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useSimulateTrade } from "@/api/hooks";
 import { NumericText } from "@/components/ui/numeric-text";
@@ -11,6 +12,7 @@ const SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "BTCUSD", "USOIL"];
  * POST /api/v1/portfolio/{id}/simulate. Pure fixture fallback on error.
  */
 export function WhatIfPanel() {
+  const { t } = useTranslation();
   const [symbol, setSymbol] = useState("XAUUSD");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [volume, setVolume] = useState("1.0");
@@ -30,13 +32,13 @@ export function WhatIfPanel() {
   return (
     <Card data-testid="what-if-panel">
       <CardHeader>
-        <CardTitle>What-if</CardTitle>
-        <CardDescription>Pre-trade NAV impact projection</CardDescription>
+        <CardTitle>{t("terminal.whatIf")}</CardTitle>
+        <CardDescription>{t("terminal.whatIfDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-2" aria-label="What-if simulation">
           <label className="col-span-1 text-xs text-text-secondary">
-            Symbol
+            {t("terminal.whatIfSymbol")}
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
@@ -50,7 +52,7 @@ export function WhatIfPanel() {
             </select>
           </label>
           <label className="col-span-1 text-xs text-text-secondary">
-            Side
+            {t("terminal.whatIfSide")}
             <select
               value={side}
               onChange={(e) => setSide(e.target.value as "buy" | "sell")}
@@ -61,7 +63,7 @@ export function WhatIfPanel() {
             </select>
           </label>
           <label className="col-span-1 text-xs text-text-secondary">
-            Volume
+            {t("terminal.whatIfVolume")}
             <input
               type="number"
               step="0.01"
@@ -72,7 +74,7 @@ export function WhatIfPanel() {
             />
           </label>
           <label className="col-span-1 text-xs text-text-secondary">
-            Price
+            {t("terminal.whatIfPrice")}
             <input
               type="number"
               step="0.01"
@@ -87,13 +89,13 @@ export function WhatIfPanel() {
             disabled={simulate.isPending}
             className="col-span-2 rounded-chip bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
           >
-            {simulate.isPending ? "Simulating…" : "Simulate"}
+            {simulate.isPending ? t("terminal.whatIfSimulating") : t("terminal.whatIfSimulate")}
           </button>
         </form>
 
         {simulate.error && (
           <p className="text-xs text-danger" role="alert" data-testid="what-if-error">
-            Simulation failed — {simulate.error.message}
+            {t("terminal.whatIfError")}
           </p>
         )}
 
@@ -103,19 +105,19 @@ export function WhatIfPanel() {
             data-testid="what-if-result"
           >
             <div>
-              <dt className="text-text-tertiary">Projected NAV</dt>
+              <dt className="text-text-tertiary">{t("terminal.whatIfProjectedNav")}</dt>
               <dd className="font-mono text-text-primary">
                 <NumericText value={simulate.data.projected_nav} decimals={2} />
               </dd>
             </div>
             <div>
-              <dt className="text-text-tertiary">Margin</dt>
+              <dt className="text-text-tertiary">{t("terminal.whatIfMargin")}</dt>
               <dd className="font-mono text-text-primary">
                 <NumericText value={simulate.data.margin_required} decimals={2} />
               </dd>
             </div>
             <div>
-              <dt className="text-text-tertiary">PnL Δ</dt>
+              <dt className="text-text-tertiary">{t("terminal.whatIfPnl")}</dt>
               <dd className="font-mono text-text-primary">
                 <NumericText value={simulate.data.pnl_change} decimals={2} />
               </dd>
@@ -126,3 +128,4 @@ export function WhatIfPanel() {
     </Card>
   );
 }
+

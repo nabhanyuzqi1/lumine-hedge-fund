@@ -283,21 +283,28 @@ async def get_equity_curve(
     """Equity curve (B-05/B-06) — derived dari live positions (opened_at +
     mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
     atau belum ada posisi (bukan demo — lihat _real_equity_series).
+
+    NOTE: total dihitung sebelum _real_equity_series agar pagination valid.
     """
-    total = 240
-    real_items = await _real_equity_series(total, pagination.offset, pagination.limit)
+    real_items = await _real_equity_series(
+        total=pagination.limit + pagination.offset,
+        offset=pagination.offset,
+        limit=pagination.limit,
+    )
     if real_items is not None:
         return PaginatedList(
             items=real_items,
-            total=max(len(real_items), 1),
+            total=len(real_items) + pagination.offset,
             limit=pagination.limit,
             offset=pagination.offset,
         )
-
-    # ZERO-DEMO (B5): DB tidak tersedia → kosong, BUKAN series fiktif.
-    # Sebelumnya fallback deterministik (_DEMO_NAV drift 6% + drawdown
-    # sintetis) — angka palsu di dashboard, dihapus.
-    return PaginatedList(items=[], total=0, limit=pagination.limit, offset=pagination.offset)
+    # Fallback: tidak ada data live → return empty list (tidak pakai fixture palsu)
+    return PaginatedList(
+        items=[],
+        total=0,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
 
 
 @router.delete(

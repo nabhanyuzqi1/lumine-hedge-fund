@@ -30,6 +30,9 @@ export function GapBanner() {
     >
       <span aria-hidden="true">⚠</span>
       <span>Realtime feed degraded — {detail}.</span>
+      <span className="ml-auto text-amber-400/60 text-[10px]">
+        {reconnecting.length > 0 ? "reconnecting…" : "check connection"}
+      </span>
     </div>
   );
 }

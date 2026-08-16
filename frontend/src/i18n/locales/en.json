@@ -323,6 +323,18 @@
     "streamOpen": "SSE stream open: {{symbol}}",
     "streamError": "SSE error: {{msg}}",
     "marketClosed": "Market closed: {{msg}}",
-    "waitingLiveData": "Waiting for live data — market closed / updating"
+    "waitingLiveData": "Waiting for live data — market closed / updating",
+    "whatIf": "What-if Simulator",
+    "whatIfDescription": "Simulate a trade before placing it — see estimated impact on your account balance, required margin, and P&L",
+    "whatIfSymbol": "Symbol",
+    "whatIfSide": "Direction",
+    "whatIfVolume": "Volume (lots)",
+    "whatIfPrice": "Entry Price",
+    "whatIfSimulate": "Simulate",
+    "whatIfSimulating": "Simulating…",
+    "whatIfError": "Simulation failed — check your inputs and try again",
+    "whatIfProjectedNav": "Est. Balance After",
+    "whatIfMargin": "Margin Needed",
+    "whatIfPnl": "Estimated P&L"
   }
 }
