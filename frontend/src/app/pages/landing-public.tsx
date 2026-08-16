@@ -351,8 +351,7 @@ function MagneticButton({ children }: { children: ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 export function LandingPublicPage() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const t = (key: string) => key; // i18n ready - replace with useTranslation() when translations ready
+  const { t } = useTranslation();
   
   return (
     <div className="min-h-screen bg-abyss text-ink">
