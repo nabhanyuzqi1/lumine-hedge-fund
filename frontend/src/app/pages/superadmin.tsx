@@ -104,7 +104,7 @@ function useEAStatus() {
     queryKey: ["ea-status"],
     queryFn: () => get<EAStatus>("/admin/ea-status"),
     staleTime: 0,
-    refetchInterval: 5_000,
+    refetchInterval: 1_000,
     retry: 1,
   });
 }

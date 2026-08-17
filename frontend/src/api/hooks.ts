@@ -273,7 +273,7 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
     staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
-    refetchInterval: 5_000,
+    refetchInterval: 1_000,
   });
 }
 
@@ -489,7 +489,7 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
-    refetchInterval: 30_000,
+    refetchInterval: 1_000,
   });
 }
 
@@ -511,7 +511,7 @@ export function useOrders(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
-    refetchInterval: 5_000,
+    refetchInterval: 1_000,
   });
 }
 
