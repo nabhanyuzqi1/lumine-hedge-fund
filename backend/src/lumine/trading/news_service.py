@@ -95,7 +95,26 @@ def _parse_rss(xml_text: str, source: str, limit: int = 15) -> list[dict[str, An
             continue
         # Hanya berita yang relevan emas/dollar/ekonomi.
         low = title.lower()
-        if not any(k in low for k in ("gold", "xau", "metal", "dollar", "fed", "treasury", "inflation", "rate")):
+        if not any(
+            k in low
+            for k in (
+                "gold",
+                "xau",
+                "metal",
+                "dollar",
+                "fed",
+                "treasury",
+                "inflation",
+                "rate",
+                "cpi",
+                "oil",
+                "energy",
+                "commodit",
+                "economic",
+                "recession",
+                "yield",
+            )
+        ):
             continue
         ts = _parse_rss_date(pub_date)
         items.append(
