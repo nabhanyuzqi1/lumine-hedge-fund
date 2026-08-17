@@ -380,7 +380,13 @@ def test_hmac_signature_covers_query_string(settings: Settings, mock_db_session:
 
 
 def test_hmac_replay_is_rejected(settings: Settings, mock_db_session: None) -> None:
-    """An identical signed request within the window is rejected (auth.md)."""
+    """An identical signed MUTATING request within the window is rejected (auth.md).
+
+    GET requests are exempt from replay protection (17 Aug 2026): the frontend
+    polls GET every 1s with an empty body → body_hash identical for all of them,
+    and two clients in the same second would false-positive. Only POST/PUT/
+    PATCH/DELETE carry replay protection.
+    """
     app = create_app(settings)
     unauthenticated_client = TestClient(app)
 
@@ -392,12 +398,23 @@ def test_hmac_replay_is_rejected(settings: Settings, mock_db_session: None) -> N
         "X-Lumine-Signature": _sign("GET", url, timestamp, b"", _TEST_HMAC_SECRET),
     }
 
+    # GET is exempt from replay protection now — identical request is allowed.
     first = unauthenticated_client.get(url, headers=headers)
     assert first.status_code == 200
+    replay_get = unauthenticated_client.get(url, headers=headers)
+    assert replay_get.status_code == 200  # GET exempt
 
-    replay = unauthenticated_client.get(url, headers=headers)
-    assert replay.status_code == 401
-    assert replay.json()["error"]["code"] == "REPLAY_DETECTED"
+    # Mutating methods still reject exact replays. `_check_replay` is the
+    # unit under test — call it directly to avoid needing Redis/DB (local
+    # dev skips Docker; CI has them).
+    from lumine.api.middleware.auth import _check_replay
+
+    now = int(time.time())
+    body = b'{"action":"ping"}'
+    _check_replay("bootstrap", timestamp, hashlib.sha256(body).hexdigest(), now)
+    # Same key again → replay rejected
+    with pytest.raises(Exception, match=r"replay"):
+        _check_replay("bootstrap", timestamp, hashlib.sha256(body).hexdigest(), now)
 
 
 def test_404_uses_error_contract(client: TestClient) -> None:

@@ -168,7 +168,14 @@ async def authenticate_request(
         raise AuthError(msg, code="INVALID_SIGNATURE")
 
     # Reject exact replays within the valid window (docs/09-api/auth.md:68-75).
-    _check_replay(api_key, timestamp, body_hash, now)
+    # PITFALL (17 Aug 2026): frontend polls GET 1s dengan body kosong →
+    # body_hash = hash("") SAMA untuk semua request. Dua client (2 tab, atau
+    # tab + probe) di detik yang sama → (api_key, ts, body_hash) collide →
+    # 401 REPLAY_DETECTED intermitten padahal bukan replay. GET bersifat
+    # idempoten/read-only → replay protection tidak diperlukan; hanya mutating
+    # methods yang wajib anti-replay.
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        _check_replay(api_key, timestamp, body_hash, now)
 
     return AuthenticatedPrincipal(key_id=api_key, scopes=scopes)
 
