@@ -74,6 +74,13 @@ services:
       - RESOLUTION=1280x768x24
     volumes:
       - mt5_data:/root/.wine-mt5
+      # ── EA source bind-mount (v4+) ─────────────────────────────────────
+      # PITFALL (17 Aug 2026): /opt/lumine-ea di-bake DI DALAM image → docker
+      # cp ke host TIDAK berpengaruh, entrypoint selalu copy versi image lama
+      # (EA jalan seed=OFF padahal source sudah di-update). Bind mount ini
+      # membuat /opt/lumine-ea = folder host → update EA cukup scp ke host,
+      # restart container, entrypoint copy versi baru + MT5 recompile on boot.
+      - /opt/lumine-ea:/opt/lumine-ea:ro
     restart: unless-stopped
     # Healthcheck: cek Xvfb + x11vnc + terminal64.exe hidup.
     # Docker restart policy tidak trigger on unhealthy — tapi watchdog di
