@@ -57,6 +57,7 @@ datetime g_lastDealsSent      = 0;   // B1: terakhir snapshot deals dikirim
 int      g_failCount      = 0;      // consecutive proxy failure
 bool     g_proxyDown      = false;  // log state-change saja
 string   g_lastRespBody   = "";     // v4.12: body response terakhir (debug 500)
+datetime g_lastStatusLog  = 0;      // v4.12: throttle log JSON status (60s)
 int      g_maxBackoff;
 // v4.11: log throttling — deals log hanya saat jumlah berubah
 int      g_lastDealsCount = -1;
@@ -1268,7 +1269,14 @@ void SendStatus()
       // v4.12 (18 Aug): log BODY response 500 — identifikasi CF vs proxy
       string errBody = g_lastRespBody;
       if(StringLen(errBody) > 120) errBody = StringSubstr(errBody, 0, 120);
-      Print("LumineEA: SendStatus failed http=", res, " body=", errBody);
+      // v4.12: log JSON yang dikirim (debug malformed) — 1x per 60s saja
+      if(TimeLocal() - g_lastStatusLog > 60)
+        {
+         g_lastStatusLog = TimeLocal();
+         Print("LumineEA: SendStatus http=", res, " body=", errBody, " sent=", json);
+        }
+      else
+         Print("LumineEA: SendStatus failed http=", res, " body=", errBody);
      }
   }
 

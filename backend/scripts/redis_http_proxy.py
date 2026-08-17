@@ -135,6 +135,14 @@ def status():
         r.expire("mt5:status", 90)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
+        # v4.12 (18 Aug): log BODY request saat parse gagal — EA kirim JSON
+        # yang membuat werkzeug 400 (SendStatus 500). Body 500B pertama.
+        raw = ""
+        try:
+            raw = request.get_data(as_text=True)[:500]
+        except Exception:
+            pass
+        print(f"[STATUS] parse error: {e} | raw={raw}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 
