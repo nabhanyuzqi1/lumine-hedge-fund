@@ -7,8 +7,12 @@ services:
     container_name: lumine-autogenstudio
     working_dir: /app
     environment:
-      - OPENAI_API_KEY=${NINEROUTER_API_KEY:-}
-      - AUTOGENSTUDIO_DATABASE_URL=postgresql://lumine:password@postgres:5432/lumine
+      # 9router (LLM gateway) sebagai backend OpenAI-compatible untuk
+      # AutoGen Studio — hubungkan pipeline (17 Aug 2026): key dari .env
+      # LLM_GATEWAY_API_KEY; base URL menunjuk 9router di network backend.
+      - OPENAI_API_KEY=${LLM_GATEWAY_API_KEY:-${NINEROUTER_API_KEY:-}}
+      - OPENAI_BASE_URL=http://9router:20128/v1
+      - AUTOGENSTUDIO_DATABASE_URL=postgresql://lumine:${DB_PASSWORD:-lumine}@postgres:5432/lumine
       - AUTOGENSTUDIO_APP_DIR=/app/data
       - PORT=8081
     volumes:
