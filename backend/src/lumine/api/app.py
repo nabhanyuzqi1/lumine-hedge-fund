@@ -386,7 +386,7 @@ async def _decision_scheduler() -> None:
         await asyncio.sleep(300)
 
 
-async def _deals_worker() -> None:
+async def _deals_worker() -> None:  # noqa: C901 — deal pipeline bercabang (cutoff, dedupe, upsert)
     """B1: consume mt5:deals (history deals EA snapshot) → sinkronisasi orders.
 
     Setiap deal MT5 di-upsert ke tabel orders (status filled, dedupe by
