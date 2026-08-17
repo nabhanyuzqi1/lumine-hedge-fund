@@ -3477,7 +3477,18 @@ paths:
       tags:
       - auth
       summary: Me
-      description: Return the current session principal (SPA bootstraps from here).
+      description: 'Return the current session principal (SPA bootstraps from here).
+
+
+        Sliding renewal (17 Aug 2026): setiap panggilan /me yang valid
+
+        memperpanjang session TTL (rolling expiry) — selama user aktif memakai
+
+        aplikasi, session tidak pernah kedaluwarsa → "sekali login, tidak
+
+        pernah 401" (kecuali logout eksplisit). Hanya renew jika sisa waktu
+
+        < 50% TTL (hindari re-set cookie tiap request).'
       operationId: me_api_auth_me_get
       responses:
         '200':
