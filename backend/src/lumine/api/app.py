@@ -95,6 +95,13 @@ async def _tick_worker() -> None:
             )
             # B4: bangun bar 1m live dari tick (untuk flush ke bars_1m)
             _update_bar_builder(symbol, bid, ask, float(data.get("volume", 0.0)))
+            # B5 (17 Aug 2026): publish tick ke SSEPublisher → WebSocket
+            # /api/v1/ws/market menerima tick_update. Sebelumnya hanya SSE
+            # /streams/market-data yang dapat tick (loop internal baca
+            # MarketService) — WS connect tapi tidak pernah dapat frame tick.
+            publisher = _app_state.get("sse_publisher")
+            if publisher is not None:
+                await publisher.publish_tick_update(symbol, bid, ask)
         except Exception:
             pass  # transient / malformed tick — skip
 
