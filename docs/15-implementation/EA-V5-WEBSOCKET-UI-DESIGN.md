@@ -1,8 +1,8 @@
 # Rancangan: LumineEA v5 — WebSocket Transport + UI Chart "Lumine" + Multi-EA
 
 > Status: **RANCANGAN** (belum implementasi)
-> Referensi: `docs/08-trading/mt5-integration.md` (Redis bridge v1), `docs/09-api/sse-api.md` + `backend/src/lumine/api/routers/ws.py` (WS transport backend), `docs/10-frontend/design-tokens.md` (warna/UI), skill `lumine` (21 pitfalls EA)
-> Studi source: mobjoy0/mt5-bridge, niiisho/TradingView-MT5-Bridge, akivajp/mt5-bridge (fork niiisho), api2trade quickstart, ding9736/MT5BridgeAPI
+> Referensi: `docs/08-trading/mt5-integration.md` (Redis bridge v1), `docs/09-api/sse-api.md` + `backend/src/lumine/api/routers/ws.py` (WS transport backend), `docs/10-frontend/design-tokens.md` (warna/UI), skill `lumine` (21 pitfalls EA), `docs/15-implementation/CHART-LIBRARY-EVALUATION.md` (chart frontend: FCS vs lightweight-charts)
+> Studi source: mobjoy0/mt5-bridge, niiisho/TradingView-MT5-Bridge, akivajp/mt5-bridge (fork niiisho), api2trade quickstart, ding9736/MT5BridgeAPI, fcsapi/chart-js
 
 ---
 
@@ -270,6 +270,8 @@ input int    InpLeaderTTL     = 15;     // detik lease kepemimpinan
 | **T3** | `command` via WS (BE→EA) + `ack` idempotensi | Satu command → satu eksekusi, ack tercatat |
 | **T4** | Theme chart Lumine + panel v5 | Screenshot chart: bg abyss, candle up/down, panel per §5.4 |
 | **T5** | Highlight signal/level dari backend (OBJ_RECTANGLE/ARROW/TREND) | Signal bar tampil di chart saat backend kirim status |
+| **T5b** | Frontend: TP/SL/Entry price lines via `createPriceLine` (level dari backend) + Heikin-Ashi transform (lihat `CHART-LIBRARY-EVALUATION.md` §4) | Price lines tampil di chart frontend; toggle HA/hollow |
+| **T5c** | Frontend: chart replay mode (scrub historis dari `bars_*`) + export image | Replay jalan untuk backtest visual |
 | **T6** | Multi-EA: registry + leader election + dedup bar builder | Uji 2 EA (lokal + VPS) stream XAUUSD → bar M1 tidak ganda, failover < 15s |
 | **T7** | Test suite: contract test WS (backend), smoke di demo account | CI hijau + `vps_smoke.py` extended |
 

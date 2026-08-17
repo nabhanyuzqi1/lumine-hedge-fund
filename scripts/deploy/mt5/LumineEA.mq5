@@ -26,7 +26,7 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "4.00"
+#property version   "4.10"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy)
@@ -38,12 +38,15 @@ input int     InpDealsInterval    = 30;  // Detik antar snapshot deals/history
 input bool    InpShowPanel   = true;    // Tampilkan panel UI di chart
 input bool    InpForceSeed   = true;    // WAJIB ON: paksa seed ulang tiap start
 input int     InpStatusInterval = 5;    // Detik antar push status ke Redis
+input int     InpPollMs      = 1000;    // Interval siklus OnTimer (ms): 250-5000.
+                                         // <1000 memakai EventSetMillisecondTimer;
+                                         // default 1000 = 1 detik (hemat CPU).
+                                         // 250 = polling 4x/detik (paling responsif).
 
 // ── Global State ──────────────────────────────────────────────────────────
 string   g_proxyURL;
 string   g_orderId;                 // order_id command aktif (result sync)
 datetime g_lastTickSent   = 0;      // terakhir tick BERHASIL dikirim
-datetime g_lastTickTry    = 0;      // terakhir tick dicoba (untuk backoff)
 datetime g_lastCmdPoll    = 0;
 datetime g_lastPositionsSent = 0;   // B1: terakhir snapshot positions dikirim
 datetime g_lastDealsSent      = 0;   // B1: terakhir snapshot deals dikirim
@@ -150,8 +153,20 @@ int OnInit()
          " seed=ON(forced) build=", __DATE__, " started=", TimeToString(TimeLocal(), TIME_DATE|TIME_SECONDS));
 
    // PITFALL v2: polling di OnTick bergantung feed tick MT5. Feed pause →
-   // EA mati total. OnTimer 1s = polling mandiri.
-   EventSetTimer(1);
+   // EA mati total. OnTimer = polling mandiri.
+   // v4.1 (18 Aug): interval configurable. <1000ms pakai
+   // EventSetMillisecondTimer (MQL5 minimum 1s untuk EventSetTimer).
+   int pollMs = MathMax(250, MathMin(5000, InpPollMs));
+   if(pollMs < 1000)
+     {
+      EventSetMillisecondTimer(pollMs);
+      Print("LumineEA: timer = ", pollMs, "ms (millisecond timer)");
+     }
+   else
+     {
+      EventSetTimer(pollMs / 1000);
+      Print("LumineEA: timer = ", pollMs / 1000, "s");
+     }
 
    // Restore state (survive REASON_CHARTCHANGE/RECOMPILE/TEMPLATE)
    g_lastTickSent = (datetime)GlobalVariableGet(GV_LAST_TICK);
@@ -228,6 +243,14 @@ string DeinitReasonStr(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
   {
+   // v4.1 (18 Aug): guard ms-based — timer bisa <1 detik. Guard detik lama
+   // (g_lastCmdPoll = now+1) menghalangi polling <1s.
+   static ulong s_lastCycleMs = 0;
+   ulong nowMs = GetTickCount();
+   if(nowMs - s_lastCycleMs < (ulong)MathMax(250, MathMin(5000, InpPollMs)))
+      return;  // belum waktunya siklus — OnTimer dipanggil lebih sering dari interval
+   s_lastCycleMs = nowMs;
+
    datetime now = TimeLocal();
 
    // 1) Flush result queue (order result = uang, prioritas tertinggi)
@@ -235,18 +258,24 @@ void OnTimer()
    if(g_resultCount > 0 && now >= g_lastCmdPoll)   // jangan delay poll
       FlushOneResult(now);
 
-   // 2) Poll commands (1x per detik, skip saat backoff aktif)
-   if(now >= g_lastCmdPoll)
+   // 2) Poll commands — ms-based murni (v4.1: polling <1 detik).
+   //    g_lastCmdPoll TETAP now+1: dipakai seed guard baris ~320
+   //    (`now < g_lastCmdPoll` = jalan di sisa detik antar poll).
+   static ulong s_lastCmdMs = 0;
+   if(nowMs - s_lastCmdMs >= (ulong)MathMax(250, MathMin(5000, InpPollMs)))
      {
+      s_lastCmdMs = nowMs;
       g_lastCmdPoll = now + 1;
       PollCommands();
      }
 
-   // 3) Send tick (throttle + backoff saat proxy bermasalah)
+   // 3) Send tick — ms-based murni (v4.1: tick <1 detik saat polling cepat).
+   static ulong s_lastTickMs = 0;
    int backoff = CurrentBackoff();
-   if(now >= g_lastTickTry + backoff)
+   ulong tickIntervalMs = (ulong)MathMax(250, MathMin(5000, InpPollMs)) * (ulong)MathMax(1, backoff);
+   if(nowMs - s_lastTickMs >= tickIntervalMs)
      {
-      g_lastTickTry = now;
+      s_lastTickMs = nowMs;
       SendTick();
      }
    else if(g_seedPhase == 1)
