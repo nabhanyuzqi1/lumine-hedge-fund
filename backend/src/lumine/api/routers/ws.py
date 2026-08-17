@@ -62,7 +62,7 @@ async def ws_market(
                 continue
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=25)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await _safe_send(websocket, {"event": "heartbeat", "data": {"ts": _now_iso()}})
                 continue
             payload = _serialize_event(event)
