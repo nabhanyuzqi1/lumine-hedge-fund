@@ -413,6 +413,15 @@ async def _deals_worker() -> None:
             deals = data.get("deals", [])
             if not deals:
                 continue
+            # Fresh-start cutoff (17 Aug 2026): deal history LAMA tidak
+            # di-reinsert setelah user reset (DELETE orders). Key Redis
+            # `lumine:deals_cutoff_ts` di-set saat reset → hanya deal dengan
+            # time >= cutoff yang masuk. History MT5 (tahun lalu) di-skip.
+            try:
+                cutoff_raw = await r.get("lumine:deals_cutoff_ts")
+                cutoff = int(cutoff_raw) if cutoff_raw else 0
+            except Exception:
+                cutoff = 0
             async with get_sessionmaker()() as session:
                 from sqlalchemy import select
 
@@ -422,6 +431,9 @@ async def _deals_worker() -> None:
                         ticket = int(d["ticket"])
                     except (KeyError, TypeError, ValueError):
                         continue
+                    deal_time = int(d.get("time", 0))
+                    if deal_time < cutoff:
+                        continue  # deal history lama — di-skip (fresh start)
                     existing = (
                         await session.execute(
                             select(Order).where(Order.mt5_ticket == ticket)
@@ -429,7 +441,7 @@ async def _deals_worker() -> None:
                     ).scalar_one_or_none()
                     if existing is not None:
                         continue
-                    ts = datetime.fromtimestamp(int(d.get("time", 0)), UTC)
+                    ts = datetime.fromtimestamp(deal_time, UTC)
                     side = "sell" if int(d.get("type", 0)) == 1 else "buy"
                     session.add(
                         Order(
