@@ -30,7 +30,7 @@ from lumine.shared.config import Settings
 logger = logging.getLogger(__name__)
 
 
-async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPublisher) -> dict[str, Any]:  # noqa: PLR0915 — fixed LLM stage sequence
+async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPublisher) -> dict[str, Any]:  # noqa: PLR0915,C901 — fixed LLM stage sequence
     """Run a REAL LLM decision cycle (technical analyst → IC forum) via 9router.
 
     Sebelumnya demo-only (run_id demo-*). Sekarang:
@@ -138,15 +138,51 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             # konteks yang tersedia, bukan gagal parse.
             recent_high = float(max(b["high"] for b in bars[-20:]))
             recent_low = float(min(b["low"] for b in bars[-20:]))
+            # Konteks trading live (v3, 17 Aug 2026): dari EA status + posisi.
+            # Agen butuh data yang sama dengan trader manusia: harga, spread,
+            # session H/L, volatility, exposure, P&L, leverage.
+            import redis as redis_lib
+
+            live_status: dict[str, str] = {}
+            try:
+                _r = redis_lib.from_url(settings.redis_url)
+                _raw = await _r.hgetall("mt5:status")
+                if _raw:
+                    live_status = {
+                        k.decode() if isinstance(k, bytes) else str(k): (
+                            v.decode() if isinstance(v, bytes) else str(v)
+                        )
+                        for k, v in _raw.items()
+                    }
+            except Exception:
+                pass  # status tidak wajib — analyst tetap jalan
+            atr_pct = (atr_14 / float(last["close"]) * 100) if float(last["close"]) > 0 else 0.0
             variables: dict[str, object] = {
                 "symbol": symbol,
                 "decision_ts": now.isoformat(),
                 "atr_14": atr_14,
+                "atr_pct": round(atr_pct, 3),
                 "ema_20": round(ema_20, 2),
                 "ema_50": round(ema_50, 2),
                 "rsi_14": round(rsi_14, 2),
                 "ohlc": ohlc,
                 "swing_structure": "unknown",
+                # Market context live (untuk semua analyst)
+                "current_price": float(last["close"]),
+                "session_high": live_status.get("session_high", "unknown"),
+                "session_low": live_status.get("session_low", "unknown"),
+                "spread": live_status.get("spread", "unknown"),
+                "volume_24h": live_status.get("volume_24h", "0"),
+                "volatility_band": (
+                    "high" if atr_pct > 0.5 else "medium" if atr_pct > 0.2 else "low"
+                ),
+                "market_cap_note": (
+                    "XAUUSD is a commodity (gold) — no market cap; liquidity "
+                    "proxied by volume + spread + ATR%"
+                ),
+                "account_equity": live_status.get("equity", "unknown"),
+                "account_leverage": live_status.get("leverage", "unknown"),
+                "net_position_pnl": live_status.get("net_pnl", "0"),
                 # Macro analyst (feed eksternal belum tersedia — jujur)
                 "us_10y": "unavailable (external feed not wired)",
                 "us_2y": "unavailable (external feed not wired)",
