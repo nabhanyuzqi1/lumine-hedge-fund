@@ -91,6 +91,9 @@ async def run_backtest_endpoint(
                             "volume": Decimal(str(r.volume)),
                         }
                     )
-        except Exception:
+        except Exception as exc:
+            import logging
+
+            logging.getLogger(__name__).error("backtest DB query failed", exc_info=exc)
             rows = []  # DB error → result kosong (tidak crash)
     return run_backtest_from_rows(rows, symbol, timeframe, stop_pct=stop_pct)
