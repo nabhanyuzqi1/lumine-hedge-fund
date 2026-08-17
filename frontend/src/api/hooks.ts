@@ -476,7 +476,8 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     queryKey: ["positions", portfolioId],
     queryFn: async (): Promise<PositionFixture[]> => {
       try {
-        const page = await get<{ items: RestPosition[] }>(`/portfolio/${portfolioId}/positions`);
+        // Backend endpoint: GET /api/v1/portfolio/positions (tanpa ID)
+        const page = await get<{ items: RestPosition[] }>(`/portfolio/positions`);
         if (Array.isArray(page?.items)) {
           return page.items.map(toPositionFixture);
         }
