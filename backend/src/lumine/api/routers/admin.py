@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import secrets
+import time
 from datetime import UTC, datetime
 from typing import Annotated
 
@@ -409,8 +411,47 @@ async def get_ea_status(
             "ticks_sent": status.get("ticks_sent", "0"),
             "ticks_pending": ticks_pending,
             "proxy_url": status.get("proxy_url", "unknown"),
+            "symbol": status.get("symbol", "unknown"),
+            "bid": status.get("bid"),
+            "ask": status.get("ask"),
+            "spread": status.get("spread"),
+            "session_high": status.get("session_high"),
+            "session_low": status.get("session_low"),
+            "equity": status.get("equity"),
+            "balance": status.get("balance"),
+            "margin": status.get("margin"),
+            "free_margin": status.get("free_margin"),
+            "margin_level": status.get("margin_level"),
+            "leverage": status.get("leverage"),
+            "net_pnl": status.get("net_pnl"),
             "connected": len(status) > 0,
             "logs": logs,
         }
     except Exception as exc:
         return {"connected": False, "error": str(exc), "logs": []}
+
+
+@router.post("/ea-command")
+async def post_ea_command(
+    body: dict,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    """Kirim command ke EA MT5 via Redis (SEED_NOW / RESEED / STATUS / PANEL_TOGGLE / PING).
+
+    Body: {"action": "SEED_NOW"} — EA polling /commands tiap 1 detik, langsung eksekusi.
+    """
+    action = str(body.get("action", "")).upper().strip()
+    allowed = {"SEED_NOW", "RESEED", "STATUS", "PANEL_TOGGLE", "PING"}
+    if action not in allowed:
+        return {"ok": False, "error": f"action harus salah satu dari: {sorted(allowed)}"}
+    try:
+        r = await get_redis()
+        payload = {
+            "id": f"web-{int(time.time())}",
+            "command_id": f"web-{int(time.time())}",
+            "action": action,
+        }
+        await r.rpush("mt5:commands", json.dumps(payload))
+        return {"ok": True, "queued": payload}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}

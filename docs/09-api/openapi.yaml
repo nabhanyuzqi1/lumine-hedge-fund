@@ -3049,6 +3049,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/ea-command:
+    post:
+      tags:
+      - admin
+      summary: Post Ea Command
+      description: 'Kirim command ke EA MT5 via Redis (SEED_NOW / RESEED / STATUS
+        / PANEL_TOGGLE / PING).
+
+
+        Body: {"action": "SEED_NOW"} — EA polling /commands tiap 1 detik, langsung
+        eksekusi.'
+      operationId: post_ea_command_api_v1_admin_ea_command_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Post Ea Command Api V1 Admin Ea Command Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/rpc/run-decision-cycle:
     post:
       tags:

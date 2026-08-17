@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-redis_http_proxy.py — HTTP REST gateway untuk Redis (bypass MQL5 socket limitation).
+"""redis_http_proxy.py — HTTP REST gateway untuk Redis (bypass MQL5 socket limitation).
 
 EA polling:
   GET /commands?timeout=30 → BRPOP mt5:commands 30 → {id, action, ...}
@@ -11,9 +10,9 @@ Bridge tetap pakai Redis raw (tidak berubah).
 """
 import json
 import os
-import sys
-from flask import Flask, request, jsonify
+
 import redis
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -32,8 +31,7 @@ def health():
 
 @app.route("/commands", methods=["GET"])
 def commands():
-    """
-    BRPOP mt5:commands dengan timeout (long-polling untuk EA).
+    """BRPOP mt5:commands dengan timeout (long-polling untuk EA).
     Query param: timeout=30 (default 30s).
     Return: {id, action, symbol, ...} atau {} jika timeout.
     """
@@ -43,16 +41,14 @@ def commands():
         if result:
             _, payload = result
             return jsonify(json.loads(payload)), 200
-        else:
-            # Timeout — return empty
-            return jsonify({}), 200
+        # Timeout — return empty
+        return jsonify({}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route("/results", methods=["POST"])
 def results():
-    """
-    PUBLISH mt5:results (order result dari EA).
+    """PUBLISH mt5:results (order result dari EA).
     Body: {id, status, ticket, error, fill_price}
     """
     try:
@@ -66,8 +62,7 @@ def results():
 
 @app.route("/ticks", methods=["POST"])
 def ticks():
-    """
-    LPUSH mt5:ticks (tick data dari EA: bid, ask, timestamp).
+    """LPUSH mt5:ticks (tick data dari EA: bid, ask, timestamp).
     Body: {symbol, bid, ask, timestamp}
     """
     try:
@@ -82,8 +77,7 @@ def ticks():
 
 @app.route("/seed/bars", methods=["POST"])
 def seed_bars():
-    """
-    LPUSH mt5:seed_bars (history bars dari EA: CopyRates chunk).
+    """LPUSH mt5:seed_bars (history bars dari EA: CopyRates chunk).
     Body: {symbol, timeframe, bars: [{ts, open, high, low, close, volume}]}
     Worker di API backend consume → insert bars_* table.
     """
@@ -98,8 +92,7 @@ def seed_bars():
 
 @app.route("/positions", methods=["POST"])
 def positions():
-    """
-    LPUSH mt5:positions (snapshot open positions dari EA, tiap ~10s).
+    """LPUSH mt5:positions (snapshot open positions dari EA, tiap ~10s).
     Body: {snapshot_ts, positions: [{ticket, symbol, type, volume,
     price_open, sl, tp, profit, time}]}
     PositionSyncWorker di API backend consume → upsert tabel positions.
@@ -115,8 +108,7 @@ def positions():
 
 @app.route("/deals", methods=["POST"])
 def deals():
-    """
-    LPUSH mt5:deals (history deals dari EA: HistoryDealsGet chunk).
+    """LPUSH mt5:deals (history deals dari EA: HistoryDealsGet chunk).
     Body: {symbol, deals: [{ticket, order, type, entry, volume, price,
     profit, commission, time}]}
     Backend consume → sinkronisasi fills / trade journal.
@@ -128,6 +120,38 @@ def deals():
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/status", methods=["POST"])
+def status():
+    """HSET mt5:status (EA status: version, seed phase, ticks, spread,
+    session H/L, account metrics). EA push tiap ~5 detik.
+    Body: {ea_version, ea_build, seed_phase, ticks_sent, ...}
+    """
+    try:
+        data = request.get_json(force=True)
+        r.hset("mt5:status", mapping={k: str(v) for k, v in data.items()})
+        # TTL 90 detik — kalau EA mati, status otomatis kedaluwarsa
+        r.expire("mt5:status", 90)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/logs", methods=["POST"])
+def logs():
+    """LPUSH mt5:logs (EA log line untuk superadmin EA logs panel).
+    Body: {ts, line}
+    """
+    try:
+        data = request.get_json(force=True)
+        payload = json.dumps(data)
+        r.lpush("mt5:logs", payload)
+        r.ltrim("mt5:logs", 0, 199)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))

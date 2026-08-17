@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/api/hooks";
-import { get, put } from "@/api/client";
+import { get, post, put } from "@/api/client";
 import { ApiKeyTable } from "@/components/admin/api-key-table";
 import { CreateKeyModal } from "@/components/admin/create-key-modal";
 import { LLMRoutingTab } from "@/components/superadmin/llm-routing-tab";
@@ -96,7 +96,31 @@ interface EAStatus {
   proxy_url: string;
   connected: boolean;
   logs: string[];
+  symbol?: string;
+  bid?: string;
+  ask?: string;
+  spread?: string;
+  session_high?: string;
+  session_low?: string;
+  equity?: string;
+  balance?: string;
+  margin?: string;
+  free_margin?: string;
+  margin_level?: string;
+  leverage?: string;
+  net_pnl?: string;
   error?: string;
+}
+
+function useEACommand() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (action: string) => post("/admin/ea-command", { action }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ea-status"] });
+      qc.refetchQueries({ queryKey: ["ea-status"] });
+    },
+  });
 }
 
 function useEAStatus() {
@@ -111,8 +135,11 @@ function useEAStatus() {
 
 function EAStatusCard() {
   const { data, isLoading, isError } = useEAStatus();
+  const cmd = useEACommand();
   if (isLoading) return <div className="h-8 animate-pulse rounded bg-raised" />;
   if (isError || !data) return <p className="text-xs text-danger">EA status unavailable</p>;
+  const num = (v?: string) => (v != null && v !== "" ? Number(v) : null);
+  const pnl = num(data.net_pnl);
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -123,16 +150,33 @@ function EAStatusCard() {
         {data.ea_build !== "unknown" && (
           <span className="font-mono text-xs text-ink-faint">build {data.ea_build}</span>
         )}
+        {data.symbol && <span className="font-mono text-xs text-ink-faint">{data.symbol}</span>}
       </div>
       <div className="grid grid-cols-2 gap-1 text-[11px]">
         <span className="text-ink-faint">Seed Phase</span>
-        <span className="font-mono text-ink">{data.seed_phase || "—"}</span>
+        <span className="font-mono text-ink">{data.seed_phase === "1" ? "RUNNING" : data.seed_phase === "2" ? "DONE" : data.seed_phase || "—"}</span>
         <span className="text-ink-faint">Seed Done</span>
         <span className="font-mono text-ink">{data.seed_done === "1" ? "✅ Yes" : "⏳ No"}</span>
         <span className="text-ink-faint">Ticks Sent</span>
         <span className="font-mono text-ink">{data.ticks_sent}</span>
         <span className="text-ink-faint">Ticks Pending</span>
         <span className="font-mono text-ink">{data.ticks_pending}</span>
+        <span className="text-ink-faint">Bid / Ask</span>
+        <span className="font-mono text-ink">{num(data.bid) != null ? `${num(data.bid)!.toFixed(2)} / ${num(data.ask)!.toFixed(2)}` : "—"}</span>
+        <span className="text-ink-faint">Spread</span>
+        <span className="font-mono text-ink">{num(data.spread) != null ? `${num(data.spread)!.toFixed(1)} pts` : "—"}</span>
+        <span className="text-ink-faint">Session H/L</span>
+        <span className="font-mono text-ink">{num(data.session_high) != null ? `${num(data.session_high)!.toFixed(2)} / ${num(data.session_low)!.toFixed(2)}` : "—"}</span>
+        <span className="text-ink-faint">Equity / Balance</span>
+        <span className="font-mono text-ink">{num(data.equity) != null ? `$${num(data.equity)!.toFixed(2)} / $${num(data.balance)!.toFixed(2)}` : "—"}</span>
+        <span className="text-ink-faint">Margin / Free</span>
+        <span className="font-mono text-ink">{num(data.margin) != null ? `$${num(data.margin)!.toFixed(2)} / $${num(data.free_margin)!.toFixed(2)}` : "—"}</span>
+        <span className="text-ink-faint">Margin Level / Lev</span>
+        <span className="font-mono text-ink">{num(data.margin_level) != null ? `${num(data.margin_level)!.toFixed(0)}% / 1:${data.leverage}` : "—"}</span>
+        <span className="text-ink-faint">Net P&amp;L</span>
+        <span className={`font-mono ${pnl != null && pnl < 0 ? "text-danger" : pnl != null && pnl > 0 ? "text-ok" : "text-ink"}`}>
+          {pnl != null ? `$${pnl.toFixed(2)}` : "—"}
+        </span>
         {data.last_tick_ts && (
           <>
             <span className="text-ink-faint">Last Tick</span>
@@ -140,6 +184,49 @@ function EAStatusCard() {
           </>
         )}
       </div>
+      <div className="flex flex-wrap gap-1 pt-1">
+        <button
+          type="button"
+          className="rounded border border-line bg-raised px-2 py-1 text-[10px] font-semibold text-ink hover:bg-ink/10 disabled:opacity-50"
+          disabled={cmd.isPending}
+          onClick={() => cmd.mutate("SEED_NOW")}
+        >
+          ⟳ SEED NOW
+        </button>
+        <button
+          type="button"
+          className="rounded border border-line bg-raised px-2 py-1 text-[10px] font-semibold text-ink hover:bg-ink/10 disabled:opacity-50"
+          disabled={cmd.isPending}
+          onClick={() => cmd.mutate("RESEED")}
+        >
+          ♻ RESEED
+        </button>
+        <button
+          type="button"
+          className="rounded border border-line bg-raised px-2 py-1 text-[10px] font-semibold text-ink hover:bg-ink/10 disabled:opacity-50"
+          disabled={cmd.isPending}
+          onClick={() => cmd.mutate("STATUS")}
+        >
+          📡 STATUS
+        </button>
+        <button
+          type="button"
+          className="rounded border border-line bg-raised px-2 py-1 text-[10px] font-semibold text-ink hover:bg-ink/10 disabled:opacity-50"
+          disabled={cmd.isPending}
+          onClick={() => cmd.mutate("PANEL_TOGGLE")}
+        >
+          🖥 PANEL
+        </button>
+        <button
+          type="button"
+          className="rounded border border-line bg-raised px-2 py-1 text-[10px] font-semibold text-ink hover:bg-ink/10 disabled:opacity-50"
+          disabled={cmd.isPending}
+          onClick={() => cmd.mutate("PING")}
+        >
+          🏓 PING
+        </button>
+      </div>
+      {cmd.isError && <p className="text-[10px] text-danger">Command failed: {String((cmd.error as Error)?.message ?? cmd.error)}</p>}
     </div>
   );
 }

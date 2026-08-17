@@ -1,11 +1,18 @@
 //+------------------------------------------------------------------+
-//| LumineEA.mq5 — HTTP bridge agent untuk Lumine Hedge Fund (v3)    |
+//| LumineEA.mq5 — HTTP bridge agent untuk Lumine Hedge Fund (v4)    |
 //| Transport: HTTP polling (bypass demo account socket block)       |
 //| Redis HTTP Proxy: GET /commands?timeout=1 → BRPOP mt5:commands   |
 //|                   POST /results   → PUBLISH mt5:results          |
 //|                   POST /ticks     → LPUSH mt5:ticks              |
 //|                   POST /seed/bars → LPUSH mt5:seed              |
 //|                                                                   |
+//| v4 FEATURES:
+//|  - UI panel di chart (version, seed phase, ticks, spread, session H/L,
+//|    equity, margin, leverage, net P&L) — klik tombol SEED/RESEED/STATUS
+//|  - Command handler baru: SEED_NOW, RESEED, STATUS, PANEL_TOGGLE
+//|  - Seed WAJIB ON (InpForceSeed=true default; hapus GV seed-done)
+//|  - Status push tiap 5s: version, build, ticks, spread, session H/L,
+//|    account metrics (equity, balance, margin, free, leverage, net P&L)
 //| v3 STABILITY:                                                     |
 //|  - Result queue + retry (order result TIDAK PERNAH hilang)        |
 //|  - Exponential backoff saat proxy down (1→2→4→...→60s),          |
@@ -19,7 +26,7 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "3.10"
+#property version   "4.00"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy)
@@ -28,6 +35,9 @@ input int     InpSeedChunks  = 1000;    // Bar per chunk seed (100-1000)
 input int     InpMaxBackoff  = 60;      // Detik backoff maksimum saat proxy down
 input int     InpPositionsInterval = 10;  // Detik antar snapshot positions (B1 sync)
 input int     InpDealsInterval    = 30;  // Detik antar snapshot deals/history
+input bool    InpShowPanel   = true;    // Tampilkan panel UI di chart
+input bool    InpForceSeed   = true;    // WAJIB ON: paksa seed ulang tiap start
+input int     InpStatusInterval = 5;    // Detik antar push status ke Redis
 
 // ── Global State ──────────────────────────────────────────────────────────
 string   g_proxyURL;
@@ -62,6 +72,19 @@ string   g_seedTfNames[] = {"1m", "5m", "15m", "1h", "4h", "1d"};
 
 #define GV_SEED_DONE  "LUMINE_EA_SEED_DONE_V3"
 #define GV_LAST_TICK  "LUMINE_EA_LAST_TICK"
+#define GV_SEED_FORCED "LUMINE_EA_SEED_FORCED_V4"
+
+// ── EA v4: panel UI + status ─────────────────────────────────────────
+string   g_panelName      = "LUMINE_EA_PANEL";
+bool     g_panelVisible   = true;
+int      g_ticksSent      = 0;
+datetime g_lastStatusSent = 0;
+double   g_sessionHigh    = 0;
+double   g_sessionLow     = 0;
+datetime g_sessionDate    = 0;
+double   g_netPnl         = 0;
+double   g_marginLevel    = 0;
+int      g_eaBuild        = 0;
 
 // ── Refresh bars M1 periodik (fix stale 5m/15m) ─────────────────────────
 datetime  g_lastM1Refresh = 0;
@@ -97,6 +120,18 @@ string   ExtractJsonString(const string json, const string key);
 double   ExtractJsonDouble(const string json, const string key);
 string   EscapeJson(const string s);
 string   RetcodeStr(uint retcode);
+void     CreatePanel();
+void     UpdatePanel(const datetime now);
+void     DestroyPanel();
+void     PanelSetText(const string objName, const string txt, const int y);
+void     PanelCreateButton(const string objName, const string label, const int x, const int y);
+void     OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam);
+void     SendStatus();
+void     SendLog(const string line);
+void     UpdateSessionHL();
+void     ForceReseed();
+double   NetOpenPnl();
+long     AccountLeverage();
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
@@ -104,13 +139,15 @@ string   RetcodeStr(uint retcode);
 int OnInit()
   {
    g_proxyURL    = InpProxyURL;
-   g_seedEnabled = InpSeedHistory;
+   // v4: seed WAJIB ON — tidak peduli input lama/GlobalVariable, selalu seed.
+   g_seedEnabled = true;
    g_seedChunkSize = MathMax(100, MathMin(1000, InpSeedChunks));
    g_maxBackoff  = MathMax(5, InpMaxBackoff);
+   g_panelVisible = InpShowPanel;
+   g_eaBuild      = 400;   // EA v4.0 — build numeric sederhana
 
-   Print("LumineEA v3 starting: proxy=", g_proxyURL,
-         " seed=", g_seedEnabled ? "ON" : "OFF",
-         " build=", __DATE__, " started=", TimeToString(TimeLocal(), TIME_DATE|TIME_SECONDS));
+   Print("LumineEA v4 starting: proxy=", g_proxyURL,
+         " seed=ON(forced) build=", __DATE__, " started=", TimeToString(TimeLocal(), TIME_DATE|TIME_SECONDS));
 
    // PITFALL v2: polling di OnTick bergantung feed tick MT5. Feed pause →
    // EA mati total. OnTimer 1s = polling mandiri.
@@ -118,7 +155,17 @@ int OnInit()
 
    // Restore state (survive REASON_CHARTCHANGE/RECOMPILE/TEMPLATE)
    g_lastTickSent = (datetime)GlobalVariableGet(GV_LAST_TICK);
-   if(GlobalVariableCheck(GV_SEED_DONE) && GlobalVariableGet(GV_SEED_DONE) > 0)
+
+   // v4: InpForceSeed=true → hapus penanda seed-done dan seed ulang bersih.
+   if(InpForceSeed)
+     {
+      GlobalVariableDel(GV_SEED_DONE);
+      GlobalVariableSet(GV_SEED_FORCED, 1);
+      g_seedPhase  = 1;
+      g_seedOffset = 0;
+      Print("LumineEA: FORCE SEED — seed ulang semua timeframe (bersih)");
+     }
+   else if(GlobalVariableCheck(GV_SEED_DONE) && GlobalVariableGet(GV_SEED_DONE) > 0)
      {
       g_seedPhase = 2;
       Print("LumineEA: seed sudah pernah selesai (GlobalVariable) — skip");
@@ -130,7 +177,11 @@ int OnInit()
       Print("LumineEA: seed multi-TF mulai (non-blocking, 1 chunk/detik)");
      }
 
-   Print("LumineEA v3 ready (HTTP polling, self-healing)");
+   UpdateSessionHL();
+   if(g_panelVisible)
+      CreatePanel();
+
+   Print("LumineEA v4 ready (HTTP polling, self-healing)");
    return(INIT_SUCCEEDED);
   }
 
@@ -142,6 +193,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    EventKillTimer();
+   DestroyPanel();
 
    // Flush result queue best-effort sebelum mati (max 5 detik usaha)
    for(int i = 0; i < g_resultCount && i < 8; i++)
@@ -221,9 +273,24 @@ void OnTimer()
       SeedRecentM1();
      }
 
+   // 3e) Status push ke Redis (tiap InpStatusInterval detik) — EA monitor
+   if(now >= g_lastStatusSent + InpStatusInterval)
+     {
+      g_lastStatusSent = now;
+      SendStatus();
+     }
+
+   // 3f) Session H/L refresh tiap 30 detik
+   if(now >= g_sessionDate + 30)
+      UpdateSessionHL();
+
    // 4) Seed non-blocking (1 chunk per tick)
    if(g_seedPhase == 1 && now < g_lastCmdPoll)
       SeedNextChunk();
+
+   // 5) Panel UI update (realtime)
+   if(g_panelVisible)
+      UpdatePanel(now);
   }
 
 //+------------------------------------------------------------------+
@@ -695,6 +762,44 @@ void ProcessCommand(const string json)
       double tp = ExtractJsonDouble(json, "tp");
       ExecuteModify(id, ticket, sl, tp);
      }
+   else if(action == "SEED_NOW" || action == "RESEED")
+     {
+      // Seed ulang semua timeframe dari awal (hapus GV seed-done dulu)
+      GlobalVariableDel(GV_SEED_DONE);
+      g_seedPhase  = 1;
+      g_seedOffset = 0;
+      g_seedSymIdx = 0;
+      g_seedTfIdx  = 0;
+      Print("LumineEA: command ", action, " → seed ulang dimulai");
+      SendLog("SEED_NOW executed");
+      QueueResult(BuildResultJson(id, "SEEDING", 0, "seed restarted", 0, 0));
+     }
+   else if(action == "STATUS")
+     {
+      SendStatus();
+      SendLog("STATUS requested");
+      QueueResult(BuildResultJson(id, "STATUS_SENT", 0, "status pushed to redis", 0, 0));
+     }
+   else if(action == "PANEL_TOGGLE")
+     {
+      if(g_panelVisible)
+        {
+         g_panelVisible = false;
+         DestroyPanel();
+        }
+      else
+        {
+         g_panelVisible = true;
+         CreatePanel();
+        }
+      SendLog("PANEL_TOGGLE -> " + (g_panelVisible ? "show" : "hide"));
+      QueueResult(BuildResultJson(id, "OK", 0, "panel " + (g_panelVisible ? "shown" : "hidden"), 0, 0));
+     }
+   else if(action == "PING")
+     {
+      SendLog("PING ok");
+      QueueResult(BuildResultJson(id, "PONG", 0, "", 0, 0));
+     }
    else
      {
       QueueResult(BuildResultJson(id, "ERROR", 0, "Unknown action: " + action, 0, 0));
@@ -927,6 +1032,244 @@ string EscapeJson(const string s)
 //+------------------------------------------------------------------+
 //| Helper: Retcode → string                                          |
 //+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+//| EA v4: Panel UI di chart                                          |
+//| Menampilkan: version, build, seed phase, ticks, spread, bid/ask, |
+//| session H/L, equity, margin, leverage, net P&L.                   |
+//| Tombol: SEED (seed ulang), STATUS (push status), HIDE (sembunyi)  |
+//+------------------------------------------------------------------+
+void CreatePanel()
+  {
+   string bg = g_panelName + "_bg";
+   ObjectCreate(0, bg, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, 10);
+   ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, 25);
+   ObjectSetInteger(0, bg, OBJPROP_XSIZE, 260);
+   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 240);
+   ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'18,22,34');
+   ObjectSetInteger(0, bg, OBJPROP_BORDER_COLOR, clrGray);
+   ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
+   ObjectSetInteger(0, bg, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, bg, OBJPROP_BACK, false);
+   ObjectSetInteger(0, bg, OBJPROP_SELECTABLE, false);
+   ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
+   ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
+
+   PanelSetText(g_panelName + "_title", "LUMINE EA v4", 30);
+   PanelSetText(g_panelName + "_ver",   "build: " + __DATE__, 48);
+   PanelSetText(g_panelName + "_seed",  "seed: ...", 66);
+   PanelSetText(g_panelName + "_tick",  "ticks: 0", 84);
+   PanelSetText(g_panelName + "_px",    "bid/ask/spread: --", 102);
+   PanelSetText(g_panelName + "_sess",  "session H/L: --", 120);
+   PanelSetText(g_panelName + "_eq",    "equity/margin: --", 138);
+   PanelSetText(g_panelName + "_lev",   "leverage: --", 156);
+   PanelSetText(g_panelName + "_pnl",   "net P&L: --", 174);
+
+   PanelCreateButton(g_panelName + "_btn_seed",   "SEED",   10, 215);
+   PanelCreateButton(g_panelName + "_btn_status", "STATUS", 70, 215);
+   PanelCreateButton(g_panelName + "_btn_hide",   "HIDE",  130, 215);
+
+   UpdatePanel(TimeLocal());
+  }
+
+void PanelSetText(const string objName, const string txt, const int y)
+  {
+   if(ObjectFind(0, objName) < 0)
+     {
+      ObjectCreate(0, objName, OBJ_LABEL, 0, 0, 0);
+      ObjectSetInteger(0, objName, OBJPROP_XDISTANCE, 16);
+      ObjectSetInteger(0, objName, OBJPROP_YDISTANCE, y);
+      ObjectSetInteger(0, objName, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetInteger(0, objName, OBJPROP_COLOR, clrWhite);
+      ObjectSetInteger(0, objName, OBJPROP_FONTSIZE, 9);
+      ObjectSetString(0, objName, OBJPROP_FONT, "Consolas");
+      ObjectSetInteger(0, objName, OBJPROP_SELECTABLE, false);
+      ObjectSetInteger(0, objName, OBJPROP_HIDDEN, true);
+      ObjectSetInteger(0, objName, OBJPROP_ZORDER, 1);
+     }
+   ObjectSetString(0, objName, OBJPROP_TEXT, txt);
+  }
+
+void PanelCreateButton(const string objName, const string label, const int x, const int y)
+  {
+   if(ObjectFind(0, objName) < 0)
+     {
+      ObjectCreate(0, objName, OBJ_BUTTON, 0, 0, 0);
+      ObjectSetInteger(0, objName, OBJPROP_XDISTANCE, x);
+      ObjectSetInteger(0, objName, OBJPROP_YDISTANCE, y);
+      ObjectSetInteger(0, objName, OBJPROP_XSIZE, 56);
+      ObjectSetInteger(0, objName, OBJPROP_YSIZE, 22);
+      ObjectSetInteger(0, objName, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetInteger(0, objName, OBJPROP_COLOR, clrWhite);
+      ObjectSetInteger(0, objName, OBJPROP_BGCOLOR, C'40,60,90');
+      ObjectSetInteger(0, objName, OBJPROP_BORDER_COLOR, C'80,100,130');
+      ObjectSetInteger(0, objName, OBJPROP_FONTSIZE, 8);
+      ObjectSetString(0, objName, OBJPROP_TEXT, label);
+      ObjectSetInteger(0, objName, OBJPROP_SELECTABLE, false);
+      ObjectSetInteger(0, objName, OBJPROP_HIDDEN, true);
+      ObjectSetInteger(0, objName, OBJPROP_ZORDER, 1);
+     }
+  }
+
+void UpdatePanel(const datetime now)
+  {
+   string sym = NormalizeSymbol(Symbol());
+   double bid = SymbolInfoDouble(sym, SYMBOL_BID);
+   double ask = SymbolInfoDouble(sym, SYMBOL_ASK);
+   double spread = (ask > bid && bid > 0) ? (ask - bid) / SymbolInfoDouble(sym, SYMBOL_POINT) : 0;
+   string seedPhaseStr = g_seedPhase == 1 ? "RUNNING" : (g_seedPhase == 2 ? "DONE" : "IDLE");
+
+   PanelSetText(g_panelName + "_title", "LUMINE EA v4", 30);
+   PanelSetText(g_panelName + "_ver",   "build: " + __DATE__ + "  sym: " + sym, 48);
+   PanelSetText(g_panelName + "_seed",  "seed: " + seedPhaseStr, 66);
+   PanelSetText(g_panelName + "_tick",  "ticks sent: " + IntegerToString(g_ticksSent), 84);
+   PanelSetText(g_panelName + "_px",    "bid: " + DoubleToString(bid, 2) + "  ask: " + DoubleToString(ask, 2)
+                                        + "  spr: " + DoubleToString(spread, 1), 102);
+   PanelSetText(g_panelName + "_sess",  "sess H/L: " + DoubleToString(g_sessionHigh, 2) + " / "
+                                        + DoubleToString(g_sessionLow, 2), 120);
+   double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+   double margin = AccountInfoDouble(ACCOUNT_MARGIN);
+   PanelSetText(g_panelName + "_eq",    "eq: " + DoubleToString(equity, 2) + "  mg: " + DoubleToString(margin, 2), 138);
+   PanelSetText(g_panelName + "_lev",   "lev: 1:" + IntegerToString((int)AccountLeverage()), 156);
+   PanelSetText(g_panelName + "_pnl",   "net P&L: " + DoubleToString(g_netPnl, 2), 174);
+   ChartRedraw(0);
+  }
+
+void DestroyPanel()
+  {
+   string objs[] = {"_bg", "_title", "_ver", "_seed", "_tick", "_px", "_sess",
+                    "_eq", "_lev", "_pnl", "_btn_seed", "_btn_status", "_btn_hide"};
+   for(int i = 0; i < ArraySize(objs); i++)
+      ObjectDelete(0, g_panelName + objs[i]);
+   ChartRedraw(0);
+  }
+
+//+------------------------------------------------------------------+
+//| Chart events — klik tombol panel                                  |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam)
+  {
+   if(id != CHARTEVENT_OBJECT_CLICK)
+      return;
+   if(sparam == g_panelName + "_btn_seed")
+     {
+      GlobalVariableDel(GV_SEED_DONE);
+      g_seedPhase  = 1;
+      g_seedOffset = 0;
+      g_seedSymIdx = 0;
+      g_seedTfIdx  = 0;
+      Print("LumineEA: [SEED] diklik — seed ulang");
+      SendLog("SEED clicked on panel");
+     }
+   else if(sparam == g_panelName + "_btn_status")
+     {
+      SendStatus();
+      SendLog("STATUS clicked on panel");
+     }
+   else if(sparam == g_panelName + "_btn_hide")
+     {
+      g_panelVisible = false;
+      DestroyPanel();
+      SendLog("Panel hidden");
+     }
+   ObjectSetInteger(0, sparam, OBJPROP_STATE, false);   // reset tombol
+  }
+
+//+------------------------------------------------------------------+
+//| Push status lengkap ke Redis via HTTP (EA monitor)                |
+//+------------------------------------------------------------------+
+void SendStatus()
+  {
+   string sym = NormalizeSymbol(Symbol());
+   double bid = SymbolInfoDouble(sym, SYMBOL_BID);
+   double ask = SymbolInfoDouble(sym, SYMBOL_ASK);
+   double spread = (ask > bid && bid > 0) ? (ask - bid) / SymbolInfoDouble(sym, SYMBOL_POINT) : 0;
+   double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   double margin  = AccountInfoDouble(ACCOUNT_MARGIN);
+   double freeMargin = AccountInfoDouble(ACCOUNT_MARGIN_FREE);
+   g_netPnl      = NetOpenPnl();
+   g_marginLevel = (margin > 0 ? (equity / margin) * 100.0 : 0.0);
+
+   string json = StringFormat(
+      "{\"ea_version\":\"4.0\",\"ea_build\":\"%s\",\"seed_phase\":%d,"
+      "\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,"
+      "\"proxy_url\":\"%s\",\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,"
+      "\"spread\":%.1f,\"session_high\":%.2f,\"session_low\":%.2f,"
+      "\"equity\":%.2f,\"balance\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,"
+      "\"margin_level\":%.2f,\"leverage\":%d,\"net_pnl\":%.2f}",
+      __DATE__, g_seedPhase, (g_seedPhase == 2 ? 1 : 0), g_ticksSent,
+      (long)g_lastTickSent, g_proxyURL, sym, bid, ask, spread,
+      g_sessionHigh, g_sessionLow, equity, balance, margin, freeMargin,
+      g_marginLevel, (int)AccountLeverage(), g_netPnl);
+
+   int res = HttpPostJson("/status", json, 3000);
+   if(res != 200 && res != -1 && !g_proxyDown)
+      Print("LumineEA: SendStatus failed http=", res);
+  }
+
+//+------------------------------------------------------------------+
+//| Push log line ke Redis (mt5:logs, superadmin EA logs panel)       |
+//+------------------------------------------------------------------+
+void SendLog(const string line)
+  {
+   string json = StringFormat("{\"ts\":%I64d,\"line\":\"%s\"}",
+      (long)TimeCurrent(), EscapeJson(line));
+   int res = HttpPostJson("/logs", json, 2000);
+   if(res != 200 && res != -1 && !g_proxyDown)
+      Print("LumineEA: SendLog failed http=", res);
+  }
+
+//+------------------------------------------------------------------+
+//| Session High/Low — dari bar D1 hari ini (session current)         |
+//+------------------------------------------------------------------+
+void UpdateSessionHL()
+  {
+   datetime dayStart = StringToTime(TimeToString(TimeCurrent(), TIME_DATE));
+   g_sessionDate = dayStart;
+   g_sessionHigh = iHigh(Symbol(), PERIOD_D1, 0);
+   g_sessionLow  = iLow(Symbol(), PERIOD_D1, 0);
+  }
+
+//+------------------------------------------------------------------+
+//| Net open P&L — sum semua posisi                                  |
+//+------------------------------------------------------------------+
+double NetOpenPnl()
+  {
+   double total = 0;
+   int n = PositionsTotal();
+   for(int i = 0; i < n; i++)
+     {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      total += PositionGetDouble(POSITION_PROFIT);
+     }
+   return total;
+  }
+
+//+------------------------------------------------------------------+
+//| Account leverage                                                  |
+//+------------------------------------------------------------------+
+long AccountLeverage()
+  {
+   return AccountInfoInteger(ACCOUNT_LEVERAGE);
+  }
+
+//+------------------------------------------------------------------+
+//| Force reseed — command RESEED handler                             |
+//+------------------------------------------------------------------+
+void ForceReseed()
+  {
+   GlobalVariableDel(GV_SEED_DONE);
+   g_seedPhase  = 1;
+   g_seedOffset = 0;
+   g_seedSymIdx = 0;
+   g_seedTfIdx  = 0;
+   Print("LumineEA: FORCE RESEED dimulai");
+   SendLog("FORCE RESEED executed");
+  }
+
 string RetcodeStr(uint retcode)
   {
    switch(retcode)
