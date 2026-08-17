@@ -99,17 +99,7 @@ if [[ ! -f "${MT5_BIN}" ]]; then
   MT5_BIN="${WINEPREFIX}/drive_c/Program Files/MetaTrader 5/terminal64.exe"
 fi
 
-# ── Patch /etc/hosts: mt5.local → origin IP (18 Aug 2026) ─────────────
-    # MT5 build HFM menolak whitelist IP address (ERR_WEBREQUEST_UNSUPPORTED
-    # 4014). Solusi: hostname palsu mt5.local resolve 166.88.227.177 via
-    # /etc/hosts → whitelist hostname (diterima MT5) + bypass Cloudflare
-    # (origin langsung, tanpa WAF 500). Idempotent per boot.
-    if ! grep -q "mt5.local" /etc/hosts 2>/dev/null; then
-      echo "166.88.227.177 mt5.local" >> /etc/hosts
-      echo "==> /etc/hosts: mt5.local → 166.88.227.177 (origin IP)"
-    fi
-
-    if [[ -f "${MT5_BIN}" ]]; then
+if [[ -f "${MT5_BIN}" ]]; then
   # ── Install + compile LumineEA (Redis bridge agent) ──────────────────────
   # Data folder MT5: mode portable → <MT5_DIR>/MQL5 (bukan AppData/MetaQuotes)
   MT5_DATA_DIR=$(find "${WINEPREFIX}/drive_c" -type d -name "MQL5" 2>/dev/null | head -1)
@@ -155,7 +145,7 @@ def ensure_section(lines, section, keyvals):
         lines.insert(insert_at, kv)
     return lines
 
-lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id,http://mt5.local"])
+lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id"])
 lines = ensure_section(lines, "[Common]", ["RestoreLast=1"])
 new_text = CRLF.join(lines)
 # Tulis ulang dengan BOM + CRLF (format Windows)
@@ -178,15 +168,15 @@ PYEOF
     if [[ -d "${WORKSPACE_BACKUP}" ]]; then
       echo "==> Restore workspace Default (EA attach)"
       mkdir -p "${MT5_DATA_DIR}/Profiles/Charts/Default"
-      # PITFALL (18 Aug 2026): .chr chart menyimpan INPUT EA (InpProxyURL)
-      # — chart lama masih lumine.biz.id (Cloudflare → 500 ke WebRequest
-      # tanpa UA). Patch .chr: replace URL proxy lama → mt5.local (origin
-      # IP via /etc/hosts), agar EA attach dengan proxy yang benar tiap boot.
+      # PITFALL (18 Aug 2026): .chr chart menyimpan INPUT EA (InpProxyURL).
+      # Whitelist hanya terima lumine.biz.id (build HFM tolak IP/hostname
+      # palsu) → pastikan .chr selalu lumine.biz.id (hapus sisa mt5.local/
+      # IP dari eksperimen), + fix 500 CF via User-Agent di HttpPostJson.
       for f in "${WORKSPACE_BACKUP}/"*.chr; do
         [[ -f "$f" ]] || continue
-        if grep -q "lumine.biz.id/mt5-proxy" "$f" 2>/dev/null; then
-          sed -i 's#http://lumine.biz.id/mt5-proxy#http://mt5.local/mt5-proxy#g' "$f"
-          echo "    -> patched .chr proxy URL: $(basename "$f")"
+        if grep -q "mt5.local\|166.88.227.177" "$f" 2>/dev/null; then
+          sed -i 's#http://mt5.local/mt5-proxy#http://lumine.biz.id/mt5-proxy#g; s#http://166.88.227.177/mt5-proxy#http://lumine.biz.id/mt5-proxy#g' "$f"
+          echo "    -> patched .chr proxy URL (lumine.biz.id): $(basename "$f")"
         fi
       done
       cp -f "${WORKSPACE_BACKUP}/"*.chr "${MT5_DATA_DIR}/Profiles/Charts/Default/" 2>/dev/null || true

@@ -29,12 +29,11 @@
 #property version   "4.11"
 #property strict
 
-input string  InpProxyURL    = "http://mt5.local/mt5-proxy"; // Redis HTTP proxy — hostname palsu → origin IP via /etc/hosts.
-                                         // PITFALL (18 Aug 2026): lumine.biz.id = Cloudflare (500 sesekali ke
-                                         // WebRequest tanpa UA); IP langsung 166.88.227.177 kena MT5 bug
-                                         // ERR_WEBREQUEST_UNSUPPORTED (4014 — whitelist IP ditolak build HFM).
-                                         // mt5.local resolve 166.88.227.177 via /etc/hosts (entrypoint patch),
-                                         // whitelist hostname selalu diterima MT5 → bypass CF + stabil.
+input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy+Cloudflare)
+                                         // PITFALL (18 Aug 2026): CF WAF balas 500 ke request tanpa
+                                         // User-Agent (WebRequest MQL5 default). Fix di HttpPostJson:
+                                         // header User-Agent ditambahkan. Whitelist IP/hostname palsu
+                                         // (166.88.227.177 / mt5.local) ditolak build HFM (4014).
 input bool    InpSeedHistory = true;    // Seed history bars multi-TF saat start
 input int     InpSeedChunks  = 1000;    // Bar per chunk seed (100-1000)
 input int     InpMaxBackoff  = 60;      // Detik backoff maksimum saat proxy down
@@ -372,7 +371,12 @@ int HttpPostJson(const string path, const string json, const int timeoutMs)
    ArrayResize(data, ArraySize(data) - 1);  // buang null terminator
 
    char result[];
-   string headers = "Content-Type: application/json\r\n";
+   // PITFALL (18 Aug 2026): WebRequest MQL5 default TANPA User-Agent →
+   // Cloudflare WAF balas HTTP 500 ke request (curl 200 karena UA curl).
+   // Tambah User-Agent eksplisit — CF treat sebagai browser-like request.
+   string headers = "Content-Type: application/json
+\nUser-Agent: LumineEA/4.11 (MT5; XAUUSD)
+\n";
    string url = g_proxyURL + path;
 
    int res = WebRequest("POST", url, headers, timeoutMs, data, result, headers);
