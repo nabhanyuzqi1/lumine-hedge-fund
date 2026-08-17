@@ -31,11 +31,16 @@ _NEWS_SEEN_KEY = "lumine:news:seen"  # hash url → ts (dedup)
 _MAX_HEADLINES = 30
 _POLL_SECONDS = 300
 
-# RSS feeds publik — emas/XAUUSD. Keterangan: feed ini bisa berubah;
-# service memakai list ini + fallback yang selalu sukses (JSON statis).
+# RSS feeds publik — emas/XAUUSD + ekonomi. Diuji 18 Aug 2026 dari VPS:
+# - BBC business (RSS XML asli, andal)
+# - OilPrice main (energi + komoditas — konteks inflasi/emas)
+# - MarketWatch topstories (ekonomi/market)
+# Kitco TIDAK dipakai: feed lama sudah jadi HTML (bukan RSS) — parse gagal.
+# Reuters feeds mati (DNS tidak resolve dari VPS).
 _RSS_FEEDS: list[str] = [
-    "https://www.kitco.com/news/rss/commodities.xml",
-    "https://feeds.reuters.com/reuters/businessNews",
+    "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "https://oilprice.com/rss/main",
+    "https://www.marketwatch.com/rss/topstories",
 ]
 
 # Fallback: kalau semua RSS gagal, pakai snapshot ini (biar analyst tidak
