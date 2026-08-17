@@ -29,11 +29,12 @@
 #property version   "4.11"
 #property strict
 
-input string  InpProxyURL    = "http://166.88.227.177/mt5-proxy"; // Redis HTTP proxy URL — LANGSUNG ke origin IP (bypass Cloudflare).
-                                         // PITFALL (18 Aug 2026): lewat lumine.biz.id = Cloudflare di depan —
-                                         // WebRequest MQL5 tanpa User-Agent kena 500 sesekali (WAF/rate-limit),
-                                         // EA log 'SendStatus failed http=500' padahal proxy log 200.
-                                         // IP origin stabil 200 (tested).
+input string  InpProxyURL    = "http://mt5.local/mt5-proxy"; // Redis HTTP proxy — hostname palsu → origin IP via /etc/hosts.
+                                         // PITFALL (18 Aug 2026): lumine.biz.id = Cloudflare (500 sesekali ke
+                                         // WebRequest tanpa UA); IP langsung 166.88.227.177 kena MT5 bug
+                                         // ERR_WEBREQUEST_UNSUPPORTED (4014 — whitelist IP ditolak build HFM).
+                                         // mt5.local resolve 166.88.227.177 via /etc/hosts (entrypoint patch),
+                                         // whitelist hostname selalu diterima MT5 → bypass CF + stabil.
 input bool    InpSeedHistory = true;    // Seed history bars multi-TF saat start
 input int     InpSeedChunks  = 1000;    // Bar per chunk seed (100-1000)
 input int     InpMaxBackoff  = 60;      // Detik backoff maksimum saat proxy down
