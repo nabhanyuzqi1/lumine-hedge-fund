@@ -154,7 +154,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "count": len(position_rows),
                 "net_size": float(
                     sum(
-                        (float(p.size) if p.direction == "long" else -float(p.size))
+                        (float(p.size) if p.side == "long" else -float(p.size))
                         for p in position_rows
                     )
                 ),
