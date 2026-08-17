@@ -71,8 +71,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
         }
       });
+
+    // Sliding session renewal (17 Aug 2026): /me backend memperpanjang TTL
+    // cookie saat sisa < 50%. Polling berkala menjaga session hidup selama
+    // aplikasi terbuka → "sekali login, tidak pernah 401" kecuali logout.
+    // 30 menit << TTL 12 jam, dan hanya hit ringan ke endpoint kecil.
+    const renewTimer = window.setInterval(() => {
+      fetchMe()
+        .then((user) => {
+          if (!cancelled) {
+            setState({ role: user.role, username: user.username, isAuthenticated: true });
+          }
+        })
+        .catch(() => {
+          // Jangan langsung logout — network blip ≠ session mati. Biarkan
+          // interval berikutnya mencoba lagi.
+        });
+    }, 30 * 60_000);
+
     return () => {
       cancelled = true;
+      window.clearInterval(renewTimer);
     };
   }, []);
 

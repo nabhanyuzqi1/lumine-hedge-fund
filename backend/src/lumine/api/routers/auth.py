@@ -264,14 +264,34 @@ async def logout(response: Response) -> dict[str, bool]:
 @router.get("/me")
 async def me(
     request: Request,
+    response: Response,
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> dict[str, str]:
-    """Return the current session principal (SPA bootstraps from here)."""
+    """Return the current session principal (SPA bootstraps from here).
+
+    Sliding renewal (17 Aug 2026): setiap panggilan /me yang valid
+    memperpanjang session TTL (rolling expiry) — selama user aktif memakai
+    aplikasi, session tidak pernah kedaluwarsa → "sekali login, tidak
+    pernah 401" (kecuali logout eksplisit). Hanya renew jika sisa waktu
+    < 50% TTL (hindari re-set cookie tiap request).
+    """
     payload = _session_from_request(request, settings)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="not authenticated",
+        )
+    remaining = payload.get("exp", 0) - time.time()
+    if remaining < settings.session_ttl_seconds / 2:
+        token = issue_token(settings, payload["sub"], payload["role"])
+        response.set_cookie(
+            key=SESSION_COOKIE,
+            value=token,
+            max_age=settings.session_ttl_seconds,
+            httponly=True,
+            samesite="lax",
+            path="/",
+            secure=settings.session_cookie_secure,
         )
     return {"username": payload["sub"], "role": payload["role"]}
 
