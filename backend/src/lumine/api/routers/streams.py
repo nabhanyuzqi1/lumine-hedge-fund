@@ -106,24 +106,25 @@ def _iso_utc_ms(dt: datetime) -> str:
 # (weekend gap). Feed broker berhenti push tick → SSE harus tandai
 # market_closed, bukan stream kosong tanpa penjelasan.
 _WEEKEND_CLOSE_WDAY = 5  # Sabtu (ISO: 5)
-_WEEKEND_REOPEN_HOUR = 21  # Senin 21:00 UTC
+_WEEKEND_REOPEN_WDAY = 0  # Senin — XAUUSD CFD broker (HFM) buka Senin 00:00 UTC
 
 
 def _market_status(now: datetime | None = None) -> dict[str, Any]:
-    """Return market session status for XAUUSD (forex 24x5).
+    """Return market session status for XAUUSD (CFD 24x5).
 
-    Returns dict dengan `open` (bool) + `reason`/`next_open` — dipakai
-    SSE market-data untuk emit event `market_closed` saat libur.
+    PITFALL (17 Aug 2026): kalender awalnya mengasumsikan forex gap Senin
+    00:00-21:00 UTC (standar interbank). Broker XAUUSD CFD (HFM) trading
+    LANGSUNG dari Senin 00:00 UTC — kalender lama salah menandai Senin pagi
+    sebagai "weekend" padahal EA mengirim tick live. Weekend hanya Sabtu (5)
+    + Minggu (6).
     """
     now = now or datetime.now(UTC)
     wday = now.weekday()  # ISO: 0=Senin .. 6=Minggu
-    if wday >= _WEEKEND_CLOSE_WDAY or (wday == 0 and now.hour < _WEEKEND_REOPEN_HOUR):
-        # Weekend gap: Sabtu (5) + Minggu (6), dan Senin sebelum 21:00 UTC
-        days_until = (0 - wday) % 7
-        if days_until == 0:
-            days_until = 7
+    if wday >= _WEEKEND_CLOSE_WDAY:
+        # Weekend gap: Sabtu (5) + Minggu (6)
+        days_until = (7 - wday) % 7 or 7
         next_open = now.replace(
-            hour=_WEEKEND_REOPEN_HOUR, minute=0, second=0, microsecond=0
+            hour=0, minute=0, second=0, microsecond=0
         ) + timedelta(days=days_until)
         return {"open": False, "reason": "weekend", "next_open": _iso_utc_ms(next_open)}
     return {"open": True, "reason": "open", "next_open": None}
@@ -302,8 +303,14 @@ async def stream_market_data(
             # Market calendar: kalau pasar libur (weekend/holiday), emit
             # `market_closed` — UI tampilkan status, koneksi tetap hidup
             # (auto-resume saat market buka, tanpa refresh browser).
+            # PITFALL (17 Aug 2026): kalender hardcoded salah mendeteksi
+            # "weekend" padahal EA mengirim tick LIVE (XAUUSD broker HFM
+            # trading 24/5, termasuk Senin 00:00-21:00 UTC). Data live lebih
+            # otoritatif dari kalender: kalau MarketService punya tick fresh
+            # (<30s), market jelas BUKA → jangan emit market_closed.
             status = _market_status()
-            if not status["open"]:
+            live_tick = await market_service.get_quote(symbol)
+            if not status["open"] and live_tick is None:
                 yield _emit(
                     f"market:{symbol}",
                     stream_id,

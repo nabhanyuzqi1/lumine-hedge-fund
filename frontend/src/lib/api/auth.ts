@@ -57,6 +57,15 @@ async function computeSignature(message: string, secret: string): Promise<string
 let _lastTimestamp = 0;
 
 export function nextTimestamp(nowSeconds: number = Math.floor(Date.now() / 1000)): string {
+  // PITFALL (17 Aug 2026): `_lastTimestamp + 1` tanpa reset drift — setelah
+  // beberapa menit polling 1s + burst request (multi-hook dalam detik yang
+  // sama), timestamp melaju JAUH di depan `now`. Begitu drift > 300s (jendela
+  // EXPIRED_TIMESTAMP backend), SEMUA request jadi 401 → gejala "kadang
+  // tiba-tiba unauthorized" padahal kode tidak berubah. Reset drift di sini:
+  // kalau sudah lebih dari 5 detik di depan now, kembali sinkron ke now.
+  if (_lastTimestamp > nowSeconds + 5) {
+    _lastTimestamp = nowSeconds;
+  }
   const ts = Math.max(nowSeconds, _lastTimestamp + 1);
   _lastTimestamp = ts;
   return String(ts);
