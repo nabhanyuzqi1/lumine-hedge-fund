@@ -70,7 +70,8 @@ async def run_backtest_endpoint(
                     # lalu query dengan interpolasi yang sudah dikunci.
                     table_map = {"1m": "bars_1m", "5m": "bars_5m", "1h": "bars_1h", "4h": "bars_4h"}
                     tbl = table_map[timeframe]  # KeyError tidak mungkin — Query pattern sudah membatasi
-                    stmt = (
+                    # nosec B608: `tbl` dari whitelist dict konstanta, bukan input user.
+                    stmt = (  # nosec B608
                         "SELECT ts, open, high, low, close, volume "
                         "FROM " + tbl + " WHERE symbol = :sym "
                         "ORDER BY ts ASC LIMIT :lim"
