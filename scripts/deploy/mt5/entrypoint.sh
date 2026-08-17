@@ -114,7 +114,7 @@ if [[ -f "${MT5_BIN}" ]]; then
     # terbaca MT5). WAJIB decode → modify → encode ulang UTF-16LE via python.
     MT5_INI="${MT5_DATA_DIR}/../Config/terminal.ini"
     if [[ -f "${MT5_INI}" ]]; then
-      echo "==> Patch terminal.ini: auto-whitelist http://lumine.biz.id + RestoreLast=1"
+      echo "==> Patch terminal.ini: auto-whitelist proxy URLs + RestoreLast=1"
       python3 - "${MT5_INI}" <<'PYEOF'
 import sys
 path = sys.argv[1]
@@ -145,7 +145,7 @@ def ensure_section(lines, section, keyvals):
         lines.insert(insert_at, kv)
     return lines
 
-lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id"])
+lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id,http://166.88.227.177"])
 lines = ensure_section(lines, "[Common]", ["RestoreLast=1"])
 new_text = CRLF.join(lines)
 # Tulis ulang dengan BOM + CRLF (format Windows)
