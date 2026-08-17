@@ -87,6 +87,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     llm_url = settings.llm_gateway_url
     llm_key = settings.llm_gateway_api_key
     routing_chain: list[str] | None = None
+    _r = None
     try:
         from lumine.llm_gateway.routing_overlay import get_overlay, parse_fallbacks
 
@@ -103,6 +104,33 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             routing_chain = chain
     except Exception:
         pass  # overlay tidak tersedia → fallback ke env
+
+    # News headlines real (18 Aug 2026): baca cache Redis dari _news_worker.
+    # Fallback "[]" → analyst tetap jalan (jujur, tidak gagal).
+    _news_headlines_json = "[]"
+    try:
+        if _r is None:
+            _r = await get_redis()
+        from lumine.trading.news_service import get_cached_headlines
+
+        _news_headlines = await get_cached_headlines(_r)
+        if _news_headlines:
+            import json as _json
+
+            _news_headlines_json = _json.dumps(
+                [
+                    {
+                        "title": h.get("title", ""),
+                        "source": h.get("source", ""),
+                        "time": h.get("ts"),
+                        "url": h.get("url", ""),
+                    }
+                    for h in _news_headlines[:8]
+                ],
+                ensure_ascii=False,
+            )
+    except Exception:
+        pass
 
     async def _run() -> dict[str, Any]:  # noqa: PLR0915,C901 — fixed LLM stage sequence
         """Execute the LLM cycle; raises on failure (caught by caller)."""
@@ -244,8 +272,9 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "real_yields": "unavailable (external feed not wired)",
                 "fed_stance": "unavailable (external feed not wired)",
                 "risk_regime": "risk-on" if ema_20 > ema_50 else "risk-off",
-                # News analyst (feed berita belum tersedia — jujur)
-                "headlines": "[]",
+                # News analyst (18 Aug 2026): headlines REAL dari cache RSS
+                # (fetch worker backend, bukan placeholder "[]").
+                "headlines": _news_headlines_json,
                 "sentiment_score": 0.0,
                 "relevance_score": 0.0,
                 "scheduled_events": "none (feed not wired)",

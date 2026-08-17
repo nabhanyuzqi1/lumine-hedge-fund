@@ -1554,6 +1554,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/news:
+    get:
+      tags:
+      - market
+      summary: Get News Headlines
+      description: 'Berita XAUUSD/emas real (18 Aug 2026) — dari cache RSS _news_worker.
+
+
+        Seed awal saat startup + update tiap 5 menit; headline baru di-push
+
+        ke SSE channel `news-headlines` (WS /ws/market menerima event
+
+        `news_update`). Gagal → fallback list (analyst tidak pernah kosong).'
+      operationId: get_news_headlines_api_v1_market_news_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 10
+          title: Limit
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get News Headlines Api V1 Market News Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/market/quotes:
     get:
       tags:

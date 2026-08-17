@@ -184,6 +184,32 @@ async def get_quote(
     )
 
 
+@router.get("/news")
+async def get_news_headlines(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+) -> dict:
+    """Berita XAUUSD/emas real (18 Aug 2026) — dari cache RSS _news_worker.
+
+    Seed awal saat startup + update tiap 5 menit; headline baru di-push
+    ke SSE channel `news-headlines` (WS /ws/market menerima event
+    `news_update`). Gagal → fallback list (analyst tidak pernah kosong).
+    """
+    from lumine.trading.news_service import get_cached_headlines
+
+    r = await _redis()
+    items = await get_cached_headlines(r, limit=limit)
+    return {"items": items, "count": len(items), "source": "rss-kitco-reuters"}
+
+
+async def _redis():
+    import redis as _redis_lib
+
+    from lumine.shared.config import get_settings as _gs
+
+    return _redis_lib.from_url(_gs().redis_url)
+
+
 @router.get("/quotes")
 async def get_quotes(
     symbols: Annotated[list[str], Query(min_length=1, max_length=50)],

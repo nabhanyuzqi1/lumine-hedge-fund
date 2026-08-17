@@ -474,6 +474,29 @@ async def _deals_worker() -> None:  # noqa: C901 — deal pipeline bercabang (cu
             pass  # transient — skip, tetap jalan
 
 
+async def _news_worker(publisher: SSEPublisher) -> None:
+    """News feed (18 Aug 2026): seed awal + poll 5 menit → publish baru.
+
+    News TIDAK dari EA (MQL5 tidak punya API news). Backend fetch RSS
+    publik (Kitco/Reuters) → cache Redis `lumine:news:headlines` →
+    publish `news_update` ke SSE channel `news-headlines` HANYA untuk
+    headline URL baru (dedup via `lumine:news:seen` hash).
+    """
+    from lumine.shared.config import get_settings as _gs
+    from lumine.trading.news_service import refresh_news_cache
+
+    try:
+        r = await redis.from_url(_gs().redis_url)
+    except Exception:
+        return
+    while True:
+        try:
+            await refresh_news_cache(r, publisher)
+        except Exception as exc:
+            print(f"[NEWS] worker error: {str(exc)[:150]}", flush=True)
+        await asyncio.sleep(300)  # poll tiap 5 menit
+
+
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR0915 — infra init
     """Application lifespan: initialize trading infrastructure."""
@@ -506,6 +529,9 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR091
         _app_state["tick_worker"] = asyncio.create_task(_tick_worker())
         # B4: bar 1m/5m live dari ticks (flush tiap 60s)
         _app_state["bar_flush_worker"] = asyncio.create_task(_bar_flush_worker())
+        # News feed (18 Aug 2026): seed awal + poll 5 menit + publish
+        # headline baru ke SSE news-headlines.
+        _app_state["news_worker"] = asyncio.create_task(_news_worker(sse_publisher))
 
     # Initialize PositionSyncWorker if database pool available
     pool = getattr(settings, "database_url", None)

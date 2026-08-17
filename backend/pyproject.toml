@@ -9,6 +9,7 @@ authors = [{ name = "Lumine Engineering" }]
 
 dependencies = [
     "fastapi>=0.115.0",
+    "defusedxml>=0.7.1",  # XML-safe RSS parse (news_service, 18 Aug 2026)
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.9.0",
     "pydantic-settings>=2.6.0",
