@@ -515,11 +515,35 @@ async def get_ea_status(
             "margin_level": status.get("margin_level"),
             "leverage": status.get("leverage"),
             "net_pnl": status.get("net_pnl"),
-            "connected": len(status) > 0,
+            # v4.11 (18 Aug 2026): connected = tick FRESH (<30s), bukan
+            # sekadar hash ada — status Redis punya TTL 90s, EA bisa mati
+            # tapi status masih tampil "Connected" hingga 90s.
+            "connected": _ea_fresh(status),
             "logs": logs,
         }
     except Exception as exc:
         return {"connected": False, "error": str(exc), "logs": []}
+
+
+def _ea_fresh(status: dict[str, str], max_age_s: float = 30.0) -> bool:
+    """EA connected = last_tick_ts dalam max_age_s detik (atau status segar).
+
+    Status Redis di-hset EA tiap InpStatusInterval (5s) tanpa TTL per
+    field; hash bisa bertahan setelah EA mati. Gunakan last_tick_ts
+    (epoch) sebagai sumber kebenaran freshness.
+    """
+    if not status:
+        return False
+    try:
+        last = float(status.get("last_tick_ts", 0))
+        if last > 0:
+            import time as _time
+
+            return (_time.time() - last) < max_age_s
+    except (TypeError, ValueError):
+        pass
+    # Fallback: hash ada (EA baru start, tick pertama belum).
+    return bool(status.get("ea_version"))
 
 
 @router.post("/ea-command")

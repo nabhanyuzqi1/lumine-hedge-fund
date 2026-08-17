@@ -140,10 +140,19 @@ function EAStatusCard() {
   if (isError || !data) return <p className="text-xs text-danger">EA status unavailable</p>;
   const num = (v?: string) => (v != null && v !== "" ? Number(v) : null);
   const pnl = num(data.net_pnl);
+  const tickAge = data.last_tick_ts
+    ? Math.max(0, Math.round(Date.now() / 1000 - Number(data.last_tick_ts)))
+    : null;
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Badge tone={data.connected ? "ok" : "warn"} label={data.connected ? "Connected" : "No Status"} />
+        {tickAge != null && (
+          <Badge
+            tone={tickAge < 10 ? "ok" : tickAge < 60 ? "warn" : "danger"}
+            label={`tick ${tickAge}s ago`}
+          />
+        )}
         {data.ea_version !== "unknown" && (
           <span className="font-mono text-xs text-ink-dim">v{data.ea_version}</span>
         )}
