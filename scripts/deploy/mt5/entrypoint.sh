@@ -152,7 +152,7 @@ def ensure_section(lines, section, keyvals):
         lines.insert(insert_at, kv)
     return lines
 
-lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id,http://mt5.local"])
+lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id"])
 lines = ensure_section(lines, "[Common]", ["RestoreLast=1"])
 new_text = CRLF.join(lines)
 # Tulis ulang dengan BOM + CRLF (format Windows)
@@ -176,14 +176,14 @@ PYEOF
       echo "==> Restore workspace Default (EA attach)"
       mkdir -p "${MT5_DATA_DIR}/Profiles/Charts/Default"
       # PITFALL (18 Aug 2026): .chr chart menyimpan INPUT EA (InpProxyURL).
-      # Patch ke mt5.local (origin IP via /etc/hosts) — bypass Cloudflare
-      # yang balas 500 ke WebRequest tanpa UA. build HFM tolak IP address
-      # di whitelist (4014) → mt5.local hostname diterima.
+      # MT5 build HFM TOLAK hostname non-DNS (mt5.local) & IP address di
+      # whitelist WebRequest (4014) — satu-satunya yang diterima: domain
+      # publik lumine.biz.id. Patch .chr force ke lumine.biz.id tiap boot.
       for f in "${WORKSPACE_BACKUP}/"*.chr; do
         [[ -f "$f" ]] || continue
-        if grep -q "lumine.biz.id/mt5-proxy\|166.88.227.177/mt5-proxy" "$f" 2>/dev/null; then
-          sed -i 's#http://lumine.biz.id/mt5-proxy#http://mt5.local/mt5-proxy#g; s#http://166.88.227.177/mt5-proxy#http://mt5.local/mt5-proxy#g' "$f"
-          echo "    -> patched .chr proxy URL (mt5.local): $(basename "$f")"
+        if grep -q "mt5.local\|166.88.227.177" "$f" 2>/dev/null; then
+          sed -i 's#http://mt5.local/mt5-proxy#http://lumine.biz.id/mt5-proxy#g; s#http://166.88.227.177/mt5-proxy#http://lumine.biz.id/mt5-proxy#g' "$f"
+          echo "    -> patched .chr proxy URL (lumine.biz.id): $(basename "$f")"
         fi
       done
       cp -f "${WORKSPACE_BACKUP}/"*.chr "${MT5_DATA_DIR}/Profiles/Charts/Default/" 2>/dev/null || true

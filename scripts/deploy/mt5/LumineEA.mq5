@@ -56,6 +56,7 @@ datetime g_lastPositionsSent = 0;   // B1: terakhir snapshot positions dikirim
 datetime g_lastDealsSent      = 0;   // B1: terakhir snapshot deals dikirim
 int      g_failCount      = 0;      // consecutive proxy failure
 bool     g_proxyDown      = false;  // log state-change saja
+string   g_lastRespBody   = "";     // v4.12: body response terakhir (debug 500)
 int      g_maxBackoff;
 // v4.11: log throttling — deals log hanya saat jumlah berubah
 int      g_lastDealsCount = -1;
@@ -378,6 +379,15 @@ int HttpPostJson(const string path, const string json, const int timeoutMs)
       string url = g_proxyURL + path;
 
    int res = WebRequest("POST", url, headers, timeoutMs, data, result, headers);
+   // v4.12: simpan body response (debug 500 CF vs proxy)
+   g_lastRespBody = "";
+   int respLen = ArraySize(result);
+   if(respLen > 0)
+     {
+      ArrayResize(result, MathMin(respLen, 256));
+      g_lastRespBody = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+      ArrayResize(result, respLen);
+     }
    if(res == 200)
       MarkProxyOk();
    else if(res == -1)
@@ -1254,7 +1264,12 @@ void SendStatus()
 
    int res = HttpPostJson("/status", json, 3000);
    if(res != 200 && res != -1 && !g_proxyDown)
-      Print("LumineEA: SendStatus failed http=", res);
+     {
+      // v4.12 (18 Aug): log BODY response 500 — identifikasi CF vs proxy
+      string errBody = g_lastRespBody;
+      if(StringLen(errBody) > 120) errBody = StringSubstr(errBody, 0, 120);
+      Print("LumineEA: SendStatus failed http=", res, " body=", errBody);
+     }
   }
 
 //+------------------------------------------------------------------+
