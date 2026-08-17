@@ -39,6 +39,7 @@ from lumine.api.routers import (
     rpc,
     streams,
     workflows,
+    ws,
 )
 from lumine.api.routers.auth import router as auth_router
 from lumine.api.routers.auth import seed_bootstrap_users
@@ -580,6 +581,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         market.router,
         journal.router,
         streams.router,
+        ws.router,
         admin.router,
         rpc.router,
         backtest.router,

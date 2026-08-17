@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useMarketBars, useOrders, usePositions } from "@/api/hooks";
+import { useMarketWS } from "@/hooks/useMarketWS";
 import { usePerformanceMetrics } from "@/hooks/usePerformanceMetrics";
 import { PerformanceIndicator } from "@/components/monitoring/performance-indicator";
 import type { Timeframe } from "@/components/charts/candlestick-chart";
@@ -338,9 +339,34 @@ function TradingWorkspace() {
     };
   }, [selectedSymbol]);
 
+  // ── WebSocket market stream (v2, 17 Aug 2026) ─────────────────────────
+  // Primary transport: WS lebih ringan + realtime per tick. Kalau WS gagal
+  // (status "error"/"closed" tanpa reconnect dalam 2× backoff), SSE tetap
+  // jalan sebagai fallback — keduanya menulis ke store yang sama, tanpa
+  // duplikasi (upsertTick idempoten per symbol).
+  const wsConnected = useMarketWS({
+    symbol: selectedSymbol,
+    enabled: true,
+    onTick: (tick) => {
+      upsertTick(tick);
+      setStreamState(streamKey, { status: "open" });
+    },
+    onClosed: (reason) => {
+      setStreamState(streamKey, { status: "closed", error: reason });
+      appendLog({ stream: "market", message: `Market closed: ${reason}`, level: "warn" });
+    },
+    onStatusChange: (status) => {
+      if (status === "open") {
+        appendLog({ stream: "market", message: `WS stream open: ${selectedSymbol}`, level: "info" });
+      }
+    },
+  });
+
+  // SSE fallback: aktif HANYA kalau WS tidak tersambung (primary down).
   useSSE<MarketDataEvent>({
     url: streamUrl,
-    enabled: Object.keys(sseHeaders).length > 0 || !getHmacCredentials(),
+    enabled:
+      (Object.keys(sseHeaders).length > 0 || !getHmacCredentials()) && !wsConnected,
     headers: sseHeaders,
     onEvent: (envelope) => {
       if (envelope.data?.tick) {
