@@ -3360,10 +3360,13 @@ paths:
       tags:
       - backtest
       summary: Run Backtest Endpoint
-      description: "Run backtest and return equity curve + trades + metrics.\n\nArgs:\n\
-        \    symbol: Trading symbol (default XAUUSD)\n    timeframe: Bar timeframe\
-        \ (default 1h)\n    stop_pct: Stop loss percentage (default 2%)\n\nReturns:\n\
-        \    BacktestResult with equity, trades, metrics"
+      description: 'Run backtest on REAL bars from PostgreSQL (bars_* seeded via MT5
+        EA).
+
+
+        Backtest beta (17 Aug 2026): data nyata dari DB, bukan demo/deterministik.
+
+        15m diagregasi dari bars_5m (bucket 900s). Baris diambil oldest-first.'
       operationId: run_backtest_endpoint_api_v1_backtest_run_get
       parameters:
       - name: symbol
@@ -3378,14 +3381,29 @@ paths:
         required: false
         schema:
           type: string
+          pattern: ^(1m|5m|15m|1h|4h)$
           default: 1h
           title: Timeframe
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 5000
+          minimum: 50
+          default: 400
+          title: Limit
       - name: stop_pct
         in: query
         required: false
         schema:
-          type: number
-          default: 0.02
+          anyOf:
+          - type: number
+            maximum: 0.2
+            minimum: 0.001
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          default: '0.02'
           title: Stop Pct
       - name: X-Lumine-API-Key
         in: header
@@ -3417,9 +3435,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
-                title: Response Run Backtest Endpoint Api V1 Backtest Run Get
+                $ref: '#/components/schemas/BacktestResult'
         '422':
           description: Validation Error
           content:
@@ -3567,6 +3583,103 @@ components:
       - created_at
       title: AdminKey
       description: API key management view.
+    BacktestMetrics:
+      properties:
+        total_return_pct:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Total Return Pct
+        max_drawdown_pct:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Max Drawdown Pct
+        win_rate_pct:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Win Rate Pct
+        trade_count:
+          type: integer
+          title: Trade Count
+        sharpe_like:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Sharpe Like
+      type: object
+      required:
+      - total_return_pct
+      - max_drawdown_pct
+      - win_rate_pct
+      - trade_count
+      - sharpe_like
+      title: BacktestMetrics
+      description: Performance summary (v1).
+    BacktestResult:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        timeframe:
+          type: string
+          title: Timeframe
+        equity:
+          items:
+            type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          type: array
+          title: Equity
+        trades:
+          items:
+            $ref: '#/components/schemas/BacktestTrade'
+          type: array
+          title: Trades
+        metrics:
+          anyOf:
+          - $ref: '#/components/schemas/BacktestMetrics'
+          - type: 'null'
+      type: object
+      required:
+      - symbol
+      - timeframe
+      - equity
+      title: BacktestResult
+      description: Full engine output.
+    BacktestTrade:
+      properties:
+        symbol:
+          type: string
+          title: Symbol
+        side:
+          type: string
+          title: Side
+        entry_ts:
+          type: string
+          title: Entry Ts
+        exit_ts:
+          type: string
+          title: Exit Ts
+        entry_price:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Entry Price
+        exit_price:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Exit Price
+        pnl_pct:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Pnl Pct
+      type: object
+      required:
+      - symbol
+      - side
+      - entry_ts
+      - exit_ts
+      - entry_price
+      - exit_price
+      - pnl_pct
+      title: BacktestTrade
+      description: One closed trade.
     BulkStatusRequest:
       properties:
         order_ids:

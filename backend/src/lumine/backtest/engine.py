@@ -14,8 +14,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import Any
 
-from lumine.api.demo_data import bars  # reuse the deterministic OHLCV series
+from lumine.api.demo_data import bars  # fallback: deterministic OHLCV series
 
 
 @dataclass
@@ -66,8 +67,52 @@ def _sma(values: list[Decimal], period: int) -> list[Decimal | None]:
 
 
 def run_backtest(symbol: str = "XAUUSD", timeframe: str = "1h", *, stop_pct: Decimal = Decimal("0.02")) -> BacktestResult:
-    """Run the v1 rule-based backtest over the deterministic demo bars."""
+    """Run the v1 rule-based backtest over the deterministic demo bars.
+
+    Fallback path — synchronous, demo data. Backtest beta (17 Aug 2026):
+    endpoint menggunakan `run_backtest_from_db` yang mengambil bars REAL
+    dari PostgreSQL (bars_1m/5m/1h/4h seed MT5); fungsi ini dipertahankan
+    untuk unit test & offline (deterministik, tanpa DB).
+    """
     rows = bars(symbol, timeframe, limit=400)
+    return _run_over_rows(rows, symbol, timeframe, stop_pct)
+
+
+def run_backtest_from_rows(
+    rows: list[dict[str, Any]],
+    symbol: str = "XAUUSD",
+    timeframe: str = "1h",
+    *,
+    stop_pct: Decimal = Decimal("0.02"),
+) -> BacktestResult:
+    """Run the backtest over externally-supplied bars (DB-backed beta).
+
+    rows: list of {ts, open, high, low, close, volume} — oldest-first,
+    minimal 30 bar. Pakai data REAL dari bars_* (bukan demo).
+    """
+    return _run_over_rows(rows, symbol, timeframe, stop_pct)
+
+
+def _run_over_rows(
+    rows: list[dict[str, Any]],
+    symbol: str,
+    timeframe: str,
+    stop_pct: Decimal,
+) -> BacktestResult:
+    """Shared strategy execution over a bar list."""
+    if len(rows) < 30:
+        # Tidak cukup data — return result kosong (bukan crash).
+        empty = BacktestResult(
+            symbol=symbol, timeframe=timeframe, equity=[Decimal(100000)], trades=[]
+        )
+        empty.metrics = BacktestMetrics(
+            total_return_pct=Decimal(0),
+            max_drawdown_pct=Decimal(0),
+            win_rate_pct=Decimal(0),
+            trade_count=0,
+            sharpe_like=Decimal(0),
+        )
+        return empty
     closes = [Decimal(str(row["close"])) for row in rows]
     volumes = [Decimal(str(row["volume"])) for row in rows]
     sma20 = _sma(closes, 20)
