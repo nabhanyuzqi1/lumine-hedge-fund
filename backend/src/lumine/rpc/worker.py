@@ -80,7 +80,31 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
         "status": "failed",
     }
 
-    async def _run() -> dict[str, Any]:  # noqa: PLR0915 — fixed LLM stage sequence
+    # ── Realtime LLM routing overlay (18 Aug 2026) ────────────────────────
+    # User ubah default/fallback model via superadmin → Redis
+    # `lumine:llm_routing` → worker baca SETIAP cycle (bukan env statis).
+    # Auto-discovery: worker refresh daftar model 9router tiap N detik.
+    llm_url = settings.llm_gateway_url
+    llm_key = settings.llm_gateway_api_key
+    routing_chain: list[str] | None = None
+    try:
+        from lumine.llm_gateway.routing_overlay import get_overlay, parse_fallbacks
+
+        _r = await get_redis()
+        overlay = await get_overlay(_r)
+        if overlay.get("llm_gateway_url"):
+            llm_url = overlay["llm_gateway_url"]
+        if overlay.get("llm_gateway_api_key"):
+            llm_key = overlay["llm_gateway_api_key"]
+        if overlay.get("default_model") or overlay.get("fallback_models"):
+            chain = [str(overlay.get("default_model") or settings.llm_default_model)]
+            fb = parse_fallbacks(overlay.get("fallback_models"))
+            chain.extend(fb)
+            routing_chain = chain
+    except Exception:
+        pass  # overlay tidak tersedia → fallback ke env
+
+    async def _run() -> dict[str, Any]:  # noqa: PLR0915,C901 — fixed LLM stage sequence
         """Execute the LLM cycle; raises on failure (caught by caller)."""
         async with get_sessionmaker()() as session:
             # model_version + prompt_version production
@@ -95,8 +119,37 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
 
             # Registry model dari DB (wajib — resolve model_version_id)
             model_registry = await load_model_versions(session)
-            client = RouterClient(url=settings.llm_gateway_url, api_key=settings.llm_gateway_api_key)
-            gateway = Gateway(registry=model_registry, budget=BudgetGate({}), client=client)
+            client = RouterClient(url=llm_url, api_key=llm_key)
+            # v4.11+: fallback provider dari routing overlay — jika user set
+            # default/fallback model via superadmin, chain itu MENANG atas
+            # policy DB (realtime, tanpa restart). None → policy DB default.
+            fallback_provider = None
+            if routing_chain:
+                from lumine.llm_gateway.types import ModelTier
+
+                def _overlay_fallbacks(tier: ModelTier) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+                    # Primary = model pertama chain; hops = sisa. Semua hop
+                    # resolve via mv.id (registry), nama model di-override
+                    # oleh _call_for (route["model"]).
+                    def _route(model: str) -> dict[str, Any]:
+                        return {
+                            "model": model,
+                            "model_version_id": str(mv.id),
+                            "tier": tier.value if hasattr(tier, "value") else str(tier),
+                        }
+
+                    chain = list(routing_chain or [])
+                    primary = _route(chain[0]) if chain else {}
+                    hops = [_route(m) for m in chain[1:]]
+                    return primary, hops
+
+                fallback_provider = _overlay_fallbacks
+            gateway = Gateway(
+                registry=model_registry,
+                budget=BudgetGate({}),
+                client=client,
+                fallbacks=fallback_provider,
+            )
             prompt_registry = Registry(base_path=Path("/app/docs/prompts"))
 
             # Indikator dari bars_5m (terakhir 60 bar)

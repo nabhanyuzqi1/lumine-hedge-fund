@@ -11,7 +11,7 @@ interface QuoteSnapshot {
   symbol: string;
   bid: number;
   ask: number;
-  spread: number;
+  spread?: number | null;
   timestamp: string;
 }
 
@@ -57,7 +57,8 @@ export function HealthPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["market", "quotes", "XAUUSD"],
     queryFn: () => fetchQuote("XAUUSD"),
-    refetchInterval: 5_000,
+    refetchInterval: 1_000,
+    staleTime: 0,
     retry: 3,
   });
 
@@ -176,7 +177,7 @@ export function HealthPage() {
                   { label: "SYM", value: data.symbol },
                   { label: "BID", value: <NumericText value={data.bid} decimals={2} /> },
                   { label: "ASK", value: <NumericText value={data.ask} decimals={2} /> },
-                  { label: "SPR", value: <NumericText value={data.spread} decimals={4} /> },
+                  { label: "SPR", value: <NumericText value={data.spread ?? undefined} decimals={2} /> },
                   { label: "UPD", value: new Date(data.timestamp).toLocaleTimeString() },
                 ].map(({ label, value }) => (
                   <div

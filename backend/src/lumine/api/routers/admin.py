@@ -330,6 +330,74 @@ async def list_llm_usage(
         return []
 
 
+@router.get("/llm-models")
+async def list_llm_models(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+    refresh: bool = Query(default=False),
+) -> dict:
+    """B10b: auto-discovery model 9router (18 Aug 2026).
+
+    Fetch GET {llm_gateway_url}/v1/models → daftar model aktif → cache
+    Redis `lumine:llm_routing:models`. UI superadmin pakai ini untuk
+    dropdown default/fallback model. `?refresh=1` paksa fetch ulang.
+    """
+    from lumine.llm_gateway.routing_overlay import ROUTING_KEY
+
+    r = await get_redis()
+    cache_key = f"{ROUTING_KEY}:models"
+    if not refresh:
+        cached = await r.get(cache_key)
+        if cached:
+            import json as _json
+
+            return _json.loads(cached.decode() if isinstance(cached, bytes) else cached)
+
+    from lumine.shared.config import get_settings
+
+    settings = get_settings()
+    url = settings.llm_gateway_url.rstrip("/") + "/v1/models"
+    key = settings.llm_gateway_api_key
+    models: list[dict] = []
+    error: str | None = None
+    try:
+        import urllib.request
+
+        def _fetch() -> dict:
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"})  # noqa: S310 — url dari env LLM_GATEWAY_URL (admin-controlled)
+            with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 — url dari env LLM_GATEWAY_URL (admin-controlled)
+                import json as _json
+
+                return _json.loads(resp.read())
+
+        import asyncio
+
+        payload = await asyncio.to_thread(_fetch)
+        for item in payload.get("data", []):
+            mid = item.get("id", "")
+            if mid:
+                models.append(
+                    {
+                        "id": mid,
+                        "owned_by": item.get("owned_by", ""),
+                        "created": item.get("created"),
+                    }
+                )
+    except Exception as exc:
+        error = str(exc)[:200]
+
+    payload = {"models": models, "fetched_at": time_now_iso(), "error": error}
+    import json as _json
+
+    await r.set(cache_key, _json.dumps(payload), ex=300)
+    return payload
+
+
+def time_now_iso() -> str:
+    from datetime import UTC, datetime
+
+    return datetime.now(UTC).isoformat()
+
+
 @router.put("/system-config", response_model=dict)
 async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, many branches
     request: SystemConfigUpdate,
@@ -384,7 +452,30 @@ async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, man
     if updates:
         await r.hset(_SYSCONFIG_KEY, mapping=updates)
 
-    return {"updated": list(updates.keys()), "note": "restart api container to apply all changes"}
+    # v4.11 (18 Aug 2026): REALTIME routing overlay — default/fallback model
+    # langsung dipakai cycle berikutnya (tanpa restart api container).
+    # Worker baca `lumine:llm_routing` tiap decision cycle.
+    overlay_updates: dict[str, str] = {}
+    if request.llm_default_model is not None:
+        overlay_updates["default_model"] = request.llm_default_model
+    if request.llm_fallback_models is not None:
+        import json as _json
+
+        overlay_updates["fallback_models"] = _json.dumps(request.llm_fallback_models)
+    if request.llm_auto_fallback is not None:
+        overlay_updates["auto_discovery"] = "1" if request.llm_auto_fallback else "0"
+    if overlay_updates:
+        from lumine.llm_gateway.routing_overlay import ROUTING_KEY
+
+        await r.hset(ROUTING_KEY, mapping=overlay_updates)
+
+    note = (
+        "runtime config tersimpan; routing model realtime (tanpa restart), "
+        "key/url masih butuh restart"
+        if overlay_updates
+        else "restart api container to apply all changes"
+    )
+    return {"updated": list(updates.keys()), "note": note}
 
 
 @router.get("/ea-status")

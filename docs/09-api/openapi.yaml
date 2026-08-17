@@ -2943,6 +2943,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/llm-models:
+    get:
+      tags:
+      - admin
+      summary: List Llm Models
+      description: 'B10b: auto-discovery model 9router (18 Aug 2026).
+
+
+        Fetch GET {llm_gateway_url}/v1/models → daftar model aktif → cache
+
+        Redis `lumine:llm_routing:models`. UI superadmin pakai ini untuk
+
+        dropdown default/fallback model. `?refresh=1` paksa fetch ulang.'
+      operationId: list_llm_models_api_v1_admin_llm_models_get
+      parameters:
+      - name: refresh
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Refresh
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response List Llm Models Api V1 Admin Llm Models Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/admin/system-config:
     put:
       tags:
@@ -4200,6 +4261,12 @@ components:
           type: string
           pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Last
+        spread:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Spread
         volume_24h:
           type: string
           pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$

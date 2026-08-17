@@ -205,6 +205,7 @@ class MarketQuote(BaseModel):
     ask: Decimal
     mid: Decimal
     last: Decimal
+    spread: Decimal | None = None  # ask - bid (live, 18 Aug 2026)
     volume_24h: Decimal
     change_24h: Decimal
     change_pct_24h: Decimal

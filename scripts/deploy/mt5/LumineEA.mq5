@@ -26,7 +26,7 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "4.10"
+#property version   "4.11"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy)
@@ -53,6 +53,9 @@ datetime g_lastDealsSent      = 0;   // B1: terakhir snapshot deals dikirim
 int      g_failCount      = 0;      // consecutive proxy failure
 bool     g_proxyDown      = false;  // log state-change saja
 int      g_maxBackoff;
+// v4.11: log throttling — deals log hanya saat jumlah berubah
+int      g_lastDealsCount = -1;
+bool     g_dealsLoggedOnce = false;
 
 // ── Result queue (persist: order result harus sampai ke backend) ──────────
 #define RESULT_QUEUE_MAX 128
@@ -743,7 +746,16 @@ void SendDealsSnapshot()
 
    int res = HttpPostJson("/deals", json, 3000);
    if(res == 200)
-      Print("LumineEA: deals sent count=", count, " total=", total);
+     {
+      // v4.11: jangan spam log tiap 30s — log hanya saat jumlah berubah
+      // (deal baru) atau state-change pertama.
+      if(count != g_lastDealsCount || !g_dealsLoggedOnce)
+        {
+         g_lastDealsCount = count;
+         g_dealsLoggedOnce = true;
+         Print("LumineEA: deals sent count=", count, " total=", total);
+        }
+     }
    else if(res != -1 && !g_proxyDown)
       Print("LumineEA: SendDealsSnapshot failed http=", res);
   }
