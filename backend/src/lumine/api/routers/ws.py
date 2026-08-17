@@ -58,12 +58,12 @@ async def ws_market(
             if queue is None:
                 # No publisher — heartbeat saja, jangan mati.
                 await asyncio.sleep(15)
-                await websocket.send_json({"event": "heartbeat", "data": {"ts": _now_iso()}})
+                await _safe_send(websocket, {"event": "heartbeat", "data": {"ts": _now_iso()}})
                 continue
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=25)
-            except TimeoutError:
-                await websocket.send_json({"event": "heartbeat", "data": {"ts": _now_iso()}})
+            except asyncio.TimeoutError:
+                await _safe_send(websocket, {"event": "heartbeat", "data": {"ts": _now_iso()}})
                 continue
             payload = _serialize_event(event)
             if payload is None:
@@ -74,12 +74,27 @@ async def ws_market(
             ev_symbol = tick.get("symbol") if tick else data.get("symbol")
             if ev_symbol is not None and str(ev_symbol).upper() != symbol.upper():
                 continue
-            await websocket.send_json(payload)
+            await _safe_send(websocket, payload)
     except WebSocketDisconnect:
         pass
     finally:
         if queue is not None and publisher is not None:
             await publisher.unsubscribe(queue)
+
+
+async def _safe_send(websocket: WebSocket, payload: dict[str, Any]) -> None:
+    """Send JSON; jika client sudah disconnect (transport closed), abort.
+
+    PITFALL (17 Aug 2026): send_json ke transport yang sudah closed →
+    RuntimeError "unable to perform operation on <TCPTransport closed>"
+    → ASGI exception crash log. WebSocketDisconnect tidak selalu di-raise
+    saat SEND (bukan receive) — harus guard eksplisit.
+    """
+    try:
+        await websocket.send_json(payload)
+    except (RuntimeError, WebSocketDisconnect):
+        # Client hilang — biarkan loop exit via finally unsubscribe.
+        raise WebSocketDisconnect
 
 
 def _now_iso() -> str:
