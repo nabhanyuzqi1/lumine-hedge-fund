@@ -374,7 +374,7 @@ int HttpPostJson(const string path, const string json, const int timeoutMs)
       // PITFALL (18 Aug 2026): WebRequest MQL5 default TANPA User-Agent →
       // Cloudflare WAF balas HTTP 500 ke request (curl 200 karena UA curl).
       // Tambah User-Agent eksplisit — CF treat sebagai browser-like request.
-      string headers = "Content-Type: application/json
+            string headers = "Content-Type: application/json
 User-Agent: LumineEA/4.11 (MT5; XAUUSD)
 ";
       string url = g_proxyURL + path;
