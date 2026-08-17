@@ -1252,7 +1252,7 @@ void SendStatus()
    g_marginLevel = (margin > 0 ? (equity / margin) * 100.0 : 0.0);
 
    string json = StringFormat(
-      "{\"ea_version\":\"4.11\",\"ea_build\":%d,\"seed_phase\":%d,\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,
+      "{\"ea_version\":\"4.11\",\"ea_build\":%d,\"seed_phase\":%d,\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,"
       "\"proxy_url\":\"%s\",\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,"
       "\"spread\":%.1f,\"session_high\":%.2f,\"session_low\":%.2f,"
       "\"equity\":%.2f,\"balance\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,"
