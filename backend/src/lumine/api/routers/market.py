@@ -248,6 +248,10 @@ async def get_ohlcv(
             if timeframe == "15m":
                 from sqlalchemy import text as sa_text
 
+                # PITFALL (17 Aug 2026): `:since IS NULL OR ts >= :since` di
+                # SQL + asyncpg → DBAPIError saat since=None (can't compare
+                # None). Handle since di Python: query penuh tanpa filter,
+                # filter ts >= since di level Python.
                 result = await session.execute(
                     sa_text(
                         """
@@ -260,15 +264,18 @@ async def get_ohlcv(
                           (array_agg(close ORDER BY ts))[array_length(array_agg(close ORDER BY ts), 1)] AS close,
                           sum(volume) AS volume
                         FROM bars_5m
-                        WHERE symbol = :sym AND (:since IS NULL OR ts >= :since)
+                        WHERE symbol = :sym
                         GROUP BY 1, 2
                         ORDER BY 1 DESC
                         LIMIT :lim
                         """
                     ),
-                    {"sym": symbol.upper(), "lim": limit, "since": since},
+                    {"sym": symbol.upper(), "lim": max(limit, 1000)},
                 )
                 rows = result.all()
+                if since is not None:
+                    rows = [r for r in rows if r.ts >= since]
+                rows = rows[:limit]
             else:
                 stmt = select(model).order_by(model.ts.desc()).limit(limit)
                 if since is not None:

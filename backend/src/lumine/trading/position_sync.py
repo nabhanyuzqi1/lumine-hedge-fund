@@ -127,9 +127,6 @@ class PositionSyncWorker:
 
     async def _upsert_positions(self, payload: list[dict[str, Any]]) -> None:
         """Upsert MT5 positions; tutup posisi yang tidak ada di snapshot."""
-        if not payload:
-            return
-
         tickets: set[int] = set()
         async with get_sessionmaker()() as session:
             for item in payload:
@@ -145,7 +142,11 @@ class PositionSyncWorker:
                 }
                 await self._upsert_one(session, normalized_item, ticket)
 
-            # Tutup posisi MT5 yang tidak ada di snapshot terbaru
+            # Tutup posisi MT5 yang tidak ada di snapshot terbaru.
+            # PITFALL (17 Aug 2026): snapshot KOSONG ([] — semua posisi
+            # ditutup di MT5) TIDAK boleh skip — itu justru sinyal SEMUA
+            # posisi harus ditutup. Loop penutupan jalan untuk payload
+            # kosong maupun non-kosong.
             existing = (
                 await session.execute(
                     select(Position).where(

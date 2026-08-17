@@ -144,15 +144,22 @@ export function CandlestickChart({
       return () => clearTimeout(timer);
     }, [lastTick]);
 
-    // Data freshness: bar terakhir lebih tua dari 2× interval terbesar (4H×2
-    // = 8 jam, tapi untuk jendela 5m/15m gunakan 10 menit) → anggap stale.
-    // Pasar tutup (weekend) → bars_1m berhenti → overlay "waiting for live
-    // data" supaya user tahu chart menampilkan data terakhir, bukan live.
+    // Data freshness: TANPA tick live dalam 2× interval → stale. PITFALL
+    // (17 Aug 2026): logika lama pakai umur bar terakhir vs interval —
+    // untuk 1H/4H bar terakhir selalu "baru" saat market buka TAPI bar
+    // terakhir itu wajar lebih tua dari 10 menit (bar 4H berganti tiap 4
+    // jam) → overlay "market closed" tampil padahal market BUKA dan chart
+    // malah tidak live. Sebaliknya dengan live tick: kalau EA kirim tick
+    // <30s lalu, market jelas buka → jangan stale.
     const isStale =
       bars.length > 0 &&
       waitingLabel != null &&
-      Date.now() - (bars[bars.length - 1]!.time + (timeframe === "5m" ? 300 : timeframe === "15m" ? 900 : timeframe === "1H" ? 3600 : 14400)) * 1000 >
-        10 * 60_000;
+      // Live tick lebih baru dari 30 detik → market buka, pasti tidak stale.
+      (lastTick == null ||
+        lastTick.last == null ||
+        !Number.isFinite(lastTick.last) ||
+        Date.now() - (bars[bars.length - 1]!.time + (timeframe === "5m" ? 300 : timeframe === "15m" ? 900 : timeframe === "1H" ? 3600 : 14400)) * 1000 >
+          (timeframe === "1H" || timeframe === "4H" ? 2 * 60 * 60_000 : 10 * 60_000));
 
   return (
     <ChartCard

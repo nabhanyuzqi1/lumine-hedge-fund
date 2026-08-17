@@ -45,7 +45,10 @@ export function CommitteeFeed({
   }
 
   return (
-    <ul className="space-y-2" data-testid="committee-feed">
+    <ul
+      className="max-h-72 space-y-2 overflow-y-auto overscroll-none pr-1"
+      data-testid="committee-feed"
+    >
       {shown.map((activity) => (
         <li
           key={activity.id}
