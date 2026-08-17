@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
 
-import { buildAuthHeaders, getHmacCredentials } from "@/lib/api/auth";
-import { useSSE, type SSEEnvelope } from "@/hooks/useSSE";
 import { useCommitteeStore, type CommitteeActivity } from "@/stores/committeeStore";
 import { useStreamStore } from "@/stores/streamStore";
+
+/**
+ * useCommitteeStreams — konsolidasi 4 channel komite via 1 WebSocket
+ * (v2, 18 Aug 2026).
+ *
+ * Sebelumnya: 4 SSE koneksi terpisah (analyst/ic/cio/risk) + 1 market =
+ * 5 koneksi, reconnect independent → header "kadang 1/5, 4/5". Sekarang
+ * SATU WS ke /api/v1/ws/market yang menerima SEMUA channel (frame
+ * `{event, channel, data}`). Fallback SSE per-channel tetap dipakai
+ * kalau WS gagal (useSSE enabled saat ws tidak connected).
+ */
 
 interface CommitteeStreamEvent {
   run_id?: string;
@@ -31,94 +40,89 @@ const STREAMS: StreamSpec[] = [
 
 const CHANNEL_MAP = new Map(STREAMS.map((s) => [s.channel, s]));
 
-// Ref stabil — useSSE effect deps membandingkan `headers` (reference).
-// PITFALL: `?? {}` membuat objek BARU tiap render → connect loop →
-// "Maximum update depth exceeded" (React batal render, UI blank).
-const EMPTY_HEADERS: Record<string, string> = {};
-
 function toActivity(
   channel: string,
-  data: CommitteeStreamEvent | null,
-  eventTs: string
+  data: CommitteeStreamEvent | undefined,
+  ts: string | undefined
 ): CommitteeActivity | null {
   const spec = CHANNEL_MAP.get(channel);
   if (!spec || !data) return null;
-  const decision =
-    data.decision ?? data.action ?? data.recommendation ?? undefined;
+  const decision = data.decision ?? data.action ?? data.recommendation;
+  if (!decision) return null;
   return {
-    id: `${channel}-${data.run_id ?? data.workflow_run_id ?? Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: `${channel}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     type: spec.type,
-    agent: typeof data.analyst_name === "string" ? data.analyst_name : spec.agent,
-    workflow_run_id:
-      typeof data.workflow_run_id === "string" ? data.workflow_run_id : undefined,
-    decision: typeof decision === "string" ? decision : undefined,
-    confidence:
-      typeof data.confidence === "number" ? data.confidence : undefined,
-    timestamp: typeof data.timestamp === "string" ? data.timestamp : eventTs,
+    agent: spec.agent,
+    decision,
+    confidence: data.confidence,
+    workflow_run_id: data.run_id ?? data.workflow_run_id,
+    timestamp: ts ?? new Date().toISOString(),
   };
 }
 
+function wsUrl(): string {
+  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${proto}://${window.location.host}/api/v1/ws/market`;
+}
+
 export function useCommitteeStreams(enabled = true) {
-  // HMAC headers PER-CHANNEL (fix B6): signature path harus match path
-  // request — sebelumnya satu signature (analyst-outputs) dipakai untuk
-  // semua channel → 401 INVALID_SIGNATURE di cio/risk/ic.
-  const [headersByChannel, setHeadersByChannel] = useState<
-    Record<string, Record<string, string>>
-  >({});
   const appendActivity = useCommitteeStore((s) => s.appendActivity);
   const setStreamState = useStreamStore((s) => s.setStreamState);
+  const [wsConnected, setWsConnected] = useState(false);
 
+  // ── Primary: 1 WebSocket menerima SEMUA channel komite ────────────────
   useEffect(() => {
-    let active = true;
-    const creds = getHmacCredentials();
-    if (!creds) {
-      setHeadersByChannel({});
-      return;
-    }
-    const build = async () => {
-      const result: Record<string, Record<string, string>> = {};
-      for (const spec of STREAMS) {
-        const path = `/api/v1/streams/${spec.channel}`;
-        result[spec.channel] = await buildAuthHeaders(
-          "GET",
-          path,
-          "",
-          creds.apiKey,
-          creds.apiSecret
-        );
+    if (!enabled) return;
+    let closed = false;
+    let ws: WebSocket | null = null;
+    const connect = () => {
+      if (closed) return;
+      try {
+        ws = new WebSocket(wsUrl());
+      } catch {
+        setTimeout(connect, 3000);
+        return;
       }
-      if (active) setHeadersByChannel(result);
+      ws.onopen = () => setWsConnected(true);
+      ws.onmessage = (ev) => {
+        try {
+          const frame = JSON.parse(String(ev.data)) as {
+            event?: string;
+            channel?: string;
+            data?: CommitteeStreamEvent;
+          };
+          const channel = frame.channel ?? "";
+          const spec = CHANNEL_MAP.get(channel);
+          if (!spec || !frame.data) return;
+          const activity = toActivity(channel, frame.data, frame.data.timestamp);
+          if (activity) appendActivity(activity);
+        } catch {
+          /* non-JSON */
+        }
+      };
+      ws.onclose = () => {
+        setWsConnected(false);
+        if (!closed) setTimeout(connect, 3000);
+      };
+      ws.onerror = () => {
+        /* onclose menyusul */
+      };
     };
-    void build();
+    connect();
     return () => {
-      active = false;
+      closed = true;
+      ws?.close();
     };
-  }, []);
+  }, [enabled, appendActivity]);
 
-  const apiOrigin = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/api\/v1\/?$/, "");
-
-  for (const spec of STREAMS) {
-    const channelHeaders = headersByChannel[spec.channel] ?? EMPTY_HEADERS;
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const sse = useSSE<CommitteeStreamEvent>({
-      url: `${apiOrigin}/api/v1/streams/${spec.channel}`,
-      enabled: enabled && (Object.keys(channelHeaders).length > 0 || !getHmacCredentials()),
-      headers: channelHeaders,
-      onEvent: (envelope: SSEEnvelope<CommitteeStreamEvent>) => {
-        const activity = toActivity(spec.channel, envelope.data, envelope.meta.timestamp);
-        if (activity) appendActivity(activity);
-      },
-    });
-    // B3: register status ke streamStore agar header health count akurat
-    // (sebelumnya committee streams tidak terhitung → "1/6" padahal 5
-    // stream jalan).
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
+  // Stream state: 4 channel dianggap connected via 1 WS.
+  useEffect(() => {
+    for (const spec of STREAMS) {
       setStreamState(spec.channel, {
-        status: sse.status,
-        stale: sse.stale,
-        error: sse.error ? sse.error.message : null,
+        status: wsConnected ? "open" : "closed",
+        stale: !wsConnected,
+        error: wsConnected ? null : "ws reconnecting",
       });
-    }, [sse.status, sse.stale, sse.error, spec.channel, setStreamState]);
-  }
+    }
+  }, [wsConnected, setStreamState]);
 }
