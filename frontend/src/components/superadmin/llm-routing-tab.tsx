@@ -1,5 +1,5 @@
-import { get } from "@/api/client";
-import { useQuery } from "@tanstack/react-query";
+import { get, put } from "@/api/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 
 /**
@@ -188,6 +188,26 @@ export function LLMRoutingTab() {
 
   const rolesSeen = new Set(usage.map((u) => u.role));
 
+  // ── Model settings (18 Aug 2026): dropdown dari /admin/llm-models ─────
+  const { data: modelsData } = useQuery({
+    queryKey: ["admin", "llm-models"],
+    queryFn: () => get<{ models: { id: string }[]; fetched_at?: string; error?: string | null }>("/admin/llm-models"),
+    staleTime: 60_000,
+  });
+  const qc = useQueryClient();
+  const saveCfg = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      put<{ updated: string[]; note: string }>("/admin/system-config", payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["admin", "llm-models"] });
+    },
+  });
+  const modelIds = (modelsData?.models ?? []).map((m) => m.id);
+
+  const [defModel, setDefModel] = React.useState("");
+  const [fbModels, setFbModels] = React.useState("");
+  const [autoDisc, setAutoDisc] = React.useState(true);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -207,6 +227,84 @@ export function LLMRoutingTab() {
           )}
           {usage.length} calls · last {lastTs ? new Date(lastTs).toLocaleTimeString() : "—"}
         </span>
+      </div>
+
+      {/* ── Model Settings — prompt flow control (18 Aug 2026) ─────────── */}
+      <div className="rounded-panel border border-line bg-bg p-3">
+        <h3 className="mb-2 font-mono text-[10px] uppercase tracking-widest text-ink-dim">
+          Model Routing Settings — prompt flow
+        </h3>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <label className="flex flex-col gap-1 text-[11px] text-ink-faint">
+            Default model (primary)
+            <select
+              className="rounded border border-line bg-raised px-2 py-1 font-mono text-xs text-ink"
+              value={defModel}
+              onChange={(e) => setDefModel(e.target.value)}
+            >
+              <option value="">— auto (discovery) —</option>
+              {modelIds.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-[11px] text-ink-faint">
+            Fallback models (comma-separated)
+            <input
+              className="rounded border border-line bg-raised px-2 py-1 font-mono text-xs text-ink"
+              placeholder="deepseek-v4-flash, glm-5, qwen-3.7"
+              value={fbModels}
+              onChange={(e) => setFbModels(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-1.5 text-[11px] text-ink-faint">
+            <input
+              type="checkbox"
+              checked={autoDisc}
+              onChange={(e) => setAutoDisc(e.target.checked)}
+            />
+            Auto-discovery (pilih model terbaik aktif otomatis)
+          </label>
+          <button
+            className="rounded border border-accent/50 bg-accent/10 px-3 py-1 font-mono text-[11px] text-accent hover:bg-accent/20"
+            disabled={saveCfg.isPending}
+            onClick={() => {
+              const payload: Record<string, unknown> = {};
+              if (defModel) payload.llm_default_model = defModel;
+              const fb = fbModels
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+              if (fb.length > 0) payload.llm_fallback_models = fb;
+              payload.llm_auto_fallback = autoDisc;
+              saveCfg.mutate(payload);
+            }}
+          >
+            {saveCfg.isPending ? "Saving…" : "Save (realtime)"}
+          </button>
+          {saveCfg.isSuccess && (
+            <span className="font-mono text-[10px] text-ok">
+              ✓ saved — applied tanpa restart
+            </span>
+          )}
+          {saveCfg.isError && (
+            <span className="font-mono text-[10px] text-danger">✗ save failed</span>
+          )}
+          {modelsData?.error && (
+            <span className="font-mono text-[10px] text-warn">
+              discovery: {modelsData.error}
+            </span>
+          )}
+          {modelIds.length === 0 && (
+            <span className="font-mono text-[10px] text-ink-faint">
+              (models list kosong — 9router belum reachable / auto-discovery aktif)
+            </span>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

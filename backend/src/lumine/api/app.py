@@ -497,6 +497,40 @@ async def _news_worker(publisher: SSEPublisher) -> None:
         await asyncio.sleep(300)  # poll tiap 5 menit
 
 
+async def _model_discovery_worker() -> None:
+    """Auto-select model terbaik dari 9router (18 Aug 2026).
+
+    Poll GET /v1/models tiap 60s → `auto_select_best_model` update overlay
+    `lumine:llm_routing.default_model` ke model non-free terbaik yang aktif.
+    Circuit breaker (routing_overlay) menandai model yang gagal 401/429 →
+    discovery berikutnya otomatis pindah ke model sehat. User tetap bisa
+    override manual via superadmin (default_model di-set → discovery hanya
+    update last_models, tidak menimpa pilihan manual ketika sudah cocok).
+    """
+    from lumine.llm_gateway.routing_overlay import auto_select_best_model
+    from lumine.shared.config import get_settings as _gs
+
+    settings = _gs()
+    if not settings.llm_gateway_url or not settings.llm_gateway_api_key:
+        return
+    try:
+        r = await redis.from_url(settings.redis_url)
+    except Exception:
+        return
+    while True:
+        try:
+            res = await auto_select_best_model(
+                r, settings.llm_gateway_url, settings.llm_gateway_api_key
+            )
+            if res.get("error"):
+                print(f"[MODELS] discovery error: {res['error'][:120]}", flush=True)
+            elif res.get("changed"):
+                print(f"[MODELS] auto-select → {res['chosen']} ({len(res['models'])} models)", flush=True)
+        except Exception as exc:
+            print(f"[MODELS] worker error: {str(exc)[:120]}", flush=True)
+        await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR0915 — infra init
     """Application lifespan: initialize trading infrastructure."""
@@ -532,6 +566,10 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR091
         # News feed (18 Aug 2026): seed awal + poll 5 menit + publish
         # headline baru ke SSE news-headlines.
         _app_state["news_worker"] = asyncio.create_task(_news_worker(sse_publisher))
+        # Model discovery (18 Aug 2026): auto-select model terbaik 9router
+        # tiap 60s — user minta agent utama yang pilih best aktif + switch
+        # otomatis saat rate-limit/down.
+        _app_state["model_discovery_worker"] = asyncio.create_task(_model_discovery_worker())
 
     # Initialize PositionSyncWorker if database pool available
     pool = getattr(settings, "database_url", None)

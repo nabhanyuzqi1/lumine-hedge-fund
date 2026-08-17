@@ -231,7 +231,6 @@ async def refresh_news_cache(redis: Any, publisher: Any | None = None) -> list[d
 
 
 async def get_cached_headlines(redis: Any, limit: int = 10) -> list[dict[str, Any]]:
-    """Read headlines dari cache (News Analyst / API). Kosong → coba refresh."""
     try:
         import json as _json
 
