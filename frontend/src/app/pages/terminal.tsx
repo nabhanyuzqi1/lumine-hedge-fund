@@ -305,7 +305,9 @@ function TradingWorkspace() {
   const { t } = useTranslation();
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
-  const [modifyTarget, setModifyTarget] = useState<OrderFixture | null>(null);
+    // T5b: Heikin-Ashi toggle — state di sini agar persist antar timeframe.
+    const [heikinAshi, setHeikinAshi] = useState(false);
+    const [modifyTarget, setModifyTarget] = useState<OrderFixture | null>(null);
   const lastTick = useMarketStore((s) => s.ticks[selectedSymbol] ?? null);
 
   const bars = useMarketBars(selectedSymbol, timeframe);
@@ -451,6 +453,8 @@ function TradingWorkspace() {
                       timeframe={timeframe}
                       onTimeframeChange={setTimeframe}
                       waitingLabel={t("terminal.waitingLiveData")}
+                      heikinAshi={heikinAshi}
+                      onHeikinAshiChange={setHeikinAshi}
                     />
         </Suspense>
         <Card>

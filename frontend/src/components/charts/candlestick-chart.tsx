@@ -15,6 +15,7 @@ import { buildLwcOptions, getChartColors } from "@/lib/chart-theme";
 import {
   barsToCandles,
   candleFromBar,
+  heikinAshiToCandles,
   updateBarWithTick,
   volumeFromBar,
 } from "@/lib/chart-transform";
@@ -35,6 +36,11 @@ export interface CandlestickChartProps {
   height?: number;
   /** Fallback label saat data live belum masuk/stale (market tutup dll). */
   waitingLabel?: string;
+  /** T5b: Heikin-Ashi toggle (transform OHLC → HA). */
+  heikinAshi?: boolean;
+  onHeikinAshiChange?: (v: boolean) => void;
+  /** T5b: price lines (TP/SL/Entry) via createPriceLine. */
+  priceLines?: { price: number; title: string; color?: string }[];
 }
 
 /**
@@ -49,6 +55,9 @@ export function CandlestickChart({
   onTimeframeChange,
   height = 360,
   waitingLabel,
+  heikinAshi = false,
+  onHeikinAshiChange,
+  priceLines = [],
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<{
@@ -115,15 +124,41 @@ export function CandlestickChart({
 
   useChartResize(chart, containerRef);
 
+  // T5b: price lines (TP/SL/Entry) — createPriceLine per level.
+  // Recreate saat daftar level berubah (hapus semua → create ulang).
+  useEffect(() => {
+    const { candles } = seriesRef.current;
+    if (!candles) return;
+    const created = priceLines.map((pl) => {
+      if (!Number.isFinite(pl.price) || pl.price <= 0) return null;
+      return candles.createPriceLine({
+        price: pl.price,
+        title: pl.title,
+        color: pl.color ?? "#f59e0b",
+        lineWidth: 1 as const,
+        lineStyle: 2 as const,
+        axisLabelVisible: true,
+      });
+    });
+    return () => {
+      for (const line of created) {
+        if (line) candles.removePriceLine(line);
+      }
+    };
+  }, [priceLines]);
+
   // Full re-render when the bar set changes (timeframe switch, refetch).
   useEffect(() => {
     const { candles, volumes } = seriesRef.current;
     if (!candles || !volumes || bars.length === 0) return;
-    const payload = barsToCandles(bars);
+    // T5b: Heikin-Ashi mode → transform OHLC ke HA sebelum render.
+    const payload = heikinAshi
+      ? { candles: heikinAshiToCandles(bars), volumes: barsToCandles(bars).volumes }
+      : barsToCandles(bars);
     candles.setData(payload.candles);
     volumes.setData(payload.volumes);
     lastBarRef.current = bars[bars.length - 1] ?? null;
-  }, [bars]);
+  }, [bars, heikinAshi]);
 
   // Debounced live tick → mutate the in-progress bar in place.
     useEffect(() => {
@@ -187,6 +222,21 @@ export function CandlestickChart({
               {tf}
             </button>
           ))}
+          {onHeikinAshiChange && (
+            <button
+              type="button"
+              onClick={() => onHeikinAshiChange(!heikinAshi)}
+              aria-pressed={heikinAshi}
+              className={cn(
+                "ml-1 rounded px-2 py-1 font-mono text-[11px] transition-colors",
+                heikinAshi
+                  ? "bg-cyan-500/20 text-cyan-300"
+                  : "text-text-muted hover:text-text-primary"
+              )}
+            >
+              HA
+            </button>
+          )}
         </div>
       }
       height={height}

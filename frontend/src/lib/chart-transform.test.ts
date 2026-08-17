@@ -10,6 +10,7 @@ import {
   equityToArea,
   equityToDrawdown,
   exposureToTreemap,
+  heikinAshiToCandles,
   pnlToLine,
   toUTCTime,
   updateBarWithTick,
@@ -178,5 +179,34 @@ describe("confidenceToEcharts", () => {
 describe("toUTCTime", () => {
   it("floors fractional seconds", () => {
     expect(toUTCTime(1000.9)).toBe(1000);
+  });
+});
+
+describe("heikinAshiToCandles", () => {
+  it("computes HA close as (O+H+L+C)/4 and smooths open", () => {
+    const bars = [
+      { time: 100, open: 10, high: 12, low: 9, close: 11, volume: 5 },
+      { time: 200, open: 11, high: 14, low: 10, close: 13, volume: 7 },
+    ];
+    const out = heikinAshiToCandles(bars);
+    expect(out).toHaveLength(2);
+    // Candle 1: haClose = (10+12+9+11)/4 = 10.5, haOpen = (10+11)/2 = 10.5
+    expect(out[0]!.close).toBeCloseTo(10.5);
+    expect(out[0]!.open).toBeCloseTo(10.5);
+    // Candle 2: haClose = (11+14+10+13)/4 = 12, haOpen = (10.5+10.5)/2 = 10.5
+    expect(out[1]!.close).toBeCloseTo(12);
+    expect(out[1]!.open).toBeCloseTo(10.5);
+    // haHigh = max(14, 10.5, 12) = 14
+    expect(out[1]!.high).toBe(14);
+  });
+
+  it("skips non-finite bars (defensive NaN guard)", () => {
+    const bars = [
+      { time: 100, open: 10, high: 12, low: 9, close: 11, volume: 5 },
+      { time: 200, open: Number.NaN, high: 14, low: 10, close: 13, volume: 7 },
+      { time: 300, open: 12, high: 15, low: 11, close: 14, volume: 9 },
+    ];
+    const out = heikinAshiToCandles(bars);
+    expect(out).toHaveLength(2);
   });
 });

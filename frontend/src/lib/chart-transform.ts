@@ -91,6 +91,44 @@ export function updateBarWithTick(bar: ChartBar, price: number, time?: number): 
   };
 }
 
+/**
+ * T5b (18 Aug 2026): Heikin-Ashi transform — harga dimuluskan (open/close
+ * rata-rata candle sebelumnya; body = haOpen-haClose). Implementasi
+ * standar HA:
+ *   haClose = (O+H+L+C)/4
+ *   haOpen  = (prevHaOpen + prevHaClose)/2  (candle pertama: (O+C)/2)
+ *   haHigh  = max(H, haOpen, haClose)
+ *   haLow   = min(L, haOpen, haClose)
+ */
+export function heikinAshiToCandles(
+  bars: ChartBar[]
+): CandlestickData<UTCTimestamp>[] {
+  const out: CandlestickData<UTCTimestamp>[] = [];
+  let prevHaOpen = 0;
+  let prevHaClose = 0;
+  for (const b of bars) {
+    const o = b.open;
+    const h = b.high;
+    const l = b.low;
+    const c = b.close;
+    if (!Number.isFinite(o) || !Number.isFinite(h) || !Number.isFinite(l) || !Number.isFinite(c)) continue;
+    const haClose = (o + h + l + c) / 4;
+    const haOpen = prevHaClose > 0 ? (prevHaOpen + prevHaClose) / 2 : (o + c) / 2;
+    const haHigh = Math.max(h, haOpen, haClose);
+    const haLow = Math.min(l, haOpen, haClose);
+    out.push({
+      time: toUTCTime(b.time),
+      open: haOpen,
+      high: haHigh,
+      low: haLow,
+      close: haClose,
+    });
+    prevHaOpen = haOpen;
+    prevHaClose = haClose;
+  }
+  return out;
+}
+
 /** Equity curve / P&L sparkline → area/line series points. */
 function validPoint(p: EquityPoint): p is EquityPoint {
   return (
