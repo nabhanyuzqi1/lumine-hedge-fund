@@ -371,13 +371,13 @@ int HttpPostJson(const string path, const string json, const int timeoutMs)
    ArrayResize(data, ArraySize(data) - 1);  // buang null terminator
 
    char result[];
-   // PITFALL (18 Aug 2026): WebRequest MQL5 default TANPA User-Agent →
-   // Cloudflare WAF balas HTTP 500 ke request (curl 200 karena UA curl).
-   // Tambah User-Agent eksplisit — CF treat sebagai browser-like request.
-   string headers = "Content-Type: application/json
-\nUser-Agent: LumineEA/4.11 (MT5; XAUUSD)
-\n";
-   string url = g_proxyURL + path;
+      // PITFALL (18 Aug 2026): WebRequest MQL5 default TANPA User-Agent →
+      // Cloudflare WAF balas HTTP 500 ke request (curl 200 karena UA curl).
+      // Tambah User-Agent eksplisit — CF treat sebagai browser-like request.
+      string headers = "Content-Type: application/json
+User-Agent: LumineEA/4.11 (MT5; XAUUSD)
+";
+      string url = g_proxyURL + path;
 
    int res = WebRequest("POST", url, headers, timeoutMs, data, result, headers);
    if(res == 200)
