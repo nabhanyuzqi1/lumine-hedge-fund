@@ -99,6 +99,13 @@ if [[ ! -f "${MT5_BIN}" ]]; then
   MT5_BIN="${WINEPREFIX}/drive_c/Program Files/MetaTrader 5/terminal64.exe"
 fi
 
+# ── /etc/hosts: mt5.local → origin IP (18 Aug 2026) ──────────────────
+# Bypass Cloudflare (500 ke WebRequest tanpa UA). Whitelist mt5.local
+# (hostname diterima MT5; IP address ditolak build HFM = 4014).
+if ! grep -q "mt5.local" /etc/hosts 2>/dev/null; then
+  echo "166.88.227.177 mt5.local" >> /etc/hosts
+fi
+
 if [[ -f "${MT5_BIN}" ]]; then
   # ── Install + compile LumineEA (Redis bridge agent) ──────────────────────
   # Data folder MT5: mode portable → <MT5_DIR>/MQL5 (bukan AppData/MetaQuotes)
@@ -145,7 +152,7 @@ def ensure_section(lines, section, keyvals):
         lines.insert(insert_at, kv)
     return lines
 
-lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id"])
+lines = ensure_section(lines, "[Experts]", ["AllowWebRequest=http://lumine.biz.id,http://mt5.local"])
 lines = ensure_section(lines, "[Common]", ["RestoreLast=1"])
 new_text = CRLF.join(lines)
 # Tulis ulang dengan BOM + CRLF (format Windows)
@@ -169,14 +176,14 @@ PYEOF
       echo "==> Restore workspace Default (EA attach)"
       mkdir -p "${MT5_DATA_DIR}/Profiles/Charts/Default"
       # PITFALL (18 Aug 2026): .chr chart menyimpan INPUT EA (InpProxyURL).
-      # Whitelist hanya terima lumine.biz.id (build HFM tolak IP/hostname
-      # palsu) → pastikan .chr selalu lumine.biz.id (hapus sisa mt5.local/
-      # IP dari eksperimen), + fix 500 CF via User-Agent di HttpPostJson.
+      # Patch ke mt5.local (origin IP via /etc/hosts) — bypass Cloudflare
+      # yang balas 500 ke WebRequest tanpa UA. build HFM tolak IP address
+      # di whitelist (4014) → mt5.local hostname diterima.
       for f in "${WORKSPACE_BACKUP}/"*.chr; do
         [[ -f "$f" ]] || continue
-        if grep -q "mt5.local\|166.88.227.177" "$f" 2>/dev/null; then
-          sed -i 's#http://mt5.local/mt5-proxy#http://lumine.biz.id/mt5-proxy#g; s#http://166.88.227.177/mt5-proxy#http://lumine.biz.id/mt5-proxy#g' "$f"
-          echo "    -> patched .chr proxy URL (lumine.biz.id): $(basename "$f")"
+        if grep -q "lumine.biz.id/mt5-proxy\|166.88.227.177/mt5-proxy" "$f" 2>/dev/null; then
+          sed -i 's#http://lumine.biz.id/mt5-proxy#http://mt5.local/mt5-proxy#g; s#http://166.88.227.177/mt5-proxy#http://mt5.local/mt5-proxy#g' "$f"
+          echo "    -> patched .chr proxy URL (mt5.local): $(basename "$f")"
         fi
       done
       cp -f "${WORKSPACE_BACKUP}/"*.chr "${MT5_DATA_DIR}/Profiles/Charts/Default/" 2>/dev/null || true
