@@ -35,6 +35,13 @@ interface LiveUsageFrame {
   timestamp: string;
 }
 
+interface LiveFailureFrame {
+  error: string;
+  kind: string;
+  llm_down: boolean;
+  timestamp: string;
+}
+
 const STAGE_ORDER = [
   "technical_analyst",
   "macro_analyst",
@@ -58,10 +65,15 @@ const STAGE_LABEL: Record<string, string> = {
 };
 
 /** WS live frames — di-push backend saat tiap stage selesai. */
-function useLLMUsageLive(onFrame: (f: LiveUsageFrame) => void) {
+function useLLMUsageLive(
+  onFrame: (f: LiveUsageFrame) => void,
+  onFailure: (f: LiveFailureFrame) => void
+) {
   const wsRef = React.useRef<WebSocket | null>(null);
   const cbRef = React.useRef(onFrame);
   cbRef.current = onFrame;
+  const failRef = React.useRef(onFailure);
+  failRef.current = onFailure;
 
   React.useEffect(() => {
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
@@ -79,6 +91,8 @@ function useLLMUsageLive(onFrame: (f: LiveUsageFrame) => void) {
             const frame = JSON.parse(String(ev.data));
             if (frame.event === "llm_usage" && frame.data) {
               cbRef.current(frame.data as LiveUsageFrame);
+            } else if (frame.event === "analyst_failed" && frame.data) {
+              failRef.current(frame.data as LiveFailureFrame);
             }
           } catch {
             /* non-JSON */
@@ -157,9 +171,15 @@ export function LLMRoutingTab() {
   const { data: usage = [], isLoading } = useLLMUsage();
   // Live frames via WS — merge ke usage list (role unik per frame).
   const [liveRows, setLiveRows] = React.useState<LiveUsageFrame[]>([]);
-  useLLMUsageLive((frame) => {
-    setLiveRows((prev) => [frame, ...prev].slice(0, 30));
-  });
+  const [failures, setFailures] = React.useState<LiveFailureFrame[]>([]);
+  useLLMUsageLive(
+    (frame) => {
+      setLiveRows((prev) => [frame, ...prev].slice(0, 30));
+    },
+    (failure) => {
+      setFailures((prev) => [failure, ...prev].slice(0, 20));
+    }
+  );
 
   const lastTs = usage.length > 0 ? Date.parse(usage[0].ts) : 0;
   const isActive = (role: string) =>
@@ -300,6 +320,41 @@ export function LLMRoutingTab() {
               )}
             </div>
           </div>
+
+          {/* Monitoring: analyst failures / LLM down (18 Aug 2026) */}
+          {failures.length > 0 && (
+            <div className="rounded-panel border border-danger/40 bg-danger/5">
+              <div className="border-b border-danger/30 px-3 py-2">
+                <h3 className="font-mono text-[10px] uppercase tracking-widest text-danger">
+                  ⚠ Analyst Failures / LLM Down — {failures.filter((f) => f.llm_down).length} down
+                </h3>
+              </div>
+              <div className="max-h-40 space-y-1 overflow-y-auto p-2">
+                {failures.map((f, i) => (
+                  <div
+                    key={`fail-${i}`}
+                    className="flex items-start justify-between gap-2 rounded bg-bg px-2 py-1 font-mono text-[10px]"
+                  >
+                    <div className="min-w-0">
+                      <span
+                        className={
+                          f.llm_down
+                            ? "mr-1 font-semibold text-danger"
+                            : "mr-1 font-semibold text-warn"
+                        }
+                      >
+                        {f.llm_down ? "LLM DOWN" : f.kind}
+                      </span>
+                      <span className="text-ink-dim">{f.error.slice(0, 120)}</span>
+                    </div>
+                    <span className="shrink-0 text-ink-faint">
+                      {new Date(f.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -378,7 +378,27 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             # menggagalkan cycle (resilience: 1 analyst down ≠ komite mati).
             for outcome in done:
                 if isinstance(outcome, BaseException):
-                    print(f"decision_cycle: analyst failed: {type(outcome).__name__}: {str(outcome)[:200]}", flush=True)
+                    err_text = str(outcome)[:200]
+                    print(f"decision_cycle: analyst failed: {type(outcome).__name__}: {err_text}", flush=True)
+                    # B10c (18 Aug 2026): publish kegagalan analyst ke SSE —
+                    # superadmin monitoring (channel llm-usage, event
+                    # analyst_failed) + deteksi LLM down (429/rate-limit).
+                    try:
+                        await publisher.publish(
+                            SSEEvent(
+                                event_type="analyst_failed",
+                                channel="llm-usage",
+                                data={
+                                    "error": err_text,
+                                    "kind": type(outcome).__name__,
+                                    "llm_down": "429" in err_text or "Rate limit" in err_text
+                                    or "timed out" in err_text or "FallbackExhausted" in err_text,
+                                    "timestamp": now.isoformat(),
+                                },
+                            )
+                        )
+                    except Exception:
+                        pass
                     continue
                 stage, label, out = outcome
                 analyst_inputs.append(out.parsed)
