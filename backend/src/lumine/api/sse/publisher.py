@@ -146,18 +146,22 @@ class SSEPublisher:
         await self.publish(event)
 
     async def publish_tick_update(self, symbol: str, bid: float, ask: float) -> None:
-        """Publish tick price update event."""
-        event = SSEEvent(
-            event_type="tick_update",
-            channel=f"market:{symbol}",
-            data={
-                "symbol": symbol,
-                "bid": bid,
-                "ask": ask,
-                "timestamp": datetime.now(UTC).isoformat(),
-            },
-        )
-        await self.publish(event)
+            """Publish tick price update event."""
+            event = SSEEvent(
+                event_type="tick_update",
+                channel=f"market:{symbol}",
+                data={
+                    "symbol": symbol,
+                    "bid": bid,
+                    "ask": ask,
+                    # PITFALL (18 Aug 2026): frontend MarketTick butuh `last`
+                    # untuk live chart + isStale — tanpanya chart beku & label
+                    # "waiting for live data / market closed" muncul terus.
+                    "last": bid,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+            )
+            await self.publish(event)
 
     async def publish_stream_open(self, channel: str) -> None:
         """Publish stream open lifecycle event."""

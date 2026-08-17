@@ -30,7 +30,7 @@ export const TICK_DEBOUNCE_MS = 100;
 export interface CandlestickChartProps {
   bars: ChartBar[];
   /** Live tick used to mutate the in-progress bar (debounced). */
-  lastTick?: { last: number } | null;
+  lastTick?: { last?: number; bid?: number; timestamp?: string } | null;
   timeframe: Timeframe;
   onTimeframeChange?: (timeframe: Timeframe) => void;
   height?: number;
@@ -188,9 +188,9 @@ export function CandlestickChart({
         const bar = lastBarRef.current;
         const { candles, volumes } = seriesRef.current;
         if (!bar || !candles || !volumes) return;
-        // Guard: lastTick.last null/NaN (SSE partial data) → skip, jangan
-        // crash lightweight-charts "Value is null".
-        const price = lastTick.last;
+        // Guard: lastTick.last null/NaN (SSE partial data) → fallback bid,
+        // lalu skip kalau keduanya invalid (jangan crash "Value is null").
+        const price = lastTick.last ?? (lastTick as { bid?: number }).bid;
         if (price == null || !Number.isFinite(price) || price <= 0) return;
         const updated = updateBarWithTick(bar, price);
         lastBarRef.current = updated;
@@ -207,15 +207,16 @@ export function CandlestickChart({
     // jam) → overlay "market closed" tampil padahal market BUKA dan chart
     // malah tidak live. Sebaliknya dengan live tick: kalau EA kirim tick
     // <30s lalu, market jelas buka → jangan stale.
-    const isStale =
-      bars.length > 0 &&
-      waitingLabel != null &&
-      // Live tick lebih baru dari 30 detik → market buka, pasti tidak stale.
-      (lastTick == null ||
-        lastTick.last == null ||
-        !Number.isFinite(lastTick.last) ||
-        Date.now() - (bars[bars.length - 1]!.time + (timeframe === "5m" ? 300 : timeframe === "15m" ? 900 : timeframe === "1H" ? 3600 : 14400)) * 1000 >
-          (timeframe === "1H" || timeframe === "4H" ? 2 * 60 * 60_000 : 10 * 60_000));
+    // Freshness: tick live <30s → market BUKA, pasti tidak stale (18 Aug).
+    // lastTick.last null → fallback bid (EA kirim bid/ask; last di-set
+    // backend = bid). Umur bar terakhir TIDAK dipakai (bar 4H wajar tua).
+    const tickPrice = lastTick?.last ?? lastTick?.bid;
+    const tickFresh =
+      lastTick != null &&
+      tickPrice != null &&
+      Number.isFinite(tickPrice) &&
+      Date.now() - Date.parse(lastTick.timestamp ?? "") < 30_000;
+    const isStale = bars.length > 0 && waitingLabel != null && !tickFresh;
 
   return (
     <ChartCard
