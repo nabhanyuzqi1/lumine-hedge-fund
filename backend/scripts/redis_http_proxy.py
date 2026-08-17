@@ -155,4 +155,8 @@ def logs():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    # PITFALL (18 Aug 2026): tanpa threaded=True Flask single-threaded —
+    # GET /commands?timeout=1 (long-poll 1s) memblokir satu-satunya thread;
+    # POST /status (dan lainnya) antri > EA WebRequest timeout 3s → socket
+    # tertutup → 500. EA kirim 5 request/detik → race hampir konstan.
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
