@@ -129,6 +129,15 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             last = bars[-1]
             ohlc = f"[{last['close']}, {max(b['high'] for b in bars[-5:])}, {min(b['low'] for b in bars[-5:])}, {closes[-1]}]"
 
+            # ── Context real untuk SEMUA analyst (v2, 17 Aug 2026) ─────────
+            # Macro/news/smc butuh variabel yang tadinya tidak disediakan →
+            # MissingVariableError → analyst gagal → cycle batal. Sekarang
+            # semua variabel diisi: nilai yang bisa dihitung dari bars_5m
+            # dihitung real; yang butuh feed eksternal (yield, dxy, news)
+            # diberi nilai jujur "unavailable" — LLM tetap beralasan dengan
+            # konteks yang tersedia, bukan gagal parse.
+            recent_high = float(max(b["high"] for b in bars[-20:]))
+            recent_low = float(min(b["low"] for b in bars[-20:]))
             variables: dict[str, object] = {
                 "symbol": symbol,
                 "decision_ts": now.isoformat(),
@@ -138,6 +147,30 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "rsi_14": round(rsi_14, 2),
                 "ohlc": ohlc,
                 "swing_structure": "unknown",
+                # Macro analyst (feed eksternal belum tersedia — jujur)
+                "us_10y": "unavailable (external feed not wired)",
+                "us_2y": "unavailable (external feed not wired)",
+                "dxy": "unavailable (external feed not wired)",
+                "real_yields": "unavailable (external feed not wired)",
+                "fed_stance": "unavailable (external feed not wired)",
+                "risk_regime": "risk-on" if ema_20 > ema_50 else "risk-off",
+                # News analyst (feed berita belum tersedia — jujur)
+                "headlines": "[]",
+                "sentiment_score": 0.0,
+                "relevance_score": 0.0,
+                "scheduled_events": "none (feed not wired)",
+                # SMC analyst (struktur dari bars_5m real)
+                "order_blocks": f"computed from bars: recent swing high {recent_high:.2f}, swing low {recent_low:.2f}",
+                "liquidity_pools": f"buy-side above {recent_high:.2f}, sell-side below {recent_low:.2f}",
+                "liquidity_sweep": (
+                    f"price above prior high {recent_high:.2f} (sell-side liquidity)"
+                    if float(last["close"]) > recent_high
+                    else f"price below prior low {recent_low:.2f} (buy-side liquidity)"
+                    if float(last["close"]) < recent_low
+                    else "none observed in recent window"
+                ),
+                "fair_value_gaps": "not computed",
+                "market_structure": "bullish" if ema_20 > ema_50 else "bearish",
             }
 
             # Position summary — konteks portofolio untuk risk assessor & CIO
@@ -271,10 +304,15 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             # Risk Assessor — evaluasi exposure/risk dari posisi + signal.
             # Konsumsi analyst consensus; output dipakai IC forum sebagai
             # constraint (D4-2 risk committee).
-            risk_vars = {
-                **variables,
-                "analyst_inputs": analyst_inputs,
+            # NOTE: run_risk_assessor pakai keyword args spesifik (bukan
+            # `variables` dict) — symbol/decision_ts/proposal_summary/
+            # portfolio_context/volatility_band (17 Aug 2026).
+            portfolio_context = {
+                "symbol": symbol,
                 "position_summary": position_summary,
+                "net_exposure_usd": float(position_summary["net_size"]) * float(last["close"]),
+                "margin_used": 0.0,
+                "open_pnl": float(position_summary["unrealized_pnl"]),
             }
             risk_out = await run_risk_assessor(
                 gateway=gateway,
@@ -284,7 +322,15 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 stage_run_id="risk_assessor",
                 model_version_id=mv.id,
                 idempotency_key=f"{lineage_id}:risk_assessor",
-                variables=risk_vars,
+                symbol=symbol,
+                decision_ts=now.isoformat(),
+                proposal_summary={
+                    "analyst_inputs": analyst_inputs,
+                    "symbol": symbol,
+                    "last_close": float(last["close"]),
+                },
+                portfolio_context=portfolio_context,
+                volatility_band="normal",
                 session=session,
             )
             await publisher.publish(
@@ -303,39 +349,9 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 )
             )
 
-            # CIO Proposer — konsensus analyst + risk → proposal keputusan.
-            cio_vars = {
-                **variables,
-                "analyst_inputs": analyst_inputs,
-                "risk_assessment": risk_out.parsed,
-                "position_summary": position_summary,
-            }
-            cio_out = await run_cio_proposer(
-                gateway=gateway,
-                registry=prompt_registry,
-                lineage_id=lineage_id,
-                workflow_run_id=result["run_id"],
-                stage_run_id="cio_proposer",
-                model_version_id=mv.id,
-                idempotency_key=f"{lineage_id}:cio_proposer",
-                variables=cio_vars,
-                session=session,
-            )
-            await publisher.publish(
-                SSEEvent(
-                    event_type="cio_proposal",
-                    channel="cio-proposals",
-                    data={
-                        "portfolio_id": "default",
-                        "symbol": symbol,
-                        "proposal": str(cio_out.parsed.get("proposal", "HOLD")),
-                        "rationale": str(cio_out.parsed.get("rationale", ""))[:500],
-                        "timestamp": now.isoformat(),
-                    },
-                )
-            )
-
-            # IC Forum (LLM real) — konsumsi SEMUA analyst + risk + CIO
+            # IC Forum (LLM real) — konsumsi SEMUA analyst + risk.
+            # Urutan (17 Aug 2026): analyst → risk assessor → IC forum →
+            # CIO proposer (CIO butuh ic_output dari IC).
             ic = await run_ic_forum(
                 gateway=gateway,
                 registry=prompt_registry,
@@ -362,6 +378,45 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                         "positions": [],
                         "confidence": confidence,
                         "reasoning": str(ic.parsed.get("reasoning", ""))[:500],
+                        "timestamp": now.isoformat(),
+                    },
+                )
+            )
+
+            # CIO Proposer — IC verdict + analyst consensus → proposal eksekusi.
+            # (17 Aug 2026): dijalankan SETELAH IC karena butuh ic_output.
+            cio_out = await run_cio_proposer(
+                gateway=gateway,
+                registry=prompt_registry,
+                lineage_id=lineage_id,
+                workflow_run_id=result["run_id"],
+                stage_run_id="cio_proposer",
+                model_version_id=mv.id,
+                idempotency_key=f"{lineage_id}:cio_proposer",
+                symbol=symbol,
+                decision_ts=now.isoformat(),
+                ic_output={
+                    "action": action,
+                    "confidence": confidence,
+                    "reasoning": str(ic.parsed.get("reasoning", ""))[:500],
+                },
+                analyst_inputs=analyst_inputs,
+                portfolio_context=portfolio_context,
+                policy_version_id="policy@v1",
+                model_version_ids={"default": str(mv.id)},
+                prompt_version_ids={"default": "v1"},
+                debate_held=False,
+                session=session,
+            )
+            await publisher.publish(
+                SSEEvent(
+                    event_type="cio_proposal",
+                    channel="cio-proposals",
+                    data={
+                        "portfolio_id": "default",
+                        "symbol": symbol,
+                        "proposal": str(cio_out.parsed.get("proposal", "HOLD")),
+                        "rationale": str(cio_out.parsed.get("rationale", ""))[:500],
                         "timestamp": now.isoformat(),
                     },
                 )
