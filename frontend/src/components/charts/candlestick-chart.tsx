@@ -41,6 +41,10 @@ export interface CandlestickChartProps {
   onHeikinAshiChange?: (v: boolean) => void;
   /** T5b: price lines (TP/SL/Entry) via createPriceLine. */
   priceLines?: { price: number; title: string; color?: string }[];
+  /** T5c: replay mode — index bar aktif (null = normal). Saat aktif,
+   *  chart menampilkan window [index-window, index] via visible range. */
+  replayIndex?: number | null;
+  replayWindow?: number;
 }
 
 /**
@@ -58,6 +62,8 @@ export function CandlestickChart({
   heikinAshi = false,
   onHeikinAshiChange,
   priceLines = [],
+  replayIndex = null,
+  replayWindow = 80,
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<{
@@ -124,6 +130,19 @@ export function CandlestickChart({
 
   useChartResize(chart, containerRef);
 
+  // T5c: replay — visible range mengekor index aktif. Replay aktif →
+  // live tick dibekukan (guard di bawah).
+  useEffect(() => {
+    if (!chart || replayIndex == null) return;
+    const total = bars.length;
+    if (total === 0) return;
+    const from = Math.max(0, replayIndex - replayWindow);
+    chart.timeScale().setVisibleLogicalRange({
+      from,
+      to: Math.max(from + 1, replayIndex),
+    });
+  }, [chart, replayIndex, replayWindow, bars.length]);
+
   // T5b: price lines (TP/SL/Entry) — createPriceLine per level.
   // Recreate saat daftar level berubah (hapus semua → create ulang).
   useEffect(() => {
@@ -163,6 +182,8 @@ export function CandlestickChart({
   // Debounced live tick → mutate the in-progress bar in place.
     useEffect(() => {
       if (!lastTick) return;
+      // T5c: replay aktif → jangan mutasi bar live (frozen snapshot).
+      if (replayIndex != null) return;
       const timer = setTimeout(() => {
         const bar = lastBarRef.current;
         const { candles, volumes } = seriesRef.current;
@@ -177,7 +198,7 @@ export function CandlestickChart({
         volumes.update(volumeFromBar(updated));
       }, TICK_DEBOUNCE_MS);
       return () => clearTimeout(timer);
-    }, [lastTick]);
+    }, [lastTick, replayIndex]);
 
     // Data freshness: TANPA tick live dalam 2× interval → stale. PITFALL
     // (17 Aug 2026): logika lama pakai umur bar terakhir vs interval —

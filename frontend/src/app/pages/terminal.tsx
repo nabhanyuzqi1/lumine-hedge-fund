@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 import { useMarketBars, useOrders, usePositions } from "@/api/hooks";
 import { useMarketWS } from "@/hooks/useMarketWS";
@@ -307,10 +308,29 @@ function TradingWorkspace() {
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
     // T5b: Heikin-Ashi toggle — state di sini agar persist antar timeframe.
     const [heikinAshi, setHeikinAshi] = useState(false);
+    // T5c: replay mode — index bar aktif + playing flag.
+    const [replayIndex, setReplayIndex] = useState<number | null>(null);
+    const [replayPlaying, setReplayPlaying] = useState(false);
+    const replayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const [modifyTarget, setModifyTarget] = useState<OrderFixture | null>(null);
   const lastTick = useMarketStore((s) => s.ticks[selectedSymbol] ?? null);
 
   const bars = useMarketBars(selectedSymbol, timeframe);
+
+  // T5c: replay — play interval maju 1 bar per tick (400ms).
+  useEffect(() => {
+    if (!replayPlaying) return;
+    replayTimer.current = setInterval(() => {
+      setReplayIndex((prev) => {
+        const total = bars.data?.length ?? 0;
+        if (prev == null) return total > 0 ? 0 : null;
+        return prev + 1 >= total ? null : prev + 1;
+      });
+    }, 400);
+    return () => {
+      if (replayTimer.current) clearInterval(replayTimer.current);
+    };
+  }, [replayPlaying, bars.data?.length]);
   const positions = usePositions();
   const orders = useOrders();
   const upsertTick = useMarketStore((state) => state.upsertTick);
@@ -455,8 +475,72 @@ function TradingWorkspace() {
                       waitingLabel={t("terminal.waitingLiveData")}
                       heikinAshi={heikinAshi}
                       onHeikinAshiChange={setHeikinAshi}
+                      replayIndex={replayIndex}
                     />
         </Suspense>
+
+        {/* T5c: Replay controls — scrub historis bars_* + export */}
+        <div className="flex flex-wrap items-center gap-2 rounded-panel border border-line bg-bg-overlay/60 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (replayIndex == null) {
+                setReplayIndex(0);
+                setReplayPlaying(true);
+              } else {
+                setReplayIndex(null);
+                setReplayPlaying(false);
+              }
+            }}
+            className={cn(
+              "rounded border px-2 py-1 font-mono text-[11px] transition-colors",
+              replayIndex != null
+                ? "border-accent/50 bg-accent/10 text-accent"
+                : "border-border-subtle text-text-muted hover:text-text-primary"
+            )}
+          >
+            {replayIndex != null ? "Exit Replay" : "▶ Replay"}
+          </button>
+          {replayIndex != null && (
+            <>
+              <button
+                type="button"
+                onClick={() => setReplayPlaying((p) => !p)}
+                className="rounded border border-border-subtle px-2 py-1 font-mono text-[11px] text-text-muted hover:text-text-primary"
+              >
+                {replayPlaying ? "⏸ Pause" : "▶ Play"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setReplayIndex((prev) => {
+                    const total = bars.data?.length ?? 0;
+                    if (prev == null) return 0;
+                    return Math.min(prev + 20, Math.max(total - 1, 0));
+                  })
+                }
+                className="rounded border border-border-subtle px-2 py-1 font-mono text-[11px] text-text-muted hover:text-text-primary"
+              >
+                +20
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={Math.max((bars.data?.length ?? 1) - 1, 0)}
+                value={replayIndex ?? 0}
+                onChange={(e) => {
+                  setReplayIndex(Number(e.target.value));
+                  setReplayPlaying(false);
+                }}
+                className="h-1 w-40 cursor-pointer accent-accent"
+                aria-label="Replay scrubber"
+              />
+              <span className="font-mono text-[10px] text-text-muted tabular-nums">
+                {replayIndex ?? 0} / {Math.max((bars.data?.length ?? 1) - 1, 0)}
+              </span>
+            </>
+          )}
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>{t("terminal.positions")}</CardTitle>
