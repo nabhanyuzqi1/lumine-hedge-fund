@@ -1193,13 +1193,13 @@ void SendStatus()
    g_marginLevel = (margin > 0 ? (equity / margin) * 100.0 : 0.0);
 
    string json = StringFormat(
-      "{\"ea_version\":\"4.0\",\"ea_build\":\"%s\",\"seed_phase\":%d,"
+      "{\"ea_version\":\"4.0\",\"ea_build\":%d,\"seed_phase\":%d,"
       "\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,"
       "\"proxy_url\":\"%s\",\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,"
       "\"spread\":%.1f,\"session_high\":%.2f,\"session_low\":%.2f,"
       "\"equity\":%.2f,\"balance\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,"
       "\"margin_level\":%.2f,\"leverage\":%d,\"net_pnl\":%.2f}",
-      __DATE__, g_seedPhase, (g_seedPhase == 2 ? 1 : 0), g_ticksSent,
+      g_eaBuild, g_seedPhase, (g_seedPhase == 2 ? 1 : 0), g_ticksSent,
       (long)g_lastTickSent, g_proxyURL, sym, bid, ask, spread,
       g_sessionHigh, g_sessionLow, equity, balance, margin, freeMargin,
       g_marginLevel, (int)AccountLeverage(), g_netPnl);
