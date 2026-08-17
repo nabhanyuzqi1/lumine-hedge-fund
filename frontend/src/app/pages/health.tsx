@@ -177,7 +177,7 @@ export function HealthPage() {
                   { label: "SYM", value: data.symbol },
                   { label: "BID", value: <NumericText value={data.bid} decimals={2} /> },
                   { label: "ASK", value: <NumericText value={data.ask} decimals={2} /> },
-                  { label: "SPR", value: <NumericText value={data.spread ?? undefined} decimals={2} /> },
+                  { label: "SPR", value: data.spread != null ? <NumericText value={data.spread} decimals={2} /> : <span>—</span> },
                   { label: "UPD", value: new Date(data.timestamp).toLocaleTimeString() },
                 ].map(({ label, value }) => (
                   <div

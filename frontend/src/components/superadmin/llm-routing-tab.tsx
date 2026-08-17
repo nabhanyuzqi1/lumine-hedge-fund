@@ -1,10 +1,14 @@
 import { get } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
+import * as React from "react";
 
 /**
  * B10: LLM routing diagram — superadmin. Visualisasi nodes yang saling
  * terhubung (9router → Gateway → agent stages → SSE channels). Node yang
  * baru saja aktif mendapat border menyala (pulse) + verbose log call.
+ *
+ * v2 (18 Aug 2026): WebSocket realtime — frame `llm_usage` dari decision
+ * cycle dipush langsung (tanpa polling). + panel verbose prompt per call.
  */
 
 interface LLMUsageEntry {
@@ -19,6 +23,16 @@ interface LLMUsageEntry {
   fallback_hops: number;
   degraded: boolean;
   lane: string | null;
+}
+
+interface LiveUsageFrame {
+  role: string;
+  model: string;
+  fallback_hops: number;
+  degraded: boolean;
+  tokens_in: number;
+  tokens_out: number;
+  timestamp: string;
 }
 
 const STAGE_ORDER = [
@@ -42,6 +56,48 @@ const STAGE_LABEL: Record<string, string> = {
   cio_proposer: "CIO",
   risk_officer: "Risk Officer",
 };
+
+/** WS live frames — di-push backend saat tiap stage selesai. */
+function useLLMUsageLive(onFrame: (f: LiveUsageFrame) => void) {
+  const wsRef = React.useRef<WebSocket | null>(null);
+  const cbRef = React.useRef(onFrame);
+  cbRef.current = onFrame;
+
+  React.useEffect(() => {
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    let closed = false;
+    const connect = () => {
+      if (closed) return;
+      try {
+        const ws = new WebSocket(`${proto}://${window.location.host}/api/v1/ws/market`);
+        wsRef.current = ws;
+        ws.onopen = () => {
+          // WS menerima SEMUA channel (termasuk llm-usage).
+        };
+        ws.onmessage = (ev) => {
+          try {
+            const frame = JSON.parse(String(ev.data));
+            if (frame.event === "llm_usage" && frame.data) {
+              cbRef.current(frame.data as LiveUsageFrame);
+            }
+          } catch {
+            /* non-JSON */
+          }
+        };
+        ws.onclose = () => {
+          if (!closed) setTimeout(connect, 3000);
+        };
+      } catch {
+        setTimeout(connect, 3000);
+      }
+    };
+    connect();
+    return () => {
+      closed = true;
+      wsRef.current?.close();
+    };
+  }, []);
+}
 
 function useLLMUsage(limit = 30) {
   return useQuery<LLMUsageEntry[]>({
@@ -99,10 +155,16 @@ function Edge({ active }: { active: boolean }) {
 
 export function LLMRoutingTab() {
   const { data: usage = [], isLoading } = useLLMUsage();
+  // Live frames via WS — merge ke usage list (role unik per frame).
+  const [liveRows, setLiveRows] = React.useState<LiveUsageFrame[]>([]);
+  useLLMUsageLive((frame) => {
+    setLiveRows((prev) => [frame, ...prev].slice(0, 30));
+  });
 
   const lastTs = usage.length > 0 ? Date.parse(usage[0].ts) : 0;
   const isActive = (role: string) =>
-    usage.some((u) => u.role === role && Date.now() - Date.parse(u.ts) < 60_000);
+    usage.some((u) => u.role === role && Date.now() - Date.parse(u.ts) < 60_000) ||
+    liveRows.some((f) => f.role === role && Date.now() - Date.parse(f.timestamp) < 60_000);
 
   const rolesSeen = new Set(usage.map((u) => u.role));
 
@@ -112,11 +174,17 @@ export function LLMRoutingTab() {
         <div>
           <h2 className="text-sm font-medium text-ink">LLM Routing — Live</h2>
           <p className="text-xs text-ink-faint">
-            Node menyala (border glow) = stage aktif &lt;60s terakhir. Data real dari
-            tabel llm_usage (polling 5s).
+            Node menyala (border glow) = stage aktif &lt;60s. Data real dari tabel
+            llm_usage + push WebSocket realtime (frame llm_usage per stage).
           </p>
         </div>
         <span className="font-mono text-[10px] text-ink-faint tabular-nums">
+          {liveRows.length > 0 && (
+            <span className="mr-2 inline-flex items-center gap-1 text-cyan-400">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
+              WS live
+            </span>
+          )}
           {usage.length} calls · last {lastTs ? new Date(lastTs).toLocaleTimeString() : "—"}
         </span>
       </div>
@@ -158,7 +226,7 @@ export function LLMRoutingTab() {
               </h3>
             </div>
             <div className="max-h-64 overflow-y-auto">
-              {usage.length === 0 ? (
+              {usage.length === 0 && liveRows.length === 0 ? (
                 <p className="px-3 py-4 text-xs text-ink-faint">
                   Belum ada LLM call tercatat. Trigger decision cycle untuk melihat routing live.
                 </p>
@@ -175,6 +243,31 @@ export function LLMRoutingTab() {
                     </tr>
                   </thead>
                   <tbody>
+                    {liveRows.map((f, i) => (
+                      <tr key={`live-${i}`} className="border-t border-cyan-400/20 bg-cyan-400/5">
+                        <td className="px-3 py-1 text-ink-dim">
+                          {new Date(f.timestamp).toLocaleTimeString()}
+                        </td>
+                        <td className="px-3 py-1 text-ink">
+                          {STAGE_LABEL[f.role] ?? f.role}
+                        </td>
+                        <td className="px-3 py-1 text-ink-dim">{f.model}</td>
+                        <td className="px-3 py-1 text-right text-ink-dim">
+                          {f.tokens_in + f.tokens_out}
+                        </td>
+                        <td className="px-3 py-1 text-right text-ink-dim">—</td>
+                        <td className="px-3 py-1">
+                          {f.degraded ? (
+                            <span className="text-amber-400">degraded</span>
+                          ) : (
+                            <span className="text-up">ok</span>
+                          )}
+                          {f.fallback_hops > 0 && (
+                            <span className="ml-1 text-ink-faint">hops={f.fallback_hops}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                     {usage.slice(0, 30).map((u) => (
                       <tr key={u.id} className="border-t border-line/50">
                         <td className="px-3 py-1 text-ink-dim">

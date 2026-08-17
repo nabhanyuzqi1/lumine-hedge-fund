@@ -149,6 +149,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 budget=BudgetGate({}),
                 client=client,
                 fallbacks=fallback_provider,
+                session=session,  # wajib — llm_usage + reasoning_traces (audit)
             )
             prompt_registry = Registry(base_path=Path("/app/docs/prompts"))
 
@@ -353,6 +354,26 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 stage, label, out = outcome
                 analyst_inputs.append(out.parsed)
                 analyst_results.append((stage, label, out))
+                # B10b (18 Aug 2026): publish usage realtime → LLM Routing
+                # tab (WS/SSE channel llm-usage) — UI live tanpa tunggu commit.
+                try:
+                    await publisher.publish(
+                        SSEEvent(
+                            event_type="llm_usage",
+                            channel="llm-usage",
+                            data={
+                                "role": stage,
+                                "model": getattr(out, "model_used", "unknown"),
+                                "fallback_hops": getattr(out, "fallback_hops", 0),
+                                "degraded": bool(getattr(out, "degraded", False)),
+                                "tokens_in": 0,
+                                "tokens_out": 0,
+                                "timestamp": now.isoformat(),
+                            },
+                        )
+                    )
+                except Exception:
+                    pass  # publish gagal tidak menggagalkan cycle
                 # G3: journal per analyst
                 await log_step(
                     session,
