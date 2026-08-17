@@ -94,7 +94,7 @@ async def _safe_send(websocket: WebSocket, payload: dict[str, Any]) -> None:
         await websocket.send_json(payload)
     except (RuntimeError, WebSocketDisconnect):
         # Client hilang — biarkan loop exit via finally unsubscribe.
-        raise WebSocketDisconnect
+        raise WebSocketDisconnect from None
 
 
 def _now_iso() -> str:
