@@ -363,8 +363,8 @@ async def list_llm_models(
         import urllib.request
 
         def _fetch() -> dict:
-            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"})  # noqa: S310 — url dari env LLM_GATEWAY_URL (admin-controlled)
-            with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 — url dari env LLM_GATEWAY_URL (admin-controlled)
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"})  # noqa: S310  # nosec B310 — url dari env LLM_GATEWAY_URL
+            with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310  # nosec B310 — url dari env LLM_GATEWAY_URL
                 import json as _json
 
                 return _json.loads(resp.read())
