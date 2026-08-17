@@ -43,15 +43,26 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     Macro/news/smc analyst di-skip (data feeds eksternal belum tersedia);
     technical + IC sudah cukup untuk committee feed LIVE yang bermakna.
     """
+    # v2 (17 Aug 2026): SEMUA agent aktif — technical, macro, news, smc
+    # (paralel), risk assessor, cio proposer, lalu IC forum. Analyst
+    # menggunakan variabel market context yang sama (D4-2).
+    import asyncio
     from decimal import Decimal
     from pathlib import Path
     from uuid import uuid4
 
     from sqlalchemy import select, text
 
+    from lumine.autogen_pipeline.agents.macro_analyst import run_macro_analyst
+    from lumine.autogen_pipeline.agents.news_analyst import run_news_analyst
+    from lumine.autogen_pipeline.agents.smc_analyst import run_smc_analyst
     from lumine.autogen_pipeline.agents.technical_analyst import run_technical_analyst
+    from lumine.autogen_pipeline.cio_proposer import run_cio_proposer
     from lumine.autogen_pipeline.ic_forum import run_ic_forum
-    from lumine.data.models import ModelVersion
+    from lumine.autogen_pipeline.journal import log_step
+    from lumine.autogen_pipeline.risk_assessor import run_risk_assessor
+    from lumine.data.models import ModelVersion, Position
+    from lumine.data.models import Signal as SignalRow
     from lumine.data.session import get_sessionmaker
     from lumine.features.indicators import atr, rsi
     from lumine.llm_gateway.budget import BudgetGate
@@ -69,7 +80,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
         "status": "failed",
     }
 
-    async def _run() -> dict[str, Any]:
+    async def _run() -> dict[str, Any]:  # noqa: PLR0915 — fixed LLM stage sequence
         """Execute the LLM cycle; raises on failure (caught by caller)."""
         async with get_sessionmaker()() as session:
             # model_version + prompt_version production
@@ -129,60 +140,202 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "swing_structure": "unknown",
             }
 
+            # Position summary — konteks portofolio untuk risk assessor & CIO
+            # (D4-2: risk committee & CIO harus tahu exposure saat ini).
+            position_rows = (
+                await session.execute(
+                    select(Position).where(
+                        Position.status == "open",
+                        Position.symbol == symbol,
+                    )
+                )
+            ).scalars().all()
+            position_summary: dict[str, object] = {
+                "count": len(position_rows),
+                "net_size": float(
+                    sum(
+                        (float(p.size) if p.direction == "long" else -float(p.size))
+                        for p in position_rows
+                    )
+                ),
+                "avg_entry": float(
+                    sum(float(p.avg_entry) for p in position_rows) / len(position_rows)
+                    if position_rows
+                    else 0.0
+                ),
+                "unrealized_pnl": float(sum(float(p.mt5_profit or 0) for p in position_rows)),
+            }
+
             lineage_id = uuid4()
-            # Technical analyst (LLM real)
-            analyst = await run_technical_analyst(
+            # ── Multi-analyst (v2, 17 Aug 2026) ────────────────────────────
+            # Semua 4 analyst dijalankan PARALEL (technical, macro, news, smc)
+            # — masing-masing LLM call via 9router. Sebelumnya hanya technical
+            # (macro/news/smc di-skip karena "feed eksternal belum ada").
+            # Variabel market context yang sama, tapi analyst punya fokus
+            # masing-masing (D4-2): technical = price action/indikator,
+            # macro = fundamental/rates, news = sentimen berita, smc = market
+            # structure/liquidity.
+            analyst_inputs: list[dict[str, object]] = []
+
+            analyst_specs = [
+                ("technical_analyst", run_technical_analyst, "Technical Analyst"),
+                ("macro_analyst", run_macro_analyst, "Macro Analyst"),
+                ("news_analyst", run_news_analyst, "News Analyst"),
+                ("smc_analyst", run_smc_analyst, "SMC Analyst"),
+            ]
+
+            analyst_results: list[tuple[str, str, object]] = []
+
+            async def _run_one(stage: str, fn: object, label: str) -> tuple[str, str, object]:
+                run_fn = fn  # type: ignore[assignment]
+                out = await run_fn(
+                    gateway=gateway,
+                    registry=prompt_registry,
+                    lineage_id=lineage_id,
+                    workflow_run_id=result["run_id"],
+                    stage_run_id=stage,
+                    model_version_id=mv.id,
+                    idempotency_key=f"{lineage_id}:{stage}",
+                    variables=variables,
+                    session=session,
+                )
+                await publisher.publish(
+                    SSEEvent(
+                        event_type="analyst_output",
+                        channel="analyst-outputs",
+                        data={
+                            "portfolio_id": "default",
+                            "symbol": symbol,
+                            "analyst_name": label,
+                            "recommendation": str(out.parsed.get("recommendation", "hold")),
+                            "confidence": float(out.parsed.get("confidence", 0.5)),
+                            "reasoning": str(out.parsed.get("reasoning", ""))[:500],
+                            "timestamp": now.isoformat(),
+                        },
+                    )
+                )
+                return stage, label, out
+
+            # Jalankan 4 analyst parallel (LLM call independen).
+            analyst_tasks = [
+                _run_one(stage, fn, label) for stage, fn, label in analyst_specs
+            ]
+            done = await asyncio.gather(*analyst_tasks, return_exceptions=True)
+
+            # Kumpulkan hasil yang sukses; analyst gagal di-log, tidak
+            # menggagalkan cycle (resilience: 1 analyst down ≠ komite mati).
+            for outcome in done:
+                if isinstance(outcome, BaseException):
+                    print(f"decision_cycle: analyst failed: {type(outcome).__name__}: {str(outcome)[:200]}", flush=True)
+                    continue
+                stage, label, out = outcome
+                analyst_inputs.append(out.parsed)
+                analyst_results.append((stage, label, out))
+                # G3: journal per analyst
+                await log_step(
+                    session,
+                    workflow_id=result["run_id"],
+                    step_name=stage,
+                    status="completed",
+                    duration_ms=int((datetime.now(UTC) - now).total_seconds() * 1000),
+                    input_snapshot={"symbol": symbol, "ohlc": ohlc},
+                    output_snapshot={
+                        "recommendation": str(out.parsed.get("recommendation", "hold")),
+                        "confidence": float(out.parsed.get("confidence", 0.5)),
+                    },
+                    lineage_id=None,
+                )
+                # B5: persist signal per analyst → dashboard AI confidence.
+                rec = str(out.parsed.get("recommendation", "hold")).lower()
+                direction = (
+                    "bullish" if rec in ("buy", "long", "bullish")
+                    else "bearish" if rec in ("sell", "short", "bearish")
+                    else "neutral"
+                )
+                session.add(
+                    SignalRow(
+                        run_id=result["run_id"],
+                        symbol=symbol,
+                        analyst=label,
+                        direction=direction,
+                        confidence=Decimal(str(float(out.parsed.get("confidence", 0.5)))),
+                        rationale=str(out.parsed.get("reasoning", ""))[:500],
+                        generated_at=now,
+                    )
+                )
+
+            if not analyst_inputs:
+                msg = "all analysts failed — aborting cycle"
+                raise RuntimeError(msg)
+
+            # Risk Assessor — evaluasi exposure/risk dari posisi + signal.
+            # Konsumsi analyst consensus; output dipakai IC forum sebagai
+            # constraint (D4-2 risk committee).
+            risk_vars = {
+                **variables,
+                "analyst_inputs": analyst_inputs,
+                "position_summary": position_summary,
+            }
+            risk_out = await run_risk_assessor(
                 gateway=gateway,
                 registry=prompt_registry,
                 lineage_id=lineage_id,
                 workflow_run_id=result["run_id"],
-                stage_run_id="technical_analyst",
+                stage_run_id="risk_assessor",
                 model_version_id=mv.id,
-                idempotency_key=f"{lineage_id}:technical_analyst",
-                variables=variables,
+                idempotency_key=f"{lineage_id}:risk_assessor",
+                variables=risk_vars,
                 session=session,
             )
             await publisher.publish(
                 SSEEvent(
-                    event_type="analyst_output",
-                    channel="analyst-outputs",
+                    event_type="risk_assessment",
+                    channel="risk-assessments",
                     data={
                         "portfolio_id": "default",
                         "symbol": symbol,
-                        "analyst_name": "Technical Analyst",
-                        "recommendation": str(analyst.parsed.get("recommendation", "hold")),
-                        "confidence": float(analyst.parsed.get("confidence", 0.5)),
-                        "reasoning": str(analyst.parsed.get("reasoning", ""))[:500],
+                        "risk_level": str(risk_out.parsed.get("risk_level", "medium")),
+                        "max_position_size": float(risk_out.parsed.get("max_position_size", 0.01)),
+                        "stop_loss_pct": float(risk_out.parsed.get("stop_loss_pct", 1.0)),
+                        "reasoning": str(risk_out.parsed.get("reasoning", ""))[:500],
                         "timestamp": now.isoformat(),
                     },
                 )
             )
 
-            # G3: journal pipeline — analyst step → workflow_journal (hash chain).
-            from lumine.autogen_pipeline.journal import log_step
-
-            await log_step(
-                session,
-                workflow_id=result["run_id"],
-                step_name="technical_analyst",
-                status="completed",
-                duration_ms=int((datetime.now(UTC) - now).total_seconds() * 1000),
-                input_snapshot={
-                    "symbol": symbol,
-                    "ohlc": ohlc,
-                    "atr_14": atr_14,
-                    "rsi_14": rsi_14,
-                    "ema_20": ema_20,
-                    "ema_50": ema_50,
-                },
-                output_snapshot={
-                    "recommendation": str(analyst.parsed.get("recommendation", "hold")),
-                    "confidence": float(analyst.parsed.get("confidence", 0.5)),
-                },
-                lineage_id=None,  # cycle ringkas — lineage_records penuh belum dibuat
+            # CIO Proposer — konsensus analyst + risk → proposal keputusan.
+            cio_vars = {
+                **variables,
+                "analyst_inputs": analyst_inputs,
+                "risk_assessment": risk_out.parsed,
+                "position_summary": position_summary,
+            }
+            cio_out = await run_cio_proposer(
+                gateway=gateway,
+                registry=prompt_registry,
+                lineage_id=lineage_id,
+                workflow_run_id=result["run_id"],
+                stage_run_id="cio_proposer",
+                model_version_id=mv.id,
+                idempotency_key=f"{lineage_id}:cio_proposer",
+                variables=cio_vars,
+                session=session,
+            )
+            await publisher.publish(
+                SSEEvent(
+                    event_type="cio_proposal",
+                    channel="cio-proposals",
+                    data={
+                        "portfolio_id": "default",
+                        "symbol": symbol,
+                        "proposal": str(cio_out.parsed.get("proposal", "HOLD")),
+                        "rationale": str(cio_out.parsed.get("rationale", ""))[:500],
+                        "timestamp": now.isoformat(),
+                    },
+                )
             )
 
-            # IC Forum (LLM real) — konsumsi analyst output
+            # IC Forum (LLM real) — konsumsi SEMUA analyst + risk + CIO
             ic = await run_ic_forum(
                 gateway=gateway,
                 registry=prompt_registry,
@@ -193,7 +346,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 idempotency_key=f"{lineage_id}:ic_forum",
                 symbol=symbol,
                 decision_ts=now.isoformat(),
-                analyst_inputs=[analyst.parsed],
+                analyst_inputs=analyst_inputs,
                 session=session,
             )
             action = str(ic.parsed.get("action", "HOLD"))
@@ -221,32 +374,12 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 step_name="ic_forum",
                 status="completed",
                 duration_ms=int((datetime.now(UTC) - now).total_seconds() * 1000),
-                input_snapshot={"symbol": symbol, "analyst_inputs": [analyst.parsed]},
+                input_snapshot={"symbol": symbol, "analyst_inputs": analyst_inputs},
                 output_snapshot={"action": action, "confidence": confidence},
                 lineage_id=None,
             )
 
-            # B5: persist signals → dashboard AI confidence / signals panel.
-            # Analyst output (direction dari recommendation) + IC decision.
-            from lumine.data.models import Signal as SignalRow
-
-            rec = str(analyst.parsed.get("recommendation", "hold")).lower()
-            direction = (
-                "bullish" if rec in ("buy", "long", "bullish")
-                else "bearish" if rec in ("sell", "short", "bearish")
-                else "neutral"
-            )
-            session.add(
-                SignalRow(
-                    run_id=result["run_id"],
-                    symbol=symbol,
-                    analyst="Technical Analyst",
-                    direction=direction,
-                    confidence=Decimal(str(float(analyst.parsed.get("confidence", 0.5)))),
-                    rationale=str(analyst.parsed.get("reasoning", ""))[:500],
-                    generated_at=now,
-                )
-            )
+            # B5: persist signal IC → dashboard AI confidence / signals panel.
             ic_action = action.lower()
             ic_direction = (
                 "bullish" if ic_action in ("buy", "long")
@@ -270,7 +403,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "status": "completed",
                 "decision": action.lower(),
                 "confidence": confidence,
-                "analyst_recommendation": str(analyst.parsed.get("recommendation", "hold")),
+                "analyst_recommendation": "aggregated",
                 "finished_at": datetime.now(UTC).isoformat(),
             }
 
