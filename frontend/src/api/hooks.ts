@@ -263,7 +263,12 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
           timeframe: timeframe.toLowerCase(),
           limit: "200",
         });
-        if (Array.isArray(bars) && bars.length > 0) return bars.map(toChartBar);
+        if (Array.isArray(bars) && bars.length > 0)
+          return bars
+            .map(toChartBar)
+            // Guard: bar dengan timestamp invalid (0/NaN dari data parsial)
+            // bikin lightweight-charts crash "Value is null" — skip.
+            .filter((b) => Number.isFinite(b.time) && b.time > 0);
       } catch {
         // fall through to empty / fixture
       }
@@ -289,10 +294,14 @@ export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
           offset: "0",
         });
         if (Array.isArray(res?.items) && res.items.length > 0 && typeof res.items[0]?.nav === "string") {
-          return res.items.map((p) => ({
-            time: new Date(p.ts).getTime() / 1000,
-            value: num(p.nav, 0),
-          }));
+          return res.items
+            .map((p) => ({
+              time: epochSec(p.ts),
+              value: num(p.nav, 0),
+            }))
+            // Guard: skip titik dengan timestamp invalid (NaN/0) — kalau
+            // lolos, lightweight-charts throw "Value is null" dan halaman crash.
+            .filter((p) => Number.isFinite(p.time) && p.time > 0 && Number.isFinite(p.value));
         }
       } catch {
         // fall through to fixture

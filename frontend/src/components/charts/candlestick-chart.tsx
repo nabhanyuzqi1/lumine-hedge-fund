@@ -132,7 +132,11 @@ export function CandlestickChart({
         const bar = lastBarRef.current;
         const { candles, volumes } = seriesRef.current;
         if (!bar || !candles || !volumes) return;
-        const updated = updateBarWithTick(bar, lastTick.last);
+        // Guard: lastTick.last null/NaN (SSE partial data) → skip, jangan
+        // crash lightweight-charts "Value is null".
+        const price = lastTick.last;
+        if (price == null || !Number.isFinite(price) || price <= 0) return;
+        const updated = updateBarWithTick(bar, price);
         lastBarRef.current = updated;
         candles.update(candleFromBar(updated));
         volumes.update(volumeFromBar(updated));

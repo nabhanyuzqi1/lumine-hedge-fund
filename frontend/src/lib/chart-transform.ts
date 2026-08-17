@@ -29,10 +29,10 @@ export interface CandlePayload {
 export function candleFromBar(bar: ChartBar): CandlestickData<UTCTimestamp> {
   return {
     time: toUTCTime(bar.time),
-    open: bar.open,
-    high: bar.high,
-    low: bar.low,
-    close: bar.close,
+    open: Number.isFinite(bar.open) ? bar.open : bar.close,
+    high: Number.isFinite(bar.high) ? bar.high : bar.close,
+    low: Number.isFinite(bar.low) ? bar.low : bar.close,
+    close: Number.isFinite(bar.close) ? bar.close : bar.open,
   };
 }
 
@@ -43,7 +43,7 @@ export function volumeFromBar(
 ): HistogramData<UTCTimestamp> {
   return {
     time: toUTCTime(bar.time),
-    value: bar.volume,
+    value: Number.isFinite(bar.volume) ? Math.max(0, bar.volume) : 0,
     color: bar.close >= bar.open ? colors.up : colors.down,
   };
 }
@@ -57,11 +57,18 @@ export function barsToCandles(
   const volumes: HistogramData<UTCTimestamp>[] = [];
 
   for (const bar of bars) {
+    // Guard: lightweight-charts v5 throws "Value is null" saat time/value
+    // NaN/null lolos (seed bars realtime bisa berisi bar in-progress atau
+    // data parsial dari EA). Skip bar invalid — jangan render.
+    if (!bar || !Number.isFinite(bar.time) || bar.time <= 0) continue;
+    if (!Number.isFinite(bar.open) || !Number.isFinite(bar.high) ||
+        !Number.isFinite(bar.low) || !Number.isFinite(bar.close)) continue;
     const time = toUTCTime(bar.time);
     candles.push({ time, open: bar.open, high: bar.high, low: bar.low, close: bar.close });
+    const volume = Number.isFinite(bar.volume) ? Math.max(0, bar.volume) : 0;
     volumes.push({
       time,
-      value: bar.volume,
+      value: volume,
       color: bar.close >= bar.open ? colors.up : colors.down,
     });
   }
@@ -85,12 +92,21 @@ export function updateBarWithTick(bar: ChartBar, price: number, time?: number): 
 }
 
 /** Equity curve / P&L sparkline → area/line series points. */
+function validPoint(p: EquityPoint): p is EquityPoint {
+  return (
+    p != null &&
+    Number.isFinite(p.time) &&
+    p.time > 0 &&
+    Number.isFinite(p.value)
+  );
+}
+
 export function equityToArea(points: EquityPoint[]): AreaData<UTCTimestamp>[] {
-  return points.map((p) => ({ time: toUTCTime(p.time), value: p.value }));
+  return points.filter(validPoint).map((p) => ({ time: toUTCTime(p.time), value: p.value }));
 }
 
 export function pnlToLine(points: EquityPoint[]): LineData<UTCTimestamp>[] {
-  return points.map((p) => ({ time: toUTCTime(p.time), value: p.value }));
+  return points.filter(validPoint).map((p) => ({ time: toUTCTime(p.time), value: p.value }));
 }
 
 /**
@@ -100,7 +116,7 @@ export function pnlToLine(points: EquityPoint[]): LineData<UTCTimestamp>[] {
  */
 export function equityToDrawdown(points: EquityPoint[]): EquityPoint[] {
   let peak = Number.NEGATIVE_INFINITY;
-  return points.map((p) => {
+  return points.filter(validPoint).map((p) => {
     peak = Math.max(peak, p.value);
     return { time: p.time, value: p.value / peak - 1 };
   });
