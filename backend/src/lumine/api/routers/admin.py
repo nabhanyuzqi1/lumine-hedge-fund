@@ -499,12 +499,19 @@ async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, man
     overlay_updates: dict[str, str] = {}
     if request.llm_default_model is not None:
         overlay_updates["default_model"] = request.llm_default_model
+        # User set default MANUAL → worker auto-select jangan timpa
+        # (18 Aug 2026: auto-discovery selalu menang atas pilihan manual
+        # karena skor 'pro' > model lain → "pengaturan tidak tersimpan").
+        overlay_updates["manual_default"] = "1"
     if request.llm_fallback_models is not None:
         import json as _json
 
         overlay_updates["fallback_models"] = _json.dumps(request.llm_fallback_models)
     if request.llm_auto_fallback is not None:
         overlay_updates["auto_discovery"] = "1" if request.llm_auto_fallback else "0"
+        # User eksplisit toggle auto → reset manual_default (worker boleh
+        # auto-select lagi).
+        overlay_updates["manual_default"] = "0" if request.llm_auto_fallback else "1"
     # Bug fix 18 Aug 2026: llm_gateway_url/key juga ke overlay — worker
     # baca per-cycle dari ROUTING_KEY → perubahan URL/key REAL TIME
     # (sebelumnya hanya ke _SYSCONFIG_KEY → butuh restart api container).

@@ -169,14 +169,15 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
         candidates = models  # semua down → biarkan fallback chain menangani
     chosen = max(candidates, key=_score)
 
-    # Update overlay — default_model HANYA jika auto_discovery aktif
-    # (Bug fix 18 Aug 2026: sebelumnya SELALU timpa pilihan manual user
-    # via superadmin — set default_model lalu 60s kemudian di-overwrite
-    # worker → "pengaturan tidak tersimpan").
+    # Update overlay — default_model HANYA jika auto_discovery aktif DAN
+    # user belum set default manual (Bug fix 18 Aug 2026: sebelumnya
+    # SELALU timpa pilihan manual via superadmin — auto-select menang
+    # karena skor 'pro' > model lain → "pengaturan tidak tersimpan").
     auto_discovery = overlay.get("auto_discovery") == "1"
+    manual_default = overlay.get("manual_default") == "1"
     prev_default = overlay.get("default_model", "")
     updates: dict[str, str] = {}
-    if auto_discovery and chosen != prev_default:
+    if auto_discovery and not manual_default and chosen != prev_default:
         updates["default_model"] = chosen
     # last_models_json SELALU di-update (cache untuk dropdown UI) —
     # ini bukan keputusan routing, hanya daftar model yang tersedia.
@@ -185,8 +186,8 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
     if updates:
         await redis.hset(ROUTING_KEY, mapping=updates)
     return {
-        "chosen": chosen if auto_discovery else prev_default,
+        "chosen": chosen if (auto_discovery and not manual_default) else prev_default,
         "models": models[:50],
         "error": None,
-        "changed": auto_discovery and chosen != prev_default,
+        "changed": auto_discovery and not manual_default and chosen != prev_default,
     }
