@@ -80,7 +80,7 @@ async def fetch_economic_calendar(redis: Any) -> list[dict[str, Any]]:
                 # `timestamp` — ts=0 → semua jadi 1970 → filter 72h kosong.
                 raw_date = str(item.get("date", "") or "").strip()
                 if raw_date:
-                    dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+                    dt = datetime.fromisoformat(raw_date)
                 else:
                     ts = float(item.get("timestamp", 0))
                     dt = datetime.fromtimestamp(ts, tz=UTC)
