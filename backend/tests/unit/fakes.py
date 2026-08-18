@@ -205,6 +205,17 @@ def analyst_json(**overrides: object) -> str:
         "argument": "higher highs with EMA support",
         "confidence": 0.72,
         "bias": "bullish",
+        "volatility": {
+            "level": "medium",
+            "expected_pre_event": "elevated before FOMC",
+            "expected_post_event": "settles after release",
+            "atr_note": "",
+        },
+        "plan": {
+            "pre_news": "reduce size before high-impact event",
+            "post_news": "react after release settles",
+            "high_impact_within_24h": False,
+        },
     }
     payload.update(overrides)
     return json.dumps(payload)
