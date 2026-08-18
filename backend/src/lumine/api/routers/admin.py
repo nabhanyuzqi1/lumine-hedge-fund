@@ -440,7 +440,7 @@ async def _attach_overlay_state(payload: dict, r) -> dict:
 
 
 @router.put("/system-config", response_model=dict)
-async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, many branches
+async def update_system_config(  # noqa: C901, PLR0912, PLR0915 — fixed field list, many branches
     request: SystemConfigUpdate,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> dict:
