@@ -21,6 +21,8 @@ interface CommitteeStreamEvent {
   decision?: string;
   action?: string;
   recommendation?: string;
+  proposal?: string;
+  risk_level?: string;
   confidence?: number;
   timestamp?: string;
 }
@@ -47,7 +49,15 @@ function toActivity(
 ): CommitteeActivity | null {
   const spec = CHANNEL_MAP.get(channel);
   if (!spec || !data) return null;
-  const decision = data.decision ?? data.action ?? data.recommendation;
+  // FIX 18 Aug 2026: CIO publish `proposal` & Risk publish `risk_level` —
+  // SEBELUMNYA cek decision/action/recommendation saja → CIO & Risk
+  // activity SELALU null → "live agent activity tidak muncul 1 pun".
+  const decision =
+    data.decision ??
+    data.action ??
+    data.recommendation ??
+    data.proposal ??
+    (data as { risk_level?: string }).risk_level;
   if (!decision) return null;
   return {
     id: `${channel}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,

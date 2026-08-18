@@ -58,7 +58,7 @@ const SYMBOL_CANDIDATES = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTC
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen" | "backtest" | "profiles";
+type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen" | "backtest";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -66,7 +66,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "config", label: "System Config" },
   { id: "keys", label: "API Keys" },
   { id: "llm", label: "LLM Routing" },
-  { id: "profiles", label: "Trading Profiles" },
   { id: "mt5", label: "MT5 Desktop" },
   { id: "logs", label: "Logs" },
   { id: "autogen", label: "AutoGen Studio" },
@@ -693,9 +692,13 @@ export function SuperadminPage() {
       <div role="tabpanel" className="min-h-[400px]">
         {tab === "overview" && <OverviewTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "services" && <ServicesTab data={systemInfo.data} isError={systemInfo.isError} />}
-        {tab === "config" && <ConfigTab data={systemInfo.data} isError={systemInfo.isError} />}
-        {tab === "llm" && <LLMRoutingTab />}
-                {tab === "profiles" && <TradingProfilesTab />}
+        {tab === "config" && (
+                  <>
+                    <ConfigTab data={systemInfo.data} isError={systemInfo.isError} />
+                    <TradingProfilesTab />
+                  </>
+                )}
+                {tab === "llm" && <LLMRoutingTab />}
                 {tab === "mt5" && (
           <div className="space-y-4">
             <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />
