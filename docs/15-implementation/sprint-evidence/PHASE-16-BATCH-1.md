@@ -95,3 +95,6 @@ Frontend rebuilt and redeployed successfully.
 2. Frontend iframe embed for AutoGen Studio
 3. Full test suite run (`pytest`, `tsc --noEmit`, `vitest run`)
 4. Update Phase 16 complete plan with evidence links
+
+
+> NOTE (18 Aug 2026): AutoGen Studio TIDAK dipakai — pipeline AutoGen langsung (backend) sudah menggantikannya. Referensi di atas historis saja.

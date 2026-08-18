@@ -106,3 +106,6 @@
 ## Commit hashes (branch dev, 2026-08-15/16)
 
 `f52b559 → 33acad9 → dcbbb6c → 1ea16de → c5f868f → 3fa498f → d03a651 → 77d2794 → 18a150d → 3642e23 → adfa508 → fb6e91b → 2880410` (+ lainnya) — semua push + deploy via CI auto-deploy.
+
+
+> NOTE (18 Aug 2026): AutoGen Studio TIDAK dipakai — pipeline AutoGen langsung (backend) sudah menggantikannya. Referensi di atas historis saja.

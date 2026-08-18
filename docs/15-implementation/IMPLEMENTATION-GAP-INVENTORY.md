@@ -102,3 +102,6 @@ Dokumen berikut diperbarui agar sinkron dengan realitas kode:
 ---
 
 **End of Document**
+
+
+> NOTE (18 Aug 2026): AutoGen Studio TIDAK dipakai — pipeline AutoGen langsung (backend) sudah menggantikannya. Referensi di atas historis saja.

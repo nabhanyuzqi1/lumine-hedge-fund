@@ -43,10 +43,12 @@ import {
 export const DEFAULT_PORTFOLIO_ID = "default";
 
 const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
+  "1m": 60,
   "5m": 300,
   "15m": 900,
   "1H": 3_600,
   "4H": 14_400,
+  "1D": 86_400,
 };
 
 export const CORRELATION_SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTCUSD"];

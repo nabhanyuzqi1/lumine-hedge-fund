@@ -626,3 +626,6 @@ cd backend && PYTHONPATH= .venv/Scripts/python.exe -m pytest tests/contract -v
 **End of Document**
 
 **Next Action:** Begin with Task B-16-01 (Positions Backfill) — highest priority, blocks P&L display.
+
+
+> NOTE (18 Aug 2026): AutoGen Studio TIDAK dipakai — pipeline AutoGen langsung (backend) sudah menggantikannya. Referensi di atas historis saja.

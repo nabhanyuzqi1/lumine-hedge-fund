@@ -144,3 +144,6 @@
 - Commits: `9e6730a` (latest) — 24 commits hari ini ke branch `dev`
 
 Last Updated: 2026-08-15
+
+
+> NOTE (18 Aug 2026): AutoGen Studio TIDAK dipakai — pipeline AutoGen langsung (backend) sudah menggantikannya. Referensi di atas historis saja.

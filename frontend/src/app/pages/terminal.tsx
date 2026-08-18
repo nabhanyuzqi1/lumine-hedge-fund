@@ -24,6 +24,7 @@ const LazyCandlestickChart = lazy(() =>
 import { ActivityLog } from "@/components/terminal/activity-log";
 import { CommitteeFeed } from "@/components/terminal/committee-feed";
 import { AIInsightPanel } from "@/components/terminal/ai-insight-panel";
+import { HintHeader } from "@/components/ui/info-hint";
 import { QuotePanel } from "@/components/terminal/quote-panel";
 import { RiskGauges } from "@/components/terminal/risk-gauges";
 import { WhatIfPanel } from "@/components/terminal/what-if-panel";
@@ -113,12 +114,17 @@ function PositionsTable({ positions }: { positions: PositionFixture[] }) {
           cell: (row) => <NumericText value={row.current_price} decimals={2} tone="neutral" />,
         },
         {
-          key: "pnl",
-          header: t("terminal.colPnl"),
-          cell: (row) => (
-            <NumericText
-              value={row.unrealized_pnl}
-              decimals={2}
+                  key: "pnl",
+                  header: (
+                    <HintHeader
+                      label={t("terminal.colPnl") ?? "P&L"}
+                      hint="Unrealized P&L = (harga sekarang − harga entry) × qty. Positif = floating profit."
+                    />
+                  ),
+                  cell: (row) => (
+                    <NumericText
+                      value={row.unrealized_pnl}
+                      decimals={2}
               showSign
               tone={row.unrealized_pnl >= 0 ? "up" : "down"}
             />
@@ -185,12 +191,17 @@ function OrdersTable({
           cell: (row) => <Badge tone={ORDER_STATUS_TONE[row.status]} label={row.status} />,
         },
         {
-          key: "pnl",
-          header: t("terminal.colPnl"),
-          cell: (row) => (
-            <NumericText
-              value={row.pnl}
-              decimals={2}
+                  key: "pnl",
+                  header: (
+                    <HintHeader
+                      label={t("terminal.colPnl") ?? "P&L"}
+                      hint="Unrealized P&L = (harga sekarang − harga entry) × qty. Positif = floating profit."
+                    />
+                  ),
+                  cell: (row) => (
+                    <NumericText
+                      value={row.pnl}
+                      decimals={2}
               showSign
               tone={row.pnl >= 0 ? "up" : "down"}
             />

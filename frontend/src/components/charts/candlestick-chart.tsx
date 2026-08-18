@@ -21,7 +21,7 @@ import {
 } from "@/lib/chart-transform";
 import { cn } from "@/lib/utils";
 
-export const TIMEFRAMES = ["5m", "15m", "1H", "4H"] as const;
+export const TIMEFRAMES = ["1m", "5m", "15m", "1H", "4H", "1D"] as const;
 export type Timeframe = (typeof TIMEFRAMES)[number];
 
 /** Batch live ticks into one series update — exit criterion: <150ms switch, no dropped frames. */

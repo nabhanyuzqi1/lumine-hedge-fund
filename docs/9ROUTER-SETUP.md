@@ -283,3 +283,6 @@ curl http://9router:20128/v1/chat/completions
 
 Committee feed UI: agent messages muncul (AutoGen berhasil panggil LLM)
 ```
+
+
+> NOTE (18 Aug 2026): AutoGen Studio TIDAK dipakai — pipeline AutoGen langsung (backend) sudah menggantikannya. Referensi di atas historis saja.

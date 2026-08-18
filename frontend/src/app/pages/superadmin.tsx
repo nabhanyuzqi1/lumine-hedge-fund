@@ -58,7 +58,7 @@ const SYMBOL_CANDIDATES = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTC
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen" | "backtest";
+type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "backtest";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -68,7 +68,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "llm", label: "LLM Routing" },
   { id: "mt5", label: "MT5 Desktop" },
   { id: "logs", label: "Logs" },
-  { id: "autogen", label: "AutoGen Studio" },
   { id: "backtest", label: "Backtest" },
 ];
 
@@ -706,12 +705,6 @@ export function SuperadminPage() {
           </div>
         )}
         {tab === "logs" && <EmbedTab url="/dozzle/" title="Dozzle — Container Log Viewer (session-protected)" />}
-        {tab === "autogen" && (
-          <EmbedTab
-            url="/autogen-studio/"
-            title="AutoGen Studio — Visual Agent Management (session-protected)"
-          />
-        )}
         {tab === "backtest" && <BacktestTab />}
         {tab === "keys" && (
           <div className="space-y-4">
