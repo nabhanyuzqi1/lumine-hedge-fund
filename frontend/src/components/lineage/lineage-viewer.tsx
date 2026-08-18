@@ -40,9 +40,9 @@ function nodeMatches(node: LineageNode, path: string, term: string) {
   if (!term) return true;
   const t = term.toLowerCase();
   return (
-    node.label.toLowerCase().includes(t) ||
-    node.detail?.toLowerCase().includes(t) ||
-    path.toLowerCase().includes(t)
+    (node.label ?? "").toLowerCase().includes(t) ||
+    (node.detail ?? "").toLowerCase().includes(t) ||
+    (path ?? "").toLowerCase().includes(t)
   );
 }
 

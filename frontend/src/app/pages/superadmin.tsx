@@ -461,14 +461,6 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">LLM Gateway (9router)</h3>
-        <div className="rounded-chip border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-ink-dim">
-          Pengaturan model (default, fallback, auto-discovery) dipindah ke tab{" "}
-          <span className="font-mono text-accent">LLM Routing</span> — satu sumber
-          kebenaran. Edit di sana berlaku realtime tanpa restart.
-        </div>
-      </div>
-      <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Trading Parameters</h3>
         {field("Max Exposure per Trade (e.g. 0.02 = 2%)", "max_exposure_per_trade", "number")}
         {field("Risk per Trade (e.g. 0.01 = 1%)", "risk_per_trade", "number")}

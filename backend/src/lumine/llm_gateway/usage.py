@@ -14,12 +14,12 @@ thin async adapter that appends the row through a session.
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from lumine.data.models import LLMUsage
-from lumine.shared.errors import LLMUsageRecordError
 
 if TYPE_CHECKING:
     import uuid
@@ -92,19 +92,28 @@ async def write_usage(
     request: RouterRequest,
     response: GatewayResponse,
     **kwargs: Any,
-) -> LLMUsage:
+) -> LLMUsage | None:
     """Append one ``LLMUsage`` row via ``session`` (idempotent per call).
 
-    Flushes so the row's ``id``/``ts`` are populated and FK failures
-    surface here — the caller's transaction decides commit/rollback.
+    PITFALL (18 Aug 2026): persist gagal → jangan raise fatal. ``llm_usage``
+    adalah audit/cost log — kegagalannya TIDAK boleh menggagalkan decision
+    cycle (user lihat: pipeline mati karena "failed to persist llm_usage
+    row: This Session's transaction has been rolled back"). Satu exception
+    di session (mis. FK model_version_id stale) meracuni flush berikutnya.
+    Fix: rollback + log warning + return None (cycle tetap lanjut).
     """
     usage = record_usage(request=request, response=response, **kwargs)
     session.add(usage)
     try:
         await session.flush()
     except Exception as exc:  # pragma: no cover — DB errors surface upstream
-        message = f"failed to persist llm_usage row: {exc}"
-        raise LLMUsageRecordError(message) from exc
+        logger = logging.getLogger("lumine.llm_gateway.usage")
+        logger.warning("llm_usage persist skipped (non-fatal): %s", exc)
+        try:
+            await session.rollback()  # bersihkan session → flush berikutnya tidak "rolled back"
+        except Exception:  # nosec B110 — rollback best-effort
+            pass
+        return None
     return usage
 
 

@@ -367,7 +367,18 @@ export function LLMRoutingTab() {
         <>
           {/* Diagram: 9router → Gateway → stages → SSE */}
           <div className="flex flex-col items-center rounded-panel border border-line bg-bg p-4">
-            <Node label="9router" sub="oc/deepseek-v4-flash-free" active={usage.length > 0} />
+            <Node
+              label="9router"
+              // 18 Aug 2026: model dari state TERSIMPAN (default manual /
+              // available discovery) — sebelumnya hardcoded oc/deepseek
+              // walau user sudah ganti model → diagram tidak terupdate.
+              sub={
+                (modelsData?.default_model || modelsData?.models?.[0]?.id || "auto")
+                  .split("/")
+                  .pop() ?? "auto"
+              }
+              active={usage.length > 0}
+            />
             <Edge active={usage.length > 0} />
             <Node label="LLM Gateway" sub={`${usage.length} calls`} active={usage.length > 0} />
             <Edge active={usage.length > 0} />

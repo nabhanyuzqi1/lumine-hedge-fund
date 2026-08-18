@@ -672,7 +672,10 @@ class LLMUsage(Base):
     fallback_hops: Mapped[int] = mapped_column(nullable=False, default=0)
     degraded: Mapped[bool] = mapped_column(nullable=False, default=False)
     lane: Mapped[str | None] = mapped_column(Text)
-    lineage_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("lineage_records.lineage_id"))
+    # 18 Aug 2026: FK DIBUANG — worker decision cycle pass uuid4() random
+    # tanpa insert lineage_records dulu → FK violation tiap cycle
+    # ("failed to persist llm_usage row"). Kini soft reference.
+    lineage_id: Mapped[uuid.UUID | None] = mapped_column()
 
     __table_args__ = (
         Index("ix_llm_usage_ts", "ts"),

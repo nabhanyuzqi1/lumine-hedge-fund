@@ -728,8 +728,21 @@ async def _handle_place_order(payload: dict[str, Any], publisher: SSEPublisher, 
         take_profit=float(take_profit) if take_profit else None,
     )
 
-    # Paper trading mode: simulate fill without MT5
-    if settings.paper_trading:
+    # Paper trading mode: simulate fill without MT5.
+    # 18 Aug 2026: baca dari Redis system_config (realtime, tanpa restart)
+    # — user matikan paper_trading via superadmin tapi worker tetap env
+    # static → "tidak tersimpan, disuruh restart api container".
+    paper_trading = settings.paper_trading
+    try:
+        from lumine.data.redis_client import get_redis
+
+        _r = await get_redis()
+        _raw = await _r.hget("lumine:system_config", "paper_trading")
+        if _raw is not None:
+            paper_trading = str(_raw).lower() in ("1", "true", "yes")
+    except Exception:  # nosec B110 — Redis down → fallback env
+        pass
+    if paper_trading:
         import secrets
 
         # Simulate fill with random slippage (secrets for non-crypto use)
