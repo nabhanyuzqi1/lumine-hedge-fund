@@ -19,8 +19,6 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-import pytest
-
 from lumine.data.models import LLMUsage
 from lumine.llm_gateway.types import ChatMessage, GatewayResponse, ModelTier, RouterRequest
 from lumine.llm_gateway.usage import record_usage, write_usage

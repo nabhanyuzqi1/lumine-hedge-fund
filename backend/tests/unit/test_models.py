@@ -325,11 +325,12 @@ class TestLLMUsageSchemaD67:
         fks = {fk.target_fullname for fk in col.foreign_keys}
         assert "model_versions.id" in fks
 
-    def test_lineage_id_is_nullable_fk(self) -> None:
+    def test_lineage_id_is_nullable_soft_ref(self) -> None:
+        # 18 Aug 2026: FK lineage dibuang (worker pass uuid4 random tanpa
+        # lineage_records dulu → FK violation berantai). Kini soft ref.
         col = LLMUsage.__table__.columns["lineage_id"]
         assert col.nullable is True
-        fks = {fk.target_fullname for fk in col.foreign_keys}
-        assert "lineage_records.lineage_id" in fks
+        assert not col.foreign_keys
 
 
 class TestReasoningTraceSchemaD711:
