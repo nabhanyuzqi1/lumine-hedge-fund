@@ -36,7 +36,7 @@ prompts:
 - sub_role: news_analyst
   version: v1
   prompt_ref: news_analyst@v1.prompt
-  expected_hash: accdc6b58737652ee16b8f95735d106a7d8636636348079922d48edc764a6283
+  expected_hash: 37e0dbbebf1751be429a91348432f43d8147383ba1bc2e219486e5d374f21d93
   model_tier_hint: cost-efficient
   variables:
   - symbol
@@ -91,7 +91,7 @@ prompts:
 - sub_role: cio_proposer
   version: v1
   prompt_ref: cio_proposer@v1.prompt
-  expected_hash: 857b6372a141f89c36536477b7da12ce074965957920b667855019947d46d479
+  expected_hash: 9866de66f49967b45ae8076e634b63f5981b641099d7cb8f92a9d2bcce8dfb4b
   model_tier_hint: frontier
   variables:
   - symbol
