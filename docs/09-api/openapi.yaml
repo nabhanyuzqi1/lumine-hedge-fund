@@ -3049,6 +3049,222 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/profiles:
+    get:
+      tags:
+      - admin
+      summary: List Profiles
+      description: '18 Aug 2026: trading profiles (scalping/intraday/swing + transisi).'
+      operationId: list_profiles_api_v1_admin_profiles_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Profiles Api V1 Admin Profiles Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/profiles/{profile_id}:
+    put:
+      tags:
+      - admin
+      summary: Upsert Profile
+      description: Simpan profil custom (prompt override + trading params) — realtime.
+      operationId: upsert_profile_api_v1_admin_profiles__profile_id__put
+      parameters:
+      - name: profile_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Profile Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Upsert Profile Api V1 Admin Profiles  Profile Id  Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - admin
+      summary: Remove Profile
+      operationId: remove_profile_api_v1_admin_profiles__profile_id__delete
+      parameters:
+      - name: profile_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Profile Id
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Remove Profile Api V1 Admin Profiles  Profile Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/profiles/active:
+    post:
+      tags:
+      - admin
+      summary: Set Profile Active
+      description: Aktifkan profil (id di body) — realtime, tanpa restart container.
+      operationId: set_profile_active_api_v1_admin_profiles_active_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Set Profile Active Api V1 Admin Profiles Active Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/admin/reasoning-traces:
     get:
       tags:

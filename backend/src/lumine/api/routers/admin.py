@@ -330,6 +330,70 @@ async def list_llm_usage(
         return []
 
 
+@router.get("/profiles")
+async def list_profiles(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> list[dict]:
+    """18 Aug 2026: trading profiles (scalping/intraday/swing + transisi)."""
+    from lumine.data.redis_client import get_redis
+    from lumine.trading.profiles import list_profiles
+
+    try:
+        r = await get_redis()
+        return await list_profiles(r)
+    except Exception:
+        return []
+
+
+@router.put("/profiles/{profile_id}")
+async def upsert_profile(
+    profile_id: str,
+    body: dict,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    """Simpan profil custom (prompt override + trading params) — realtime."""
+    from lumine.data.redis_client import get_redis
+    from lumine.trading.profiles import upsert_profile
+
+    profile = dict(body)
+    profile["id"] = profile_id
+    try:
+        r = await get_redis()
+        return await upsert_profile(r, profile)
+    except Exception as exc:
+        return {"error": str(exc)[:200]}
+
+
+@router.delete("/profiles/{profile_id}")
+async def remove_profile(
+    profile_id: str,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    from lumine.data.redis_client import get_redis
+    from lumine.trading.profiles import delete_profile
+
+    r = await get_redis()
+    await delete_profile(r, profile_id)
+    return {"deleted": profile_id}
+
+
+@router.post("/profiles/active")
+async def set_profile_active(
+    body: dict,
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    """Aktifkan profil (id di body) — realtime, tanpa restart container."""
+    from lumine.data.redis_client import get_redis
+    from lumine.trading.profiles import set_active_profile
+
+    profile_id = str(body.get("profile_id", ""))
+    if not profile_id:
+        return {"error": "profile_id required"}
+    r = await get_redis()
+    await set_active_profile(r, profile_id)
+    return {"active_profile": profile_id}
+
+
 @router.get("/reasoning-traces")
 async def list_reasoning_traces(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],

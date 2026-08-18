@@ -137,6 +137,17 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     # News headlines real (18 Aug 2026): baca cache Redis dari _news_worker.
     # Fallback "[]" → analyst tetap jalan (jujur, tidak gagal).
     _news_headlines_json = "[]"
+    # Trading profile aktif (18 Aug 2026): scalping_1m default. Worker
+    # baca per cycle → prompt override + execution params realtime.
+    _active_profile: dict[str, Any] = {}
+    try:
+        if _r is None:
+            _r = await get_redis()
+        from lumine.trading.profiles import get_active_profile
+
+        _active_profile = await get_active_profile(_r)
+    except Exception:
+        _active_profile = {}
     # Economic calendar (18 Aug 2026): baca cache dari _eco_calendar_worker
     # → analyst (news/macro) tahu event yang akan datang + dampaknya.
     _eco_calendar_json = "[]"
@@ -478,6 +489,25 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
 
             async def _run_one(stage: str, fn: object, label: str) -> tuple[str, str, object]:
                 run_fn = fn  # type: ignore[assignment]
+                # 18 Aug 2026: per-agent prompt override dari profil aktif
+                # (user: "prompt bisa diatur sendiri" per agent). Override
+                # di-mix ke variabel `profile_override` → prompt templates
+                # menyisipkannya bila ada; tanpa override → tidak berubah.
+                stage_vars = dict(variables)
+                try:
+                    overrides = (_active_profile.get("agent_overrides") or {})
+                    if isinstance(overrides, dict) and overrides.get(stage):
+                        stage_vars["profile_override"] = str(overrides[stage])
+                    else:
+                        stage_vars["profile_override"] = ""
+                    stage_vars["active_profile"] = str(
+                        _active_profile.get("id", "scalping_1m")
+                    )
+                    stage_vars["profile_timeframe"] = str(
+                        _active_profile.get("timeframe", variables.get("timeframe", "5m"))
+                    )
+                except Exception:
+                    stage_vars["profile_override"] = ""
                 out = await run_fn(
                     gateway=gateway,
                     registry=prompt_registry,
@@ -486,7 +516,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     stage_run_id=stage,
                     model_version_id=mv_id,
                     idempotency_key=f"{lineage_id}:{stage}",
-                    variables=variables,
+                    variables=stage_vars,
                     session=session,
                 )
                 await publisher.publish(
@@ -779,7 +809,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 prop_sl = cio_out.parsed.get("stop_loss")
                 prop_tp = cio_out.parsed.get("take_profit")
 
-                # Threshold confidence dari system_config (realtime).
+                # Threshold confidence dari system_config ATAU profil aktif
+                # (18 Aug 2026: profil punya min_confidence sendiri).
                 min_conf = 0.70
                 try:
                     if _r is None:
@@ -787,6 +818,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     _raw_conf = await _r.hget("lumine:system_config", "execution_min_confidence")
                     if _raw_conf is not None:
                         min_conf = float(_raw_conf)
+                    if _active_profile.get("min_confidence"):
+                        min_conf = float(_active_profile["min_confidence"])
                 except Exception:
                     pass
                 # Kill switch check.
@@ -805,6 +838,40 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     and confidence >= min_conf
                     and not _halted
                 )
+                # ── AUTO SL/TP dari profil (18 Aug 2026): jika AI tidak
+                # beri stop_loss/take_profit, hitung dari ATR x multiplier
+                # profil (sl_atr_mult / tp_atr_mult). User: "semua auto
+                # sl tp, cl, be dan entry out otomatis".
+                try:
+                    if eligible and (prop_sl is None or prop_tp is None):
+                        atr_val = 0.0
+                        try:
+                            from lumine.features.indicators import atr as _atr
+
+                            if len(bars) >= 20:
+                                atr_val = float(_atr(bars, period=14))
+                        except Exception:
+                            atr_val = 0.0
+                        if atr_val <= 0.0:
+                            # Fallback: 0.5% harga
+                            atr_val = float(last["close"]) * 0.005
+                        entry_px = float(last["close"])
+                        sl_mult = float(_active_profile.get("sl_atr_mult", 1.0))
+                        tp_mult = float(_active_profile.get("tp_atr_mult", 2.0))
+                        if prop_sl is None:
+                            prop_sl = (
+                                round(entry_px - atr_val * sl_mult, 2)
+                                if prop_side == "BUY"
+                                else round(entry_px + atr_val * sl_mult, 2)
+                            )
+                        if prop_tp is None:
+                            prop_tp = (
+                                round(entry_px + atr_val * tp_mult, 2)
+                                if prop_side == "BUY"
+                                else round(entry_px - atr_val * tp_mult, 2)
+                            )
+                except Exception:
+                    pass
                 if eligible:
                     order_id = uuid4()
                     await enqueue_command(
