@@ -120,6 +120,11 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     if avail is not None and m not in avail:
                         continue
                     filtered.append(m)
+                # 18 Aug 2026: manual chain SEMUA non-available (budget
+                # habis / tidak respond probe) → jatuh ke available_models
+                # dari discovery (model yang benar-benar bisa dipanggil).
+                if not filtered and avail:
+                    filtered = avail[:3]
                 chain = filtered or chain
             except Exception:  # nosec B110 — filter best-effort
                 pass  # filter best-effort — chain tetap dipakai apa adanya
