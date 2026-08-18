@@ -129,6 +129,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             except Exception:  # nosec B110 — filter best-effort
                 pass  # filter best-effort — chain tetap dipakai apa adanya
             routing_chain = chain
+            # DEBUG 18 Aug 2026: lihat chain aktual yang dipakai worker.
+            print(f"[ROUTING] chain={chain} avail={avail if 'avail' in locals() else 'n/a'}", flush=True)
     except Exception:
         pass  # overlay tidak tersedia → fallback ke env
 
