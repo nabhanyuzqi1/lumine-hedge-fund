@@ -397,6 +397,7 @@ class SystemInfo(BaseModel):
     llm_gateway_configured: bool  # True jika API key terisi
     demo_data: bool
     paper_trading: bool = True  # ADR-0043: paper trading mode
+    sandbox_profile: str | None = None
     environment: str
     version: str
     # B9: symbol aktif (enable/disable currency via superadmin).
@@ -439,3 +440,4 @@ class SystemConfigUpdate(BaseModel):
     llm_fallback_models: list[str] | None = None
     # ADR-0043: paper trading mode — simulate fills, do not send to MT5
     paper_trading: bool | None = None
+    sandbox_profile: str | None = None

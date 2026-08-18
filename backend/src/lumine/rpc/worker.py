@@ -146,6 +146,20 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
         from lumine.trading.profiles import get_active_profile
 
         _active_profile = await get_active_profile(_r)
+        # SANDBOX: saat paper_trading=1, worker pakai profil SANDBOX
+        # (system_config.sandbox_profile) — uji profile baru tanpa
+        # mengganggu profil real. default: profil aktif yang sama.
+        try:
+            _pt = await _r.hget("lumine:system_config", "paper_trading")
+            _sp = await _r.hget("lumine:system_config", "sandbox_profile")
+            if _pt and str(_pt).lower() in ("1", "true", "yes") and _sp:
+                from lumine.trading.profiles import get_profile
+
+                _sb = await get_profile(_r, str(_sp))
+                if _sb:
+                    _active_profile = _sb
+        except Exception:
+            pass
     except Exception:
         _active_profile = {}
     # Economic calendar (18 Aug 2026): baca cache dari _eco_calendar_worker

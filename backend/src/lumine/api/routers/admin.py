@@ -200,7 +200,7 @@ async def set_kill_switch(
 
 
 @router.get("/system-info", response_model=SystemInfo)
-async def get_system_info(
+async def get_system_info(  # noqa: C901 — banyak branch status service + config
     settings: Annotated[Settings, Depends(get_settings)],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> SystemInfo:
@@ -269,12 +269,28 @@ async def get_system_info(
     except Exception:  # nosec B110 — Redis down → default XAUUSD
         pass  # Redis down — default XAUUSD
 
+    # FIX 18 Aug 2026: paper_trading & sandbox_profile dibaca dari Redis
+    # (realtime) — SEBELUMNYA dari settings env static → UI tampil state
+    # lama ("paper masih nyala") walau sudah diubah via System Config.
+    paper_trading = settings.paper_trading
+    sandbox_profile: str | None = None
+    try:
+        _pt = await r.hget(_SYSCONFIG_KEY, "paper_trading")
+        if _pt is not None:
+            paper_trading = str(_pt).lower() in ("1", "true", "yes")
+        _sp = await r.hget(_SYSCONFIG_KEY, "sandbox_profile")
+        if _sp:
+            sandbox_profile = str(_sp)
+    except Exception:  # nosec B110 — Redis down → fallback env
+        pass
+
     return SystemInfo(
         services=services,
         llm_gateway_url=settings.llm_gateway_url,
         llm_gateway_configured=bool(settings.llm_gateway_api_key),
         demo_data=settings.demo_data,
-        paper_trading=settings.paper_trading,
+        paper_trading=paper_trading,
+        sandbox_profile=sandbox_profile,
         environment=getattr(settings, "environment", "production"),
         version="1.0.0",
         enabled_symbols=enabled_symbols,
@@ -599,6 +615,9 @@ async def update_system_config(  # noqa: C901, PLR0912, PLR0915 — fixed field 
 
     if request.paper_trading is not None:
         updates["paper_trading"] = "1" if request.paper_trading else "0"
+
+    if request.sandbox_profile is not None:
+        updates["sandbox_profile"] = request.sandbox_profile
 
     if updates:
         await r.hset(_SYSCONFIG_KEY, mapping=updates)

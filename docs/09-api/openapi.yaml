@@ -5631,6 +5631,11 @@ components:
           - type: boolean
           - type: 'null'
           title: Paper Trading
+        sandbox_profile:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sandbox Profile
       type: object
       title: SystemConfigUpdate
       description: Payload untuk memperbarui konfigurasi runtime via superadmin.
@@ -5654,6 +5659,11 @@ components:
           type: boolean
           title: Paper Trading
           default: true
+        sandbox_profile:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sandbox Profile
         environment:
           type: string
           title: Environment

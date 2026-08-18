@@ -36,8 +36,9 @@ interface SystemInfo {
   llm_gateway_url: string;
   llm_gateway_configured: boolean;
   demo_data: boolean;
-  paper_trading: boolean;
-  environment: string;
+    paper_trading: boolean;
+    sandbox_profile?: string;
+    environment: string;
   version: string;
   enabled_symbols: string[];
 }
@@ -48,6 +49,7 @@ interface ConfigForm {
   max_daily_loss_pct: string;
   demo_data: boolean;
   paper_trading: boolean;
+  sandbox_profile?: string;
 }
 
 // B9: kandidat symbol untuk enable/disable (multicurrency). Default fokus
@@ -417,12 +419,16 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
     if (data?.enabled_symbols) setEnabledSymbols(data.enabled_symbols);
   }, [data?.enabled_symbols]);
   const [form, setForm] = React.useState<ConfigForm>({
-      max_exposure_per_trade: "0.02",
-      risk_per_trade: "0.01",
-      max_daily_loss_pct: "0.03",
-      demo_data: data?.demo_data ?? false,
-      paper_trading: data?.paper_trading ?? true,
-    });
+        max_exposure_per_trade: "0.02",
+        risk_per_trade: "0.01",
+        max_daily_loss_pct: "0.03",
+        demo_data: data?.demo_data ?? false,
+        // FIX 18 Aug 2026: default REAL (false), bukan true — user keluh
+        // "paper trading masih nyala terus" padahal sudah matikan; ?? true
+        // membuat checkbox nyala sebelum data backend load.
+        paper_trading: data?.paper_trading ?? false,
+              sandbox_profile: data?.sandbox_profile ?? "",
+            });
 
   if (isError) return <ErrorBanner message="system-info" />;
 
@@ -437,6 +443,7 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
         enabled_symbols: enabledSymbols,
       };
             payload.paper_trading = form.paper_trading;
+            if (form.sandbox_profile) payload.sandbox_profile = form.sandbox_profile;
       update.mutate(payload, {
         onSuccess: (result) => {
           toast({ variant: "success", title: "Config saved", description: result.note });
@@ -479,29 +486,55 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
           </label>
         </div>
         <div>
-          <label className="flex items-center gap-2 text-xs text-ink-dim">
-            <input
-              type="checkbox"
-              checked={form.paper_trading}
-              onChange={(e) => setForm((f) => ({ ...f, paper_trading: e.target.checked }))}
-              className="accent-accent"
-            />
-            Paper Trading Mode — order disimulasikan, TIDAK dikirim ke MT5 broker
-          </label>
-          {!form.paper_trading && (
-            <p className="mt-1 text-[11px] text-danger">
-              ⚠ Real trading aktif — order akan dikirim ke akun MT5 live/demo
-            </p>
-          )}
-        </div>
-      </div>
+                  <label className="flex items-center gap-2 text-xs text-ink-dim">
+                    <input
+                      type="checkbox"
+                      checked={form.paper_trading}
+                      onChange={(e) => setForm((f) => ({ ...f, paper_trading: e.target.checked }))}
+                      className="accent-accent"
+                    />
+                    Paper Trading (sandbox) — order disimulasikan, TIDAK dikirim ke MT5 broker
+                  </label>
+                  {form.paper_trading ? (
+                              <p className="mt-1 text-[11px] text-amber">
+                                Sandbox aktif — aman untuk uji profile/agent baru. Verdict &
+                                prompt tetap dicatat, eksekusi tidak menyentuh akun broker.
+                              </p>
+                            ) : (
+                              <p className="mt-1 text-[11px] text-danger">
+                                ⚠ REAL TRADING AKTIF — order akan dikirim ke akun MT5 live/demo
+                              </p>
+                            )}
+                            {form.paper_trading && (
+                              <label className="mt-2 flex items-center gap-2 text-xs text-ink-dim">
+                                Profil sandbox:
+                                <select
+                                  value={form.sandbox_profile ?? ""}
+                                  onChange={(e) => setForm((f) => ({ ...f, sandbox_profile: e.target.value }))}
+                                  className="rounded border border-line bg-bg px-2 py-1 text-xs text-ink"
+                                >
+                                  <option value="">(ikuti profil aktif)</option>
+                                  {["scalping_1m", "scalping_5m", "intraday_15m", "intraday_1h", "intraday_swing_4h", "swing_1d"].map((p) => (
+                                    <option key={p} value={p}>
+                                      {p}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            )}
+                  <p className="mt-1 text-[11px] text-ink-faint">
+                    Berlaku realtime (worker baca per call — tanpa restart container).
+                  </p>
+                </div>
+              </div>
       <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
           Active Symbols (B9 — enable/disable currency)
         </h3>
         <p className="text-xs text-ink-faint">
           Fokus matangkan 1 stream XAUUSD dulu; aktifkan symbol lain setelah
-          multi-stream siap. Perubahan berlaku setelah restart api.
+                    multi-stream siap. Simpan berlaku realtime
+                    (worker baca per call — tanpa restart).
         </p>
         <div className="grid grid-cols-2 gap-2">
           {SYMBOL_CANDIDATES.map((sym) => {
