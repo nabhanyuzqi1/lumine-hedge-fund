@@ -74,6 +74,11 @@ jobs:
           HMAC_SECRET_KEY: ci-test-secret-key-not-for-production
           ENVIRONMENT: test
         run: uv run pytest tests/unit -q --tb=short
+      # PITFALL (18 Aug 2026): backend/docs/prompts/ = salinan Dockerfile
+      # COPY target — drift dari root docs/prompts/ → container prompt lama.
+      - name: Prompt registry sync check
+        run: |
+          diff -rq ../docs/prompts docs/prompts && echo "prompts SYNCED" || { echo "DRIFT: jalankan cp -r ../docs/prompts/* docs/prompts/"; exit 1; }
 
   backend-lint:
     name: Backend · lint + typecheck
@@ -131,11 +136,6 @@ jobs:
 
       - name: Production build
         run: npm run build
-      # PITFALL (18 Aug 2026): backend/docs/prompts/ = salinan Dockerfile
-      # COPY target — drift dari root docs/prompts/ → container prompt lama.
-      - name: Prompt registry sync check
-        run: |
-          diff -rq docs/prompts backend/docs/prompts && echo "prompts SYNCED" || { echo "DRIFT: jalankan cp -r docs/prompts/* backend/docs/prompts/"; exit 1; }
   # ── Deploy (VPS) ────────────────────────────────────────────────────────────
   deploy:
     name: Deploy → VPS
