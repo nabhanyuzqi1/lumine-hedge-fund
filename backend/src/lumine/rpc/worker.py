@@ -768,7 +768,12 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             try:
                 from lumine.rpc.queue import enqueue_command
 
-                proposal = str(cio_out.parsed.get("proposal", "HOLD")).upper()
+                # FIX 18 Aug 2026: schema CIO pakai field `action` (bukan
+                # `proposal`!) — SEBELUMNYA baca "proposal" → selalu HOLD →
+                # execution gate tak pernah trigger walau AI bilang SELL.
+                proposal = str(
+                    cio_out.parsed.get("action", cio_out.parsed.get("proposal", "HOLD"))
+                ).upper()
                 prop_side = str(cio_out.parsed.get("side", "") or "").upper()
                 prop_size = float(cio_out.parsed.get("size", 0) or 0)
                 prop_sl = cio_out.parsed.get("stop_loss")
