@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -31,15 +31,37 @@ router = APIRouter(prefix="/market", tags=["market"])
 async def list_bars(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
     pagination: Annotated[Pagination, Depends()],
+    symbol: str = Query(default="XAUUSD"),
+    timeframe: str = Query(default="5m", pattern="^(1m|5m|15m|1h|4h|1d)$"),
 ) -> PaginatedList[MarketBar]:
-    """Return recent market bars (H1, DB-backed via bars_1h; seed dari MT5)."""
-    from lumine.data.models import Bars1H
+    """Return recent market bars untuk timeframe yang diminta.
+
+    FIX 18 Aug 2026 (critical): SEBELUMNYA hardcoded Bars1H — abaikan
+    symbol & timeframe → semua halaman dapat 1h walau pilih 5m/15m → chart
+    tampil timeframe salah. Sekarang pilih tabel per timeframe
+    (bars_1m/5m/15m/1h/4h/1d). Plus value di-cast float (Decimal →
+    string JSON membuat frontend Number.isFinite() skip semua bar → chart
+    kosong).
+    """
+    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
     from lumine.data.session import get_sessionmaker
 
+    table_by_tf: dict[str, Any] = {
+        "1m": Bars1M,
+        "5m": Bars5M,
+        "15m": Bars15M,
+        "1h": Bars1H,
+        "4h": Bars4H,
+        "1d": Bars1D,
+    }
+    model = table_by_tf.get(timeframe, Bars1H)
     try:
         async with get_sessionmaker()() as session:
             result = await session.execute(
-                select(Bars1H).order_by(Bars1H.ts.desc()).limit(pagination.limit)
+                select(model)
+                .where(model.symbol == symbol)
+                .order_by(model.ts.desc())
+                .limit(pagination.limit)
             )
             rows = result.scalars().all()
     except Exception:
@@ -47,12 +69,12 @@ async def list_bars(
     items = [
         MarketBar(
             symbol=row.symbol,
-            timeframe="1h",
+            timeframe=timeframe,
             timestamp=row.ts,
-            open=row.open,
-            high=row.high,
-            low=row.low,
-            close=row.close,
+            open=float(row.open),
+            high=float(row.high),
+            low=float(row.low),
+            close=float(row.close),
             volume=row.volume,
         )
         for row in rows

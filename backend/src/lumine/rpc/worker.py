@@ -576,7 +576,13 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     lineage_id=None,
                 )
                 # B5: persist signal per analyst → dashboard AI confidence.
-                rec = str(out.parsed.get("recommendation", "hold")).lower()
+                # FIX 18 Aug 2026: analyst AI kirim `bias` (bullish/bearish/
+                # neutral) di parsed — SEBELUMNYA worker baca field
+                # `recommendation` yang TIDAK ada di analyst_output schema
+                # → default "hold" → semua signal neutral (padahal
+                # reasoning_traces penuh bias bearish/bullish!). Bias dulu,
+                # fallback recommendation.
+                rec = str(out.parsed.get("bias", out.parsed.get("recommendation", "neutral"))).lower()
                 direction = (
                     "bullish" if rec in ("buy", "long", "bullish")
                     else "bearish" if rec in ("sell", "short", "bearish")

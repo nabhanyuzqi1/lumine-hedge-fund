@@ -22,6 +22,17 @@ Instructions:
 - Distinguish priced-in news from surprise; surprises move price.
 - Cite the specific headline(s) or sentiment input(s) driving your conclusion.
 - Confidence reflects relevance and surprise, not headline volume.
+- ECONOMIC CALENDAR (18 Aug 2026): `scheduled_events` lists upcoming
+  high/medium impact events (NFP, CPI, FOMC, PCE, dll) with impact level.
+  Assess each event's expected XAUUSD impact (dollar strength / real
+  yields / safe-haven demand) and volatility risk. In your `plan`,
+  separate PRE-NEWS (positioning before a high-impact event — reduce size,
+  widen stops, avoid trading into the event) from POST-NEWS (reaction
+  trading after the release settles). If a high-impact event is < 24h away
+  you must flag it and lean conservative.
+- Include in your output: volatility assessment (expected vol before/after
+  events), directional bias (bullish/bearish/neutral), and the pre/post
+  news plan as structured fields.
 
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
