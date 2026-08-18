@@ -8,7 +8,7 @@ from fastapi import APIRouter, Query
 
 from lumine.api.middleware.auth import AuthenticatedPrincipal, require_scope
 from lumine.backtest.engine import BacktestResult, run_backtest_from_rows
-from lumine.data.models import Bars1H, Bars1M, Bars4H, Bars5M
+from lumine.data.models import Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
 from lumine.data.session import get_sessionmaker
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/backtest", tags=["backtest"])
 _TF_MODEL = {
     "1m": Bars1M,
     "5m": Bars5M,
-    "15m": Bars5M,  # agregasi 3 bar 5m per 15m
+    "15m": Bars15M,  # 18 Aug 2026: tabel real (sebelumnya agregasi 5m)
     "1h": Bars1H,
     "4h": Bars4H,
 }
@@ -33,7 +33,7 @@ async def run_backtest_endpoint(
     """Run backtest on REAL bars from PostgreSQL (bars_* seeded via MT5 EA).
 
     Backtest beta (17 Aug 2026): data nyata dari DB, bukan demo/deterministik.
-    15m diagregasi dari bars_5m (bucket 900s). Baris diambil oldest-first.
+    15m dari tabel bars_15m (18 Aug 2026). Baris diambil oldest-first.
     """
     from sqlalchemy import text
 
@@ -43,43 +43,27 @@ async def run_backtest_endpoint(
     if table is not None:
         try:
             async with get_sessionmaker()() as session:
-                # 15m: agregasi bucket 900s dari bars_5m.
-                if timeframe == "15m":
-                    result = await session.execute(
-                        text(
-                            """
-                            SELECT
-                              to_timestamp(floor(extract(epoch FROM ts) / 900) * 900) AT TIME ZONE 'UTC' AS ts,
-                              (array_agg(open ORDER BY ts))[1] AS open,
-                              max(high) AS high,
-                              min(low) AS low,
-                              (array_agg(close ORDER BY ts))[array_length(array_agg(close ORDER BY ts), 1)] AS close,
-                              sum(volume) AS volume
-                            FROM bars_5m
-                            WHERE symbol = :sym
-                            GROUP BY 1
-                            ORDER BY 1 ASC
-                            LIMIT :lim
-                            """
-                        ),
-                        {"sym": symbol.upper(), "lim": limit},
-                    )
-                else:
-                    # Whitelist tabel eksplisit (tanpa f-string → tidak ada
-                    # S608): pilih nama tabel dari dict konstanta _TF_MODEL,
-                    # lalu query dengan interpolasi yang sudah dikunci.
-                    table_map = {"1m": "bars_1m", "5m": "bars_5m", "1h": "bars_1h", "4h": "bars_4h"}
-                    tbl = table_map[timeframe]  # KeyError tidak mungkin — Query pattern sudah membatasi
-                    # nosec B608 — tabel dari whitelist dict konstanta.
-                    stmt = (
-                        "SELECT ts, open, high, low, close, volume "  # nosec B608
-                        "FROM " + tbl + " WHERE symbol = :sym "
-                        "ORDER BY ts ASC LIMIT :lim"
-                    )
-                    result = await session.execute(
-                        text(stmt),
-                        {"sym": symbol.upper(), "lim": limit},
-                    )
+                # Whitelist tabel eksplisit (tanpa f-string → tidak ada
+                # S608): pilih nama tabel dari dict konstanta _TF_MODEL,
+                # lalu query dengan interpolasi yang sudah dikunci.
+                table_map = {
+                    "1m": "bars_1m",
+                    "5m": "bars_5m",
+                    "15m": "bars_15m",  # 18 Aug 2026: tabel real
+                    "1h": "bars_1h",
+                    "4h": "bars_4h",
+                }
+                tbl = table_map[timeframe]  # KeyError tidak mungkin — Query pattern sudah membatasi
+                # nosec B608 — tabel dari whitelist dict konstanta.
+                stmt = (
+                    "SELECT ts, open, high, low, close, volume "  # nosec B608
+                    "FROM " + tbl + " WHERE symbol = :sym "
+                    "ORDER BY ts ASC LIMIT :lim"
+                )
+                result = await session.execute(
+                    text(stmt),
+                    {"sym": symbol.upper(), "lim": limit},
+                )
                 for r in result.all():
                     rows.append(
                         {

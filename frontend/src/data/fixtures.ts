@@ -360,6 +360,9 @@ export interface PositionFixture {
   current_price: number;
   unrealized_pnl: number;
   updated_at: string;
+  /** T5b: level SL/TP (nullable — posisi tanpa stop/profit). */
+  stop_loss?: number | null;
+  take_profit?: number | null;
 }
 
 export function generatePositions(seed = 43): PositionFixture[] {

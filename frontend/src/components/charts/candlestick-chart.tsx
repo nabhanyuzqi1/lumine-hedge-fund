@@ -27,6 +27,12 @@ export type Timeframe = (typeof TIMEFRAMES)[number];
 /** Batch live ticks into one series update — exit criterion: <150ms switch, no dropped frames. */
 export const TICK_DEBOUNCE_MS = 100;
 
+export interface PriceLine {
+  price: number;
+  title: string;
+  color?: string;
+}
+
 export interface CandlestickChartProps {
   bars: ChartBar[];
   /** Live tick used to mutate the in-progress bar (debounced). */
@@ -40,7 +46,7 @@ export interface CandlestickChartProps {
   heikinAshi?: boolean;
   onHeikinAshiChange?: (v: boolean) => void;
   /** T5b: price lines (TP/SL/Entry) via createPriceLine. */
-  priceLines?: { price: number; title: string; color?: string }[];
+  priceLines?: PriceLine[];
   /** T5c: replay mode — index bar aktif (null = normal). Saat aktif,
    *  chart menampilkan window [index-window, index] via visible range. */
   replayIndex?: number | null;

@@ -8,6 +8,7 @@ import { useMarketWS } from "@/hooks/useMarketWS";
 import { usePerformanceMetrics } from "@/hooks/usePerformanceMetrics";
 import { PerformanceIndicator } from "@/components/monitoring/performance-indicator";
 import type { Timeframe } from "@/components/charts/candlestick-chart";
+import type { PriceLine } from "@/components/charts/candlestick-chart";
 import { ChartCard } from "@/components/charts/chart-card";
 import { useSSE } from "@/hooks/useSSE";
 import { useCommitteeStreams } from "@/hooks/useCommitteeStreams";
@@ -476,6 +477,7 @@ function TradingWorkspace() {
                       heikinAshi={heikinAshi}
                       onHeikinAshiChange={setHeikinAshi}
                       replayIndex={replayIndex}
+                      priceLines={buildPriceLines(positions.data ?? [])}
                     />
         </Suspense>
 
@@ -587,6 +589,31 @@ function TradingWorkspace() {
       )}
     </div>
   );
+}
+
+/**
+ * T5b: price lines dari posisi aktif — Entry (biru), SL (merah),
+ * TP (hijau). Hanya untuk symbol yang sedang ditampilkan.
+ */
+function buildPriceLines(positions: PositionFixture[]): PriceLine[] {
+  const lines: PriceLine[] = [];
+  for (const p of positions) {
+    if (p.symbol.toUpperCase() !== "XAUUSD") continue;
+    if (p.avg_entry_price != null && Number.isFinite(p.avg_entry_price)) {
+      lines.push({
+        price: p.avg_entry_price,
+        title: "Entry",
+        color: "#3b82f6",
+      });
+    }
+    if (p.stop_loss != null && Number.isFinite(p.stop_loss)) {
+      lines.push({ price: p.stop_loss as number, title: "SL", color: "#ef4444" });
+    }
+    if (p.take_profit != null && Number.isFinite(p.take_profit)) {
+      lines.push({ price: p.take_profit as number, title: "TP", color: "#22c55e" });
+    }
+  }
+  return lines;
 }
 
 /**

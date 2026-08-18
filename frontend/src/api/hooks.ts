@@ -166,6 +166,9 @@ function toPositionFixture(position: RestPosition): PositionFixture {
     current_price: num(position.current_price, num(position.entry_price)),
     unrealized_pnl: num(position.unrealized_pnl),
     updated_at: position.opened_at,
+    // T5b: level SL/TP untuk price lines di chart (nullable).
+    stop_loss: position.stop_loss != null ? num(position.stop_loss) : null,
+    take_profit: position.take_profit != null ? num(position.take_profit) : null,
   };
 }
 
