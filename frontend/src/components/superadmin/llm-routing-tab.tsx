@@ -520,6 +520,109 @@ export function LLMRoutingTab() {
           )}
         </>
       )}
+
+      {/* ── AI Trace: prompt & response mentah per LLM call (18 Aug 2026) ── */}
+      <TraceViewer />
+    </div>
+  );
+}
+
+/** TraceViewer — baca /admin/reasoning-traces: lihat APA yang dikirim ke
+ *  AI (prompt_sent) & BENTUK respons AI (response_raw/parsed). */
+function TraceViewer() {
+  const [openId, setOpenId] = React.useState<string | null>(null);
+  const { data: traces = [] } = useQuery({
+    queryKey: ["reasoning-traces"],
+    queryFn: () =>
+      get<
+        {
+          trace_id: string;
+          ts: string;
+          role: string;
+          stage_run_id: string;
+          model: string | null;
+          prompt_sent: string;
+          response_raw: string;
+          parsed_output: Record<string, unknown> | null;
+        }[]
+      >("/admin/reasoning-traces", { limit: "15" }),
+    staleTime: 30_000,
+  });
+
+  return (
+    <div className="rounded-panel border border-line bg-bg">
+      <div className="border-b border-line px-3 py-2">
+        <h3 className="font-mono text-[10px] uppercase tracking-widest text-ink-dim">
+          AI Trace — Prompt & Response (15 call terakhir)
+        </h3>
+      </div>
+      <div className="max-h-96 overflow-y-auto">
+        {traces.length === 0 ? (
+          <p className="px-3 py-4 text-xs text-ink-faint">
+            Belum ada trace. Jalankan decision cycle untuk melihat prompt yang
+            dikirim ke AI & respons mentahnya.
+          </p>
+        ) : (
+          <div className="divide-y divide-line/50">
+            {traces.map((t) => (
+              <div key={t.trace_id} className="px-3 py-2">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 text-left"
+                  onClick={() => setOpenId(openId === t.trace_id ? null : t.trace_id)}
+                >
+                  <span className="min-w-0">
+                    <span className="font-mono text-[10px] text-ink">
+                      {t.role}
+                    </span>
+                    <span className="ml-2 font-mono text-[10px] text-ink-faint">
+                      {t.model ?? "—"}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="font-mono text-[10px] text-ink-faint">
+                      {new Date(t.ts).toLocaleTimeString()}
+                    </span>
+                    <span className="text-[10px] text-ink-faint">
+                      {openId === t.trace_id ? "▲" : "▼"}
+                    </span>
+                  </span>
+                </button>
+                {openId === t.trace_id && (
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <p className="font-mono text-[9px] uppercase tracking-wider text-ink-faint">
+                        PROMPT SENT
+                      </p>
+                      <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded border border-line bg-bg-raised p-2 font-mono text-[10px] leading-relaxed text-ink">
+                        {t.prompt_sent}
+                      </pre>
+                    </div>
+                    <div>
+                      <p className="font-mono text-[9px] uppercase tracking-wider text-ink-faint">
+                        RESPONSE RAW
+                      </p>
+                      <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded border border-line bg-bg-raised p-2 font-mono text-[10px] leading-relaxed text-ink">
+                        {t.response_raw}
+                      </pre>
+                    </div>
+                    {t.parsed_output && (
+                      <div>
+                        <p className="font-mono text-[9px] uppercase tracking-wider text-ink-faint">
+                          PARSED
+                        </p>
+                        <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap break-words rounded border border-line bg-bg-raised p-2 font-mono text-[10px] leading-relaxed text-ink">
+                          {JSON.stringify(t.parsed_output, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

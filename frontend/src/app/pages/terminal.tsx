@@ -23,6 +23,7 @@ const LazyCandlestickChart = lazy(() =>
 );
 import { ActivityLog } from "@/components/terminal/activity-log";
 import { CommitteeFeed } from "@/components/terminal/committee-feed";
+import { AIInsightPanel } from "@/components/terminal/ai-insight-panel";
 import { QuotePanel } from "@/components/terminal/quote-panel";
 import { RiskGauges } from "@/components/terminal/risk-gauges";
 import { WhatIfPanel } from "@/components/terminal/what-if-panel";
@@ -449,6 +450,18 @@ function TradingWorkspace() {
           </CardHeader>
           <CardContent>
             <CommitteeFeed />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Insight</CardTitle>
+            <CardDescription>
+              Sinyal analyst real (bullish/bearish, confidence, rationale) + bar
+              minimum eksekusi
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AIInsightPanel symbol={selectedSymbol} />
           </CardContent>
         </Card>
         <Card>
