@@ -112,15 +112,20 @@ class LineageRecord(BaseModel):
 
 
 class MarketBar(BaseModel):
-    """OHLCV bar for market data endpoints."""
+    """OHLCV bar for market data endpoints.
+
+    18 Aug 2026: Decimal → float — Pydantic serialize Decimal ke JSON
+    string ("4334.26") → frontend Number.isFinite() skip semua bar →
+    chart kosong (stream kosong). Float = number JSON.
+    """
 
     symbol: str
     timeframe: str
     timestamp: datetime
-    open: Decimal
-    high: Decimal
-    low: Decimal
-    close: Decimal
+    open: float
+    high: float
+    low: float
+    close: float
     volume: int
 
 

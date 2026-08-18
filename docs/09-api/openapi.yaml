@@ -4419,20 +4419,16 @@ components:
           format: date-time
           title: Timestamp
         open:
-          type: string
-          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          type: number
           title: Open
         high:
-          type: string
-          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          type: number
           title: High
         low:
-          type: string
-          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          type: number
           title: Low
         close:
-          type: string
-          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          type: number
           title: Close
         volume:
           type: integer
@@ -4448,7 +4444,14 @@ components:
       - close
       - volume
       title: MarketBar
-      description: OHLCV bar for market data endpoints.
+      description: 'OHLCV bar for market data endpoints.
+
+
+        18 Aug 2026: Decimal → float — Pydantic serialize Decimal ke JSON
+
+        string ("4334.26") → frontend Number.isFinite() skip semua bar →
+
+        chart kosong (stream kosong). Float = number JSON.'
     MarketQuote:
       properties:
         symbol:
