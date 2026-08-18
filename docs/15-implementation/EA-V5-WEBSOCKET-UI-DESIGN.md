@@ -270,8 +270,8 @@ input int    InpLeaderTTL     = 15;     // detik lease kepemimpinan
 | **T3** | `command` via WS (BE→EA) + `ack` idempotensi | Satu command → satu eksekusi, ack tercatat |
 | **T4** | Theme chart Lumine + panel v5 | Screenshot chart: bg abyss, candle up/down, panel per §5.4 |
 | **T5** | Highlight signal/level dari backend (OBJ_RECTANGLE/ARROW/TREND) | Signal bar tampil di chart saat backend kirim status |
-| **T5b** | Frontend: TP/SL/Entry price lines via `createPriceLine` (level dari backend) + Heikin-Ashi transform (lihat `CHART-LIBRARY-EVALUATION.md` §4) | Price lines tampil di chart frontend; toggle HA/hollow |
-| **T5c** | Frontend: chart replay mode (scrub historis dari `bars_*`) + export image | Replay jalan untuk backtest visual |
+| **T5b** | Frontend: TP/SL/Entry price lines via `createPriceLine` (level dari backend) + Heikin-Ashi transform (lihat `CHART-LIBRARY-EVALUATION.md` §4) | ✅ **SELESAI 18 Aug 2026** — `heikinAshiToCandles` (chart-transform.ts), toggle HA di toolbar, price lines SL/TP/Entry dari posisi (`buildPriceLines`), 18 tests pass, CI hijau |
+| **T5c** | Frontend: chart replay mode (scrub historis dari `bars_*`) + export image | ✅ **SELESAI 18 Aug 2026** — replayIndex/replayWindow di CandlestickChart (setVisibleLogicalRange), ReplayControls di terminal (Play/Pause/step/slider), live tick dibekukan saat replay, CI hijau |
 | **T6** | Multi-EA: registry + leader election + dedup bar builder | Uji 2 EA (lokal + VPS) stream XAUUSD → bar M1 tidak ganda, failover < 15s |
 | **T7** | Test suite: contract test WS (backend), smoke di demo account | CI hijau + `vps_smoke.py` extended |
 
