@@ -271,7 +271,7 @@ async def _seed_worker() -> None:
     """Seed history worker: consume mt5:seed_bars (EA CopyRates)
     → insert ke tabel bars_* (B-08 fondasi: TCA backfill butuh history).
     """
-    from lumine.data.models import Bars15M, Bars1D, Bars1H, Bars1M, Bars4H, Bars5M
+    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
     from lumine.data.session import get_sessionmaker
     from lumine.shared.config import get_settings as _gs
 
