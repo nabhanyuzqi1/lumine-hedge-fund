@@ -271,6 +271,10 @@ def proposal_json(**overrides: object) -> str:
         "reasoning": "committee and technicals align",
         "debate_held": False,
         "overrode_ic": False,
+        "side": "BUY",
+        "size": 0.05,
+        "stop_loss": 4340.0,
+        "take_profit": 4390.0,
         "analyst_inputs": [
             {
                 "sub_role": "technical_analyst",
