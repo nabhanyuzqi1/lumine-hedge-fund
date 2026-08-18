@@ -1697,6 +1697,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/dxy:
+    get:
+      tags:
+      - market
+      summary: Get Dxy
+      description: 'DXY (US Dollar Index) realtime (18 Aug 2026) — cache _dxy_worker.
+
+
+        Variabel LLM (inverse correlation XAUUSD) + NewsRoom display.'
+      operationId: get_dxy_api_v1_market_dxy_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Dxy Api V1 Market Dxy Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/market/quotes:
     get:
       tags:

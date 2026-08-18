@@ -525,6 +525,28 @@ async def _eco_calendar_worker() -> None:
         await asyncio.sleep(1800)  # poll tiap 30 menit
 
 
+async def _dxy_worker() -> None:
+    """DXY (US Dollar Index) (18 Aug 2026): refresh tiap 60 detik.
+
+    Fetch Stooq DX.F → cache Redis `lumine:dxy` → analyst prompt baca
+    per-cycle (variabel tambahan: inverse correlation USD/XAUUSD) +
+    NewsRoom quotes strip.
+    """
+    from lumine.shared.config import get_settings as _gs
+    from lumine.trading.dxy_service import fetch_and_cache_dxy
+
+    try:
+        r = await redis.from_url(_gs().redis_url)
+    except Exception:
+        return
+    while True:
+        try:
+            await fetch_and_cache_dxy(r)
+        except Exception as exc:
+            print(f"[DXY] worker error: {str(exc)[:150]}", flush=True)
+        await asyncio.sleep(60)  # poll tiap 60 detik
+
+
 async def _model_discovery_worker() -> None:
     """Auto-select model terbaik dari 9router (18 Aug 2026).
 
@@ -597,6 +619,8 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR091
         # Economic calendar (18 Aug 2026): refresh tiap 30 menit → cache
         # Redis lumine:eco_calendar → analyst prompt baca per-cycle.
         _app_state["eco_calendar_worker"] = asyncio.create_task(_eco_calendar_worker())
+        # DXY (18 Aug 2026): refresh tiap 60s → cache lumine:dxy.
+        _app_state["dxy_worker"] = asyncio.create_task(_dxy_worker())
         # Model discovery (18 Aug 2026): auto-select model terbaik 9router
         # tiap 60s — user minta agent utama yang pilih best aktif + switch
         # otomatis saat rate-limit/down.

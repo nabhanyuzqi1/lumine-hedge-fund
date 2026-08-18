@@ -62,6 +62,17 @@ function useQuotes() {
   });
 }
 
+function useDXY() {
+  return useQuery({
+    queryKey: ["dxy"],
+    queryFn: () =>
+      get<{ price?: number; high?: number; low?: number; source?: string }>(
+        "/market/dxy"
+      ),
+    refetchInterval: 60_000,
+  });
+}
+
 const IMPACT_TONE: Record<string, string> = {
   high: "bg-crimson/15 text-crimson",
   medium: "bg-amber/15 text-amber",
@@ -72,6 +83,7 @@ export function NewsRoomPage() {
   const news = useNews(30);
   const calendar = useCalendar();
   const quotes = useQuotes();
+  const dxyQuery = useDXY();
 
   const items = Array.isArray(news.data?.items) ? news.data.items : [];
   const events = Array.isArray(calendar.data?.items) ? calendar.data.items : [];
@@ -80,12 +92,36 @@ export function NewsRoomPage() {
     symbol,
     ...(typeof q === "object" && q !== null ? q : {}),
   }));
+  const dxy = dxyQuery.data;
 
   return (
     <div className="space-y-4 p-4">
       {/* Macro quotes strip */}
       <div className="flex flex-wrap gap-2">
-        {quoteItems.length === 0 && (
+        {dxy?.price != null && (
+          <div className="rounded-chip border border-accent/30 bg-accent/5 px-3 py-1.5">
+            <p className="font-mono text-[10px] uppercase text-ink-faint">
+              DXY (USD Index)
+            </p>
+            <p className="font-mono text-sm text-ink">
+              {dxy.price}
+              {dxy.low != null && (
+                <span className="ml-1.5 text-[10px] text-ink-faint">
+                  L {dxy.low}
+                </span>
+              )}
+              {dxy.high != null && (
+                <span className="ml-1.5 text-[10px] text-ink-faint">
+                  H {dxy.high}
+                </span>
+              )}
+            </p>
+            <p className="font-mono text-[9px] text-ink-faint">
+              inverse corr emas · {dxy.source ?? ""}
+            </p>
+          </div>
+        )}
+        {quoteItems.length === 0 && !dxy?.price && (
           <p className="text-xs text-ink-faint">memuat quotes…</p>
         )}
         {quoteItems.slice(0, 8).map((q) => (

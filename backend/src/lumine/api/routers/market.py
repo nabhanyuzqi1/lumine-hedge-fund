@@ -240,6 +240,23 @@ async def get_economic_calendar(
     return {"items": events, "count": len(events), "source": "faireconomy-rss"}
 
 
+@router.get("/dxy")
+async def get_dxy(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
+) -> dict:
+    """DXY (US Dollar Index) realtime (18 Aug 2026) — cache _dxy_worker.
+
+    Variabel LLM (inverse correlation XAUUSD) + NewsRoom display.
+    """
+    from lumine.trading.dxy_service import get_cached_dxy
+
+    r = await _redis()
+    dxy = await get_cached_dxy(r)
+    if not dxy:
+        return {"price": None, "source": "unavailable"}
+    return dxy
+
+
 async def _redis():
     # FIX 18 Aug 2026: SEBELUMNYA redis.from_url() → client SYNC → await
     # r.get() TypeError → caught → [] (calendar/news kosong walau cache ada).

@@ -165,6 +165,21 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     # Economic calendar (18 Aug 2026): baca cache dari _eco_calendar_worker
     # → analyst (news/macro) tahu event yang akan datang + dampaknya.
     _eco_calendar_json = "[]"
+    # DXY (18 Aug 2026): variabel USD index untuk LLM — inverse correl
+    # dengan emas. Baca cache lumine:dxy (refresh 60s).
+    _dxy_json = "null"
+    try:
+        if _r is None:
+            _r = await get_redis()
+        from lumine.trading.dxy_service import get_cached_dxy
+
+        _dxy = await get_cached_dxy(_r)
+        if _dxy and _dxy.get("price"):
+            import json as _json
+
+            _dxy_json = _json.dumps(_dxy, ensure_ascii=False)
+    except Exception:
+        pass
     try:
         if _r is None:
             _r = await get_redis()
@@ -429,7 +444,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 # Macro analyst (feed eksternal belum tersedia — jujur)
                 "us_10y": "unavailable (external feed not wired)",
                 "us_2y": "unavailable (external feed not wired)",
-                "dxy": "unavailable (external feed not wired)",
+                "dxy": _dxy_json,
                 "real_yields": "unavailable (external feed not wired)",
                 "fed_stance": "unavailable (external feed not wired)",
                 "risk_regime": "risk-on" if ema_20 > ema_50 else "risk-off",
@@ -441,6 +456,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 # Economic calendar (18 Aug 2026): jadwal event REAL dari
                 # _eco_calendar_worker (sebelumnya "none (feed not wired)").
                 "scheduled_events": _eco_calendar_json,
+                # DXY (18 Aug 2026): sudah di-set di macro section (key `dxy`) —
+                # nilai JSON dari cache lumine:dxy (refresh 60s).
                 # SMC analyst (struktur dari bars_5m real)
                 "order_blocks": f"computed from bars: recent swing high {recent_high:.2f}, swing low {recent_low:.2f}",
                 "liquidity_pools": f"buy-side above {recent_high:.2f}, sell-side below {recent_low:.2f}",
