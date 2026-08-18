@@ -217,6 +217,10 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                                 model_id=_m,
                                 provider="9router",
                                 status="production",
+                                # NOT NULL tanpa default (18 Aug 2026:
+                                # upsert gagal IntegrityError → fallback
+                                # mv.id stale → verbose tampil model lama).
+                                version="1",
                             )
                             session.add(row)
                             try:
@@ -234,6 +238,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                                     model_id=_m,
                                     provider="9router",
                                     status="production",
+                                    version="1",
                                 )
                                 session.add(row)
                                 try:
