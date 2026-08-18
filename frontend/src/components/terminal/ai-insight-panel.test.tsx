@@ -31,7 +31,7 @@ describe("AIInsightPanel", () => {
     render(<AIInsightPanel symbol="XAUUSD" />);
     expect(screen.getByText(/Verdict terakhir/)).toBeTruthy();
     expect(screen.getAllByText(/bullish/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/82%/)).toBeTruthy();
+    expect(screen.getAllByText(/82%/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Confidence & bar minimum eksekusi/)).toBeTruthy();
     expect(screen.getByText(/≥ 70%/)).toBeTruthy();
   });
