@@ -241,11 +241,11 @@ async def get_economic_calendar(
 
 
 async def _redis():
-    import redis as _redis_lib
+    # FIX 18 Aug 2026: SEBELUMNYA redis.from_url() → client SYNC → await
+    # r.get() TypeError → caught → [] (calendar/news kosong walau cache ada).
+    from lumine.data.redis_client import get_redis
 
-    from lumine.shared.config import get_settings as _gs
-
-    return _redis_lib.from_url(_gs().redis_url)
+    return await get_redis()
 
 
 @router.get("/quotes")
