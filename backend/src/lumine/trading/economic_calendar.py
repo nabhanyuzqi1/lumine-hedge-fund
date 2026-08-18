@@ -57,7 +57,7 @@ def _filter_upcoming(events: list[dict[str, Any]], hours: int = 72) -> list[dict
     return sorted(out, key=lambda x: x.get("date", ""))
 
 
-async def fetch_economic_calendar(redis: Any) -> list[dict[str, Any]]:
+async def fetch_economic_calendar(redis: Any) -> list[dict[str, Any]]:  # noqa: C901 — fetch+parse+fallback bercabang
     """Fetch calendar dari API publik (best-effort) → cache Redis.
 
     Sumber utama: https://nfs.faireconomy.media/ff_calendar_thisweek.json
