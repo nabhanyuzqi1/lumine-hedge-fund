@@ -193,6 +193,9 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 from lumine.llm_gateway.types import ModelTier
 
                 _mv_by_model: dict[str, str] = {}
+                # Pre-capture id string — fallback TIDAK boleh akses mv.id
+                # setelah session error (rolled back → MissingGreenlet).
+                _fallback_mv_id = str(mv.id)
                 for _m in routing_chain:
                     try:
                         existing = (
@@ -210,10 +213,26 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                                 status="production",
                             )
                             session.add(row)
-                            await session.flush()
+                            try:
+                                await session.flush()
+                            except Exception:
+                                # Race: 2 cycle parallel insert model sama →
+                                # duplicate key. Rollback lokal & re-select.
+                                await session.rollback()
+                                again = (
+                                    await session.execute(
+                                        _sa_select(ModelVersion)
+                                        .where(ModelVersion.model_id == _m)
+                                        .limit(1)
+                                    )
+                                ).scalar_one_or_none()
+                                if again is not None:
+                                    _mv_by_model[_m] = str(again.id)
+                                    continue
+                                raise
                             _mv_by_model[_m] = str(row.id)
                     except Exception:  # nosec B110 — best-effort; fallback mv.id
-                        _mv_by_model[_m] = str(mv.id)
+                        _mv_by_model[_m] = _fallback_mv_id
 
                 def _overlay_fallbacks(tier: ModelTier) -> tuple[dict[str, Any], list[dict[str, Any]]]:
                     # Primary = model pertama chain; hops = sisa. Semua hop
@@ -222,7 +241,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     def _route(model: str) -> dict[str, Any]:
                         return {
                             "model": model,
-                            "model_version_id": _mv_by_model.get(model, str(mv.id)),
+                            "model_version_id": _mv_by_model.get(model, _fallback_mv_id),
                             "tier": tier.value if hasattr(tier, "value") else str(tier),
                         }
 
