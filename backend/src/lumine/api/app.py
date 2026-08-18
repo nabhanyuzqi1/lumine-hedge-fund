@@ -504,6 +504,27 @@ async def _news_worker(publisher: SSEPublisher) -> None:
         await asyncio.sleep(300)  # poll tiap 5 menit
 
 
+async def _eco_calendar_worker() -> None:
+    """Economic calendar (18 Aug 2026): refresh tiap 30 menit.
+
+    Fetch jadwal ekonomi publik → cache Redis `lumine:eco_calendar` →
+    analyst prompt (news/macro) baca per-cycle via get_cached_calendar.
+    """
+    from lumine.shared.config import get_settings as _gs
+    from lumine.trading.economic_calendar import fetch_economic_calendar
+
+    try:
+        r = await redis.from_url(_gs().redis_url)
+    except Exception:
+        return
+    while True:
+        try:
+            await fetch_economic_calendar(r)
+        except Exception as exc:
+            print(f"[ECOCAL] worker error: {str(exc)[:150]}", flush=True)
+        await asyncio.sleep(1800)  # poll tiap 30 menit
+
+
 async def _model_discovery_worker() -> None:
     """Auto-select model terbaik dari 9router (18 Aug 2026).
 
@@ -573,6 +594,9 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR091
         # News feed (18 Aug 2026): seed awal + poll 5 menit + publish
         # headline baru ke SSE news-headlines.
         _app_state["news_worker"] = asyncio.create_task(_news_worker(sse_publisher))
+        # Economic calendar (18 Aug 2026): refresh tiap 30 menit → cache
+        # Redis lumine:eco_calendar → analyst prompt baca per-cycle.
+        _app_state["eco_calendar_worker"] = asyncio.create_task(_eco_calendar_worker())
         # Model discovery (18 Aug 2026): auto-select model terbaik 9router
         # tiap 60s — user minta agent utama yang pilih best aktif + switch
         # otomatis saat rate-limit/down.

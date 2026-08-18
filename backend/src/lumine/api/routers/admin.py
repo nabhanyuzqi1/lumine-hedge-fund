@@ -330,6 +330,50 @@ async def list_llm_usage(
         return []
 
 
+@router.get("/reasoning-traces")
+async def list_reasoning_traces(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    role: str | None = Query(default=None),
+) -> list[dict]:
+    """18 Aug 2026: prompt & response mentah per LLM call (reasoning_traces).
+
+    User butuh lihat APA data yang dikirim ke AI & BENTUK responsnya.
+    Data real dari tabel reasoning_traces (append-only, 1 row per call).
+    """
+    from sqlalchemy import select
+
+    from lumine.data.models import ModelVersion, ReasoningTrace
+    from lumine.data.session import get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            q = (
+                select(ReasoningTrace, ModelVersion.model_id)
+                .join(ModelVersion, ReasoningTrace.model_version_id == ModelVersion.id, isouter=True)
+                .order_by(ReasoningTrace.ts.desc())
+            )
+            if role:
+                q = q.where(ReasoningTrace.role == role)
+            rows = (await session.execute(q.limit(limit))).all()
+            return [
+                {
+                    "trace_id": str(r.ReasoningTrace.trace_id),
+                    "ts": r.ReasoningTrace.ts.isoformat(),
+                    "role": r.ReasoningTrace.role,
+                    "stage_run_id": r.ReasoningTrace.stage_run_id,
+                    "workflow_run_id": r.ReasoningTrace.workflow_run_id,
+                    "model": r.model_id,
+                    "prompt_sent": r.ReasoningTrace.prompt_sent,
+                    "response_raw": r.ReasoningTrace.response_raw,
+                    "parsed_output": r.ReasoningTrace.parsed_output,
+                }
+                for r in rows
+            ]
+    except Exception:
+        return []
+
+
 @router.get("/llm-models")
 async def list_llm_models(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],

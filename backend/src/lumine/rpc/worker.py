@@ -137,10 +137,20 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     # News headlines real (18 Aug 2026): baca cache Redis dari _news_worker.
     # Fallback "[]" → analyst tetap jalan (jujur, tidak gagal).
     _news_headlines_json = "[]"
+    # Economic calendar (18 Aug 2026): baca cache dari _eco_calendar_worker
+    # → analyst (news/macro) tahu event yang akan datang + dampaknya.
+    _eco_calendar_json = "[]"
     try:
         if _r is None:
             _r = await get_redis()
+        from lumine.trading.economic_calendar import get_cached_calendar
         from lumine.trading.news_service import get_cached_headlines
+
+        _eco_events = await get_cached_calendar(_r)
+        if _eco_events:
+            import json as _json
+
+            _eco_calendar_json = _json.dumps(_eco_events, ensure_ascii=False)
 
         _news_headlines = await get_cached_headlines(_r)
         if _news_headlines:
@@ -403,7 +413,9 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "headlines": _news_headlines_json,
                 "sentiment_score": 0.0,
                 "relevance_score": 0.0,
-                "scheduled_events": "none (feed not wired)",
+                # Economic calendar (18 Aug 2026): jadwal event REAL dari
+                # _eco_calendar_worker (sebelumnya "none (feed not wired)").
+                "scheduled_events": _eco_calendar_json,
                 # SMC analyst (struktur dari bars_5m real)
                 "order_blocks": f"computed from bars: recent swing high {recent_high:.2f}, swing low {recent_low:.2f}",
                 "liquidity_pools": f"buy-side above {recent_high:.2f}, sell-side below {recent_low:.2f}",
@@ -739,11 +751,94 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             )
             await session.commit()
 
+            # ── EXECUTION GATE (18 Aug 2026) ─────────────────────────
+            # User: "AI hanya hold-hold-hold, apakah benar eksekusi?"
+            # Sebelumnya pipeline berhenti di CIO proposal — TIDAK ada
+            # jalur ke place_order. Sekarang: proposal dievaluasi →
+            # threshold confidence (default 0.70, configurable via
+            # system_config.execution_min_confidence) + kill switch →
+            # enqueue place_order ke MT5 (paper/real via _handle_place_order).
+            execution_result: dict[str, Any] | None = None
+            try:
+                from lumine.rpc.queue import enqueue_command
+
+                proposal = str(cio_out.parsed.get("proposal", "HOLD")).upper()
+                prop_side = str(cio_out.parsed.get("side", "") or "").upper()
+                prop_size = float(cio_out.parsed.get("size", 0) or 0)
+                prop_sl = cio_out.parsed.get("stop_loss")
+                prop_tp = cio_out.parsed.get("take_profit")
+
+                # Threshold confidence dari system_config (realtime).
+                min_conf = 0.70
+                try:
+                    if _r is None:
+                        _r = await get_redis()
+                    _raw_conf = await _r.hget("lumine:system_config", "execution_min_confidence")
+                    if _raw_conf is not None:
+                        min_conf = float(_raw_conf)
+                except Exception:
+                    pass
+                # Kill switch check.
+                try:
+                    if _r is None:
+                        _r = await get_redis()
+                    _ks = await _r.hget(settings.kill_switch_key, "armed")
+                    _halted = _ks is not None and str(_ks) == "1"
+                except Exception:
+                    _halted = False
+
+                eligible = (
+                    proposal in ("BUY", "SELL", "LONG", "SHORT")
+                    and prop_side in ("BUY", "SELL")
+                    and prop_size >= 0.01
+                    and confidence >= min_conf
+                    and not _halted
+                )
+                if eligible:
+                    order_id = uuid4()
+                    await enqueue_command(
+                        "place_order",
+                        {
+                            "order_id": str(order_id),
+                            "symbol": symbol,
+                            "volume": prop_size,
+                            "order_type": "BUY" if prop_side == "BUY" else "SELL",
+                            "stop_loss": prop_sl,
+                            "take_profit": prop_tp,
+                        },
+                    )
+                    execution_result = {
+                        "order_id": str(order_id),
+                        "action": prop_side,
+                        "volume": prop_size,
+                        "confidence": confidence,
+                        "threshold": min_conf,
+                    }
+                    print(
+                        f"[EXEC] ORDER {prop_side} {prop_size} {symbol} "
+                        f"conf={confidence:.2f}>= {min_conf} → enqueued {order_id}",
+                        flush=True,
+                    )
+                else:
+                    execution_result = {
+                        "action": proposal,
+                        "skipped_reason": (
+                            "halted" if _halted
+                            else "confidence_below_threshold" if confidence < min_conf
+                            else "no_valid_side_size"
+                        ),
+                        "confidence": confidence,
+                        "threshold": min_conf,
+                    }
+            except Exception as _exec_exc:  # nosec B110 — eksekusi tidak boleh crash cycle
+                print(f"[EXEC] error: {str(_exec_exc)[:150]}", flush=True)
+
             return {
                 "status": "completed",
                 "decision": action.lower(),
                 "confidence": confidence,
                 "analyst_recommendation": "aggregated",
+                "execution": execution_result,
                 "finished_at": datetime.now(UTC).isoformat(),
             }
 

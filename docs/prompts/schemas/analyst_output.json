@@ -4,12 +4,24 @@
   "title": "AnalystOutput",
   "description": "Structured output emitted by each of the four analyst sub-roles (technical, macro, news, smc). One row per analyst per decision cycle.",
   "type": "object",
-  "required": ["sub_role", "argument", "confidence", "bias"],
+  "required": [
+    "sub_role",
+    "argument",
+    "confidence",
+    "bias",
+    "volatility",
+    "plan"
+  ],
   "additionalProperties": false,
   "properties": {
     "sub_role": {
       "type": "string",
-      "enum": ["technical_analyst", "macro_analyst", "news_analyst", "smc_analyst"]
+      "enum": [
+        "technical_analyst",
+        "macro_analyst",
+        "news_analyst",
+        "smc_analyst"
+      ]
     },
     "argument": {
       "type": "string",
@@ -24,12 +36,61 @@
     },
     "bias": {
       "type": "string",
-      "enum": ["bullish", "bearish", "neutral"]
+      "enum": [
+        "bullish",
+        "bearish",
+        "neutral"
+      ],
+      "description": "Directional bias"
     },
     "citations": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Optional references to inputs (feature names, headlines, levels)."
+    },
+    "volatility": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "extreme"
+          ]
+        },
+        "expected_pre_event": {
+          "type": "string",
+          "description": "Vol expectation before high-impact news"
+        },
+        "expected_post_event": {
+          "type": "string",
+          "description": "Vol expectation after high-impact news"
+        },
+        "atr_note": {
+          "type": "string",
+          "description": "ATR context if available"
+        }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "properties": {
+        "pre_news": {
+          "type": "string",
+          "description": "Positioning plan BEFORE high-impact events"
+        },
+        "post_news": {
+          "type": "string",
+          "description": "Reaction plan AFTER high-impact events"
+        },
+        "high_impact_within_24h": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

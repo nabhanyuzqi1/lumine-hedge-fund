@@ -33,6 +33,13 @@ Instructions:
 - Reasoning is concise: why this action, given the IC view and your override decision.
 - Echo the policy/model/prompt version UUIDs verbatim into the corresponding fields; never fabricate UUIDs.
 - Set version to the literal string "v1" (proposal schema version).
+- EXECUTION PARAMS (18 Aug 2026): for BUY or SELL you MUST also provide
+  `side` ("BUY"|"SELL"), `size` (lot size, min 0.01; XAUUSD 1.0 lot = 100 oz),
+  `stop_loss` (price ~1.5-2x ATR below entry for BUY / above for SELL) and
+  `take_profit` (price ~2-3x risk). For HOLD/REJECT set side="HOLD",
+  size=0, stop_loss=0, take_profit=0. The deterministic execution layer
+  applies final risk checks and the confidence threshold — your params
+  are the proposal, not the guaranteed fill.
 
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
