@@ -171,6 +171,12 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             if mv is None:
                 msg = "no production model_versions row"
                 raise RuntimeError(msg)
+            # Capture id UUID SEKALI — session.rollback() (race upsert di
+            # bawah) men-expire ORM objek → akses mv.id berikutnya
+            # MissingGreenlet. UUID object tetap valid.
+            import uuid as _uuid_mod
+
+            mv_id: _uuid_mod.UUID = mv.id
 
             # Registry model dari DB (wajib — resolve model_version_id)
             model_registry = await load_model_versions(session)
@@ -195,7 +201,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 _mv_by_model: dict[str, str] = {}
                 # Pre-capture id string — fallback TIDAK boleh akses mv.id
                 # setelah session error (rolled back → MissingGreenlet).
-                _fallback_mv_id = str(mv.id)
+                _fallback_mv_id = str(mv_id)
                 for _m in routing_chain:
                     try:
                         existing = (
@@ -217,19 +223,35 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                                 await session.flush()
                             except Exception:
                                 # Race: 2 cycle parallel insert model sama →
-                                # duplicate key. Rollback lokal & re-select.
+                                # duplicate key. PITFALL: session.rollback()
+                                # men-expire SEMUA objek (termasuk mv) →
+                                # akses mv.id berikutnya MissingGreenlet.
+                                # Pakai savepoint — rollback hanya sub-transaksi.
                                 await session.rollback()
-                                again = (
-                                    await session.execute(
-                                        _sa_select(ModelVersion)
-                                        .where(ModelVersion.model_id == _m)
-                                        .limit(1)
-                                    )
-                                ).scalar_one_or_none()
-                                if again is not None:
-                                    _mv_by_model[_m] = str(again.id)
-                                    continue
-                                raise
+                                # Re-bind row di savepoint baru, re-select.
+                                row = ModelVersion(
+                                    id=uuid4(),
+                                    model_id=_m,
+                                    provider="9router",
+                                    status="production",
+                                )
+                                session.add(row)
+                                try:
+                                    await session.flush()
+                                except Exception:
+                                    # Masih gagal (row lain menang) → re-select.
+                                    await session.rollback()
+                                    again = (
+                                        await session.execute(
+                                            _sa_select(ModelVersion)
+                                            .where(ModelVersion.model_id == _m)
+                                            .limit(1)
+                                        )
+                                    ).scalar_one_or_none()
+                                    if again is not None:
+                                        _mv_by_model[_m] = str(again.id)
+                                        continue
+                                    raise
                             _mv_by_model[_m] = str(row.id)
                     except Exception:  # nosec B110 — best-effort; fallback mv.id
                         _mv_by_model[_m] = _fallback_mv_id
@@ -425,7 +447,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     lineage_id=lineage_id,
                     workflow_run_id=result["run_id"],
                     stage_run_id=stage,
-                    model_version_id=mv.id,
+                    model_version_id=mv_id,
                     idempotency_key=f"{lineage_id}:{stage}",
                     variables=variables,
                     session=session,
@@ -558,7 +580,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 lineage_id=lineage_id,
                 workflow_run_id=result["run_id"],
                 stage_run_id="risk_assessor",
-                model_version_id=mv.id,
+                model_version_id=mv_id,
                 idempotency_key=f"{lineage_id}:risk_assessor",
                 symbol=symbol,
                 decision_ts=now.isoformat(),
@@ -596,7 +618,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 lineage_id=lineage_id,
                 workflow_run_id=result["run_id"],
                 stage_run_id="ic_forum",
-                model_version_id=mv.id,
+                model_version_id=mv_id,
                 idempotency_key=f"{lineage_id}:ic_forum",
                 symbol=symbol,
                 decision_ts=now.isoformat(),
@@ -629,7 +651,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 lineage_id=lineage_id,
                 workflow_run_id=result["run_id"],
                 stage_run_id="cio_proposer",
-                model_version_id=mv.id,
+                model_version_id=mv_id,
                 idempotency_key=f"{lineage_id}:cio_proposer",
                 symbol=symbol,
                 decision_ts=now.isoformat(),
@@ -641,7 +663,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 analyst_inputs=analyst_inputs,
                 portfolio_context=portfolio_context,
                 policy_version_id="policy@v1",
-                model_version_ids={"default": str(mv.id)},
+                model_version_ids={"default": str(mv_id)},
                 prompt_version_ids={"default": "v1"},
                 debate_held=False,
                 session=session,
