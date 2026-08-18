@@ -222,9 +222,11 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                                 # NOT NULL tanpa default (18 Aug 2026:
                                 # upsert gagal IntegrityError → fallback
                                 # mv.id stale → verbose tampil model lama).
-                                version="1",
+                                # version UNIK per model (UniqueConstraint)
+                                version=f"1-{_m.replace('/', '-')}",
                                 tier="cost-efficient",
                                 context_window=128_000,
+                                params={},
                             )
                             session.add(row)
                             try:
@@ -242,9 +244,10 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                                     model_id=_m,
                                     provider="9router",
                                     status="production",
-                                    version="1",
+                                    version=f"1-{_m.replace('/', '-')}",
                                     tier="cost-efficient",
                                     context_window=128_000,
+                                    params={},
                                 )
                                 session.add(row)
                                 try:
