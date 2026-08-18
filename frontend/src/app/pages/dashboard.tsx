@@ -1,6 +1,8 @@
 import { Suspense, lazy, useState } from "react";
 
 import { useCorrelation, useEquityCurve, useExposure, useMarketBars, useSignals } from "@/api/hooks";
+import { useMarketWS } from "@/hooks/useMarketWS";
+import { useMarketStore } from "@/stores";
 import { MarketIndicatorsPanel } from "@/components/dashboard/market-indicators-panel";
 import { SignalPanel } from "@/components/dashboard/signal-panel";
 import { ExposureSummaryCard } from "@/components/dashboard/exposure-summary-card";
@@ -35,7 +37,9 @@ function PaneFallback({ title, height = 320 }: { title: string; height?: number 
  * `/dashboard` — institutional chart grid (F-Sprint 4). Lightweight-charts
  * panes are statically imported; ECharts panes load lazily. All data flows
  * from live REST endpoints (market bars, equity, exposure, signals,
- * correlation) — no demo streams.
+ * correlation) — no demo streams. WS tick (18 Aug 2026) → chart live
+ * mutasi bar + label "Waiting for live data" HANYA saat benar-benar stale
+ * (sebelumnya tanpa lastTick → isStale selalu true → label selalu muncul).
  */
 export function DashboardPage() {
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
@@ -45,6 +49,16 @@ export function DashboardPage() {
   const exposure = useExposure();
   const signals = useSignals("XAUUSD");
   const correlation = useCorrelation();
+
+  // WS tick → store → lastTick (sama dengan terminal). Tanpa ini chart
+  // dashboard BEKU & label stale selalu tampil (isStale butuh lastTick).
+  const upsertTick = useMarketStore((state) => state.upsertTick);
+  useMarketWS({
+    symbol: "XAUUSD",
+    enabled: true,
+    onTick: (tick) => upsertTick(tick),
+  });
+  const lastTick = useMarketStore((s) => s.ticks["XAUUSD"] ?? null);
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4">
@@ -61,9 +75,10 @@ export function DashboardPage() {
               <div className="md:col-span-2 xl:col-span-3">
                 <CandlestickChart
                   bars={bars.data ?? []}
+                  lastTick={lastTick}
                   timeframe={timeframe}
                   onTimeframeChange={setTimeframe}
-                  waitingLabel="Waiting for live data"
+                  height={420}
                 />
               </div>
 

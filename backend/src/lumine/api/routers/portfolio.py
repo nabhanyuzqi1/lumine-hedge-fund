@@ -165,14 +165,39 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
             )
 
             if not rows:
-                return [
-                    EquityPoint(
-                        ts=datetime.now(UTC),
-                        nav=Decimal(0),
-                        equity=Decimal(0),
-                        drawdown=Decimal(0),
-                    )
-                ]
+                # 18 Aug 2026: tanpa posisi open → ambil equity REAL dari
+                # EA status (mt5:status, TTL 90s). Sebelumnya hardcode 0 →
+                # chart equity dashboard selalu datar 0 padahal EA live
+                # (balance 99955).
+                try:
+                    from lumine.data.redis_client import get_redis
+
+                    _r = await get_redis()
+                    raw = await _r.hgetall("mt5:status")
+                    ov = {
+                        (k.decode() if isinstance(k, bytes) else str(k)):
+                        (v.decode() if isinstance(v, bytes) else str(v))
+                        for k, v in raw.items()
+                    }
+                    eq = Decimal(ov.get("equity") or ov.get("balance") or "0")
+                    nav = eq.quantize(Decimal("0.01"))
+                    return [
+                        EquityPoint(
+                            ts=datetime.now(UTC),
+                            nav=nav,
+                            equity=nav,
+                            drawdown=Decimal(0),
+                        )
+                    ]
+                except Exception:  # nosec B110 — Redis down → fallback 0
+                    return [
+                        EquityPoint(
+                            ts=datetime.now(UTC),
+                            nav=Decimal(0),
+                            equity=Decimal(0),
+                            drawdown=Decimal(0),
+                        )
+                    ]
 
             now = datetime.now(UTC)
             points: list[EquityPoint] = []
