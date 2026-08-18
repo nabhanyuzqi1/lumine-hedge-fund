@@ -151,9 +151,16 @@ export function CandlestickChart({
 
   // T5b: price lines (TP/SL/Entry) — createPriceLine per level.
   // Recreate saat daftar level berubah (hapus semua → create ulang).
+  // PITFALL (18 Aug 2026): parent pass array BARU tiap render (positions
+  // refetch 1s) → recreate price line tiap detik → WebGL churn →
+  // browser renderer crash STATUS_BREAKPOINT. Fix: bandingkan JSON isi.
+  const priceLinesKey = JSON.stringify(priceLines);
+  const prevKeyRef = useRef("");
   useEffect(() => {
     const { candles } = seriesRef.current;
     if (!candles) return;
+    if (prevKeyRef.current === priceLinesKey) return;
+    prevKeyRef.current = priceLinesKey;
     const created = priceLines.map((pl) => {
       if (!Number.isFinite(pl.price) || pl.price <= 0) return null;
       return candles.createPriceLine({
@@ -170,7 +177,7 @@ export function CandlestickChart({
         if (line) candles.removePriceLine(line);
       }
     };
-  }, [priceLines]);
+  }, [priceLinesKey, priceLines]);
 
   // Full re-render when the bar set changes (timeframe switch, refetch).
   useEffect(() => {

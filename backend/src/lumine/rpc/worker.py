@@ -159,7 +159,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     except Exception:
         pass
 
-    async def _run() -> dict[str, Any]:  # noqa: PLR0915,C901 — fixed LLM stage sequence
+    async def _run() -> dict[str, Any]:  # noqa: PLR0915,C901,PLR0912 — fixed LLM stage sequence
         """Execute the LLM cycle; raises on failure (caught by caller)."""
         async with get_sessionmaker()() as session:
             # model_version + prompt_version production
@@ -180,7 +180,40 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             # policy DB (realtime, tanpa restart). None → policy DB default.
             fallback_provider = None
             if routing_chain:
+                # 18 Aug 2026: model_version_id per model dari overlay —
+                # oc/deepseek-v4-flash-free) → llm_usage/verbose mencatat
+                # model LAMA walau call pakai ag/claude-opus. Fix: upsert
+                # ModelVersion utk tiap model di chain → resolve id BENAR.
+                # PITFALL: fallback_provider dipanggil SYNC oleh Gateway —
+                # semua await di-pre-compute di sini (sekali per cycle).
+                from uuid import uuid4
+
+                from sqlalchemy import select as _sa_select
+
                 from lumine.llm_gateway.types import ModelTier
+
+                _mv_by_model: dict[str, str] = {}
+                for _m in routing_chain:
+                    try:
+                        existing = (
+                            await session.execute(
+                                _sa_select(ModelVersion).where(ModelVersion.model_id == _m).limit(1)
+                            )
+                        ).scalar_one_or_none()
+                        if existing is not None:
+                            _mv_by_model[_m] = str(existing.id)
+                        else:
+                            row = ModelVersion(
+                                id=uuid4(),
+                                model_id=_m,
+                                provider="9router",
+                                status="production",
+                            )
+                            session.add(row)
+                            await session.flush()
+                            _mv_by_model[_m] = str(row.id)
+                    except Exception:  # nosec B110 — best-effort; fallback mv.id
+                        _mv_by_model[_m] = str(mv.id)
 
                 def _overlay_fallbacks(tier: ModelTier) -> tuple[dict[str, Any], list[dict[str, Any]]]:
                     # Primary = model pertama chain; hops = sisa. Semua hop
@@ -189,7 +222,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     def _route(model: str) -> dict[str, Any]:
                         return {
                             "model": model,
-                            "model_version_id": str(mv.id),
+                            "model_version_id": _mv_by_model.get(model, str(mv.id)),
                             "tier": tier.value if hasattr(tier, "value") else str(tier),
                         }
 

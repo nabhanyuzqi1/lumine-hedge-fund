@@ -281,7 +281,10 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
     staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
-    refetchInterval: 1_000,
+    // 18 Aug 2026: 1s → 5s — bar terakhir sudah di-update live oleh WS
+    // tick. Refetch 1s hanya render storm + WebGL churn → browser crash
+    // STATUS_BREAKPOINT di dashboard (chart + WS + refetch bersamaan).
+    refetchInterval: 5_000,
   });
 }
 
@@ -502,7 +505,8 @@ export function usePositions(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
-    refetchInterval: 1_000,
+    // 18 Aug 2026: 1s → 5s (render storm di dashboard + price lines).
+    refetchInterval: 5_000,
   });
 }
 
@@ -524,7 +528,8 @@ export function useOrders(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
     staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
-    refetchInterval: 1_000,
+    // 18 Aug 2026: 1s → 5s (render storm).
+    refetchInterval: 5_000,
   });
 }
 

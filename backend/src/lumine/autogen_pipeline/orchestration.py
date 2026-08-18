@@ -309,7 +309,39 @@ class AutoGenOrchestrator:
 
 
 async def create_orchestrator(session: AsyncSession) -> AutoGenOrchestrator:
-    """Factory function to create and configure AutoGen orchestrator."""
+    """Factory function to create and configure AutoGen orchestrator.
+
+    18 Aug 2026: model + gateway url/key diambil dari routing overlay Redis
+    (lumine:llm_routing) — sama seperti worker decision cycle. Sebelumnya
+    hardcoded oc/deepseek-v4-flash-free + gateway kosong → committee live
+    agent activity di terminal memakai model lama (tidak ikut pengaturan
+    superadmin, "tidak benar-benar kepanggil").
+    """
     config = AutoGenConfig()
+    try:
+        from lumine.data.redis_client import get_redis
+        from lumine.llm_gateway.routing_overlay import get_overlay
+
+        r = await get_redis()
+        overlay = await get_overlay(r)
+        # Model: overlay default > available pertama > env > hardcoded.
+        model = overlay.get("default_model") or ""
+        if not model:
+            import json as _json
+
+            try:
+                avail = _json.loads(overlay.get("available_models") or "[]")
+                if isinstance(avail, list) and avail:
+                    model = str(avail[0])
+            except Exception:  # nosec B110 — parse best-effort
+                pass
+        if model:
+            config.model_name = model
+        if overlay.get("llm_gateway_url"):
+            config.gateway_base_url = overlay["llm_gateway_url"]
+        if overlay.get("llm_gateway_api_key"):
+            config.gateway_api_key = overlay["llm_gateway_api_key"]
+    except Exception:  # nosec B110 — overlay tidak tersedia → default config
+        pass
     orchestrator = AutoGenOrchestrator(config)
     return orchestrator
