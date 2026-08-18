@@ -1644,6 +1644,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/market/economic-calendar:
+    get:
+      tags:
+      - market
+      summary: Get Economic Calendar
+      description: 'Economic calendar (18 Aug 2026) — dari cache _eco_calendar_worker.
+
+
+        Event 72 jam ke depan: NFP/CPI/FOMC dll + impact level. Dipakai
+
+        halaman NewsRoom frontend + analyst prompt.'
+      operationId: get_economic_calendar_api_v1_market_economic_calendar_get
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Economic Calendar Api V1 Market Economic Calendar
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/market/quotes:
     get:
       tags:

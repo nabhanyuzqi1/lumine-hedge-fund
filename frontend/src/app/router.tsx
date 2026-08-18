@@ -45,6 +45,9 @@ const LazyHealth = React.lazy(() =>
 const LazyStreams = React.lazy(() =>
   import("./pages/streams").then((m) => ({ default: m.StreamsPage }))
 );
+const LazyNewsRoom = React.lazy(() =>
+  import("./pages/news-room").then((m) => ({ default: m.NewsRoomPage }))
+);
 const LazyWorkflowRunDetail = React.lazy(() =>
   import("./pages/workflow-run-detail").then((m) => ({ default: m.WorkflowRunDetailPage }))
 );
@@ -130,6 +133,7 @@ export const router = createBrowserRouter([
       { path: "/app/dashboard", element: <LazyDashboard /> },
       { path: "/app/health", element: <LazyHealth /> },
       { path: "/app/streams", element: <LazyStreams /> },
+      { path: "/app/news", element: <LazyNewsRoom /> },
       { path: "/app/journal", element: <LazyJournal /> },
       { path: "/app/workflows", element: <LazyWorkflowRunList /> },
 

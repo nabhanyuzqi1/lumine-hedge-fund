@@ -11,6 +11,7 @@ const WORKSPACE_PATHS: Record<string, string> = {
   risk: "/app/health",
   ops: "/app/journal",
   superadmin: "/superadmin",
+  news: "/app/news",
 };
 
 const PATH_WORKSPACE: Record<string, string> = {
@@ -18,6 +19,7 @@ const PATH_WORKSPACE: Record<string, string> = {
   "/app/dashboard": "research",
   "/app/health": "risk",
   "/app/journal": "ops",
+  "/app/news": "news",
   "/terminal": "trading",
   "/dashboard": "research",
   "/health": "risk",

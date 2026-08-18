@@ -224,6 +224,22 @@ async def get_news_headlines(
     return {"items": items, "count": len(items), "source": "rss-kitco-reuters"}
 
 
+@router.get("/economic-calendar")
+async def get_economic_calendar(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
+) -> dict:
+    """Economic calendar (18 Aug 2026) — dari cache _eco_calendar_worker.
+
+    Event 72 jam ke depan: NFP/CPI/FOMC dll + impact level. Dipakai
+    halaman NewsRoom frontend + analyst prompt.
+    """
+    from lumine.trading.economic_calendar import get_cached_calendar
+
+    r = await _redis()
+    events = await get_cached_calendar(r)
+    return {"items": events, "count": len(events), "source": "faireconomy-rss"}
+
+
 async def _redis():
     import redis as _redis_lib
 
