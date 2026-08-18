@@ -280,6 +280,16 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     return primary, hops
 
                 fallback_provider = _overlay_fallbacks
+                # COMMIT upsert ModelVersion SEKALI — PITFALL (18 Aug 2026):
+                # upsert + analyst + write_trace dalam SATU session → error
+                # analyst nanti → session.rollback() → row ModelVersion yang
+                # baru di-upsert IKUT rollback → model_versions tidak pernah
+                # berubah → llm_usage resolve ke oc/deepseek stale.
+                # Commit di sini agar row persist sebelum analyst jalan.
+                try:
+                    await session.commit()
+                except Exception:  # nosec B110 — best-effort
+                    await session.rollback()
             gateway = Gateway(
                 registry=model_registry,
                 budget=BudgetGate({}),
