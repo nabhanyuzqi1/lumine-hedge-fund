@@ -23,7 +23,7 @@ import pytest
 
 from lumine.data.models import LLMUsage
 from lumine.llm_gateway.types import ChatMessage, GatewayResponse, ModelTier, RouterRequest
-from lumine.llm_gateway.usage import LLMUsageRecordError, record_usage, write_usage
+from lumine.llm_gateway.usage import record_usage, write_usage
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -162,6 +162,7 @@ class _FakeSession:
         self.added: list[Any] = []
         self._fail_flush = fail_flush
         self.flushed = False
+        self.rolled_back = False
 
     def add(self, obj: object) -> None:
         self.added.append(obj)
@@ -170,6 +171,9 @@ class _FakeSession:
         if self._fail_flush:
             raise RuntimeError("constraint violation")
         self.flushed = True
+
+    async def rollback(self) -> None:
+        self.rolled_back = True
 
 
 class TestWriteUsage:
@@ -180,7 +184,10 @@ class TestWriteUsage:
         assert session.flushed is True
         assert isinstance(row, LLMUsage)
 
-    async def test_flush_failure_surfaces_usage_record_error(self) -> None:
+    async def test_flush_failure_non_fatal(self) -> None:
+        # 18 Aug 2026: persist gagal → non-fatal (audit log tidak boleh
+        # matikan pipeline). Sebelumnya raise LLMUsageRecordError.
         session = _FakeSession(fail_flush=True)
-        with pytest.raises(LLMUsageRecordError, match="llm_usage"):
-            await write_usage(session, request=_req(), response=_resp())
+        row = await write_usage(session, request=_req(), response=_resp())
+        assert row is None
+        assert session.rolled_back is True
