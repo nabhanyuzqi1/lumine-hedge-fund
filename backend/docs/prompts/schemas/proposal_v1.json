@@ -249,8 +249,8 @@
     },
     "size": {
       "type": "number",
-      "minimum": 0.01,
-      "description": "Lot size (0.01 = 1 micro lot). HOLD/REJECT \u2192 0"
+      "minimum": 0,
+      "description": "Lot size (0.01 = 1 micro lot). HOLD/REJECT \u2192 0 (gate eksekusi tetap \u22650.01)"
     },
     "stop_loss": {
       "type": "number",
