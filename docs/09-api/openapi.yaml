@@ -3490,7 +3490,7 @@ paths:
 
         Backtest beta (17 Aug 2026): data nyata dari DB, bukan demo/deterministik.
 
-        15m diagregasi dari bars_5m (bucket 900s). Baris diambil oldest-first.'
+        15m dari tabel bars_15m (18 Aug 2026). Baris diambil oldest-first.'
       operationId: run_backtest_endpoint_api_v1_backtest_run_get
       parameters:
       - name: symbol
