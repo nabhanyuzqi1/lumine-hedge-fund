@@ -271,11 +271,18 @@ async def _seed_worker() -> None:
     """Seed history worker: consume mt5:seed_bars (EA CopyRates)
     → insert ke tabel bars_* (B-08 fondasi: TCA backfill butuh history).
     """
-    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M
+    from lumine.data.models import Bars15M, Bars1D, Bars1H, Bars1M, Bars4H, Bars5M
     from lumine.data.session import get_sessionmaker
     from lumine.shared.config import get_settings as _gs
 
-    bar_models = {"1m": Bars1M, "5m": Bars5M, "1h": Bars1H, "4h": Bars4H, "1d": Bars1D}
+    bar_models = {
+        "1m": Bars1M,
+        "5m": Bars5M,
+        "15m": Bars15M,  # 18 Aug 2026: 15m hilang → 100k bars dibuang
+        "1h": Bars1H,
+        "4h": Bars4H,
+        "1d": Bars1D,
+    }
     try:
         r = await redis.from_url(_gs().redis_url)
     except Exception:

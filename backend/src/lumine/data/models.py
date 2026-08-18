@@ -600,6 +600,9 @@ def _make_bar_table(
 
 Bars1M = _make_bar_table("bars_1m", partitioned=True)
 Bars5M = _make_bar_table("bars_5m", partitioned=True)
+# 18 Aug 2026: Bars15M ditambahkan — seed EA kirim 15m tapi mapping
+# worker TIDAK punya model → 100k bars dibuang diam-diam (data hilang).
+Bars15M = _make_bar_table("bars_15m", partitioned=False)
 Bars1H = _make_bar_table("bars_1h", partitioned=False)
 Bars4H = _make_bar_table("bars_4h", partitioned=False)
 Bars1D = _make_bar_table("bars_1d", partitioned=False)

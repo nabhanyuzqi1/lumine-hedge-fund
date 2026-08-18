@@ -251,7 +251,7 @@ async def get_ohlcv(
 
     ZERO-DEMO: tabel kosong = return [] (bukan data fiktif random walk).
     """
-    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M
+    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
     from lumine.data.session import get_sessionmaker
 
     # 15m tidak punya tabel sendiri → pakai bars_5m (bucket 15m adalah
@@ -260,7 +260,7 @@ async def get_ohlcv(
     bar_models = {
         "1m": Bars1M,
         "5m": Bars5M,
-        "15m": Bars5M,
+        "15m": Bars15M,  # 18 Aug 2026: tabel real (sebelumnya agregasi 5m)
         "1h": Bars1H,
         "4h": Bars4H,
         "1d": Bars1D,
