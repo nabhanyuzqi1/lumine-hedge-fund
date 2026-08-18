@@ -260,7 +260,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                                         continue
                                     raise
                             _mv_by_model[_m] = str(row.id)
-                    except Exception:  # nosec B110 — best-effort; fallback mv.id
+                    except Exception as _exc:  # nosec B110 — best-effort; fallback mv.id
+                        print(f"[ROUTING] upsert fail {_m}: {type(_exc).__name__}: {str(_exc)[:150]}", flush=True)
                         _mv_by_model[_m] = _fallback_mv_id
 
                 def _overlay_fallbacks(tier: ModelTier) -> tuple[dict[str, Any], list[dict[str, Any]]]:
