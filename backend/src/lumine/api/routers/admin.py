@@ -351,7 +351,7 @@ async def list_llm_models(
             import json as _json
 
             payload = _json.loads(cached.decode() if isinstance(cached, bytes) else cached)
-            return _attach_overlay_state(payload, r)
+            return await _attach_overlay_state(payload, r)
         # PITFALL (18 Aug 2026): worker _model_discovery_worker menulis
         # last_models_json ke ROUTING_KEY (bukan :models subkey) — cache
         # endpoint kosong → dropdown frontend kosong. Fallback: baca dari
@@ -366,7 +366,7 @@ async def list_llm_models(
                 models = [{"id": str(m), "owned_by": "", "created": None} for m in raw_list]
                 payload = {"models": models, "fetched_at": time_now_iso(), "error": None}
                 await r.set(cache_key, _json.dumps(payload), ex=300)
-                return _attach_overlay_state(payload, r)
+                return await _attach_overlay_state(payload, r)
             except Exception:  # nosec B110 — cache corrupt → fetch ulang
                 pass
 
