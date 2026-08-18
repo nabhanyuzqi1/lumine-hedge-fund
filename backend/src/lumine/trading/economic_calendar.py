@@ -76,11 +76,17 @@ async def fetch_economic_calendar(redis: Any) -> list[dict[str, Any]]:
         parsed: list[dict[str, Any]] = []
         for item in raw if isinstance(raw, list) else []:
             try:
-                ts = float(item.get("timestamp", 0))
-                dt = datetime.fromtimestamp(ts, tz=UTC)
+                # API pakai field `date` (ISO string dgn offset), bukan
+                # `timestamp` — ts=0 → semua jadi 1970 → filter 72h kosong.
+                raw_date = str(item.get("date", "") or "").strip()
+                if raw_date:
+                    dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+                else:
+                    ts = float(item.get("timestamp", 0))
+                    dt = datetime.fromtimestamp(ts, tz=UTC)
                 parsed.append(
                     {
-                        "date": dt.isoformat(),
+                        "date": dt.astimezone(UTC).isoformat(),
                         "currency": str(item.get("country", "") or "USD").upper(),
                         "event": str(item.get("title", "") or "Economic Event"),
                         "impact": _impact_level(item),
