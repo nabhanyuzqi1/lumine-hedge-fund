@@ -5,6 +5,7 @@ import { get, post, put } from "@/api/client";
 import { ApiKeyTable } from "@/components/admin/api-key-table";
 import { CreateKeyModal } from "@/components/admin/create-key-modal";
 import { LLMRoutingTab } from "@/components/superadmin/llm-routing-tab";
+import { TradingProfilesTab } from "@/components/superadmin/trading-profiles-tab";
 import { BacktestTab } from "@/components/superadmin/backtest-tab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,7 @@ const SYMBOL_CANDIDATES = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTC
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen" | "backtest";
+type Tab = "overview" | "services" | "config" | "keys" | "mt5" | "logs" | "llm" | "autogen" | "backtest" | "profiles";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -63,6 +64,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "config", label: "System Config" },
   { id: "keys", label: "API Keys" },
   { id: "llm", label: "LLM Routing" },
+  { id: "profiles", label: "Trading Profiles" },
   { id: "mt5", label: "MT5 Desktop" },
   { id: "logs", label: "Logs" },
   { id: "autogen", label: "AutoGen Studio" },
@@ -660,7 +662,8 @@ export function SuperadminPage() {
         {tab === "services" && <ServicesTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "config" && <ConfigTab data={systemInfo.data} isError={systemInfo.isError} />}
         {tab === "llm" && <LLMRoutingTab />}
-        {tab === "mt5" && (
+                {tab === "profiles" && <TradingProfilesTab />}
+                {tab === "mt5" && (
           <div className="space-y-4">
             <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />
             <EALogsPanel />
