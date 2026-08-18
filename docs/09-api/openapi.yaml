@@ -2192,9 +2192,26 @@ paths:
       tags:
       - journal
       summary: List Journal Entries
-      description: 'List trade journal entries (DB-backed: orders + workflow_journal).'
+      description: 'List trade journal entries (DB-backed: orders + workflow_journal).
+
+
+        18 Aug 2026: journal kini gabung orders (0 karena fresh start) +
+
+        workflow_journal (204 step AutoGen — analyst/IC/CIO/risk executions).
+
+        Filter portfolio_id opsional. Metadata lengkap (portfolio_id, symbol,
+
+        side, volume, price, status) untuk UI.'
       operationId: list_journal_entries_api_v1_journal_get
       parameters:
+      - name: portfolio_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Portfolio Id
       - name: limit
         in: query
         required: false
@@ -2254,7 +2271,7 @@ paths:
       tags:
       - journal
       summary: Get Journal Entry
-      description: Return a single journal entry.
+      description: Return a single journal entry (dari gabungan orders + workflow).
       operationId: get_journal_entry_api_v1_journal__entry_id__get
       parameters:
       - name: entry_id
@@ -2262,7 +2279,6 @@ paths:
         required: true
         schema:
           type: string
-          format: uuid
           title: Entry Id
       - name: X-Lumine-API-Key
         in: header
@@ -4063,8 +4079,10 @@ components:
           format: uuid
           title: Entry Id
         trade_id:
-          type: string
-          format: uuid
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
           title: Trade Id
         agent_name:
           type: string
@@ -4079,16 +4097,45 @@ components:
           type: string
           format: date-time
           title: Created At
+        portfolio_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Portfolio Id
+        symbol:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Symbol
+        side:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Side
+        volume:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Volume
+        price:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Price
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
       type: object
       required:
       - entry_id
-      - trade_id
       - agent_name
       - reflection
       - lesson
       - created_at
       title: JournalEntry
-      description: Trade journal entry.
+      description: Trade journal entry (orders + workflow_journal steps).
     KillSwitchRequest:
       properties:
         reason:

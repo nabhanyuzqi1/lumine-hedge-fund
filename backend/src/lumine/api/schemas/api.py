@@ -137,14 +137,23 @@ class Signal(BaseModel):
 
 
 class JournalEntry(BaseModel):
-    """Trade journal entry."""
+    """Trade journal entry (orders + workflow_journal steps)."""
 
     entry_id: UUID
-    trade_id: UUID
+    trade_id: UUID | None = None
     agent_name: str
     reflection: str
     lesson: str
     created_at: datetime
+    # 18 Aug 2026: metadata lengkap — portfolio & trade fields untuk
+    # filter/UI (sebelumnya hanya reflection/lesson → journal kosong saat
+    # orders 0 dan filter portfolio tidak pernah berfungsi).
+    portfolio_id: str | None = None
+    symbol: str | None = None
+    side: str | None = None
+    volume: float | None = None
+    price: float | None = None
+    status: str | None = None
 
 
 class AdminKey(BaseModel):

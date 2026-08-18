@@ -113,7 +113,7 @@ async def resolve_route_models(
     return healthy, overlay
 
 
-async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str) -> dict[str, Any]:  # noqa: C901 — discovery heuristik bercabang
+async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str) -> dict[str, Any]:  # noqa: C901, PLR0915 — discovery heuristik bercabang
     """Auto-discovery: fetch 9router /v1/models → pilih model TERBAIK aktif.
 
     Agent utama (18 Aug 2026) — user minta program yang fetch semua model
@@ -150,19 +150,47 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
 
     overlay = await get_overlay(redis)
     # Skor: pro > turbo > flash > free; premium tanpa "free" menang.
-    def _score(mid: str) -> tuple[int, int]:
+    def _score(mid: str) -> tuple[int, float, int]:  # noqa: C901, PLR0912 — heuristik bercabang
         low = mid.lower()
+        # Free selalu terakhir (rate-limit cepat).
         if "free" in low:
-            return (0, 0)
-        if "flash" in low:
-            return (1, 1)
-        if "turbo" in low:
-            return (2, 2)
-        if "pro" in low:
-            return (3, 3)
-        if "mini" in low:
-            return (1, 0)
-        return (2, 1)  # default premium
+            return (0, 0.0, 0)
+        # Tier utama: opus > sonnet > pro > flash > mini/oss > default.
+        tier = 2
+        if "opus" in low:
+            tier = 6
+        elif "sonnet" in low:
+            tier = 5
+        elif "pro" in low:
+            tier = 4
+        elif "flash" in low:
+            tier = 3
+        elif "gpt-oss" in low or "oss" in low:
+            tier = 2
+        elif "mini" in low:
+            tier = 1
+        # Version-aware tiebreak: gemini-3.7 > 3.6 > 3.5 > 3.1 > 3
+        # (18 Aug 2026: daftar 9router baru — ag/gemini-3.7-flash-high dll).
+        ver = 0.0
+        for marker in ("3.7", "3.6", "3.5", "3.1", "3.0", "4.6", "4.5", "120b"):
+            if marker in low:
+                ver = float(marker.replace("b", "")) if marker != "120b" else 3.5
+                break
+        if "3-flash-agent" in low:
+            ver = 3.5
+        # Sub-tier: high > medium > low > extra-low (sama model).
+        sub = 0
+        if "high" in low:
+            sub = 3
+        elif "medium" in low:
+            sub = 2
+        elif "extra-low" in low:
+            sub = 0
+        elif "low" in low:
+            sub = 1
+        else:
+            sub = 2  # tanpa suffix → anggap default (medium)
+        return (tier, ver, sub)
 
     candidates = [m for m in models if not is_circuit_open(m, overlay)]
     if not candidates:
