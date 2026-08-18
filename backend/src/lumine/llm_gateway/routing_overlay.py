@@ -83,7 +83,7 @@ async def open_circuit(redis: Any, model: str) -> None:
         circuits[model] = time.time()
         await redis.hset(ROUTING_KEY, mapping={"circuit_open": json.dumps(circuits)})
         logger.warning("llm routing: circuit open for %s (120s)", model)
-    except Exception:
+    except Exception:  # nosec B110 — Redis down → circuit tetap closed
         pass
 
 
@@ -169,19 +169,24 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
         candidates = models  # semua down → biarkan fallback chain menangani
     chosen = max(candidates, key=_score)
 
-    # Update overlay — default_model hanya jika berubah (hindari overwrite
-    # pilihan manual user yang sudah di-set via superadmin).
+    # Update overlay — default_model HANYA jika auto_discovery aktif
+    # (Bug fix 18 Aug 2026: sebelumnya SELALU timpa pilihan manual user
+    # via superadmin — set default_model lalu 60s kemudian di-overwrite
+    # worker → "pengaturan tidak tersimpan").
+    auto_discovery = overlay.get("auto_discovery") == "1"
     prev_default = overlay.get("default_model", "")
     updates: dict[str, str] = {}
-    if chosen != prev_default:
+    if auto_discovery and chosen != prev_default:
         updates["default_model"] = chosen
+    # last_models_json SELALU di-update (cache untuk dropdown UI) —
+    # ini bukan keputusan routing, hanya daftar model yang tersedia.
     updates["last_models_json"] = json.dumps(models[:50])
     updates["last_discovery_ts"] = str(int(_time.time()))
     if updates:
         await redis.hset(ROUTING_KEY, mapping=updates)
     return {
-        "chosen": chosen,
+        "chosen": chosen if auto_discovery else prev_default,
         "models": models[:50],
         "error": None,
-        "changed": chosen != prev_default,
+        "changed": auto_discovery and chosen != prev_default,
     }

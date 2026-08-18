@@ -189,9 +189,20 @@ export function LLMRoutingTab() {
   const rolesSeen = new Set(usage.map((u) => u.role));
 
   // ── Model settings (18 Aug 2026): dropdown dari /admin/llm-models ─────
+  // Response kini menyertakan state TERSIMPAN (default_model,
+  // fallback_models, auto_discovery) — Bug fix: sebelumnya state tidak
+  // pernah di-load → dropdown selalu kosong & auto=true padahal tersimpan.
   const { data: modelsData } = useQuery({
     queryKey: ["admin", "llm-models"],
-    queryFn: () => get<{ models: { id: string }[]; fetched_at?: string; error?: string | null }>("/admin/llm-models"),
+    queryFn: () =>
+      get<{
+        models: { id: string }[];
+        fetched_at?: string;
+        error?: string | null;
+        default_model?: string;
+        fallback_models?: string[];
+        auto_discovery?: boolean;
+      }>("/admin/llm-models"),
     staleTime: 60_000,
   });
   const qc = useQueryClient();
@@ -207,6 +218,20 @@ export function LLMRoutingTab() {
   const [defModel, setDefModel] = React.useState("");
   const [fbModels, setFbModels] = React.useState("");
   const [autoDisc, setAutoDisc] = React.useState(true);
+
+  // Sync local state ← data tersimpan (load sekali saat data masuk).
+  const loadedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (loadedRef.current || !modelsData) return;
+    loadedRef.current = true;
+    if (modelsData.default_model) setDefModel(modelsData.default_model);
+    if (Array.isArray(modelsData.fallback_models)) {
+      setFbModels(modelsData.fallback_models.join(", "));
+    }
+    if (typeof modelsData.auto_discovery === "boolean") {
+      setAutoDisc(modelsData.auto_discovery);
+    }
+  }, [modelsData]);
 
   return (
     <div className="space-y-4">

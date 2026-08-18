@@ -266,8 +266,8 @@ async def get_system_info(
             parsed = _json.loads(raw)
             if isinstance(parsed, list) and parsed:
                 enabled_symbols = [str(s).upper() for s in parsed]
-    except Exception:
-        pass  # Redis down → default XAUUSD
+    except Exception:  # nosec B110 — Redis down → default XAUUSD
+        pass  # Redis down — default XAUUSD
 
     return SystemInfo(
         services=services,
@@ -350,7 +350,25 @@ async def list_llm_models(
         if cached:
             import json as _json
 
-            return _json.loads(cached.decode() if isinstance(cached, bytes) else cached)
+            payload = _json.loads(cached.decode() if isinstance(cached, bytes) else cached)
+            return _attach_overlay_state(payload, r)
+        # PITFALL (18 Aug 2026): worker _model_discovery_worker menulis
+        # last_models_json ke ROUTING_KEY (bukan :models subkey) — cache
+        # endpoint kosong → dropdown frontend kosong. Fallback: baca dari
+        # overlay langsung.
+        import json as _json
+
+        overlay = await r.hgetall(ROUTING_KEY)
+        last_raw = overlay.get(b"last_models_json") or overlay.get("last_models_json")
+        if last_raw:
+            try:
+                raw_list = _json.loads(last_raw.decode() if isinstance(last_raw, bytes) else last_raw)
+                models = [{"id": str(m), "owned_by": "", "created": None} for m in raw_list]
+                payload = {"models": models, "fetched_at": time_now_iso(), "error": None}
+                await r.set(cache_key, _json.dumps(payload), ex=300)
+                return _attach_overlay_state(payload, r)
+            except Exception:  # nosec B110 — cache corrupt → fetch ulang
+                pass
 
     from lumine.shared.config import get_settings
 
@@ -389,13 +407,36 @@ async def list_llm_models(
     import json as _json
 
     await r.set(cache_key, _json.dumps(payload), ex=300)
-    return payload
+    return await _attach_overlay_state(payload, r)
 
 
 def time_now_iso() -> str:
     from datetime import UTC, datetime
 
     return datetime.now(UTC).isoformat()
+
+
+async def _attach_overlay_state(payload: dict, r) -> dict:
+    """Tambahkan state routing tersimpan (default_model, fallback_models,
+    auto_discovery) ke payload /llm-models — frontend load dropdown dari
+    sini (Bug fix 18 Aug 2026: sebelumnya state tidak pernah di-render,
+    UI selalu tampil kosong / auto=true padahal tersimpan beda).
+    """
+    from lumine.llm_gateway.routing_overlay import ROUTING_KEY, parse_fallbacks
+
+    try:
+        overlay = await r.hgetall(ROUTING_KEY)
+        ov = {
+            (k.decode() if isinstance(k, bytes) else str(k)):
+            (v.decode() if isinstance(v, bytes) else str(v))
+            for k, v in overlay.items()
+        }
+        payload["default_model"] = ov.get("default_model") or ""
+        payload["fallback_models"] = parse_fallbacks(ov.get("fallback_models"))
+        payload["auto_discovery"] = ov.get("auto_discovery") == "1"
+    except Exception:  # nosec B110 — overlay tidak tersedia → state default
+        pass
+    return payload
 
 
 @router.put("/system-config", response_model=dict)
@@ -464,16 +505,22 @@ async def update_system_config(  # noqa: C901, PLR0912 — fixed field list, man
         overlay_updates["fallback_models"] = _json.dumps(request.llm_fallback_models)
     if request.llm_auto_fallback is not None:
         overlay_updates["auto_discovery"] = "1" if request.llm_auto_fallback else "0"
+    # Bug fix 18 Aug 2026: llm_gateway_url/key juga ke overlay — worker
+    # baca per-cycle dari ROUTING_KEY → perubahan URL/key REAL TIME
+    # (sebelumnya hanya ke _SYSCONFIG_KEY → butuh restart api container).
+    if request.llm_gateway_url is not None:
+        overlay_updates["llm_gateway_url"] = request.llm_gateway_url
+    if request.llm_gateway_api_key is not None:
+        overlay_updates["llm_gateway_api_key"] = request.llm_gateway_api_key
     if overlay_updates:
         from lumine.llm_gateway.routing_overlay import ROUTING_KEY
 
         await r.hset(ROUTING_KEY, mapping=overlay_updates)
 
     note = (
-        "runtime config tersimpan; routing model realtime (tanpa restart), "
-        "key/url masih butuh restart"
+        "runtime config tersimpan; routing model realtime (tanpa restart)"
         if overlay_updates
-        else "restart api container to apply all changes"
+        else "tidak ada field yang diubah"
     )
     return {"updated": list(updates.keys()), "note": note}
 
