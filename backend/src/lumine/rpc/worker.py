@@ -30,7 +30,7 @@ from lumine.shared.config import Settings
 logger = logging.getLogger(__name__)
 
 
-async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPublisher) -> dict[str, Any]:  # noqa: PLR0915,C901 — fixed LLM stage sequence
+async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPublisher) -> dict[str, Any]:  # noqa: PLR0915,C901,PLR0912 — fixed LLM stage sequence
     """Run a REAL LLM decision cycle (technical analyst → IC forum) via 9router.
 
     Sebelumnya demo-only (run_id demo-*). Sekarang:
@@ -101,6 +101,28 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             chain = [str(overlay.get("default_model") or settings.llm_default_model)]
             fb = parse_fallbacks(overlay.get("fallback_models"))
             chain.extend(fb)
+            # Skip model yang TAHU tidak available (18 Aug 2026): quota
+            # habis / tidak respond probe → jangan buang waktu di chain.
+            import json as _json
+
+            try:
+                from lumine.llm_gateway.routing_overlay import is_circuit_open
+
+                avail_raw = overlay.get("available_models")
+                avail: list[str] | None = None
+                if avail_raw:
+                    _v = _json.loads(avail_raw)
+                    avail = [str(m) for m in _v] if isinstance(_v, list) else []
+                filtered: list[str] = []
+                for m in chain:
+                    if is_circuit_open(m, overlay):
+                        continue
+                    if avail is not None and m not in avail:
+                        continue
+                    filtered.append(m)
+                chain = filtered or chain
+            except Exception:  # nosec B110 — filter best-effort
+                pass  # filter best-effort — chain tetap dipakai apa adanya
             routing_chain = chain
     except Exception:
         pass  # overlay tidak tersedia → fallback ke env

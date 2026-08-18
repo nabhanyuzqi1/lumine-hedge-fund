@@ -105,10 +105,26 @@ async def resolve_route_models(
     primary = str(overlay.get("default_model") or env_default)
     fb_raw = overlay.get("fallback_models")
     fallbacks = parse_fallbacks(fb_raw) if fb_raw else list(policy_fallbacks)
-    # Circuit: skip model yang sedang down (bukan primary pertama).
+    # Availability (18 Aug 2026): model yang gagal probe (quota habis/
+    # tidak available) di-skip dari chain — discovery menandai via
+    # `available_models` + circuit_open. Jangan pakai model yang
+    # diketahui 429 "Budget has been exceeded".
+    import json as _json
+
+    avail: list[str] = []
+    try:
+        avail_raw = overlay.get("available_models")
+        if avail_raw:
+            _v = _json.loads(avail_raw)
+            avail = [str(m) for m in _v] if isinstance(_v, list) else []
+    except Exception:
+        avail = []
+    known_bad = {m for m in fallbacks if is_circuit_open(m, overlay)}
+    if avail:
+        known_bad |= {m for m in fallbacks if m not in avail}
     healthy = [primary]
     for m in fallbacks:
-        if not is_circuit_open(m, overlay):
+        if m not in known_bad:
             healthy.append(m)
     return healthy, overlay
 
@@ -195,7 +211,71 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
     candidates = [m for m in models if not is_circuit_open(m, overlay)]
     if not candidates:
         candidates = models  # semua down → biarkan fallback chain menangani
-    chosen = max(candidates, key=_score)
+
+    # ── Availability probe (18 Aug 2026) ─────────────────────────────
+    # Masalah: service memilih model yang quota habis / tidak available —
+    # ranking heuristic tidak tahu budget/availability sebenarnya (semua
+    # ss/* kena 429 "Budget has been exceeded"). Solusi: TEST-CALL top-8
+    # model (paralel, max_tokens=1) → hanya yang respond 200 dianggap
+    # available → chosen dari available saja. Model 429 → circuit open
+    # (skip 120s) → discovery berikutnya tidak probe lagi.
+    ranked = sorted(candidates, key=_score, reverse=True)
+    probe_pool = ranked[:8]
+
+    async def _probe(mid: str) -> tuple[str, bool]:
+        """Minimal chat call — 200 = available, 429/4xx/5xx = skip.
+        urllib blocking → jalankan di thread (async-safe).
+        """
+
+        def _probe_sync() -> tuple[str, bool]:
+            import urllib.request
+
+            body = json.dumps(
+                {
+                    "model": mid,
+                    "messages": [{"role": "user", "content": "ping"}],
+                    "max_tokens": 1,
+                }
+            ).encode()
+            url = str(gateway_url).rstrip("/") + "/v1/chat/completions"
+            req = urllib.request.Request(  # noqa: S310  # nosec B310 — url dari env
+                url,
+                data=body,
+                headers={
+                    "Authorization": f"Bearer {gateway_key}",
+                    "Content-Type": "application/json",
+                },
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=12) as resp:  # noqa: S310  # nosec B310 — url dari env
+                    resp.read()
+                    return mid, True
+            except urllib.error.HTTPError as exc:
+                # 429 budget exceeded / quota habis → circuit open (skip 120s).
+                if exc.code == 429 or exc.code >= 500:
+                    # circuit di-lakukan dari luar (async) — tandai saja.
+                    pass
+                return mid, False
+            except Exception:
+                return mid, False
+
+        ok = await asyncio.to_thread(_probe_sync)
+        if not ok[1]:
+            await open_circuit(redis, mid)
+        return ok
+
+    available: list[str] = []
+    if probe_pool:
+        try:
+            results = await asyncio.gather(*(_probe(m) for m in probe_pool))
+            available = [m for m, ok in results if ok]
+        except Exception:
+            available = []
+    # Kalau probe gagal total (network), fallback ke ranking (jangan
+    # kosongkan chain — worker circuit breaker tetap melindungi).
+    if not available:
+        available = ranked
+    chosen = max(available, key=_score)
 
     # Update overlay — default_model HANYA jika auto_discovery aktif DAN
     # user belum set default manual (Bug fix 18 Aug 2026: sebelumnya
@@ -211,11 +291,13 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
     # ini bukan keputusan routing, hanya daftar model yang tersedia.
     updates["last_models_json"] = json.dumps(models[:50])
     updates["last_discovery_ts"] = str(int(_time.time()))
+    updates["available_models"] = json.dumps(available[:20])
     if updates:
         await redis.hset(ROUTING_KEY, mapping=updates)
     return {
         "chosen": chosen if (auto_discovery and not manual_default) else prev_default,
         "models": models[:50],
+        "available": available[:20],
         "error": None,
         "changed": auto_discovery and not manual_default and chosen != prev_default,
     }

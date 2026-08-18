@@ -202,6 +202,7 @@ export function LLMRoutingTab() {
         default_model?: string;
         fallback_models?: string[];
         auto_discovery?: boolean;
+        gateway_url?: string;
       }>("/admin/llm-models"),
     staleTime: 60_000,
   });
@@ -218,6 +219,10 @@ export function LLMRoutingTab() {
   const [defModel, setDefModel] = React.useState("");
   const [fbModels, setFbModels] = React.useState("");
   const [autoDisc, setAutoDisc] = React.useState(true);
+  // 18 Aug 2026 (merge System Config → LLM Routing): gateway url/key
+  // dipindah ke sini — satu sumber kebenaran untuk semua config LLM.
+  const [gwUrl, setGwUrl] = React.useState("");
+  const [gwKey, setGwKey] = React.useState("");
 
   // Sync local state ← data tersimpan (load sekali saat data masuk).
   const loadedRef = React.useRef(false);
@@ -231,6 +236,7 @@ export function LLMRoutingTab() {
     if (typeof modelsData.auto_discovery === "boolean") {
       setAutoDisc(modelsData.auto_discovery);
     }
+    if (modelsData.gateway_url) setGwUrl(modelsData.gateway_url);
   }, [modelsData]);
 
   return (
@@ -285,6 +291,27 @@ export function LLMRoutingTab() {
             />
           </label>
         </div>
+        <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+          <label className="flex flex-col gap-1 text-[11px] text-ink-faint">
+            Gateway URL (9router)
+            <input
+              className="rounded border border-line bg-raised px-2 py-1 font-mono text-xs text-ink"
+              placeholder="http://9router:20128"
+              value={gwUrl}
+              onChange={(e) => setGwUrl(e.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[11px] text-ink-faint">
+            Gateway API Key (kosong = tidak diubah)
+            <input
+              className="rounded border border-line bg-raised px-2 py-1 font-mono text-xs text-ink"
+              type="password"
+              placeholder="sk-..."
+              value={gwKey}
+              onChange={(e) => setGwKey(e.target.value)}
+            />
+          </label>
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-1.5 text-[11px] text-ink-faint">
             <input
@@ -306,6 +333,8 @@ export function LLMRoutingTab() {
                 .filter(Boolean);
               if (fb.length > 0) payload.llm_fallback_models = fb;
               payload.llm_auto_fallback = autoDisc;
+              if (gwUrl.trim()) payload.llm_gateway_url = gwUrl.trim();
+              if (gwKey.trim()) payload.llm_gateway_api_key = gwKey.trim();
               saveCfg.mutate(payload);
             }}
           >

@@ -17,11 +17,13 @@ interface BacktestTrade {
 }
 
 interface BacktestMetrics {
-  total_return_pct: number;
-  max_drawdown_pct: number;
-  win_rate_pct: number;
+  // Backend mengirim sebagai STRING ("0.0235") — dideklarasi number |
+  // string; render mem-parse Number defensif (18 Aug 2026).
+  total_return_pct: number | string;
+  max_drawdown_pct: number | string;
+  win_rate_pct: number | string;
   trade_count: number;
-  sharpe_like: number;
+  sharpe_like: number | string;
 }
 
 interface BacktestResult {
@@ -158,13 +160,27 @@ export function BacktestTab() {
             <CardContent>
               {data.metrics ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                  {[
-                    { label: "Total Return", value: `${data.metrics.total_return_pct.toFixed(2)}%`, tone: data.metrics.total_return_pct >= 0 ? "ok" : "danger" },
-                    { label: "Max Drawdown", value: `${data.metrics.max_drawdown_pct.toFixed(2)}%`, tone: "warn" },
-                    { label: "Win Rate", value: `${data.metrics.win_rate_pct.toFixed(1)}%`, tone: "neutral" },
-                    { label: "Trade Count", value: String(data.metrics.trade_count), tone: "neutral" },
-                    { label: "Sharpe-like", value: data.metrics.sharpe_like.toFixed(2), tone: data.metrics.sharpe_like >= 1 ? "ok" : "neutral" },
-                  ].map((m) => (
+                  {(() => {
+                    // Backend kirim metrics sebagai STRING ("0.0235") —
+                    // toFixed langsung crash (RouteErrorBoundary → superadmin
+                    // blank). Parse Number defensif (18 Aug 2026).
+                    const m = data.metrics;
+                    const num = (v: unknown): number => {
+                      const n = typeof v === "number" ? v : Number.parseFloat(String(v ?? "0"));
+                      return Number.isFinite(n) ? n : 0;
+                    };
+                    const totalReturn = num(m.total_return_pct);
+                    const maxDd = num(m.max_drawdown_pct);
+                    const winRate = num(m.win_rate_pct);
+                    const sharpe = num(m.sharpe_like);
+                    return [
+                      { label: "Total Return", value: `${totalReturn.toFixed(2)}%`, tone: totalReturn >= 0 ? "ok" : "danger" },
+                      { label: "Max Drawdown", value: `${maxDd.toFixed(2)}%`, tone: "warn" },
+                      { label: "Win Rate", value: `${winRate.toFixed(1)}%`, tone: "neutral" },
+                      { label: "Trade Count", value: String(m.trade_count ?? 0), tone: "neutral" },
+                      { label: "Sharpe-like", value: sharpe.toFixed(2), tone: sharpe >= 1 ? "ok" : "neutral" },
+                    ];
+                  })().map((m) => (
                     <div key={m.label} className="rounded-chip border border-line bg-raised p-3">
                       <p className="text-[11px] text-ink-faint">{m.label}</p>
                       <p className={`font-mono text-sm font-semibold ${m.tone === "ok" ? "text-ok" : m.tone === "danger" ? "text-danger" : m.tone === "warn" ? "text-warn" : "text-ink"}`}>

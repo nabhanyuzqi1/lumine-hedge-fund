@@ -434,6 +434,8 @@ async def _attach_overlay_state(payload: dict, r) -> dict:
         payload["default_model"] = ov.get("default_model") or ""
         payload["fallback_models"] = parse_fallbacks(ov.get("fallback_models"))
         payload["auto_discovery"] = ov.get("auto_discovery") == "1"
+        # 18 Aug 2026 (merge): gateway url/key dari overlay → frontend load.
+        payload["gateway_url"] = ov.get("llm_gateway_url") or ""
     except Exception:  # nosec B110 — overlay tidak tersedia → state default
         pass
     return payload
