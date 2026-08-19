@@ -2,8 +2,6 @@
 
 import uuid
 
-import pytest
-
 from lumine.trading.execution_intent import (
     INTENT_TO_ACTION,
     ExecutionIntent,
