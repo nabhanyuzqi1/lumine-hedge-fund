@@ -26,7 +26,7 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "4.11"
+#property version   "4.13"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy+Cloudflare)
@@ -814,6 +814,20 @@ void ProcessCommand(const string json)
       ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
       ExecuteClose(id, ticket);
      }
+   else if(action == "CUT_LOSS")
+     {
+      // 19 Aug 2026 P0: semantic cut-loss (sama dengan close, alasan eksplisit)
+      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
+      ExecuteClose(id, ticket);
+     }
+   else if(action == "PARTIAL_CLOSE")
+     {
+      // 19 Aug 2026 P0: tutup sebagian volume (layering / scale-out)
+      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
+      double lots = ExtractJsonDouble(json, "volume");
+      if(lots == 0) lots = ExtractJsonDouble(json, "lots");
+      ExecuteClosePartial(id, ticket, lots);
+     }
    else if(action == "MODIFY")
      {
       ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
@@ -1004,6 +1018,66 @@ void ExecuteClose(const string id, ulong ticket)
       QueueResult(BuildResultJson(id, "CLOSED", (long)res.order, "", res.price, volume));
    else
       QueueResult(BuildResultJson(id, "REJECTED", 0, RetcodeStr(res.retcode), 0, volume));
+  }
+
+//+------------------------------------------------------------------+
+//| Execute PARTIAL CLOSE (19 Aug 2026 P0) — tutup sebagian volume    |
+//+------------------------------------------------------------------+
+void ExecuteClosePartial(const string id, ulong ticket, double lots)
+  {
+   if(!PositionSelectByTicket(ticket))
+     {
+      QueueResult(BuildResultJson(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0, 0));
+      return;
+     }
+
+   string symbol = PositionGetString(POSITION_SYMBOL);
+   double volume = PositionGetDouble(POSITION_VOLUME);
+
+   if(lots <= 0 || lots > volume)
+      lots = volume;  // partial <= full; fallback tutup penuh
+
+   MqlTradeRequest req = {};
+   MqlTradeResult  res = {};
+
+   req.action       = TRADE_ACTION_DEAL;
+   req.position     = ticket;
+   req.symbol       = symbol;
+   req.volume       = lots;
+   req.type         = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+   req.price        = (req.type == ORDER_TYPE_SELL) ? SymbolInfoDouble(symbol, SYMBOL_BID)
+                                                    : SymbolInfoDouble(symbol, SYMBOL_ASK);
+   req.deviation    = 20;
+   req.magic        = 20260814;
+   req.comment      = "Lumine:PARTIAL:" + id;
+   req.type_filling = GetFilling(symbol);
+
+   if(!OrderSend(req, res))
+     {
+      if(res.retcode == 10030)
+        {
+         req.type_filling = (req.type_filling == ORDER_FILLING_FOK) ? ORDER_FILLING_IOC
+                            : (req.type_filling == ORDER_FILLING_IOC) ? ORDER_FILLING_RETURN
+                            : ORDER_FILLING_FOK;
+         if(!OrderSend(req, res))
+           {
+            QueueResult(BuildResultJson(id, "ERROR", 0,
+                         "OrderSend PARTIAL_CLOSE failed retcode=" + IntegerToString(res.retcode), 0, lots));
+            return;
+           }
+        }
+      else
+        {
+         QueueResult(BuildResultJson(id, "ERROR", 0,
+                      "OrderSend PARTIAL_CLOSE failed retcode=" + IntegerToString(res.retcode), 0, lots));
+         return;
+        }
+     }
+
+   if(res.retcode == TRADE_RETCODE_DONE || res.retcode == TRADE_RETCODE_DONE_PARTIAL)
+      QueueResult(BuildResultJson(id, "CLOSED", (long)res.order, "", res.price, lots));
+   else
+      QueueResult(BuildResultJson(id, "REJECTED", 0, RetcodeStr(res.retcode), 0, lots));
   }
 
 //+------------------------------------------------------------------+

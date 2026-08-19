@@ -92,8 +92,9 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
             be_after_r = float(profile.get("be_after_r", 0.5) or 0.5)
             trail_after_r = float(profile.get("trail_after_r", 1.0) or 1.0)
 
-            # 2. Live bid (XAUUSD) dari market service / Redis status
+            # 2. Live bid + equity (XAUUSD) dari Redis status
             bid = None
+            equity = None
             st = await r.hgetall("mt5:status")
             if isinstance(st, dict):
                 st = {
@@ -104,9 +105,39 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                     bid = float(st.get("bid") or 0) or None
                 except (TypeError, ValueError):
                     bid = None
+                try:
+                    equity = float(st.get("equity") or 0) or None
+                except (TypeError, ValueError):
+                    equity = None
             if not bid:
                 await asyncio.sleep(MONITOR_INTERVAL_SECONDS)
                 continue
+
+            # 2b. Cutloss daily-cap (19 Aug 2026 P0): deterministic — tidak
+            #     menunggu LLM. Day-start equity disimpan di Redis (reset
+            #     otomatis saat tanggal berganti via key ber-tanggal).
+            day = datetime.now(UTC).strftime("%Y-%m-%d")
+            day_equity_key = f"lumine:risk:day_start_equity:{day}"
+            day_start = await r.get(day_equity_key)
+            if day_start is None:
+                if equity is not None:
+                    await r.set(day_equity_key, str(equity), ex=48 * 3600)
+                    day_start = equity
+                else:
+                    day_start = None
+            else:
+                try:
+                    day_start = float(day_start)
+                except (TypeError, ValueError):
+                    day_start = None
+            # max daily loss fraction (default 3%)
+            max_daily_loss = 0.03
+            try:
+                _mdl = await r.hget("lumine:system_config", "max_daily_loss_pct")
+                if _mdl is not None:
+                    max_daily_loss = float(_mdl)
+            except Exception:  # nosec B110 — fallback default
+                pass
 
             # 3. Posisi open dari DB
             from sqlalchemy import select
@@ -211,6 +242,31 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                 # Persist state
                 states[ticket] = st_pos
                 await r.hset(STATE_KEY, str(ticket), json.dumps(st_pos))
+
+            # 5. CUT_LOSS daily-cap (deterministic flatten) — 19 Aug 2026 P0.
+            #     Jika P&L harian (equity - day_start) turun di bawah -max_daily_loss
+            #     → tutup SEMUA posisi open, tanpa menunggu LLM cycle.
+            if equity is not None and day_start is not None and open_positions:
+                day_pnl = equity - day_start
+                loss_cap = max_daily_loss * day_start
+                if day_pnl <= -loss_cap:
+                    logger.warning(
+                        "[MONITOR] CUT_LOSS daily-cap triggered: pnl=%.2f cap=-%.2f (%.1f%%)",
+                        day_pnl, loss_cap, max_daily_loss * 100,
+                    )
+                    bridge = await bridge_factory()
+                    for pos in open_positions:
+                        ticket = pos["ticket"]
+                        msg = create_close_order_command(
+                            __import__("uuid").UUID(pos["position_id"]),
+                            ticket,
+                            reason="CUT_LOSS_DAILY_CAP",
+                        )
+                        try:
+                            await bridge.send_command(msg)
+                            logger.info("[MONITOR] CUT_LOSS flatten ticket=%s", ticket)
+                        except ValueError:
+                            pass
 
         except Exception:  # nosec B110 — monitor tidak boleh mati
             logger.exception("position monitor error")
