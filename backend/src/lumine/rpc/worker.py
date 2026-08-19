@@ -427,6 +427,37 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     }
             except Exception:
                 pass  # status tidak wajib — analyst tetap jalan
+
+            # Open positions context (19 Aug 2026 P1): LLM tahu posisi open
+            # (side/lot/entry/SL/TP/P&L) → bisa jawab "hold/modify/close".
+            open_positions_json = "[]"
+            try:
+                _rows = (
+                    await session.execute(
+                        select(Position).where(Position.status == "open")
+                    )
+                ).scalars().all()
+                _ops = [
+                    {
+                        "ticket": p.mt5_ticket,
+                        "symbol": p.symbol,
+                        "side": p.side,
+                        "size": float(p.size or 0),
+                        "entry": float(p.avg_entry or 0),
+                        "sl": float(p.sl) if p.sl else None,
+                        "tp": float(p.tp) if p.tp else None,
+                        "pnl": (
+                            float(p.mt5_profit)
+                            if getattr(p, "mt5_profit", None) is not None
+                            else None
+                        ),
+                    }
+                    for p in _rows
+                    if p.mt5_ticket is not None
+                ]
+                open_positions_json = _json.dumps(_ops, ensure_ascii=False)
+            except Exception:  # nosec B110 — posisi tidak wajib
+                pass
             atr_pct = (atr_14 / float(last["close"]) * 100) if float(last["close"]) > 0 else 0.0
             variables: dict[str, object] = {
                 "symbol": symbol,
@@ -454,6 +485,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "account_equity": live_status.get("equity", "unknown"),
                 "account_leverage": live_status.get("leverage", "unknown"),
                 "net_position_pnl": live_status.get("net_pnl", "0"),
+                "open_positions": open_positions_json,
                 # Macro analyst (feed eksternal belum tersedia — jujur)
                 "us_10y": "unavailable (external feed not wired)",
                 "us_2y": "unavailable (external feed not wired)",
