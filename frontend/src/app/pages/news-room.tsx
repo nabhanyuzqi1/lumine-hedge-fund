@@ -39,9 +39,33 @@ function useNews(limit = 30) {
   return useQuery({
     queryKey: ["news", limit],
     queryFn: () => get<{ items: NewsItem[] }>(`/market/news?limit=${limit}`),
-    refetchInterval: 60_000,
+    // 18 Aug 2026: 60s → 30s — "halaman news lebih detail realtime".
+    refetchInterval: 30_000,
   });
 }
+
+/** Tag relevansi headline terhadap XAUUSD (18 Aug 2026): gold/dollar/Fed
+ *  langsung mempengaruhi emas; sisanya konteks macro. */
+function impactTag(title: string): "gold" | "dollar" | "macro" | null {
+  const t = title.toLowerCase();
+  const gold =
+    /\b(gold|golds|bullion|precious metals|xau|xauusd)\b/.test(t) ||
+    /gold (price|spot|rally|drop|steady|slides)/.test(t);
+  if (gold) return "gold";
+  const dollar =
+    /\b(dollar|usd|dxy|fed|treasury|yield|inflation|cpi|nonfarm|payrolls|fomc|powell|rates|interest)\b/.test(t);
+  if (dollar) return "dollar";
+  const macro =
+    /\b(oil|energy|economy|growth|recession|china|trade|gdp|jobs|unemployment|bank)\b/.test(t);
+  if (macro) return "macro";
+  return null;
+}
+
+const TAG_TONE: Record<string, string> = {
+  gold: "bg-amber/15 text-amber",
+  dollar: "bg-accent/15 text-accent",
+  macro: "bg-bg-raised text-ink-faint",
+};
 
 function useCalendar() {
   return useQuery({
@@ -180,6 +204,14 @@ export function NewsRoomPage() {
                       <span className="rounded bg-bg-raised px-1 py-0.5">
                         {n.source}
                       </span>
+                      {(() => {
+                        const tag = impactTag(n.title);
+                        return tag ? (
+                          <span className={`rounded px-1 py-0.5 ${TAG_TONE[tag]}`}>
+                            {tag}
+                          </span>
+                        ) : null;
+                      })()}
                       {n.ts ? <span>{new Date(n.ts as number).toLocaleString()}</span> : null}
                     </p>
                     {n.summary && (
