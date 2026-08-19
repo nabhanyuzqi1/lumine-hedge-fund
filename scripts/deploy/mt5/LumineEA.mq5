@@ -376,7 +376,7 @@ int HttpPostJson(const string path, const string json, const int timeoutMs)
       // PITFALL (18 Aug 2026): WebRequest MQL5 default TANPA User-Agent →
       // Cloudflare WAF balas HTTP 500 ke request (curl 200 karena UA curl).
       // Tambah User-Agent eksplisit — CF treat sebagai browser-like request.
-            string headers = "Content-Type: application/json" + CharToString(13) + CharToString(10) + "User-Agent: LumineEA/4.11 (MT5; XAUUSD)" + CharToString(13) + CharToString(10);
+            string headers = "Content-Type: application/json" + CharToString(13) + CharToString(10) + "User-Agent: LumineEA/4.13 (MT5; XAUUSD)" + CharToString(13) + CharToString(10);
       string url = g_proxyURL + path;
 
    int res = WebRequest("POST", url, headers, timeoutMs, data, result, headers);
@@ -1326,7 +1326,7 @@ void SendStatus()
    g_marginLevel = (margin > 0 ? (equity / margin) * 100.0 : 0.0);
 
    string json = StringFormat(
-      "{\"ea_version\":\"4.11\",\"ea_build\":%d,\"seed_phase\":%d,\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,"
+      "{\"ea_version\":\"4.13\",\"ea_build\":%d,\"seed_phase\":%d,\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,"
       "\"proxy_url\":\"%s\",\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,"
       "\"spread\":%.1f,\"session_high\":%.2f,\"session_low\":%.2f,"
       "\"equity\":%.2f,\"balance\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,"
