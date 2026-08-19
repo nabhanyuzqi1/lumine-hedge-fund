@@ -204,6 +204,15 @@ PYEOF
         sleep 1
         # -k 10: wine bisa abaikan SIGTERM → paksa SIGKILL setelah 10s grace.
         timeout -k 10 90 wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/lumineea_compile.log" >/dev/null 2>&1 || true
+        # 19 Aug 2026 PITFALL #35: MetaEditor headless sering tulis ex5 tepat
+        # SETELAH timeout 90 (proses wine orphan lanjut). pkill dini = bunuh
+        # compile yang sebenarnya sukses → false "compile gagal". Beri grace
+        # 8s + cek ex5 SEBELUM pkill.
+        sleep 8
+        if [[ -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
+          echo "==> LumineEA.ex5 COMPILED OK (attempt ${attempt}, late-write)"
+          break
+        fi
         pkill -9 wineserver 2>/dev/null || true
         pkill -9 wine64-preloader 2>/dev/null || true
         sleep 2
@@ -213,6 +222,12 @@ PYEOF
         fi
         echo "==> attempt ${attempt}: ex5 belum ada — retry"
       done
+      # 19 Aug 2026 PITFALL #35: grace final 20s — ex5 bisa muncul telat
+      # setelah loop (MetaEditor orphan masih menulis). Jangan declare gagal
+      # prematur.
+      if [[ ! -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
+        sleep 20
+      fi
       if [[ ! -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
         echo "==> WARNING: LumineEA compile gagal — cek ${MT5_DATA_DIR}/Experts/lumineea_compile.log" >&2
       fi
