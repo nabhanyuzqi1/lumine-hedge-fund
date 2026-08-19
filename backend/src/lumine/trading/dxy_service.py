@@ -38,27 +38,43 @@ async def fetch_and_cache_dxy(redis: Any) -> dict[str, Any] | None:
     import urllib.request
 
     def _fetch() -> dict[str, Any] | None:
-        # Stooq CSV: DX.F (dollar index futures) — format sd2t2ohlcv
-        url = "https://stooq.com/q/l/?s=dx.f&f=sd2t2ohlcv&h&e=csv"
+        # DXY dihitung dari komponen tetap IC futures contract menggunakan
+        # FX rates (exchangerate-api, tanpa key, diuji dari VPS 19 Aug 2026):
+        #   DXY = 50.14348112 x EURUSD^-0.576 x USDJPY^0.136 x GBPUSD^-0.119
+                #         x USDCAD^0.091 x USDSEK^0.042 x USDCHF^0.036
+        # exchangerate-api memberi 1 USD = X (EUR, JPY, GBP, CAD, SEK, CHF).
+        url = "https://open.er-api.com/v6/latest/USD"
         req = urllib.request.Request(url, headers={"User-Agent": "Lumine/1.0"})  # nosec B310 — URL publik statis
         with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310  # nosec B310
-            text = resp.read().decode("utf-8", errors="replace")
-        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-        if len(lines) < 2:
+            raw = json.loads(resp.read().decode("utf-8", errors="replace"))
+        rates = raw.get("rates") or {}
+        eur = float(rates.get("EUR") or 0)
+        jpy = float(rates.get("JPY") or 0)
+        gbp = float(rates.get("GBP") or 0)
+        cad = float(rates.get("CAD") or 0)
+        sek = float(rates.get("SEK") or 0)
+        chf = float(rates.get("CHF") or 0)
+        if not (eur and jpy and gbp and cad and sek and chf):
             return None
-        fields = [f.strip() for f in lines[1].split(",")]
-        try:
-            close = float(fields[2])
-            high = float(fields[3])
-            low = float(fields[4])
-            return {
-                "price": round(close, 3),
-                "high": round(high, 3),
-                "low": round(low, 3),
-                "source": "stooq-dxf",
-            }
-        except (ValueError, IndexError):
-            return None
+        # USDJPY = 1/JPY (rate = 1 USD = X JPY → pasangan USDJPY = X)
+        # EURUSD = 1/EUR; GBPUSD = 1/GBP; USDCAD = CAD; USDSEK = SEK; USDCHF = CHF
+        eurusd = 1.0 / eur
+        gbpusd = 1.0 / gbp
+        dxy = (
+            50.14348112
+            * (eurusd**-0.576)
+            * (jpy**0.136)
+            * (gbpusd**-0.119)
+            * (cad**0.091)
+            * (sek**0.042)
+            * (chf**0.036)
+        )
+        return {
+            "price": round(dxy, 3),
+            "high": round(dxy, 3),
+            "low": round(dxy, 3),
+            "source": "computed-ic-basket",
+        }
 
     try:
         data = await asyncio.to_thread(_fetch)
