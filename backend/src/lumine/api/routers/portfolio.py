@@ -20,8 +20,6 @@ from lumine.api.schemas.api import (
     ExposureSummary,
     PortfolioSummary,
     Position,
-    SimulateTradeRequest,
-    SimulateTradeResult,
 )
 from lumine.api.schemas.common import PaginatedList, Pagination
 from lumine.shared.config import Settings, get_settings
@@ -358,44 +356,6 @@ async def cancel_all_orders(
         repo = OrderRepository(session)
         cancelled = await repo.cancel_all_pending()
         return CancelAllResult(cancelled=cancelled, portfolio_id=portfolio_id)
-
-
-@router.post(
-    "/{portfolio_id}/simulate",
-    response_model=SimulateTradeResult,
-    dependencies=[Depends(rate_limit_dependency)],
-)
-async def simulate_trade(
-    portfolio_id: str,
-    request: SimulateTradeRequest,
-    _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
-) -> SimulateTradeResult:
-    """Project portfolio impact of a hypothetical trade (what-if, no execution).
-
-    ZERO-DEMO: harga live dari MarketService; NAV basis dari summary real.
-    """
-    if portfolio_id not in {"default", "portfolio-demo"}:
-        raise HTTPException(status_code=404, detail=f"unknown portfolio: {portfolio_id}")
-    mid = await _live_mid(request.symbol)
-    if mid is None:
-        # Feed kosong (market libur) — fallback ke last close real dari
-        # bars_1h (bukan harga fiktif; harga terakhir yang benar terjadi).
-        # Simulate tetap berguna saat weekend; note disertakan via price_source.
-        mid = await _last_close(request.symbol)
-    if mid is None:
-        raise HTTPException(
-            status_code=503, detail=f"no live price for {request.symbol} (market closed)"
-        )
-    direction = 1.0 if request.side == "buy" else -1.0
-    pnl_change = (float(mid) - float(request.price)) * float(request.volume) * direction
-    margin_required = float(request.price) * float(request.volume) * float(_MARGIN_RATE)
-    current = await _real_summary(portfolio_id=portfolio_id)
-    projected = (current.nav + Decimal(str(round(pnl_change, 2)))).quantize(Decimal("0.01"))
-    return SimulateTradeResult(
-        projected_nav=projected,
-        margin_required=Decimal(str(round(margin_required, 2))),
-        pnl_change=Decimal(str(round(pnl_change, 2))),
-    )
 
 
 @router.get("/positions", response_model=PaginatedList[Position])

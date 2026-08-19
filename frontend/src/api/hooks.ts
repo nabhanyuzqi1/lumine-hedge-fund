@@ -5,7 +5,6 @@ import type { Timeframe } from "@/components/charts/candlestick-chart";
 import { useUiStore } from "@/stores/uiStore";
 import * as adminClient from "@/lib/api/clients/adminClient";
 import * as ordersClient from "@/lib/api/clients/ordersClient";
-import * as portfolioClient from "@/lib/api/clients/portfolioClient";
 import type {
   AdminKey,
   MarketData,
@@ -804,39 +803,6 @@ export function useKillSwitch() {
         tier,
       });
       setKillSwitch(status.armed);
-    },
-  });
-}
-
-export interface SimulateParams {
-  symbol: string;
-  side: "buy" | "sell";
-  volume: number;
-  price: number;
-}
-
-export interface SimulateResult {
-  projected_nav: number;
-  margin_required: number;
-  pnl_change: number;
-}
-
-/**
- * What-if projection (F-03): POST /api/v1/portfolio/{id}/simulate with the
- * trade params and surface the NAV/margin impact BEFORE execution.
- */
-export function useSimulateTrade() {
-  return useMutation({
-    mutationFn: async (params: SimulateParams): Promise<SimulateResult> => {
-      const result = await portfolioClient.simulateTrade({
-        portfolioId: "default",
-        ...params,
-      });
-      return {
-        projected_nav: num(result.projected_nav, 0),
-        margin_required: num(result.margin_required, 0),
-        pnl_change: num(result.pnl_change, 0),
-      };
     },
   });
 }

@@ -379,67 +379,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /api/v1/portfolio/{portfolio_id}/simulate:
-    post:
-      tags:
-      - portfolio
-      summary: Simulate Trade
-      description: 'Project portfolio impact of a hypothetical trade (what-if, no
-        execution).
-
-
-        ZERO-DEMO: harga live dari MarketService; NAV basis dari summary real.'
-      operationId: simulate_trade_api_v1_portfolio__portfolio_id__simulate_post
-      parameters:
-      - name: portfolio_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Portfolio Id
-      - name: X-Lumine-API-Key
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Lumine-Api-Key
-      - name: X-Lumine-Timestamp
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Lumine-Timestamp
-      - name: X-Lumine-Signature
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Lumine-Signature
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SimulateTradeRequest'
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimulateTradeResult'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/portfolio/positions:
     get:
       tags:
@@ -5691,60 +5630,6 @@ components:
       - generated_at
       title: Signal
       description: Analyst signal view.
-    SimulateTradeRequest:
-      properties:
-        symbol:
-          type: string
-          title: Symbol
-        side:
-          type: string
-          enum:
-          - buy
-          - sell
-          title: Side
-        volume:
-          anyOf:
-          - type: number
-            exclusiveMinimum: 0.0
-          - type: string
-            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
-          title: Volume
-        price:
-          anyOf:
-          - type: number
-            exclusiveMinimum: 0.0
-          - type: string
-            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
-          title: Price
-      type: object
-      required:
-      - symbol
-      - side
-      - volume
-      - price
-      title: SimulateTradeRequest
-      description: Payload for a what-if trade simulation.
-    SimulateTradeResult:
-      properties:
-        projected_nav:
-          type: string
-          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
-          title: Projected Nav
-        margin_required:
-          type: string
-          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
-          title: Margin Required
-        pnl_change:
-          type: string
-          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
-          title: Pnl Change
-      type: object
-      required:
-      - projected_nav
-      - margin_required
-      - pnl_change
-      title: SimulateTradeResult
-      description: Projected portfolio impact of a hypothetical trade.
     SpreadMetrics:
       properties:
         avg_spread:

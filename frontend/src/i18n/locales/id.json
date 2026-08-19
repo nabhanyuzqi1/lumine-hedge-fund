@@ -323,18 +323,6 @@
     "streamOpen": "Stream SSE terbuka: {{symbol}}",
     "streamError": "Error SSE: {{msg}}",
     "marketClosed": "Pasar tutup: {{msg}}",
-    "waitingLiveData": "Menunggu data live — pasar tutup / pembaruan",
-    "whatIf": "Simulasi Trading",
-    "whatIfDescription": "Simulasikan order sebelum benar-benar membuka posisi — lihat estimasi dampak ke saldo, margin yang dibutuhkan, dan potensi P&L",
-    "whatIfSymbol": "Simbol",
-    "whatIfSide": "Arah Order",
-    "whatIfVolume": "Volume (lot)",
-    "whatIfPrice": "Harga Masuk",
-    "whatIfSimulate": "Simulasikan",
-    "whatIfSimulating": "Menghitung…",
-    "whatIfError": "Simulasi gagal — periksa input dan coba lagi",
-    "whatIfProjectedNav": "Est. Saldo Setelah",
-    "whatIfMargin": "Margin Dibutuhkan",
-    "whatIfPnl": "Est. P&L"
+    "waitingLiveData": "Menunggu data live — market tutup / memperbarui"
   }
 }

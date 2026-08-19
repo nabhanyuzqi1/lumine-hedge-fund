@@ -106,53 +106,6 @@ export function useExposureData(portfolioId: string) {
 }
 
 /**
- * Simulate trade impact before execution.
- *
- * For "what-if" analysis in pre-trade check panel.
- * Does not persist; only calculates projected metrics.
- */
-export function useSimulateTrade() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (request: {
-      portfolioId: string;
-      symbol: string;
-      side: 'buy' | 'sell';
-      volume: number;
-      price: number;
-    }) => portfolioClient.simulateTrade(request),
-    onMutate: async ({ portfolioId }) => {
-      // Cancel optimistic updates for this portfolio
-      await queryClient.cancelQueries({
-        queryKey: [QUERY_KEYS.portfolios.details(portfolioId)[0], QUERY_KEYS.portfolios.details(portfolioId)[1]],
-      });
-
-      const previousSummary = queryClient.getQueryData<PortfolioSummary>(
-        QUERY_KEYS.portfolios.details(portfolioId)
-      );
-
-      return { previousSummary };
-    },
-    onSuccess: (_data, variables, _context) => {
-      // Invalidate portfolio summary for fresh fetch
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.portfolios.details(variables.portfolioId),
-      });
-    },
-    onError: (_err, _variables, context) => {
-      // Rollback if mutation fails
-      if (context?.previousSummary) {
-        queryClient.setQueryData(
-          QUERY_KEYS.portfolios.details(_variables.portfolioId),
-          context.previousSummary
-        );
-      }
-    },
-  });
-}
-
-/**
  * Create new portfolio with given metadata.
  */
 export function useCreatePortfolio() {

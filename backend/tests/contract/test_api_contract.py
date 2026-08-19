@@ -1036,21 +1036,6 @@ def test_market_features_endpoint(client: TestClient, mock_db_session: None) -> 
 # ── Portfolio simulate (simulateTrade contract) ──────────────────────────
 
 
-def test_portfolio_simulate_endpoint(
-    client: TestClient, mock_db_session: None, mock_market_service: None
-) -> None:
-    response = client.post(
-        "/api/v1/portfolio/default/simulate",
-        json={"symbol": "XAUUSD", "side": "buy", "volume": "0.40", "price": "2420.00"},
-    )
-    assert response.status_code == 200
-    data = response.json()["data"]
-    assert "projected_nav" in data
-    assert "margin_required" in data
-    assert "pnl_change" in data
-    assert float(data["margin_required"]) > 0
-
-
 # ── Kill switch tier round-trip ──────────────────────────────────────────
 
 

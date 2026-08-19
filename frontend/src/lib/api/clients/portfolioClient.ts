@@ -144,39 +144,6 @@ export async function getExposureData(_portfolioId: string): Promise<ExposureSum
 }
 
 /**
- * Calculate theoretical NAV before execution.
- *
- * Used for "what-if" scenarios in pre-trade checks.
- * Simulates position addition without actual trade submission.
- *
- * @param portfolioId - Portfolio UUID
- * @param simulation - Trade parameters to simulate
- * @returns Simulated NAV projection
- */
-export async function simulateTrade({
-  portfolioId,
-  symbol,
-  side,
-  volume,
-  price,
-}: {
-  portfolioId: string;
-  symbol: string;
-  side: 'buy' | 'sell';
-  volume: number;
-  price: number;
-}): Promise<{ projected_nav: number; margin_required: number; pnl_change: number }> {
-  const result = await api.post<{ data: any }>(`/api/portfolio/${portfolioId}/simulate`, {
-    symbol,
-    side,
-    volume,
-    price,
-  });
-  if (result.error) throw result.error;
-  return result.data?.data;
-}
-
-/**
  * Create new portfolio.
  *
  * Initializes empty portfolio with base currency configuration.

@@ -272,23 +272,6 @@ class FeatureSet(BaseModel):
     computed_at: datetime
 
 
-class SimulateTradeRequest(BaseModel):
-    """Payload for a what-if trade simulation."""
-
-    symbol: str
-    side: Literal["buy", "sell"]
-    volume: Decimal = Field(..., gt=0)
-    price: Decimal = Field(..., gt=0)
-
-
-class SimulateTradeResult(BaseModel):
-    """Projected portfolio impact of a hypothetical trade."""
-
-    projected_nav: Decimal
-    margin_required: Decimal
-    pnl_change: Decimal
-
-
 class CreatedAdminKey(BaseModel):
     """API key creation response containing the secret exactly once."""
 
