@@ -621,6 +621,20 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR091
         _app_state["eco_calendar_worker"] = asyncio.create_task(_eco_calendar_worker())
         # DXY (18 Aug 2026): refresh tiap 60s → cache lumine:dxy.
         _app_state["dxy_worker"] = asyncio.create_task(_dxy_worker())
+        # Position monitor (19 Aug 2026 P0): deterministic BREAKEVEN /
+        # TRAILING_STOP / CUT_LOSS per posisi open berdasarkan profil aktif.
+        from lumine.data.redis_client import get_redis as _mon_get_redis
+        from lumine.data.session import get_sessionmaker as _mon_get_sm
+        from lumine.trading.position_monitor import run_position_monitor
+
+        _app_state["position_monitor"] = asyncio.create_task(
+            run_position_monitor(
+                get_sessionmaker=_mon_get_sm,
+                get_redis=_mon_get_redis,
+                bridge_factory=lambda: MT5Bridge.connect(settings),
+                publisher=sse_publisher,
+            )
+        )
         # Model discovery (18 Aug 2026): auto-select model terbaik 9router
         # tiap 60s — user minta agent utama yang pilih best aktif + switch
         # otomatis saat rate-limit/down.

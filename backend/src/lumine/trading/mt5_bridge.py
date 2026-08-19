@@ -18,16 +18,27 @@ from lumine.shared.config import get_settings
 
 @dataclass
 class CommandMessage:
-    """Command from Python backend → MT5 EA."""
+    """Command from Python backend → MT5 EA.
+
+    19 Aug 2026 P0: perintah eksekusi kini SEMANTIC (bukan sekadar
+    OPEN/CLOSE/MODIFY). Field `intent` membawa maksud institusional
+    (OPEN_POSITION / CLOSE_POSITION / PARTIAL_CLOSE / MODIFY_STOP_LOSS /
+    MODIFY_TAKE_PROFIT / BREAKEVEN / TRAILING_STOP / CUT_LOSS), sementara
+    `action` tetap primitive yang EA pahami (OPEN/CLOSE/MODIFY). Ini
+    mencegah "menyamarkan BE/trailing/cutloss sebagai sekadar BUY/SELL".
+    """
 
     command_id: str
     order_id: str
-    action: str  # OPEN, CLOSE, MODIFY
+    action: str  # OPEN, CLOSE, MODIFY (primitive EA)
     symbol: str
     volume: float
     order_type: str  # BUY, SELL
     stop_loss: float | None = None
     take_profit: float | None = None
+    ticket: int | None = None  # 19 Aug 2026: untuk CLOSE/MODIFY/BE/trailing
+    intent: str = ""  # 19 Aug 2026: semantic intent (ExecutionIntent)
+    reason: str = ""  # 19 Aug 2026: alasan (BE hit / trail / cutloss)
     idempotency_key: str = ""
     timestamp: str = ""
 
@@ -35,7 +46,19 @@ class CommandMessage:
         if not self.timestamp:
             self.timestamp = datetime.now(UTC).isoformat()
         if not self.idempotency_key:
-            self.idempotency_key = f"{self.order_id}:attempt_1"
+            self.idempotency_key = f"{self.order_id}:{self.intent or self.action}:attempt_1"
+
+    def as_payload(self) -> dict:
+        """Serialize ke dict untuk LPUSH (ticket + sl/tp + intent + reason).
+
+        EA membaca: action, symbol, order_type/volume (OPEN), ticket
+        (CLOSE/MODIFY), sl, tp, dan field intent/reason untuk observability.
+        """
+        d = asdict(self)
+        # Normalisasi: EA baca `sl`/`tp` (bukan stop_loss/take_profit)
+        d["sl"] = self.stop_loss
+        d["tp"] = self.take_profit
+        return d
 
 
 @dataclass
@@ -89,7 +112,7 @@ class MT5Bridge:
             raise ValueError(f"Idempotent command already sent: {message.idempotency_key}")
 
         # Push to command queue
-        payload = json.dumps(asdict(message))
+        payload = json.dumps(message.as_payload())
         await self.redis.lpush(self.COMMAND_QUEUE, payload)
 
         return message.command_id
@@ -201,6 +224,7 @@ def create_open_order_command(
         command_id=str(uuid.uuid4()),
         order_id=str(order_id),
         action="OPEN",
+        intent="OPEN_POSITION",
         symbol=symbol,
         volume=volume,
         order_type=order_type,
@@ -212,13 +236,53 @@ def create_open_order_command(
 def create_close_order_command(
     order_id: UUID,
     mt5_ticket: int,
+    *,
+    reason: str = "manual",
+    partial_volume: float | None = None,
 ) -> CommandMessage:
-    """Create CLOSE command to close existing position."""
+    """Create CLOSE command to close an existing position.
+
+    19 Aug 2026: ticket WAJIB (sebelumnya di-drop → EA tidak tahu posisi
+    mana yang ditutup). `partial_volume` → PARTIAL_CLOSE intent.
+    """
+    intent = "PARTIAL_CLOSE" if partial_volume else "CLOSE_POSITION"
     return CommandMessage(
         command_id=str(uuid.uuid4()),
         order_id=str(order_id),
         action="CLOSE",
+        intent=intent,
+        symbol="",
+        volume=partial_volume or 0.0,
+        order_type="",
+        ticket=mt5_ticket,
+        reason=reason,
+    )
+
+
+def create_modify_command(
+    order_id: UUID,
+    mt5_ticket: int,
+    *,
+    stop_loss: float | None = None,
+    take_profit: float | None = None,
+    intent: str = "MODIFY_STOP_LOSS",
+    reason: str = "",
+) -> CommandMessage:
+    """Create MODIFY command (SL/TP) — basis untuk BREAKEVEN/TRAILING_STOP.
+
+    19 Aug 2026: `intent` membedakan MODIFY_STOP_LOSS / MODIFY_TAKE_PROFIT /
+    BREAKEVEN / TRAILING_STOP (bukan sekadar MODIFY).
+    """
+    return CommandMessage(
+        command_id=str(uuid.uuid4()),
+        order_id=str(order_id),
+        action="MODIFY",
+        intent=intent,
         symbol="",
         volume=0.0,
         order_type="",
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+        ticket=mt5_ticket,
+        reason=reason,
     )
