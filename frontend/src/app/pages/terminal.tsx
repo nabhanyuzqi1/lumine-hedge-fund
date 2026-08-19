@@ -23,6 +23,7 @@ const LazyCandlestickChart = lazy(() =>
 );
 import { ActivityLog } from "@/components/terminal/activity-log";
 import { CommitteeFeed } from "@/components/terminal/committee-feed";
+import { CommitteeDecisionSummary } from "@/components/terminal/committee-summary";
 import { AIInsightHint } from "@/components/terminal/ai-insight-panel";
 import { DXYBadge } from "@/components/terminal/dxy-badge";
 import { HintHeader, InfoHint } from "@/components/ui/info-hint";
@@ -495,6 +496,7 @@ function TradingWorkspace() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
+                    <CommitteeDecisionSummary />
                     <CommitteeFeed />
                   </CardContent>
                 </Card>

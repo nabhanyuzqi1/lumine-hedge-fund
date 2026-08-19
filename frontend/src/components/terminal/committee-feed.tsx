@@ -42,23 +42,6 @@ export function CommitteeFeed({
           <p className="py-3 text-center text-xs text-text-tertiary">
             Belum ada aktivitas komite pada sesi ini.
           </p>
-          <div className="rounded-md border border-border-subtle bg-bg-raised px-2.5 py-2 text-[11px] leading-relaxed text-text-tertiary">
-            <p className="font-medium text-text-secondary">
-              Apa ini? — Committee Live Agent Activity
-            </p>
-            <p className="mt-1">
-              Feed realtime dari decision cycle AI: setiap cycle berjalan
-              (~5 menit, durasi 2-4 menit), agent berurutan tampil di sini:
-              Analyst (technical/macro/news/SMC) → IC Forum → CIO Proposer →
-              Risk Assessor → eksekusi/penolakan.
-            </p>
-            <p className="mt-1">
-              Di antara cycle feed kosong — itu normal. Verdict terakhir
-              (direction + confidence) selalu tersedia di panel{" "}
-              <span className="font-medium text-text-secondary">AI Insight</span>{" "}
-              di bawah.
-            </p>
-          </div>
         </div>
       );
     }
