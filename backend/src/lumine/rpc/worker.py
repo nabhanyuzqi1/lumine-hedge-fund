@@ -535,6 +535,15 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
 
             async def _run_one(stage: str, fn: object, label: str) -> tuple[str, str, object]:
                 run_fn = fn  # type: ignore[assignment]
+                # FIX 19 Aug 2026: session PER STAGE — analyst dijalankan
+                # PARALEL (gather) tapi SHARE session utama → asyncpg
+                # "manually started transaction" → worker macet + pool
+                # corrupt. Buat + close session sendiri tiap stage.
+                _stage_session = None
+                try:
+                    _stage_session = get_sessionmaker()()
+                except Exception:  # nosec B110 — fallback tanpa session
+                    pass
                 # 18 Aug 2026: per-agent prompt override dari profil aktif
                 # (user: "prompt bisa diatur sendiri" per agent). Override
                 # di-mix ke variabel `profile_override` → prompt templates
@@ -554,17 +563,30 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     )
                 except Exception:
                     stage_vars["profile_override"] = ""
-                out = await run_fn(
-                    gateway=gateway,
-                    registry=prompt_registry,
-                    lineage_id=lineage_id,
-                    workflow_run_id=result["run_id"],
-                    stage_run_id=stage,
-                    model_version_id=mv_id,
-                    idempotency_key=f"{lineage_id}:{stage}",
-                    variables=stage_vars,
-                    session=session,
-                )
+                try:
+                    out = await run_fn(
+                        gateway=gateway,
+                        registry=prompt_registry,
+                        lineage_id=lineage_id,
+                        workflow_run_id=result["run_id"],
+                        stage_run_id=stage,
+                        model_version_id=mv_id,
+                        idempotency_key=f"{lineage_id}:{stage}",
+                        variables=stage_vars,
+                        # FIX 19 Aug 2026: analyst dijalankan PARALEL (gather)
+                        # tapi SHARE session → asyncpg "cannot use
+                        # Connection.transaction() in a manually started
+                        # transaction" → worker macet + semua request DB error.
+                        # Tiap stage pakai session SENDIRI (commit + close).
+                        session=_stage_session,
+                    )
+                finally:
+                    # close di finally — leak koneksi = pool corrupt
+                    if _stage_session is not None:
+                        try:
+                            await _stage_session.close()
+                        except Exception:  # nosec B110 — best-effort cleanup
+                            pass
                 await publisher.publish(
                     SSEEvent(
                         event_type="analyst_output",

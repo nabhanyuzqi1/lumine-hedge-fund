@@ -50,11 +50,18 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
 
 
 async def get_db_session() -> AsyncSession:
-    """Get a single-use async session for direct operations."""
+    """Get a single-use async session for direct operations.
+
+    FIX 19 Aug 2026: JANGAN `await session.__aenter__()` — itu memulai
+    transaction MANUAL (asyncpg "manually started transaction"). Caller
+    yang lupa `session.close()` mengembalikan koneksi ke pool dalam state
+    transaksi aktif → koneksi berikutnya error `cannot use
+    Connection.transaction()` → worker macet + semua request DB error.
+    Biarkan autobegin SQLAlchemy (mulai di query pertama); caller WAJIB
+    `await session.close()` di finally.
+    """
     sm = get_sessionmaker()
-    session = sm()
-    await session.__aenter__()
-    return session
+    return sm()
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
