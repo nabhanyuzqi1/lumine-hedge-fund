@@ -1188,6 +1188,33 @@ async def _handle_place_order(payload: dict[str, Any], publisher: SSEPublisher, 
             )
         )
 
+        # 19 Aug 2026 P1: persist paper order ke DB (portfolio_id="paper")
+        # — research page bandingkan PAPER vs REAL (orders by portfolio_id).
+        try:
+            from decimal import Decimal
+
+            from lumine.data.models import Order as _Order
+            from lumine.data.session import get_sessionmaker as _gbs
+
+            async with _gbs()() as _sess:
+                _sess.add(
+                    _Order(
+                        order_id=order_uuid,
+                        portfolio_id="paper",
+                        symbol=symbol,
+                        side=order_type.lower(),
+                        order_type="market",
+                        volume=Decimal(str(volume)),
+                        price=Decimal(str(fill_price)),
+                        status="filled",
+                        filled_volume=Decimal(str(volume)),
+                        mt5_ticket=int(result["ticket"]),
+                    )
+                )
+                await _sess.commit()
+        except Exception:  # nosec B110 — persist paper non-fatal
+            pass
+
         return result
 
     # Real trading mode: send to MT5 via bridge

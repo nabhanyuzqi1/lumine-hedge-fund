@@ -36,6 +36,7 @@ from lumine.api.routers import (
     market,
     orders,
     portfolio,
+    research,
     rpc,
     streams,
     workflows,
@@ -743,6 +744,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # mounted under /api/v1. /health stays at the root (infra probe).
     for router in (
         portfolio.router,
+        research.router,
         orders.router,
         workflows.router,
         lineage.router,
