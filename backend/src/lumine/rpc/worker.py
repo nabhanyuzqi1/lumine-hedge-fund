@@ -740,12 +740,36 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             # NOTE: run_risk_assessor pakai keyword args spesifik (bukan
             # `variables` dict) — symbol/decision_ts/proposal_summary/
             # portfolio_context/volatility_band (17 Aug 2026).
+            # 19 Aug 2026 P1 (ara #12): analyst_alignment — konsensus analyst
+            # (bullish/bearish/neutral count). IC + CIO lihat ini: kalau 3/4
+            # analyst aligned, CIO boleh lebih responsif (bukan sekadar HOLD
+            # karena 2-vs-2). Profile-aware decision policy.
+            _bull = sum(
+                1
+                for a in analyst_inputs
+                if str(a.get("bias", a.get("recommendation", ""))).lower()
+                in ("bullish", "buy", "long")
+            )
+            _bear = sum(
+                1
+                for a in analyst_inputs
+                if str(a.get("bias", a.get("recommendation", ""))).lower()
+                in ("bearish", "sell", "short")
+            )
+            _neut = len(analyst_inputs) - _bull - _bear
+            _consensus = "bullish" if _bull > _bear else ("bearish" if _bear > _bull else "mixed")
             portfolio_context = {
                 "symbol": symbol,
                 "position_summary": position_summary,
                 "net_exposure_usd": float(position_summary["net_size"]) * float(last["close"]),
                 "margin_used": 0.0,
                 "open_pnl": float(position_summary["unrealized_pnl"]),
+                "analyst_alignment": {
+                    "bullish": _bull,
+                    "bearish": _bear,
+                    "neutral": _neut,
+                    "consensus": _consensus,
+                },
             }
             risk_out = await run_risk_assessor(
                 gateway=gateway,

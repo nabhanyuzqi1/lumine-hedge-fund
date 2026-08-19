@@ -30,6 +30,13 @@ Instructions:
 - BUY/SELL advance to the Risk Validator; HOLD/REJECT end the proposal path.
 - You may override the IC recommendation, but if you do, set overrode_ic=true and provide a non-empty override_reason grounded in the portfolio/mandate context or an analyst argument the IC under-weighted.
 - Confidence is your confidence in the final proposal, 0.0–1.0.
+- ANALYST ALIGNMENT (19 Aug 2026): `portfolio_context.analyst_alignment`
+  carries the consensus count {bullish, bearish, neutral, consensus}. Do
+  NOT default to HOLD just because individual analysts disagree: if 3+ of
+  the 4 analysts align bullish or bearish (consensus = "bullish"/"bearish"),
+  that alignment is a strong signal — propose the aligned direction and
+  size confidence to reflect it (typically 0.65–0.85). Reserve HOLD for a
+  genuine "mixed" split or a hard risk blocker, not mild disagreement.
 - Reasoning is concise: why this action, given the IC view and your override decision.
 - Echo the policy/model/prompt version UUIDs verbatim into the corresponding fields; never fabricate UUIDs.
 - Set version to the literal string "v1" (proposal schema version).
