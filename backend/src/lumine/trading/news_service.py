@@ -35,7 +35,8 @@ _POLL_SECONDS = 300
 # - BBC business (RSS XML asli, andal)
 # - OilPrice main (energi + komoditas — konteks inflasi/emas)
 # - MarketWatch topstories (ekonomi/market)
-# - FXStreet feeds: USD berpengaruh LANGSUNG ke XAUUSD (pairs USD/DXY)
+# - FXStreet: HANYA /rss/news yang valid (19 Aug 2026 — markets-news/
+#   currencies/commodities 404 dari VPS)
 # - Kitco TIDAK dipakai: feed lama sudah jadi HTML (bukan RSS) — parse gagal.
 # - Reuters feeds mati (DNS tidak resolve dari VPS).
 _RSS_FEEDS: list[str] = [
@@ -43,11 +44,10 @@ _RSS_FEEDS: list[str] = [
     "https://oilprice.com/rss/main",
     "https://www.marketwatch.com/rss/topstories",
     # 18 Aug 2026: forex/emas — USD, DXY, pairs kuat (EURUSD dll) yang
-    # mempengaruhi XAUUSD. FXStreet RSS publik andal (tidak butuh key).
-    "https://www.fxstreet.com/rss/markets-news",
-    "https://www.fxstreet.com/rss/currencies",
+    # mempengaruhi XAUUSD.
     "https://www.fxstreet.com/rss/news",
-    "https://www.fxstreet.com/rss/commodities",
+    "https://feeds.finance.yahoo.com/rss/2.0/headline?s=XAUUSD%2CXAGUSD&region=US&lang=en-US",
+    "https://www.investing.com/rss/news_25.rss",
 ]
 
 # Fallback: kalau semua RSS gagal, pakai snapshot ini (biar analyst tidak
