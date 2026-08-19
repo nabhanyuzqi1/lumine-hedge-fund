@@ -47,9 +47,6 @@ interface SystemInfo {
 }
 
 interface ConfigForm {
-  max_exposure_per_trade: string;
-  risk_per_trade: string;
-  max_daily_loss_pct: string;
   demo_data: boolean;
   paper_trading: boolean;
   sandbox_profile?: string;
@@ -421,12 +418,8 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
     if (data?.enabled_symbols) setEnabledSymbols(data.enabled_symbols);
   }, [data?.enabled_symbols]);
   const [form, setForm] = React.useState<ConfigForm>({
-        // FIX 19 Aug 2026: init dari data API (bukan hardcoded default) —
-        // SEBELUMNYA save overwrite nilai user di Redis dengan default
-        // ("trading parameters ke-reset terus saat save").
-        max_exposure_per_trade: String(data?.max_exposure_per_trade ?? 0.02),
-        risk_per_trade: String(data?.risk_per_trade ?? 0.01),
-        max_daily_loss_pct: String(data?.max_daily_loss_pct ?? 0.03),
+        // 19 Aug 2026: trading params (max_exposure/risk/max_daily_loss)
+        // DIHAPUS — sudah di Trading Profiles. Init hanya mode + data.
         demo_data: data?.demo_data ?? false,
         // FIX 18 Aug 2026: default REAL (false), bukan true — user keluh
         // "paper trading masih nyala terus" padahal sudah matikan; ?? true
@@ -441,9 +434,6 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
       e.preventDefault();
       const payload: Record<string, unknown> = {
         demo_data: form.demo_data,
-        max_exposure_per_trade: parseFloat(form.max_exposure_per_trade),
-        risk_per_trade: parseFloat(form.risk_per_trade),
-        max_daily_loss_pct: parseFloat(form.max_daily_loss_pct),
         // B9: enabled symbols (enable/disable currency)
         enabled_symbols: enabledSymbols,
       };
@@ -491,14 +481,57 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
       />
     </div>
   );
+  void field; // 19 Aug 2026: helper dipertahankan utk form masa depan (params pindah ke profiles)
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Trading Parameters</h3>
-        {field("Max Exposure per Trade (e.g. 0.02 = 2%)", "max_exposure_per_trade", "number")}
-        {field("Risk per Trade (e.g. 0.01 = 1%)", "risk_per_trade", "number")}
-        {field("Max Daily Loss (e.g. 0.03 = 3%)", "max_daily_loss_pct", "number")}
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">Mode Trading</h3>
+        {/* 19 Aug 2026: paper_trading checkbox → Mode selector REAL/Sandbox.
+            Trading parameters (max_exposure/risk/max_daily_loss) DIHAPUS —
+            sudah hidup di Trading Profiles (profil punya risk/SL/TP/BE). */}
+        <div className="grid grid-cols-2 gap-2">
+          {(["real", "sandbox"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() =>
+                setForm((f) => ({ ...f, paper_trading: mode === "sandbox" }))
+              }
+              className={`rounded-chip border px-3 py-2 text-left text-xs transition ${
+                form.paper_trading === (mode === "sandbox")
+                  ? "border-accent bg-accent/10 text-ink"
+                  : "border-line bg-bg text-ink-dim hover:text-ink"
+              }`}
+            >
+              <p className="font-medium">
+                {mode === "real" ? "REAL TRADING" : "SANDBOX (research)"}
+              </p>
+              <p className="mt-0.5 text-[10px] leading-relaxed">
+                {mode === "real"
+                  ? "Order dikirim ke akun MT5 broker. Untuk verifikasi end-to-end & live."
+                  : "Order disimulasikan — uji profile/agent baru aman, tidak menyentuh broker."}
+              </p>
+            </button>
+          ))}
+        </div>
+        {form.paper_trading && (
+          <label className="flex items-center gap-2 text-xs text-ink-dim">
+            Profil sandbox:
+            <select
+              value={form.sandbox_profile ?? ""}
+              onChange={(e) => setForm((f) => ({ ...f, sandbox_profile: e.target.value }))}
+              className="rounded border border-line bg-bg px-2 py-1 text-xs text-ink"
+            >
+              <option value="">(ikuti profil aktif)</option>
+              {["scalping_1m", "scalping_5m", "intraday_15m", "intraday_1h", "intraday_swing_4h", "swing_1d"].map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div>
           <label className="flex items-center gap-2 text-xs text-ink-dim">
             <input
@@ -510,48 +543,7 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
             Demo Data Mode (router pakai in-memory, bukan PostgreSQL)
           </label>
         </div>
-        <div>
-                  <label className="flex items-center gap-2 text-xs text-ink-dim">
-                    <input
-                      type="checkbox"
-                      checked={form.paper_trading}
-                      onChange={(e) => setForm((f) => ({ ...f, paper_trading: e.target.checked }))}
-                      className="accent-accent"
-                    />
-                    Paper Trading (sandbox) — order disimulasikan, TIDAK dikirim ke MT5 broker
-                  </label>
-                  {form.paper_trading ? (
-                              <p className="mt-1 text-[11px] text-amber">
-                                Sandbox aktif — aman untuk uji profile/agent baru. Verdict &
-                                prompt tetap dicatat, eksekusi tidak menyentuh akun broker.
-                              </p>
-                            ) : (
-                              <p className="mt-1 text-[11px] text-danger">
-                                ⚠ REAL TRADING AKTIF — order akan dikirim ke akun MT5 live/demo
-                              </p>
-                            )}
-                            {form.paper_trading && (
-                              <label className="mt-2 flex items-center gap-2 text-xs text-ink-dim">
-                                Profil sandbox:
-                                <select
-                                  value={form.sandbox_profile ?? ""}
-                                  onChange={(e) => setForm((f) => ({ ...f, sandbox_profile: e.target.value }))}
-                                  className="rounded border border-line bg-bg px-2 py-1 text-xs text-ink"
-                                >
-                                  <option value="">(ikuti profil aktif)</option>
-                                  {["scalping_1m", "scalping_5m", "intraday_15m", "intraday_1h", "intraday_swing_4h", "swing_1d"].map((p) => (
-                                    <option key={p} value={p}>
-                                      {p}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                            )}
-                  <p className="mt-1 text-[11px] text-ink-faint">
-                    Berlaku realtime (worker baca per call — tanpa restart container).
-                  </p>
-                </div>
-              </div>
+      </div>
       <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
           Active Symbols (B9 — enable/disable currency)
