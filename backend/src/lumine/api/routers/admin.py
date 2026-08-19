@@ -199,6 +199,40 @@ async def set_kill_switch(
 # ── Superadmin endpoints ───────────────────────────────────────────────────
 
 
+@router.post("/restart-api")  # noqa: PLR0915 — endpoint admin restart (few branches)
+async def restart_api(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
+) -> dict:
+    """Restart api container (19 Aug 2026 — user request).
+
+    Frontend memanggil setelah save System Config (toggle restart). Pid 1 =
+    uvicorn master; SIGTERM → container restart policy (unless-stopped) →
+    api bangun lagi. Flag Redis untuk traceability.
+    """
+    import asyncio
+
+    try:
+        from lumine.data.redis_client import get_redis
+
+        r = await get_redis()
+        await r.set("lumine:restart_requested", "api", ex=300)
+    except Exception:  # nosec B110 — Redis down → tetap restart
+        pass
+
+    async def _kill() -> None:
+        await asyncio.sleep(0.5)
+        import os
+        import signal
+
+        try:
+            os.kill(1, signal.SIGTERM)  # sengaja restart via container policy
+        except Exception:  # nosec B110 — restart failure → container tetap jalan
+            pass
+
+    _restart_task = asyncio.create_task(_kill())  # noqa: RUF006 — fire-and-forget shutdown
+    return {"status": "restarting", "note": "api container restart dalam ~5-10s"}
+
+
 @router.get("/system-info", response_model=SystemInfo)
 async def get_system_info(  # noqa: C901 — banyak branch status service + config
     settings: Annotated[Settings, Depends(get_settings)],
@@ -284,6 +318,22 @@ async def get_system_info(  # noqa: C901 — banyak branch status service + conf
     except Exception:  # nosec B110 — Redis down → fallback env
         pass
 
+    # FIX 19 Aug 2026: trading params dibaca dari Redis — SEBELUMNYA
+    # SystemInfo tidak sertakan → frontend form default "0.02/0.01/0.03"
+    # → save overwrite nilai user ("trading parameters ke-reset terus").
+    async def _float_field(key: str, default: float) -> float:
+        try:
+            v = await r.hget(_SYSCONFIG_KEY, key)
+            if v is not None:
+                return float(v)
+        except Exception:  # nosec B110 — Redis down/field kosong → default
+            pass
+        return default
+
+    max_exposure_per_trade = await _float_field("max_exposure_per_trade", 0.02)
+    risk_per_trade = await _float_field("risk_per_trade", 0.01)
+    max_daily_loss_pct = await _float_field("max_daily_loss_pct", 0.03)
+
     return SystemInfo(
         services=services,
         llm_gateway_url=settings.llm_gateway_url,
@@ -291,6 +341,9 @@ async def get_system_info(  # noqa: C901 — banyak branch status service + conf
         demo_data=settings.demo_data,
         paper_trading=paper_trading,
         sandbox_profile=sandbox_profile,
+        max_exposure_per_trade=max_exposure_per_trade,
+        risk_per_trade=risk_per_trade,
+        max_daily_loss_pct=max_daily_loss_pct,
         environment=getattr(settings, "environment", "production"),
         version="1.0.0",
         enabled_symbols=enabled_symbols,

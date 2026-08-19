@@ -8,9 +8,12 @@ import * as React from "react";
 export function InfoHint({
   text,
   label,
+  node,
 }: {
   text: string;
   label?: string;
+  /** Konten tooltip kaya (JSX) — saat disediakan, menggantikan text. */
+  node?: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLSpanElement>(null);
@@ -43,9 +46,9 @@ export function InfoHint({
       {open && (
         <span
           role="tooltip"
-          className="absolute left-0 top-full z-50 mt-1 w-56 rounded-chip border border-line bg-bg-raised px-2.5 py-2 text-[11px] leading-relaxed text-ink-dim shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1 w-72 rounded-chip border border-line bg-bg-raised px-2.5 py-2 text-[11px] leading-relaxed text-ink-dim shadow-lg"
         >
-          {text}
+          {node ?? text}
         </span>
       )}
     </span>

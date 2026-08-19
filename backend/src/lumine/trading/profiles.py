@@ -138,7 +138,12 @@ async def get_active_profile(redis: Any) -> dict[str, Any]:
     try:
         active_id_raw = await redis.get(ACTIVE_KEY)
         if active_id_raw:
-            profile = await get_profile(redis, str(active_id_raw))
+            # FIX 19 Aug 2026: decode bytes (str(b'..') merusak id → fallback)
+            if isinstance(active_id_raw, bytes):
+                active_id = active_id_raw.decode()
+            else:
+                active_id = str(active_id_raw)
+            profile = await get_profile(redis, active_id)
             if profile:
                 return profile
     except Exception:  # nosec B110 — Redis down → fallback default
@@ -183,7 +188,14 @@ async def list_profiles(redis: Any) -> list[dict[str, Any]]:
         out = [dict(v) for v in DEFAULT_PROFILES.values()]
     try:
         active_raw = await redis.get(ACTIVE_KEY)
-        active = str(active_raw) if active_raw else "scalping_1m"
+        # FIX 19 Aug 2026: str(bytes) = "b'intraday_15m'" — BUG! resume
+        # decode eksplisit. SEBELUMNYA: active Tidak pernah True di list
+        # ("stuck gabisa aktifkan profile") + worker selalu fallback
+        # scalping_1m walau profile lain di-set aktif.
+        if isinstance(active_raw, bytes):
+            active = active_raw.decode()
+        else:
+            active = str(active_raw or "") or "scalping_1m"
     except Exception:
         active = "scalping_1m"
     return [dict(p, active=(p.get("id") == active)) for p in out]

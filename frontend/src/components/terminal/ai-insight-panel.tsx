@@ -1,5 +1,6 @@
 import { useSignals } from "@/api/hooks";
 import { AnalystCard } from "@/components/dashboard/analyst-card";
+import { InfoHint } from "@/components/ui/info-hint";
 import type { SignalPoint } from "@/data/fixtures";
 
 /**
@@ -104,5 +105,62 @@ export function AIInsightPanel({ symbol }: { symbol: string }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * AIInsightHint (18 Aug 2026) — AI Insight versi TOOLTIP (user: "ai insight
+ * pindah ke tooltips saja, icon tanda tanya di masing masing tabel").
+ * Menampilkan verdict analyst terbaru + confidence + bar minimum eksekusi
+ * dalam tooltip ringkas, tanpa memenuhi halaman.
+ */
+export function AIInsightHint({ symbol }: { symbol: string }) {
+  const { data: signals = [], isLoading } = useSignals(symbol);
+  const sorted = [...signals].sort((a, b) => b.time - a.time).slice(0, 4);
+
+  return (
+    <InfoHint
+      text="AI Insight"
+      label="AI Insight — sinyal analyst + bar minimum eksekusi"
+      node={
+        <div className="space-y-2">
+          <p className="font-medium text-ink">AI Insight — {symbol}</p>
+          {isLoading ? (
+            <p className="text-ink-faint">memuat sinyal…</p>
+          ) : sorted.length === 0 ? (
+            <p className="text-ink-faint">
+              Belum ada sinyal analyst. Decision cycle jalan tiap ~5 menit.
+            </p>
+          ) : (
+            <>
+              <div className="space-y-1">
+                {sorted.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2">
+                    <span className="text-ink-dim">{s.analyst}</span>
+                    <span
+                      className={`font-mono uppercase ${
+                        s.direction === "bullish"
+                          ? "text-up"
+                          : s.direction === "bearish"
+                            ? "text-down"
+                            : "text-ink-faint"
+                      }`}
+                    >
+                      {s.direction} {Math.round(s.confidence * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-ink-dim">
+                Eksekusi hanya jika: action BUY/SELL + confidence ≥ 70% +
+                size ≥ 0.01 lot + SL/TP + kill switch off. Gagal →{" "}
+                <span className="font-mono">skipped_reason</span> di tab
+                Backtest.
+              </p>
+            </>
+          )}
+        </div>
+      }
+    />
   );
 }

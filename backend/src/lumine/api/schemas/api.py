@@ -398,6 +398,9 @@ class SystemInfo(BaseModel):
     demo_data: bool
     paper_trading: bool = True  # ADR-0043: paper trading mode
     sandbox_profile: str | None = None
+    max_exposure_per_trade: float = 0.02
+    risk_per_trade: float = 0.01
+    max_daily_loss_pct: float = 0.03
     environment: str
     version: str
     # B9: symbol aktif (enable/disable currency via superadmin).

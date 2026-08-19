@@ -23,8 +23,8 @@ const LazyCandlestickChart = lazy(() =>
 );
 import { ActivityLog } from "@/components/terminal/activity-log";
 import { CommitteeFeed } from "@/components/terminal/committee-feed";
-import { AIInsightPanel } from "@/components/terminal/ai-insight-panel";
-import { HintHeader } from "@/components/ui/info-hint";
+import { AIInsightHint } from "@/components/terminal/ai-insight-panel";
+import { HintHeader, InfoHint } from "@/components/ui/info-hint";
 import { QuotePanel } from "@/components/terminal/quote-panel";
 import { RiskGauges } from "@/components/terminal/risk-gauges";
 import { WhatIfPanel } from "@/components/terminal/what-if-panel";
@@ -74,16 +74,20 @@ interface MarketDataEvent {
   };
 }
 
-function PositionsTable({ positions }: { positions: PositionFixture[] }) {
+function PositionsTable({ positions, symbol }: { positions: PositionFixture[]; symbol: string }) {
   const { t } = useTranslation();
   return (
-    <DataTable
-      data={positions}
-      getRowId={(row) => row.id}
-      className="data-testid-positions-table"
-      maxHeight={400}
-      emptyMessage={t("terminal.emptyPositions")}
-      columns={[
+    <div>
+      <div className="mb-1 flex items-center justify-end">
+        <AIInsightHint symbol={symbol} />
+      </div>
+      <DataTable
+        data={positions}
+        getRowId={(row) => row.id}
+        className="data-testid-positions-table"
+        maxHeight={400}
+        emptyMessage={t("terminal.emptyPositions")}
+        columns={[
         {
           key: "symbol",
           header: t("terminal.colSymbol"),
@@ -130,12 +134,13 @@ function PositionsTable({ positions }: { positions: PositionFixture[] }) {
             />
           ),
         },
-      ]}
-    />
-  );
-}
+              ]}
+              />
+            </div>
+          );
+        }
 
-function OrdersTable({
+        function OrdersTable({
   orders,
   onModify,
 }: {
@@ -455,35 +460,54 @@ function TradingWorkspace() {
         </ChartCard>
         <WhatIfPanel />
         <Card>
-          <CardHeader>
-            <CardTitle>{t("terminal.committee")}</CardTitle>
-            <CardDescription>{t("terminal.committeeDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CommitteeFeed />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Insight</CardTitle>
-            <CardDescription>
-              Sinyal analyst real (bullish/bearish, confidence, rationale) + bar
-              minimum eksekusi
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AIInsightPanel symbol={selectedSymbol} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("terminal.activity")}</CardTitle>
-            <CardDescription>{t("terminal.activityDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ActivityLog limit={12} />
-          </CardContent>
-        </Card>
+                  <CardHeader>
+                    <CardTitle>
+                      <span className="inline-flex items-center gap-1">
+                        {t("terminal.committee")}
+                        <InfoHint
+                          text="Committee Live Agent Activity"
+                          label="Penjelasan Committee Live Agent Activity"
+                          node={
+                            <div className="space-y-1.5">
+                              <p className="font-medium text-ink">
+                                Committee Live Agent Activity
+                              </p>
+                              <p>
+                                Feed realtime dari decision cycle AI: setiap cycle
+                                berjalan (~5 menit, durasi 2–4 menit), agent
+                                berurutan tampil di sini:{" "}
+                                <span className="text-ink">
+                                  Analyst (technical/macro/news/SMC)
+                                </span>{" "}
+                                → <span className="text-ink">IC Forum</span> →{" "}
+                                <span className="text-ink">CIO Proposer</span> →{" "}
+                                <span className="text-ink">Risk Assessor</span> →
+                                eksekusi/penolakan.
+                              </p>
+                              <p className="text-ink-dim">
+                                Di antara cycle feed kosong — itu normal. Verdict
+                                terakhir (direction + confidence) tersedia di ikon
+                                “?” AI Insight pada tabel di bawah.
+                              </p>
+                            </div>
+                          }
+                        />
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CommitteeFeed />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t("terminal.activity")}</CardTitle>
+                    <CardDescription>{t("terminal.activityDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ActivityLog limit={12} />
+                  </CardContent>
+                </Card>
       </div>
 
       <div className="min-w-0 space-y-4 lg:col-span-2 xl:col-span-3">
@@ -580,7 +604,7 @@ function TradingWorkspace() {
                 ))}
               </div>
             ) : (
-              <PositionsTable positions={positions.data ?? []} />
+              <PositionsTable positions={positions.data ?? []} symbol={selectedSymbol} />
             )}
           </CardContent>
         </Card>

@@ -38,6 +38,9 @@ interface SystemInfo {
   demo_data: boolean;
     paper_trading: boolean;
     sandbox_profile?: string;
+    max_exposure_per_trade?: number;
+    risk_per_trade?: number;
+    max_daily_loss_pct?: number;
     environment: string;
   version: string;
   enabled_symbols: string[];
@@ -407,6 +410,7 @@ function OverviewTab({ data, isError }: { data: SystemInfo | undefined; isError:
 }
 
 function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: boolean }) {
+  const qc = useQueryClient();
   const { toast } = useToast();
   const update = useUpdateConfig();
   // B9: enabled_symbols dari system-info (default XAUUSD).
@@ -417,9 +421,12 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
     if (data?.enabled_symbols) setEnabledSymbols(data.enabled_symbols);
   }, [data?.enabled_symbols]);
   const [form, setForm] = React.useState<ConfigForm>({
-        max_exposure_per_trade: "0.02",
-        risk_per_trade: "0.01",
-        max_daily_loss_pct: "0.03",
+        // FIX 19 Aug 2026: init dari data API (bukan hardcoded default) —
+        // SEBELUMNYA save overwrite nilai user di Redis dengan default
+        // ("trading parameters ke-reset terus saat save").
+        max_exposure_per_trade: String(data?.max_exposure_per_trade ?? 0.02),
+        risk_per_trade: String(data?.risk_per_trade ?? 0.01),
+        max_daily_loss_pct: String(data?.max_daily_loss_pct ?? 0.03),
         demo_data: data?.demo_data ?? false,
         // FIX 18 Aug 2026: default REAL (false), bukan true — user keluh
         // "paper trading masih nyala terus" padahal sudah matikan; ?? true
@@ -443,14 +450,34 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
             payload.paper_trading = form.paper_trading;
             if (form.sandbox_profile) payload.sandbox_profile = form.sandbox_profile;
       update.mutate(payload, {
-        onSuccess: (result) => {
-          toast({ variant: "success", title: "Config saved", description: result.note });
-        },
-        onError: () => {
-          toast({ variant: "danger", title: "Save failed", description: "Periksa session/API key admin." });
-        },
-      });
-    };
+              onSuccess: (result) => {
+                toast({ variant: "success", title: "Config saved", description: result.note });
+              },
+              onError: () => {
+                toast({ variant: "danger", title: "Save failed", description: "Periksa session/API key admin." });
+              },
+            });
+          };
+
+        // 19 Aug 2026: restart api container (user request — status restart
+        // tampil selama proses). Panggil pustaka `post` dari client.
+        const [restartState, setRestartState] = React.useState<
+          "idle" | "restarting" | "done" | "error"
+        >("idle");
+        const handleRestartApi = async () => {
+          setRestartState("restarting");
+          try {
+            await post("/admin/restart-api", {});
+            setRestartState("done");
+            // Setelah restart, refetch system-info untuk status segar.
+            setTimeout(() => {
+              qc.invalidateQueries({ queryKey: ["system-info"] });
+              setRestartState("idle");
+            }, 12_000);
+          } catch {
+            setRestartState("error");
+          }
+        };
 
   const field = (label: string, key: keyof ConfigForm, type = "text", placeholder = "") => (
     <div>
@@ -565,14 +592,33 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Button type="submit" variant="primary" size="sm" disabled={update.isPending}>
-          {update.isPending ? "Saving…" : "Save Config"}
-        </Button>
-        <p className="text-xs text-ink-faint">Restart api container diperlukan agar apply sepenuhnya.</p>
-      </div>
-    </form>
-  );
-}
+              <Button type="submit" variant="primary" size="sm" disabled={update.isPending}>
+                {update.isPending ? "Saving…" : "Save Config"}
+              </Button>
+              <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={restartState === "restarting"}
+                        onClick={handleRestartApi}
+                      >
+                {restartState === "restarting"
+                  ? "Restarting…"
+                  : restartState === "done"
+                    ? "Restart OK ✓"
+                    : restartState === "error"
+                      ? "Restart gagal — coba lagi"
+                      : "Restart API"}
+              </Button>
+              <p className="text-xs text-ink-faint">
+                {restartState === "restarting"
+                  ? "⏳ api container sedang restart (~5-10s)…"
+                  : "Save berlaku realtime; Restart API hanya jika perlu (mis. field env)."}
+              </p>
+            </div>
+          </form>
+        );
+      }
 
 function EmbedTab({ url, title }: { url: string; title: string }) {
   return (

@@ -3040,6 +3040,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/restart-api:
+    post:
+      tags:
+      - admin
+      summary: Restart Api
+      description: 'Restart api container (19 Aug 2026 — user request).
+
+
+        Frontend memanggil setelah save System Config (toggle restart). Pid 1 =
+
+        uvicorn master; SIGTERM → container restart policy (unless-stopped) →
+
+        api bangun lagi. Flag Redis untuk traceability.'
+      operationId: restart_api_api_v1_admin_restart_api_post
+      parameters:
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Restart Api Api V1 Admin Restart Api Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/admin/system-info:
     get:
       tags:
@@ -5862,6 +5916,18 @@ components:
           - type: string
           - type: 'null'
           title: Sandbox Profile
+        max_exposure_per_trade:
+          type: number
+          title: Max Exposure Per Trade
+          default: 0.02
+        risk_per_trade:
+          type: number
+          title: Risk Per Trade
+          default: 0.01
+        max_daily_loss_pct:
+          type: number
+          title: Max Daily Loss Pct
+          default: 0.03
         environment:
           type: string
           title: Environment
