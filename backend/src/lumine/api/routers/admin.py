@@ -234,7 +234,7 @@ async def restart_api(
 
 
 @router.get("/system-info", response_model=SystemInfo)
-async def get_system_info(  # noqa: C901 — banyak branch status service + config
+async def get_system_info(  # noqa: C901, PLR0915 — banyak branch status service + config
     settings: Annotated[Settings, Depends(get_settings)],
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> SystemInfo:
