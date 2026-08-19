@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { get } from "@/api/client";
 import type { Timeframe } from "@/components/charts/candlestick-chart";
@@ -262,26 +262,28 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
   return useQuery({
     queryKey: ["market-bars", symbol, timeframe],
     queryFn: async (): Promise<ChartBar[]> => {
-      try {
-        const bars = await get<RestMarketBar[]>(`/market/ohlcv/${symbol}`, {
-          timeframe: timeframe.toLowerCase(),
-          limit: "200",
-        });
-        if (Array.isArray(bars) && bars.length > 0)
-          return bars
-            .map(toChartBar)
-            // Guard: bar dengan timestamp invalid (0/NaN dari data parsial)
-            // bikin lightweight-charts crash "Value is null" — skip.
-            .filter((b) => Number.isFinite(b.time) && b.time > 0);
-      } catch {
-        // fall through to empty / fixture
-      }
-      if (USE_REAL_DATA) return [];
+      const bars = await get<RestMarketBar[]>(`/market/ohlcv/${symbol}`, {
+        timeframe: timeframe.toLowerCase(),
+        limit: "200",
+      });
+      if (Array.isArray(bars) && bars.length > 0)
+        return bars
+          .map(toChartBar)
+          // Guard: bar dengan timestamp invalid (0/NaN dari data parsial)
+          // bikin lightweight-charts crash "Value is null" — skip.
+          .filter((b) => Number.isFinite(b.time) && b.time > 0);
+      // 19 Aug 2026: JANGAN return [] — itu menimpa data lama → chart
+      // "ilang-muncul" saat WS/REST gagal. Throw supaya keepPreviousData
+      // mempertahankan bar terakhir yang valid.
+      if (USE_REAL_DATA) throw new Error("market bars unavailable (retain last-known)");
       return generateBars({ intervalSec: TIMEFRAME_SECONDS[timeframe] });
     },
     staleTime: 0,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
+    // 19 Aug 2026 P0: retain data terakhir saat refetch gagal — dashboard
+    // tidak boleh ilang-muncul saat WS/REST down.
+    placeholderData: keepPreviousData,
     // 18 Aug 2026: 1s → 5s — bar terakhir sudah di-update live oleh WS
     // tick. Refetch 1s hanya render storm + WebGL churn → browser crash
     // STATUS_BREAKPOINT di dashboard (chart + WS + refetch bersamaan).
@@ -313,12 +315,14 @@ export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       } catch {
         // fall through to fixture
       }
-      if (USE_REAL_DATA) return [];
+      if (USE_REAL_DATA) throw new Error("equity unavailable (retain last-known)");
       return generateEquity();
     },
     staleTime: 60_000,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
+    // 19 Aug 2026 P0: retain data terakhir saat refetch gagal.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -340,10 +344,13 @@ export function useExposure(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       } catch {
         // fall through to fixture
       }
-      if (USE_REAL_DATA) return [];
+      if (USE_REAL_DATA) throw new Error("exposure unavailable (retain last-known)");
       return generateExposure();
     },
     staleTime: 60_000,
+    retry: 2,
+    // 19 Aug 2026 P0: retain data terakhir saat refetch gagal.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -380,10 +387,13 @@ export function useSignals(symbol: string) {
       } catch {
         // fall through to fixture
       }
-      if (USE_REAL_DATA) return [];
+      if (USE_REAL_DATA) throw new Error("signals unavailable (retain last-known)");
       return generateSignals();
     },
     staleTime: 30_000,
+    retry: 2,
+    // 19 Aug 2026 P0: retain data terakhir saat refetch gagal.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -455,7 +465,9 @@ export function useCorrelation() {
         // fall through to fixture
       }
       if (USE_REAL_DATA) {
-        return { symbols: CORRELATION_SYMBOLS, matrix: [] };
+        // 19 Aug 2026 P0: jangan return matrix kosong (menimpa data lama) —
+        // throw supaya keepPreviousData mempertahankan matrix terakhir.
+        throw new Error("correlation unavailable (retain last-known)");
       }
       return {
         symbols: CORRELATION_SYMBOLS,
@@ -463,6 +475,9 @@ export function useCorrelation() {
       };
     },
     staleTime: 60_000,
+    retry: 2,
+    // 19 Aug 2026 P0: retain data terakhir saat refetch gagal.
+    placeholderData: keepPreviousData,
   });
 }
 
