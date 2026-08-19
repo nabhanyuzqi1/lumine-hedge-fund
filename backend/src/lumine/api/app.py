@@ -635,6 +635,22 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: C901, PLR091
                 publisher=sse_publisher,
             )
         )
+        # Backtest scheduler (19 Aug 2026 P0): master backtest terjadwal →
+        # learning digest fresh → di-inject analyst prompt (learning loop).
+        from lumine.backtest.scheduler import run_backtest_scheduler
+
+        _bt_interval = None
+        try:
+            _bt_interval = int(getattr(settings, "backtest_schedule_seconds", 0) or 0) or None
+        except (TypeError, ValueError):
+            _bt_interval = None
+        _app_state["backtest_scheduler"] = asyncio.create_task(
+            run_backtest_scheduler(
+                get_sessionmaker=_mon_get_sm,
+                get_redis=_mon_get_redis,
+                interval_seconds=_bt_interval,
+            )
+        )
         # Model discovery (18 Aug 2026): auto-select model terbaik 9router
         # tiap 60s — user minta agent utama yang pilih best aktif + switch
         # otomatis saat rate-limit/down.
