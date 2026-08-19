@@ -782,6 +782,52 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 )
             )
 
+            # Debate moderator (19 Aug 2026 P1): ara #21 — SEBELUMNYA tidak
+            # pernah dipanggil (debate_held=False hardcode). Deterministic
+            # trigger saat inter-analyst disagreement tinggi / IC confidence
+            # rendah, lalu summary di-inject ke analyst_inputs (IC + CIO lihat).
+            debate_held = False
+            try:
+                from lumine.autogen_pipeline.debate import run_debate, should_debate
+
+                if should_debate(
+                    analyst_inputs,
+                    ic_confidence_threshold=0.6,
+                    disagreement_threshold=0.5,
+                ):
+                    debate = await run_debate(
+                        gateway=gateway,
+                        registry=prompt_registry,
+                        lineage_id=lineage_id,
+                        workflow_run_id=result["run_id"],
+                        stage_run_id="debate_moderator",
+                        model_version_id=mv_id,
+                        idempotency_key=f"{lineage_id}:debate",
+                        symbol=symbol,
+                        decision_ts=now.isoformat(),
+                        analyst_inputs=analyst_inputs,
+                        session=session,
+                    )
+                    debate_held = True
+                    _debate_summary = str(debate.parsed.get("summary", ""))[:800]
+                    analyst_inputs = [
+                        *analyst_inputs,
+                        {"analyst": "debate_moderator", "summary": _debate_summary},
+                    ]
+                    await publisher.publish(
+                        SSEEvent(
+                            event_type="debate_output",
+                            channel="debate-outputs",
+                            data={
+                                "symbol": symbol,
+                                "summary": _debate_summary,
+                                "timestamp": now.isoformat(),
+                            },
+                        )
+                    )
+            except Exception as _exc:  # nosec B110 — debate non-fatal
+                print(f"decision_cycle: debate skipped: {type(_exc).__name__}", flush=True)
+
             # IC Forum (LLM real) — konsumsi SEMUA analyst + risk.
             # Urutan (17 Aug 2026): analyst → risk assessor → IC forum →
             # CIO proposer (CIO butuh ic_output dari IC).
@@ -838,7 +884,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 policy_version_id="policy@v1",
                 model_version_ids={"default": str(mv_id)},
                 prompt_version_ids={"default": "v1"},
-                debate_held=False,
+                debate_held=debate_held,
                 session=session,
             )
             await publisher.publish(
