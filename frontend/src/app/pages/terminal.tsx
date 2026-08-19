@@ -24,6 +24,7 @@ const LazyCandlestickChart = lazy(() =>
 import { ActivityLog } from "@/components/terminal/activity-log";
 import { CommitteeFeed } from "@/components/terminal/committee-feed";
 import { AIInsightHint } from "@/components/terminal/ai-insight-panel";
+import { DXYBadge } from "@/components/terminal/dxy-badge";
 import { HintHeader, InfoHint } from "@/components/ui/info-hint";
 import { QuotePanel } from "@/components/terminal/quote-panel";
 import { RiskGauges } from "@/components/terminal/risk-gauges";
@@ -693,6 +694,7 @@ export function TerminalPage() {
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             <PerformanceIndicator fps={fps} memoryMB={memMB} />
+            <DXYBadge />
           </div>
         </div>
 

@@ -880,3 +880,25 @@ export function useWorkflowRuns(limit = 20, offset = 0) {
     staleTime: 30_000,
   });
 }
+
+export interface DXYQuote {
+  price?: number;
+  high?: number;
+  low?: number;
+  source?: string;
+  ts?: string | number;
+}
+
+/**
+ * useDXY (19 Aug 2026 P1): DXY (US Dollar Index) realtime — contextual
+ * market info untuk XAUUSD (emas inverse terhadap dolar). Cache backend
+ * _dxy_worker 60s → Redis lumine:dxy → /market/dxy.
+ */
+export function useDXY() {
+  return useQuery({
+    queryKey: ["dxy"],
+    queryFn: () => get<DXYQuote>("/market/dxy"),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+}

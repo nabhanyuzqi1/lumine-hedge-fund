@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { get } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,52 @@ function useNews(limit = 30) {
     // 18 Aug 2026: 60s → 30s — "halaman news lebih detail realtime".
     refetchInterval: 30_000,
   });
+}
+
+/**
+ * useNewsStream (19 Aug 2026 P1): realtime SSE/WS push — saat worker publish
+ * `news_update` ke channel `news-headlines`, invalidate query news sehingga
+ * headline baru muncul SEKETIKA (polling 30s = fallback).
+ */
+function useNewsStream(enabled = true) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!enabled) return;
+    let closed = false;
+    let ws: WebSocket | null = null;
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    const url = `${proto}://${window.location.host}/api/v1/ws/market`;
+    const connect = () => {
+      if (closed) return;
+      try {
+        ws = new WebSocket(url);
+      } catch {
+        setTimeout(connect, 3000);
+        return;
+      }
+      ws.onmessage = (ev) => {
+        try {
+          const frame = JSON.parse(String(ev.data)) as {
+            event?: string;
+            channel?: string;
+          };
+          if (frame.channel === "news-headlines" || frame.event === "news_update") {
+            qc.invalidateQueries({ queryKey: ["news"] });
+          }
+        } catch {
+          /* non-JSON */
+        }
+      };
+      ws.onclose = () => {
+        if (!closed) setTimeout(connect, 3000);
+      };
+    };
+    connect();
+    return () => {
+      closed = true;
+      ws?.close();
+    };
+  }, [enabled, qc]);
 }
 
 /** Tag relevansi headline terhadap XAUUSD (18 Aug 2026): gold/dollar/Fed
@@ -104,6 +151,7 @@ const IMPACT_TONE: Record<string, string> = {
 };
 
 export function NewsRoomPage() {
+  useNewsStream(); // 19 Aug 2026 P1: realtime news push (fallback polling 30s)
   const news = useNews(30);
   const calendar = useCalendar();
   const quotes = useQuotes();
