@@ -180,6 +180,19 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             _dxy_json = _json.dumps(_dxy, ensure_ascii=False)
     except Exception:
         pass
+    # Backtest learning digest (18 Aug 2026): pola XAUUSD dari master
+    # backtest profile aktif → inject ke analyst prompt (siklus belajar).
+    _learning_digest = ""
+    try:
+        from lumine.backtest.master import get_latest_learning_digest
+        from lumine.data.session import get_sessionmaker
+
+        async with get_sessionmaker()() as _sess:
+            _learning_digest = await get_latest_learning_digest(
+                _sess, str(_active_profile.get("id", "scalping_1m"))
+            )
+    except Exception:
+        pass
     try:
         if _r is None:
             _r = await get_redis()
@@ -458,6 +471,8 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "scheduled_events": _eco_calendar_json,
                 # DXY (18 Aug 2026): sudah di-set di macro section (key `dxy`) —
                 # nilai JSON dari cache lumine:dxy (refresh 60s).
+                # Backtest learning (18 Aug 2026): pola historis XAUUSD.
+                "backtest_learnings": _learning_digest,
                 # SMC analyst (struktur dari bars_5m real)
                 "order_blocks": f"computed from bars: recent swing high {recent_high:.2f}, swing low {recent_low:.2f}",
                 "liquidity_pools": f"buy-side above {recent_high:.2f}, sell-side below {recent_low:.2f}",

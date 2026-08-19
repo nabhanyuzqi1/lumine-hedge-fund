@@ -20,6 +20,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Index,
+    Integer,
     Numeric,
     SmallInteger,
     String,
@@ -633,6 +634,36 @@ class Signal(Base):
         Index("ix_signals_symbol_generated", "symbol", "generated_at"),
         Index("ix_signals_run", "run_id"),
     )
+
+
+class BacktestRun(Base):
+    """Master backtest 1 tahun (18 Aug 2026 — migrasi c02228f00017).
+
+    Menyimpan hasil master backtest per profile: metrics + equity series +
+    learning digest → learning loop (improve prompt AI dari pola XAUUSD).
+    """
+
+    __tablename__ = "backtest_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    profile_id: Mapped[str] = mapped_column(Text, nullable=False)
+    timeframe: Mapped[str] = mapped_column(Text, nullable=False)
+    symbol: Mapped[str] = mapped_column(Text, nullable=False)
+    bar_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    metrics_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    equity_json: Mapped[list[float]] = mapped_column(JSONB, nullable=False)
+    learning_digest: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+
+    __table_args__ = (
+        Index("ix_backtest_runs_profile_created", "profile_id", "created_at"),
+    )
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

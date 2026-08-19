@@ -4000,6 +4000,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/backtest/master:
+    get:
+      tags:
+      - backtest
+      summary: Run Master Backtest Endpoint
+      description: 'Master backtest 1 tahun (18 Aug 2026) — sesuai profile dipilih.
+
+
+        Ambil data candle 1 tahun (DB bars_*) → jalankan engine → simpan hasil
+
+        (backtest_runs) → learning digest dipakai improve prompt AI (loop).'
+      operationId: run_master_backtest_endpoint_api_v1_backtest_master_get
+      parameters:
+      - name: symbol
+        in: query
+        required: false
+        schema:
+          type: string
+          default: XAUUSD
+          title: Symbol
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(1m|5m|15m|1h|4h|1d)$
+          default: 1h
+          title: Timeframe
+      - name: profile_id
+        in: query
+        required: false
+        schema:
+          type: string
+          default: scalping_1m
+          title: Profile Id
+      - name: persist
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+          title: Persist
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Run Master Backtest Endpoint Api V1 Backtest Master
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/backtest/runs:
+    get:
+      tags:
+      - backtest
+      summary: List Backtest Runs Endpoint
+      description: List hasil master backtest tersimpan (learning history).
+      operationId: list_backtest_runs_endpoint_api_v1_backtest_runs_get
+      parameters:
+      - name: profile_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Profile Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 10
+          title: Limit
+      - name: X-Lumine-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Api-Key
+      - name: X-Lumine-Timestamp
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Timestamp
+      - name: X-Lumine-Signature
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Lumine-Signature
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Backtest Runs Endpoint Api V1 Backtest Runs Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/auth/login:
     post:
       tags:
