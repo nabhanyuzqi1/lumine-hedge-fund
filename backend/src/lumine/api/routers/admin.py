@@ -199,7 +199,7 @@ async def set_kill_switch(
 # ── Superadmin endpoints ───────────────────────────────────────────────────
 
 
-@router.post("/restart-api")  # noqa: PLR0915 — endpoint admin restart (few branches)
+@router.post("/restart-api")
 async def restart_api(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> dict:
