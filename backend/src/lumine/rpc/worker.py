@@ -243,6 +243,20 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     except Exception:
         pass
 
+    # 19 Aug 2026 A6: headline GEOPOLITIK (perang/konflik/sanksi) — info
+    # geo mempengaruhi safe-haven emas & oil. DIKIRIM ke news_analyst.
+    _geopolitical_json = "[]"
+    try:
+        from lumine.trading.geopolitical_service import get_geopolitical_headlines
+
+        if _r is None:
+            _r = await get_redis()
+        _geo = await get_geopolitical_headlines(get_redis)
+        if _geo:
+            _geopolitical_json = _json.dumps(_geo, ensure_ascii=False)
+    except Exception:  # nosec B110 — geo non-fatal
+        pass
+
     async def _run() -> dict[str, Any]:  # noqa: PLR0915,C901,PLR0912 — fixed LLM stage sequence
         """Execute the LLM cycle; raises on failure (caught by caller)."""
         async with get_sessionmaker()() as session:
@@ -584,6 +598,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 # News analyst (18 Aug 2026): headlines REAL dari cache RSS
                 # (fetch worker backend, bukan placeholder "[]").
                 "headlines": _news_headlines_json,
+                "geopolitical_headlines": _geopolitical_json,
                 "sentiment_score": 0.0,
                 "relevance_score": 0.0,
                 # Economic calendar (18 Aug 2026): jadwal event REAL dari
