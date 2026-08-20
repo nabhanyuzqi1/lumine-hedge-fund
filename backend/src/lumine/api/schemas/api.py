@@ -61,6 +61,8 @@ class Order(BaseModel):
     status: Literal["pending", "filled", "partially_filled", "rejected", "cancelled"]
     filled_volume: Decimal
     rejected_reason: str | None = None
+    # 19 Aug 2026 A5: alasan keputusan LLM (JSON string) — tampil di detail.
+    ai_reason: str | None = None
     created_at: datetime
     updated_at: datetime
 

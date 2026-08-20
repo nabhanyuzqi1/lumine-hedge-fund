@@ -300,6 +300,8 @@ export interface OrderFixture {
   pnl: number;
   created_at: string;
   lifecycle: OrderLifecycleEvent[];
+  /** 19 Aug 2026 A5: alasan keputusan LLM (JSON string) */
+  ai_reason?: string | null;
 }
 
 const ORDER_STATUS_SEQUENCE: OrderStatus[] = ["RECEIVED", "VALIDATED", "RISK_CHECK", "ACTIVE"];

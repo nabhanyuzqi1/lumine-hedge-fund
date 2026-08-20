@@ -46,6 +46,7 @@ def _to_schema(order: object) -> Order:
         status=order.status,  # type: ignore[arg-type]
         filled_volume=order.filled_volume,
         rejected_reason=order.rejected_reason,
+        ai_reason=order.ai_reason,
         created_at=order.created_at,
         updated_at=order.updated_at,
     )

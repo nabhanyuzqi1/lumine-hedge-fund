@@ -180,6 +180,25 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             _dxy_json = _json.dumps(_dxy, ensure_ascii=False)
     except Exception:
         pass
+    # 19 Aug 2026 A1: yield 10Y/2Y REAL (FRED publik CSV, cache 6 jam) —
+    # sebelumnya "unavailable (external feed not wired)" → LLM dapat data.
+    _us_10y = None
+    _us_2y = None
+    _fed_stance = "neutral (yield feed unavailable)"
+    try:
+        from lumine.trading.yield_service import fed_stance_from, get_yields
+
+        _yields = await get_yields(get_redis, settings)
+        _us_10y = _yields.get("us_10y")
+        _us_2y = _yields.get("us_2y")
+        try:
+            _dxy_price = float(_dxy.get("price", 0) or 0) if _dxy else 0.0
+            _dxy_prev = float(_dxy.get("prev_price", 0) or 0) if _dxy else 0.0
+        except Exception:  # nosec B110
+            _dxy_price = _dxy_prev = 0.0
+        _fed_stance = fed_stance_from(_us_10y, _us_2y, "up" if _dxy_price > _dxy_prev else "down")
+    except Exception:  # nosec B110 — yield non-fatal
+        pass
     # Backtest learning digest (18 Aug 2026): pola XAUUSD dari master
     # backtest profile aktif → inject ke analyst prompt (siklus belajar).
     _learning_digest = ""
@@ -392,6 +411,45 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 msg = f"insufficient bars_5m for {symbol}: {len(bars)}"
                 raise RuntimeError(msg)
 
+            # 19 Aug 2026 A4: Support/Resistance MULTI-TIMEFRAME (1m/5m/15m/1h)
+            # — trader profesional selalu baca S/R minor/major di beberapa TF.
+            # Sebelumnya analyst HANYA dapat EMA/ATR/RSI (tanpa S/R).
+            _sr_json = "null"
+            try:
+                from lumine.trading.support_resistance import compute_multi_tf
+
+                _bar_sets: dict[str, list[dict[str, object]]] = {}
+                for _tf_table in ("bars_1m", "bars_15m", "bars_1h"):  # noqa: S608-allowlisted
+                    _tf_rows = (
+                        await session.execute(
+                            text(
+                                f"SELECT ts, open, high, low, close, volume "  # noqa: S608 — allowlist bars_1m/15m/1h
+                                f"FROM {_tf_table} WHERE symbol = :s "
+                                f"ORDER BY ts DESC LIMIT 60"
+                            ),
+                            {"s": symbol},
+                        )
+                    ).all()
+                    if _tf_rows:
+                        _bar_sets[_tf_table.replace("bars_", "")] = [
+                            {
+                                "high": float(r.high),
+                                "low": float(r.low),
+                                "close": float(r.close),
+                            }
+                            for r in reversed(_tf_rows)
+                        ]
+                # Tambahkan 5m yang sudah dimuat (hindari query ulang)
+                _bar_sets["5m"] = [
+                    {"high": float(b["high"]), "low": float(b["low"]), "close": float(b["close"])}
+                    for b in bars
+                ]
+                if len(_bar_sets.get("5m", [])) >= 12:
+                    _sr = compute_multi_tf(_bar_sets)
+                    _sr_json = _json.dumps(_sr, ensure_ascii=False)
+            except Exception:  # nosec B110 — S/R non-fatal
+                pass
+
             closes = [b["close"] for b in bars]
             atr_14 = float(atr(bars, period=14))
             rsi_14 = float(rsi(bars, period=14))
@@ -486,12 +544,42 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "account_leverage": live_status.get("leverage", "unknown"),
                 "net_position_pnl": live_status.get("net_pnl", "0"),
                 "open_positions": open_positions_json,
+                # 19 Aug 2026 A1: SEMUA data MT5 dikirim ke agent (bukan
+                # cuma equity) — kekosongan data = cacat fatal.
+                "mt5_account": _json.dumps(
+                    {
+                        "equity": live_status.get("equity"),
+                        "balance": live_status.get("balance"),
+                        "margin": live_status.get("margin"),
+                        "free_margin": live_status.get("free_margin"),
+                        "margin_level": live_status.get("margin_level"),
+                        "leverage": live_status.get("leverage"),
+                        "net_pnl": live_status.get("net_pnl"),
+                        "symbol": live_status.get("symbol"),
+                        "ea_build": live_status.get("ea_build"),
+                        "proxy_url": live_status.get("proxy_url"),
+                    },
+                    ensure_ascii=False,
+                ),
+                "market_state": _json.dumps(
+                    {
+                        "bid": live_status.get("bid"),
+                        "ask": live_status.get("ask"),
+                        "spread": live_status.get("spread"),
+                        "session_high": live_status.get("session_high"),
+                        "session_low": live_status.get("session_low"),
+                    },
+                    ensure_ascii=False,
+                ),
+                # 19 Aug 2026 A4: Support/Resistance MULTI-TF (1m/5m/15m/1h)
+                # — pivot + swing minor/major + nearest + strong (>=2 TF).
+                "support_resistance": _sr_json,
                 # Macro analyst (feed eksternal belum tersedia — jujur)
-                "us_10y": "unavailable (external feed not wired)",
-                "us_2y": "unavailable (external feed not wired)",
+                "us_10y": _us_10y if _us_10y is not None else 0.0,
+                "us_2y": _us_2y if _us_2y is not None else 0.0,
                 "dxy": _dxy_json,
-                "real_yields": "unavailable (external feed not wired)",
-                "fed_stance": "unavailable (external feed not wired)",
+                "real_yields": _us_10y if _us_10y is not None else 0.0,
+                "fed_stance": _fed_stance,
                 "risk_regime": "risk-on" if ema_20 > ema_50 else "risk-off",
                 # News analyst (18 Aug 2026): headlines REAL dari cache RSS
                 # (fetch worker backend, bukan placeholder "[]").
@@ -1028,22 +1116,101 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                         entry_px = float(last["close"])
                         sl_mult = float(_active_profile.get("sl_atr_mult", 1.0))
                         tp_mult = float(_active_profile.get("tp_atr_mult", 2.0))
-                        if prop_sl is None:
-                            prop_sl = (
-                                round(entry_px - atr_val * sl_mult, 2)
-                                if prop_side == "BUY"
-                                else round(entry_px + atr_val * sl_mult, 2)
-                            )
-                        if prop_tp is None:
-                            prop_tp = (
-                                round(entry_px + atr_val * tp_mult, 2)
-                                if prop_side == "BUY"
-                                else round(entry_px - atr_val * tp_mult, 2)
-                            )
+                        # 19 Aug 2026 A3: CLAMP — SL/TP dari LLM (CIO) TIDAK
+                        # boleh jauh melebihi profil (user: "scalping tp sl
+                        # sangat besar"). Deterministic risk menang: max
+                        # distance = ATR x mult x 1.5; di luar → pakai profil.
+                        sl_prof = (
+                            round(entry_px - atr_val * sl_mult, 2)
+                            if prop_side == "BUY"
+                            else round(entry_px + atr_val * sl_mult, 2)
+                        )
+                        tp_prof = (
+                            round(entry_px + atr_val * tp_mult, 2)
+                            if prop_side == "BUY"
+                            else round(entry_px - atr_val * tp_mult, 2)
+                        )
+                        try:
+                            _prop_sl_f = float(prop_sl) if prop_sl is not None else None
+                            _prop_tp_f = float(prop_tp) if prop_tp is not None else None
+                        except (TypeError, ValueError):
+                            _prop_sl_f = _prop_tp_f = None
+                        if _prop_sl_f is None or abs(_prop_sl_f - entry_px) > atr_val * sl_mult * 1.5:
+                            prop_sl = sl_prof
+                        if _prop_tp_f is None or abs(_prop_tp_f - entry_px) > atr_val * tp_mult * 1.5:
+                            prop_tp = tp_prof
                 except Exception:
                     pass
                 if eligible:
                     order_id = uuid4()
+                    # ── 19 Aug 2026 A5: ENTRY AREA terbaik seperti trader
+                    # profesional (berdasarkan profil + S/R): kalau harga di
+                    # dekat support -> BUY limit di support (pullback entry);
+                    # dekat resistance -> SELL limit di resistance.
+                    _entry_candidate = float(last["close"])
+                    _entry_note = "market (harga saat ini, no S/R confluence)"
+                    _tp_reason = f"RR profil {tp_mult:.1f}:1 (ATR {atr_val:.2f})"
+                    try:
+                        _sr_parsed = _json.loads(_sr_json) if _sr_json != "null" else None
+                        _near_sup = None
+                        _near_res = None
+                        if _sr_parsed:
+                            _near_sup = (
+                                _sr_parsed.get("per_timeframe", {})
+                                .get("5m", {})
+                                .get("nearest_support")
+                            )
+                            _near_res = (
+                                _sr_parsed.get("per_timeframe", {})
+                                .get("5m", {})
+                                .get("nearest_resistance")
+                            )
+                        if prop_side == "BUY" and _near_sup:
+                            _dist = abs(_entry_candidate - float(_near_sup)) / _entry_candidate
+                            if _dist < 0.004:
+                                _entry_candidate = float(_near_sup)
+                                _entry_note = f"limit entry di support {_near_sup} (pullback, jarak {_dist*100:.2f}%)"
+                            if _near_res:
+                                _tp_reason = f"TP {prop_tp} menuju resistance {_near_res} (S/R confluence)"
+                        elif prop_side == "SELL" and _near_res:
+                            _dist = abs(_entry_candidate - float(_near_res)) / _entry_candidate
+                            if _dist < 0.004:
+                                _entry_candidate = float(_near_res)
+                                _entry_note = f"limit entry di resistance {_near_res} (pullback, jarak {_dist*100:.2f}%)"
+                            if _near_sup:
+                                _tp_reason = f"TP {prop_tp} menuju support {_near_sup} (S/R confluence)"
+                    except Exception:  # nosec B110 — entry optimizer optional
+                        pass
+
+                    # ── 19 Aug 2026 A5: alasan keputusan LLM disimpan
+                    # (Redis, TTL 7 hari) -> detail order menampilkannya.
+                    _ai_reason = {
+                        "action": prop_side,
+                        "side": prop_side,
+                        "confidence": round(float(confidence), 3),
+                        "size": prop_size,
+                        "stop_loss": prop_sl,
+                        "take_profit": prop_tp,
+                        "entry": round(_entry_candidate, 5),
+                        "entry_note": _entry_note,
+                        "tp_reason": _tp_reason,
+                        "profile_id": _active_profile.get("id"),
+                        "timeframe": _active_profile.get("timeframe"),
+                        "analyst_alignment": portfolio_context.get("analyst_alignment"),
+                        "model_version": str(mv_id)[:8],
+                        "timestamp": now.isoformat(),
+                    }
+                    try:
+                        if _r is None:
+                            _r = await get_redis()
+                        await _r.set(
+                            f"lumine:order:reason:{order_id}",
+                            _json.dumps(_ai_reason, ensure_ascii=False),
+                            ex=604800,
+                        )
+                    except Exception:  # nosec B110 — reason non-fatal
+                        pass
+
                     await enqueue_command(
                         "place_order",
                         {
@@ -1135,7 +1302,9 @@ async def _handle_cancel_order(payload: dict[str, Any], publisher: SSEPublisher)
     return result
 
 
-async def _handle_place_order(payload: dict[str, Any], publisher: SSEPublisher, settings: Settings) -> dict[str, Any]:
+async def _handle_place_order(  # noqa: PLR0915 — execution handler deterministic & banyak branch
+    payload: dict[str, Any], publisher: SSEPublisher, settings: Settings
+) -> dict[str, Any]:
     """Place order via MT5 bridge (real or paper trading simulation).
 
     Payload: {order_id, symbol, volume, order_type, stop_loss?, take_profit?}
@@ -1220,6 +1389,13 @@ async def _handle_place_order(payload: dict[str, Any], publisher: SSEPublisher, 
             from lumine.data.models import Order as _Order
             from lumine.data.session import get_sessionmaker as _gbs
 
+            _ai_reason_str = None
+            try:
+                _reason_raw = await _r.get(f"lumine:order:reason:{order_id}")
+                if _reason_raw:
+                    _ai_reason_str = _reason_raw.decode() if isinstance(_reason_raw, bytes) else _reason_raw
+            except Exception:  # nosec B110
+                pass
             async with _gbs()() as _sess:
                 _sess.add(
                     _Order(
@@ -1233,6 +1409,7 @@ async def _handle_place_order(payload: dict[str, Any], publisher: SSEPublisher, 
                         status="filled",
                         filled_volume=Decimal(str(volume)),
                         mt5_ticket=int(result["ticket"]),
+                        ai_reason=_ai_reason_str,
                     )
                 )
                 await _sess.commit()

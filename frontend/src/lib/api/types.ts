@@ -91,6 +91,8 @@ export interface Order {
   filled_volume: number;
   /** Reason for rejection (if rejected) */
   rejected_reason: string | null;
+  /** 19 Aug 2026 A5: alasan keputusan LLM (JSON string) — buy/sell/TP/entry */
+  ai_reason?: string | null;
   /** Creation timestamp */
   created_at: string;
   /** Last update timestamp */

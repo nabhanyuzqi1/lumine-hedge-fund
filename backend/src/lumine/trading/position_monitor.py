@@ -165,6 +165,41 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                     if p.mt5_ticket is not None
                 ]
 
+            # 19 Aug 2026 A3: ATR proxy per symbol (untuk posisi lama tanpa
+            # SL) dari bars_5m DB — posisi open lama harus dapat SL/TP profil.
+            atr_map: dict[str, float] = {}
+            try:
+                from sqlalchemy import text as _sa_text
+
+                async with get_sessionmaker()() as sess:
+                    rows = (
+                        await sess.execute(
+                            _sa_text(
+                                "SELECT symbol, close, high, low FROM ("
+                                "  SELECT symbol, close, high, low, ROW_NUMBER() OVER ("
+                                "    PARTITION BY symbol ORDER BY ts DESC) rn "
+                                "  FROM bars_5m WHERE ts > now() - interval '6 hours'"
+                                ") t WHERE rn <= 20"
+                            )
+                        )
+                    ).all()
+                _by_sym: dict[str, list[tuple[float, float, float]]] = {}
+                for r_sym, c, h, low_v in rows:
+                    _by_sym.setdefault(str(r_sym), []).append((float(c), float(h), float(low_v)))
+                for sym, bars_l in _by_sym.items():
+                    if len(bars_l) < 14:
+                        continue
+                    _trues: list[float] = []
+                    for i in range(1, len(bars_l)):
+                        _c, _h, _low_v = bars_l[i]
+                        _pc = bars_l[i - 1][0]
+                        _trues.append(
+                            max(_h - _low_v, abs(_h - _pc), abs(_low_v - _pc))
+                        )
+                    atr_map[sym] = sum(_trues) / len(_trues)
+            except Exception:  # nosec B110 — ATR proxy optional
+                pass
+
             if not open_positions:
                 await asyncio.sleep(MONITOR_INTERVAL_SECONDS)
                 continue
@@ -192,6 +227,26 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                 new_sl: float | None = None
                 reason = ""
 
+                # 19 Aug 2026 A3: posisi open TANPA SL/TP (posisi lama / open
+                # lama) → set deterministic SL/TP dari ATR profil (sekali).
+                if sl is None and not st_pos.get("sl_initialized"):
+                    _atr_val = atr_map.get(pos["symbol"])
+                    if _atr_val and _atr_val > 0:
+                        _sl_mult = float(profile.get("sl_atr_mult", 1.0))
+                        _tp_mult = float(profile.get("tp_atr_mult", 2.0))
+                        if side.lower() in ("buy", "long"):
+                            new_sl = round(entry - _atr_val * _sl_mult, 5)
+                            new_tp = round(entry + _atr_val * _tp_mult, 5)
+                        else:
+                            new_sl = round(entry + _atr_val * _sl_mult, 5)
+                            new_tp = round(entry - _atr_val * _tp_mult, 5)
+                        intent = ExecutionIntent.MODIFY_STOP_LOSS
+                        reason = (
+                            f"Init SL/TP profil (ATR={_atr_val:.2f} "
+                            f"sl={_sl_mult}x tp={_tp_mult}x) — posisi lama tanpa SL"
+                        )
+                        st_pos["sl_initialized"] = True
+
                 # BREAKEVEN (sekali per posisi)
                 if r_val is not None and r_val >= be_after_r and not st_pos.get("be_done"):
                     new_sl = round(entry, 5)
@@ -214,11 +269,17 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
 
                 # Kirim MODIFY (BE/trailing) atau CLOSE (cutloss)
                 bridge = await bridge_factory()
-                if intent in (ExecutionIntent.BREAKEVEN, ExecutionIntent.TRAILING_STOP):
+                if intent in (
+                    ExecutionIntent.BREAKEVEN,
+                    ExecutionIntent.TRAILING_STOP,
+                    ExecutionIntent.MODIFY_STOP_LOSS,
+                    ExecutionIntent.MODIFY_TAKE_PROFIT,
+                ):
                     msg = create_modify_command(
                         __import__("uuid").UUID(pos["position_id"]),
                         ticket,
                         stop_loss=new_sl,
+                        take_profit=(new_tp if intent == ExecutionIntent.MODIFY_STOP_LOSS else None),
                         intent=str(intent),
                         reason=reason,
                     )

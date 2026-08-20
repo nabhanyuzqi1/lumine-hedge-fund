@@ -129,7 +129,10 @@ export function OrderDetailPage() {
           <CardHeader>
             <CardTitle>Order summary</CardTitle>
             <CardDescription>
-              <Badge tone={data.side === "BUY" ? "ok" : "danger"} label={data.side} />{" "}
+              <Badge
+                tone={(["BUY", "LONG", "buy", "long"] as string[]).includes(String(data.side)) ? "ok" : "danger"}
+                label={String(data.side)}
+              />
               <Badge tone={ORDER_STATUS_TONE[data.status]} label={data.status} />
             </CardDescription>
           </CardHeader>
@@ -179,6 +182,64 @@ export function OrderDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {(() => {
+        let reason: Record<string, unknown> | null = null;
+        try {
+          if (data.ai_reason) reason = JSON.parse(data.ai_reason);
+        } catch {
+          reason = null;
+        }
+        if (!reason) return null;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Decision Reason</CardTitle>
+              <CardDescription>Mengapa Lumine mengambil keputusan ini (19 Aug 2026)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  tone={String(reason.side).toUpperCase() === "SELL" ? "danger" : "ok"}
+                  label={`${String(reason.action).toUpperCase()} · ${String(reason.side).toUpperCase()}`}
+                />
+                <span className="font-mono text-xs tabular-nums text-text-secondary">
+                  confidence {Number(reason.confidence ?? 0).toFixed(2)} · size {String(reason.size)}
+                </span>
+              </div>
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div>
+                  <dt className="text-[11px] uppercase tracking-wider text-text-secondary">Entry area</dt>
+                  <dd className="font-mono text-xs text-text-primary">{String(reason.entry)}</dd>
+                  <dd className="text-[11px] text-text-tertiary">{String(reason.entry_note ?? "—")}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-wider text-text-secondary">Stop loss</dt>
+                  <dd className="font-mono text-xs text-text-primary">{String(reason.stop_loss ?? "—")}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-wider text-text-secondary">Take profit</dt>
+                  <dd className="font-mono text-xs text-text-primary">{String(reason.take_profit ?? "—")}</dd>
+                  <dd className="text-[11px] text-text-tertiary">{String(reason.tp_reason ?? "")}</dd>
+                </div>
+              </dl>
+              {Boolean(reason.analyst_alignment) && (
+                <p className="text-[11px] text-text-tertiary">
+                  Analyst alignment: {JSON.stringify(reason.analyst_alignment)}
+                </p>
+              )}
+              {Boolean(reason.raw_reason) && (
+                <p className="rounded bg-bg-raised p-2 text-[11px] leading-relaxed text-text-secondary">
+                  {String(reason.raw_reason)}
+                </p>
+              )}
+              <p className="text-[11px] text-text-tertiary">
+                Profil {String(reason.profile_id ?? "—")} · TF {String(reason.timeframe ?? "—")} · model {String(reason.model_version ?? "—")}
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <Card>
         <CardHeader>

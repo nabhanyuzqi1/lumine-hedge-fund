@@ -97,7 +97,7 @@ function PositionsTable({ positions, symbol }: { positions: PositionFixture[]; s
         {
           key: "side",
           header: t("terminal.colSide"),
-          cell: (row) => <Badge tone={row.side === "LONG" ? "ok" : "danger"} label={row.side} />,
+          cell: (row) => <SideBadge side={row.side} />,
         },
         {
           key: "qty",
@@ -180,7 +180,7 @@ function PositionsTable({ positions, symbol }: { positions: PositionFixture[]; s
         {
           key: "side",
           header: t("terminal.colSide"),
-          cell: (row) => <Badge tone={row.side === "BUY" ? "ok" : "danger"} label={row.side} />,
+          cell: (row) => <SideBadge side={row.side} />,
         },
         {
           key: "qty",
@@ -671,6 +671,19 @@ function buildPriceLines(positions: PositionFixture[]): PriceLine[] {
  * (HMAC-signed). No demo streams — when the stream is unavailable the
  * chart renders REST bars only and the connection badge shows the state.
  */
+/**
+ * SideBadge (19 Aug 2026 A2): konsisten BUY/SELL untuk posisi & order.
+ * DB simpan lowercase "buy"/"sell"; SEBELUMNYA Positions cek "LONG" dan
+ * Orders cek "BUY" → mismatch → semua tampil tone salah/ambigu.
+ * Map: buy|long → BUY (ok), sell|short → SELL (danger).
+ */
+function SideBadge({ side }: { side?: string }) {
+  const s = (side ?? "").toUpperCase();
+  const isBuy = s === "BUY" || s === "LONG";
+  const label = isBuy ? "BUY" : s === "SELL" || s === "SHORT" ? "SELL" : side ?? "—";
+  return <Badge tone={isBuy ? "ok" : "danger"} label={label} />;
+}
+
 export function TerminalPage() {
   const { fps, memoryMB: memMB } = usePerformanceMetrics();
   const selectedSymbol = useUiStore((s) => s.selectedSymbol);

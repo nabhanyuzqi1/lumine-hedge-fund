@@ -153,6 +153,7 @@ function toOrderFixture(order: RestOrder): OrderFixture {
     pnl: 0,
     created_at: order.created_at,
     lifecycle: [{ status, timestamp: order.updated_at }],
+    ai_reason: (order as { ai_reason?: string | null }).ai_reason ?? null,
   };
 }
 
