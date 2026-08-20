@@ -437,7 +437,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     _tf_rows = (
                         await session.execute(
                             text(
-                                f"SELECT ts, open, high, low, close, volume "  # noqa: S608 — allowlist bars_1m/15m/1h
+                                f"SELECT ts, open, high, low, close, volume "  # noqa: S608  # nosec B608 — allowlist bars_1m/15m/1h
                                 f"FROM {_tf_table} WHERE symbol = :s "
                                 f"ORDER BY ts DESC LIMIT 60"
                             ),
