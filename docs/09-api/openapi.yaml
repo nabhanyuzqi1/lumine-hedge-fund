@@ -5089,6 +5089,11 @@ components:
           - type: string
           - type: 'null'
           title: Rejected Reason
+        ai_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ai Reason
         created_at:
           type: string
           format: date-time
