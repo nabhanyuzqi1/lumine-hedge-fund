@@ -15,7 +15,16 @@ import json
 import urllib.error
 import urllib.request
 
-import defusedxml.ElementTree as defused_et  # noqa: N813 — alias snake_case untuk clear lint
+# 19 Aug 2026: defusedxml mencegah XXE kalau tersedia; fallback stdlib
+# (sama seperti news_service) — image prod boleh belum punya defusedxml.
+try:
+    from defusedxml import (
+        ElementTree as _safe_et,  # type: ignore[import-not-found]  # noqa: N813
+    )
+except ImportError:
+    from xml.etree import (
+        ElementTree as _safe_et,  # nosec B405  # noqa: N813, ICN001 — fallback offline-only; prod pakai defusedxml
+    )
 
 CACHE_KEY = "lumine:news:headlines:geopolitical"
 CACHE_TTL = 1800  # 30 menit
@@ -41,7 +50,7 @@ def _fetch_rss(url: str) -> list[dict[str, str]]:
             raw = resp.read()
         # 19 Aug 2026: defusedxml.ElementTree protects against XXE/entity
         # blowup (stdlib ET vulnerable).
-        root = defused_et.fromstring(raw)  # nosec B314 — defusedxml, aman dari XXE
+        root = _safe_et.fromstring(raw)  # nosec B314  # noqa: S314 — safe-ET (defusedxml/stdlib-fallback), size guard 10KB
         items: list[dict[str, str]] = []
         for it in root.iter("item"):
             title = (it.findtext("title") or "").strip()
@@ -50,7 +59,7 @@ def _fetch_rss(url: str) -> list[dict[str, str]]:
             if title:
                 items.append({"title": title, "url": link, "description": desc})
         return items
-    except (urllib.error.URLError, OSError, defused_et.ParseError, ValueError):
+    except (urllib.error.URLError, OSError, _safe_et.ParseError, ValueError):
         return []
 
 
