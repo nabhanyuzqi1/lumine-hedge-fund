@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import patch
 
 from lumine.trading.trade_memory import (
     _f,
@@ -42,7 +41,7 @@ class _FakeSession:
         self.added: list[object] = []
         self.commits = 0
 
-    async def execute(self, _stmt: object) -> "_FakeResult":
+    async def execute(self, _stmt: object) -> _FakeResult:
         return _FakeResult(existing=self._existing, rows=self._rows)
 
     def add(self, obj: object) -> None:
@@ -60,7 +59,7 @@ class _FakeResult:
     def scalar_one_or_none(self) -> object | None:
         return self._existing
 
-    def scalars(self) -> "_FakeScalars":
+    def scalars(self) -> _FakeScalars:
         return _FakeScalars(self._rows)
 
 
@@ -140,8 +139,6 @@ class TestCaptureClosed:
 
     async def test_pips_computed_from_exit(self) -> None:
         """Posisi dengan exit price di atas entry (buy) → pips positif."""
-        from lumine.data.models import TradeMemory
-
         pos = _FakePosition(avg_entry=Decimal("4350.0"))
         session = _FakeSession(existing=None)
         # mock exit_price via exit_price None — pips harus None (no close price)

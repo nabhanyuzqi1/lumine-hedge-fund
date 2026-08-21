@@ -48,6 +48,9 @@ Instructions:
   applies final risk checks and the confidence threshold — your params
   are the proposal, not the guaranteed fill.
 
+- Trade memory (posisi nyata yang sudah ditutup sistem ini sendiri — win/loss, pnl, pelajaran):
+{{ trade_memory }}
+
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
 {{ output_schema }}
