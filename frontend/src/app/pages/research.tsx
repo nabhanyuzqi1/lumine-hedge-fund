@@ -82,7 +82,7 @@ export function ResearchPage() {
   return (
     <div className="mx-auto w-full max-w-[1200px] space-y-4 p-4">
       <div>
-        <h1 className="text-lg font-semibold text-ink">Research — Paper vs Real</h1>
+        <h1 className="text-lg font-semibold text-text-primary">Research</h1>
         <p className="text-xs text-ink-faint">
           Perbandingan keputusan AI di simulasi (paper/sandbox) terhadap eksekusi akun
           live (real). Refresh 30 detik.

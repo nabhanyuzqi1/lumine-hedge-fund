@@ -25,7 +25,7 @@ import { ActivityLog } from "@/components/terminal/activity-log";
 import { CommitteeFeed } from "@/components/terminal/committee-feed";
 import { CommitteeDecisionSummary } from "@/components/terminal/committee-summary";
 import { AIInsightHint } from "@/components/terminal/ai-insight-panel";
-import { DXYBadge } from "@/components/terminal/dxy-badge";
+import { useDXY } from "@/api/hooks";
 import { HintHeader, InfoHint } from "@/components/ui/info-hint";
 import { QuotePanel } from "@/components/terminal/quote-panel";
 import { RiskGauges } from "@/components/terminal/risk-gauges";
@@ -238,6 +238,12 @@ function PositionsTable({ positions, symbol }: { positions: PositionFixture[]; s
 /** Bloomberg-style ticker tape: last price per instrument from the market store. */
 function TickerTape() {
   const ticks = useMarketStore((s) => s.ticks);
+  // 21 Aug 2026 A7 (temuan user): DXY harus bareng pair lain di tape,
+  // bukan badge terpisah di atas workspace. Data DXY dari /market/dxy
+  // (worker 60s), bukan SSE MT5 — jadi di-poll via useDXY di sini.
+  const { data: dxy } = useDXY();
+  const fmt = (v: number | undefined | null) =>
+    v == null ? "—" : v.toFixed(v < 100 ? 3 : 2);
   return (
     <div
       className="flex items-center gap-0 overflow-x-auto border-y border-line bg-bg font-mono text-[10px] tabular-nums"
@@ -250,7 +256,7 @@ function TickerTape() {
         return (
           <span key={symbol} className="flex items-center gap-1.5 whitespace-nowrap border-r border-line px-3 py-1">
             <span className="text-ink-dim">{symbol}</span>
-            <span className="text-ink">{tick?.last?.toFixed(tick.last < 100 ? 3 : 2) ?? "—"}</span>
+            <span className="text-ink">{fmt(tick?.last)}</span>
             {tick && (
               <span className="text-ink-faint">
                 {tick.bid?.toFixed(2)}/{tick.ask?.toFixed(2)}
@@ -259,6 +265,10 @@ function TickerTape() {
           </span>
         );
       })}
+      <span className="flex items-center gap-1.5 whitespace-nowrap border-r border-line px-3 py-1" data-testid="ticker-dxy">
+        <span className="text-ink-dim">DXY</span>
+        <span className="text-ink">{fmt(dxy?.price)}</span>
+      </span>
     </div>
   );
 }
@@ -704,10 +714,11 @@ export function TerminalPage() {
       <div className="mx-auto w-full max-w-[1600px] space-y-2 p-3 md:p-4">
         <CommandBar onSymbolChange={setSelectedSymbol} sseStatus={sseStatus} />
         <TickerTape />
+        {/* 21 Aug 2026 A7: DXYBadge dihapus — DXY sekarang di TickerTape
+            bareng pair lain (temuan user). */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             <PerformanceIndicator fps={fps} memoryMB={memMB} />
-            <DXYBadge />
           </div>
         </div>
 
