@@ -23,6 +23,9 @@ Instructions:
 - regime_bucket must be one of: trending, ranging, volatile, calm. This bucket selects a deterministic multiplier from policy — you do not choose the multiplier.
 - risk_notes: concise qualitative observations (max 3 sentences).
 
+- Trade memory (posisi nyata yang sudah ditutup sistem ini sendiri — win/loss, pnl, pelajaran):
+{{ trade_memory }}
+
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
 {{ output_schema }}

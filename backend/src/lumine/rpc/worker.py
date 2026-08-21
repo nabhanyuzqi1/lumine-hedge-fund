@@ -202,6 +202,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
     # Backtest learning digest (18 Aug 2026): pola XAUUSD dari master
     # backtest profile aktif → inject ke analyst prompt (siklus belajar).
     _learning_digest = ""
+    _trade_memory_digest = ""
     try:
         from lumine.backtest.master import get_latest_learning_digest
         from lumine.data.session import get_sessionmaker
@@ -210,6 +211,11 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             _learning_digest = await get_latest_learning_digest(
                 _sess, str(_active_profile.get("id", "scalping_1m"))
             )
+            # P2 (21 Aug 2026): trade memory NYATA (bukan backtest) —
+            # digest posisi tertutup sendiri → self-improvement loop.
+            from lumine.trading.trade_memory import build_trade_memory_digest
+
+            _trade_memory_digest = await build_trade_memory_digest(_sess)
     except Exception:
         pass
     try:
@@ -608,6 +614,9 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 # nilai JSON dari cache lumine:dxy (refresh 60s).
                 # Backtest learning (18 Aug 2026): pola historis XAUUSD.
                 "backtest_learnings": _learning_digest,
+                # P2 (21 Aug 2026): pengalaman real — pola menang/kalah dari
+                # posisi tertutup sendiri (win rate, pnl, pelajaran).
+                "trade_memory": _trade_memory_digest,
                 # SMC analyst (struktur dari bars_5m real)
                 "order_blocks": f"computed from bars: recent swing high {recent_high:.2f}, swing low {recent_low:.2f}",
                 "liquidity_pools": f"buy-side above {recent_high:.2f}, sell-side below {recent_low:.2f}",

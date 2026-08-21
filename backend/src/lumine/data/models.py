@@ -16,6 +16,7 @@ from typing import Any
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     Enum,
     ForeignKey,
@@ -475,6 +476,48 @@ class Position(Base):
             postgresql_where=text("status = 'open'"),
         ),
     )
+
+class TradeMemory(Base):
+    """P2 (21 Aug 2026): persistent trade memory — pengalaman trading nyata.
+
+    Satu baris per posisi tertutup: konteks keputusan AI (side/confidence/
+    reason), hasil real (pnl/pips/durasi), dan pelajaran singkat. Di-replay
+    ke prompt LLM sebagai trade_memory digest (self-improvement loop).
+    """
+
+    __tablename__ = "trade_memories"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    position_id: Mapped[str] = mapped_column(Text, nullable=False)
+    mt5_ticket: Mapped[int | None] = mapped_column(BigInteger)
+    symbol: Mapped[str] = mapped_column(Text, nullable=False)
+    side: Mapped[str] = mapped_column(Text, nullable=False)
+    volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False)
+    entry_price: Mapped[Decimal] = mapped_column(Numeric(20, 5), nullable=False)
+    exit_price: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    sl: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    tp: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
+    profit_usd: Mapped[Decimal | None] = mapped_column(Numeric(20, 2))
+    pips: Mapped[Decimal | None] = mapped_column(Numeric(12, 1))
+    duration_minutes: Mapped[int | None] = mapped_column(Integer)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ai_reason: Mapped[str | None] = mapped_column(Text)
+    confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
+    profile_id: Mapped[str | None] = mapped_column(Text)
+    lesson: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+    digest_included: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+
+    __table_args__ = (
+        Index("ix_trade_memories_closed_at", "closed_at"),
+        Index("ix_trade_memories_symbol_side", "symbol", "side"),
+    )
+
 
 
 class ProcessedCommand(Base):

@@ -24,6 +24,9 @@ Instructions:
 - Cite the specific macro input(s) driving your conclusion.
 - Confidence reflects clarity of the regime, not conviction about a single print.
 
+- Trade memory (posisi nyata yang sudah ditutup sistem ini sendiri — win/loss, pnl, pelajaran):
+{{ trade_memory }}
+
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
 {{ output_schema }}

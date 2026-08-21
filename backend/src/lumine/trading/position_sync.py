@@ -128,6 +128,7 @@ class PositionSyncWorker:
     async def _upsert_positions(self, payload: list[dict[str, Any]]) -> None:
         """Upsert MT5 positions; tutup posisi yang tidak ada di snapshot."""
         tickets: set[int] = set()
+        closed_positions: list[Any] = []
         async with get_sessionmaker()() as session:
             for item in payload:
                 try:
@@ -160,8 +161,20 @@ class PositionSyncWorker:
                     pos.status = "closed"
                     session.add(pos)
                     logger.info("position %s (ticket %s) closed by sync", pos.position_id, pos.mt5_ticket)
-
+                    # P2 (21 Aug 2026): capture pengalaman ke trade_memories
+                    # (self-improvement loop). Commit dulu supaya status
+                    # closed terbaca; capture pakai session terpisah agar
+                    # gagal capture tidak menggagalkan sync.
+                    closed_positions.append(pos)
             await session.commit()
+            for closed in closed_positions:
+                try:
+                    from lumine.trading.trade_memory import capture_closed_position
+
+                    async with get_sessionmaker()() as mem_session:
+                        await capture_closed_position(mem_session, closed)
+                except Exception:  # nosec B110 — memory tidak boleh matikan sync
+                    logger.exception("trade memory capture failed")
 
     async def _upsert_one(
         self, session: AsyncSession, item: dict[str, Any], ticket: int

@@ -24,6 +24,9 @@ Instructions:
 - Cite the specific feature(s) driving your conclusion.
 - Confidence reflects confluence strength, not wishfulness.
 
+- Trade memory (posisi nyata yang sudah ditutup sistem ini sendiri — win/loss, pnl, pelajaran):
+{{ trade_memory }}
+
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
 {{ output_schema }}

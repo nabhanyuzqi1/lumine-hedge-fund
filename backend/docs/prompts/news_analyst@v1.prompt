@@ -34,6 +34,9 @@ Instructions:
   events), directional bias (bullish/bearish/neutral), and the pre/post
   news plan as structured fields.
 
+- Trade memory (posisi nyata yang sudah ditutup sistem ini sendiri — win/loss, pnl, pelajaran):
+{{ trade_memory }}
+
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
 {{ output_schema }}
