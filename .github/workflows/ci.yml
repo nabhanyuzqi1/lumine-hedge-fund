@@ -136,11 +136,24 @@ jobs:
 
       - name: Production build
         run: npm run build
+  # ── Security: secret scanning (G-03) ───────────────────────────────────────
+  secret-scan:
+    name: Security · gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history — gitleaks scan semua commit
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ── Deploy (VPS) ────────────────────────────────────────────────────────────
   deploy:
     name: Deploy → VPS
     runs-on: ubuntu-latest
-    needs: [backend-test, backend-lint, frontend-test]
+    needs: [backend-test, backend-lint, frontend-test, secret-scan]
     if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
     environment: production
 

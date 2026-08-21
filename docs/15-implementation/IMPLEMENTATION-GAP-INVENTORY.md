@@ -68,7 +68,7 @@ Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (se
 |----|------|----------|----------|
 | G-01 | BLOCK-002 Emergency access procedures — **CLOSED 2026-08-14** | `docs/15-implementation/EMERGENCY-RUNBOOK.md` (11 seksi: SSH, kill-switch, rollback, DR, secrets recovery) | ✅ |
 | G-02 | BLOCK-003 DR restore test — **CLOSED 2026-08-14** (dump→restore 32 tabel PASS di VPS) | verifikasi sesi ini | ✅ |
-| G-03 | BLOCK-005 Security audit — **sebagian**: bandit 0 High/0 Medium (2026-08-14); audit penuh (gitleaks, dependensi, config) belum | verifikasi sesi ini | 🟡 |
+| G-03 | BLOCK-005 Security audit — **CLOSED 2026-08-22** | gitleaks full-history 541 commit + working tree 542MB = no leaks; pip-audit backend = no known vulns; npm audit (prod) = 0 vulns; CI job `secret-scan` (gitleaks-action@v2, gate deploy); dependabot.yml (pip/npm/actions weekly) | ✅ |
 | G-04 | BLOCK-001 Untracked services — **CLOSED**: 9router+headroom di docker-compose.prod.yml; dozzle di vps.yml; semua terdokumentasi | compose files + EMERGENCY-RUNBOOK.md | ✅ |
 || G-05 | BLOCK-004 Secrets management — **CLOSED 2026-08-14** | Password bootstrap produksi di-rotate (`scripts/rotate_users.py` + env di compose api/migrate; old password 401, new 200 — verified); gitleaks 0 leak (149 commits); `GITHUB-SECRETS-SETUP.md` ada | ✅ |
 ||| G-15 | LLM gateway key — **CLOSED 2026-08-14** | `LLM_GATEWAY_API_KEY` terisi di `.env` VPS (sk-fc79…), 9router updated (v0.5.55+, image baru), `/v1/models` dengan key → 200 | ✅ |
