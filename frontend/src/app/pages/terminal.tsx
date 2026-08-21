@@ -29,6 +29,7 @@ import { useDXY } from "@/api/hooks";
 import { HintHeader, InfoHint } from "@/components/ui/info-hint";
 import { QuotePanel } from "@/components/terminal/quote-panel";
 import { RiskGauges } from "@/components/terminal/risk-gauges";
+import { FeaturePanel } from "@/components/terminal/feature-panel";
 import { ModifyOrderDialog } from "@/components/orders/modify-order-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -467,8 +468,11 @@ function TradingWorkspace() {
           <QuotePanel symbol={selectedSymbol} />
         </ChartCard>
         <ChartCard title={t("terminal.risk")} description={t("terminal.riskDescription")}>
-          <RiskGauges />
-        </ChartCard>
+                  <RiskGauges />
+                </ChartCard>
+                {/* F-06 (roadmap): FeaturePanel — computed features real dari bars
+                    (ATR/RSI/EMA/volatility/spread/session). */}
+                <FeaturePanel symbol={selectedSymbol} />
         <Card>
                   <CardHeader>
                     <CardTitle>
