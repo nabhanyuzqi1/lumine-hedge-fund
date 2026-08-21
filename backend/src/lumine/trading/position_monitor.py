@@ -85,6 +85,9 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
     while True:
         try:
             r = await get_redis()
+            # 21 Aug 2026: observability — print (bukan logger, level INFO
+            # mungkin tersembunyi) supaya bisa diverifikasi monitor JALAN.
+            print("[MONITOR] tick: reading profile/status", flush=True)
             # 1. Profil aktif
             from lumine.trading.profiles import get_active_profile
 
@@ -201,8 +204,13 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                 pass
 
             if not open_positions:
+                print("[MONITOR] no open positions", flush=True)
                 await asyncio.sleep(MONITOR_INTERVAL_SECONDS)
                 continue
+            print(
+                f"[MONITOR] open_positions={len(open_positions)} atr_map={list(atr_map.keys())}",
+                flush=True,
+            )
 
             # 4. State per ticket
             state_raw = await r.hgetall(STATE_KEY)
