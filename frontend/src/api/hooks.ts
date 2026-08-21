@@ -319,7 +319,10 @@ export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
       if (USE_REAL_DATA) throw new Error("equity unavailable (retain last-known)");
       return generateEquity();
     },
-    staleTime: 60_000,
+    // P5 equity live: backend membangun NAV dari posisi open + EA status,
+    // jadi titik baru muncul terus — poll 5s seperti positions/orders.
+    refetchInterval: 5_000,
+    staleTime: 4_000,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
     // 19 Aug 2026 P0: retain data terakhir saat refetch gagal.
