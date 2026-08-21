@@ -50,7 +50,7 @@ Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (se
 | F-06 | Volatility/spread/session indicator — **CLOSED 2026-08-14** | `useMarketIndicators` live | ✅ |
 | F-07 | ExposureSummaryCard — **CLOSED 2026-08-14** | live exposure | ✅ |
 | F-08 | CSV export — **CLOSED 2026-08-14** | `lib/csv.ts` + tombol Export CSV di Journal | ✅ |
-| F-09 | Bundle size analyzer + render profiler | f-sprint-6 items | 🟢 LOW (tooling; build warning chunk size ada) |
+| F-09 | Bundle size analyzer + render profiler — **CLOSED 2026-08-22** | `pnpm analyze` → dist/stats.html (rollup-plugin-visualizer, gzip+brotli); profiler sudah ada (`usePerformanceMetrics` FPS/vitals/long-task) — lihat FRONTEND-IMPLEMENTATION-GAP.md item 10 | ✅ |
 | F-10 | `useCorrelation` — **CLOSED 2026-08-14** | rewire ke `GET /market/correlation` | ✅ |
 | F-11 | `useEquityCurve` — **CLOSED 2026-08-14** | rewire ke `GET /portfolio/{id}/equity` | ✅ |
 | F-12 | CommandPalette a11y — **CLOSED 2026-08-14** | combobox pattern (aria-expanded/controls/activedescendant), eslint 0 | ✅ |
