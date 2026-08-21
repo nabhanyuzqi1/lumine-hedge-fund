@@ -237,17 +237,26 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
 
                 # 19 Aug 2026 A3: posisi open TANPA SL/TP (posisi lama / open
                 # lama) → set deterministic SL/TP dari ATR profil (sekali).
+                # 21 Aug 2026 FIX INVALID_STOPS: posisi lama yang sudah jauh
+                # dari entry (deep profit) — SL/TP dari ENTRY bisa invalid
+                # (TP di bawah harga pasar utk BUY). Hitung dari BID saat ini
+                # bila posisi sudah profit jauh dari entry; SL proteksi dekat
+                # harga (BE kalau entry > bid - atr*mult).
                 if sl is None and not st_pos.get("sl_initialized"):
                     _atr_val = atr_map.get(pos["symbol"])
-                    if _atr_val and _atr_val > 0:
+                    if _atr_val and _atr_val > 0 and bid is not None:
                         _sl_mult = float(profile.get("sl_atr_mult", 1.0))
                         _tp_mult = float(profile.get("tp_atr_mult", 2.0))
                         if side.lower() in ("buy", "long"):
-                            new_sl = round(entry - _atr_val * _sl_mult, 5)
-                            new_tp = round(entry + _atr_val * _tp_mult, 5)
+                            _sl_from_bid = round(bid - _atr_val * _sl_mult, 5)
+                            _tp_from_bid = round(bid + _atr_val * _tp_mult, 5)
+                            new_sl = round(max(entry, _sl_from_bid), 5)  # BE proteksi kalau entry lebih tinggi
+                            new_tp = round(max(_tp_from_bid, entry + _atr_val * _tp_mult), 5)
                         else:
-                            new_sl = round(entry + _atr_val * _sl_mult, 5)
-                            new_tp = round(entry - _atr_val * _tp_mult, 5)
+                            _sl_from_bid = round(bid + _atr_val * _sl_mult, 5)
+                            _tp_from_bid = round(bid - _atr_val * _tp_mult, 5)
+                            new_sl = round(min(entry, _sl_from_bid), 5)
+                            new_tp = round(min(_tp_from_bid, entry - _atr_val * _tp_mult), 5)
                         intent = ExecutionIntent.MODIFY_STOP_LOSS
                         reason = (
                             f"Init SL/TP profil (ATR={_atr_val:.2f} "
@@ -294,6 +303,12 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                     try:
                         await bridge.send_command(msg)
                         logger.info("[MONITOR] %s ticket=%s sl=%s (%s)", intent, ticket, new_sl, reason)
+                        # 21 Aug 2026 FIX: flag hanya diset SETELAH send
+                        # SUKSES (di dalam try) — sebelumnya di luar try →
+                        # kalau send gagal ValueError (idempotent key lama),
+                        # flag tetap diset → posisi tanpa SL tak pernah retry.
+                        if intent == ExecutionIntent.MODIFY_STOP_LOSS:
+                            st_pos["sl_initialized"] = True
                     except ValueError:
                         pass  # idempotent — sudah dikirim
                 else:
@@ -308,11 +323,8 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                     except ValueError:
                         pass
 
-                # 20 Aug 2026: flag sl_initialized BARU diset SETELAH send
-                # sukses — sebelumnya diset SEBELUM kirim, jadi kalau kirim
-                # gagal (proxy 1003/502), posisi tanpa SL tak pernah retry.
-                if intent == ExecutionIntent.MODIFY_STOP_LOSS:
-                    st_pos["sl_initialized"] = True
+                # 20 Aug 2026: flag sl_initialized diset SETELAH send sukses
+                # (di dalam try di atas) — jangan set sebelum/kalau gagal.
 
                 # Persist state
                 states[ticket] = st_pos
