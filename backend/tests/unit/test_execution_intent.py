@@ -5,6 +5,7 @@ import uuid
 from lumine.trading.execution_intent import (
     INTENT_TO_ACTION,
     ExecutionIntent,
+    normalize_side,
     primitive_action,
 )
 from lumine.trading.mt5_bridge import (
@@ -28,6 +29,42 @@ def test_intent_to_action_mapping():
 def test_all_intents_have_primitive_action():
     for intent in ExecutionIntent:
         assert intent in INTENT_TO_ACTION
+
+
+def test_normalize_side_buy_variants():
+    """Regression (20 Aug 2026, temuan user): side harus normal ke BUY.
+
+    Semua varian buy/long → BUY.
+    """
+    assert normalize_side("BUY") == "BUY"
+    assert normalize_side("buy") == "BUY"
+    assert normalize_side("LONG") == "BUY"
+    assert normalize_side("long") == "BUY"
+
+
+def test_normalize_side_sell_variants():
+    """CRITICAL: side SHORT/short HARUS jadi SELL.
+
+    Sebelumnya SELL tidak pernah lolos execution gate (prop_side in
+    ("BUY","SELL") fail) — semua varian short → SELL.
+    """
+    assert normalize_side("SELL") == "SELL"
+    assert normalize_side("sell") == "SELL"
+    assert normalize_side("SHORT") == "SELL"
+    assert normalize_side("short") == "SELL"
+
+
+def test_normalize_side_fallback_to_action():
+    """Side kosong/aneh → fallback ke action (SHORT→SELL, LONG→BUY)."""
+    assert normalize_side("", "SHORT") == "SELL"
+    assert normalize_side("", "LONG") == "BUY"
+    assert normalize_side("weird", "SELL") == "SELL"
+
+
+def test_normalize_side_hold_returns_empty():
+    """HOLD/REJECT → tidak bisa dieksekusi (return "")."""
+    assert normalize_side("HOLD") == ""
+    assert normalize_side("", "HOLD") == ""
 
 
 def test_open_command_carries_intent():

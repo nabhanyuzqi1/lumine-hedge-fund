@@ -245,7 +245,7 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                             f"Init SL/TP profil (ATR={_atr_val:.2f} "
                             f"sl={_sl_mult}x tp={_tp_mult}x) — posisi lama tanpa SL"
                         )
-                        st_pos["sl_initialized"] = True
+                        # flag sl_initialized dipindah ke SETELAH send sukses (20 Aug 2026)
 
                 # BREAKEVEN (sekali per posisi)
                 if r_val is not None and r_val >= be_after_r and not st_pos.get("be_done"):
@@ -299,6 +299,12 @@ async def run_position_monitor(  # noqa: C901, PLR0912, PLR0915 — monitor dete
                         logger.info("[MONITOR] %s ticket=%s (%s)", intent, ticket, reason)
                     except ValueError:
                         pass
+
+                # 20 Aug 2026: flag sl_initialized BARU diset SETELAH send
+                # sukses — sebelumnya diset SEBELUM kirim, jadi kalau kirim
+                # gagal (proxy 1003/502), posisi tanpa SL tak pernah retry.
+                if intent == ExecutionIntent.MODIFY_STOP_LOSS:
+                    st_pos["sl_initialized"] = True
 
                 # Persist state
                 states[ticket] = st_pos

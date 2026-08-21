@@ -449,6 +449,19 @@ class LLMGateway:
         # Handle specific errors
         error = response.error_message or ""
 
+        # 20 Aug 2026 CRITICAL (temuan user): 502 Cloudflare/9router sering
+        # TRANSIENT (detik). Retry CEPAT pada model yang sama dulu (2x,
+        # delay 0.75s/1.5s) sebelum fallback — kalau langsung fallback,
+        # SEMUA model kena 502 (origin sama) → semua stage gagal → cycle
+        # abort → hilang 1 sesi LLM (fatal).
+        if any(err in error for err in ["502", "503", "504", "429", "Timeout"]):
+            for _attempt, _delay in ((1, 0.75), (2, 1.5)):
+                await asyncio.sleep(_delay)
+                retried = await self.client.invoke(current_request)
+                if retried.success:
+                    return retried
+                error = retried.error_message or error
+
         # Timeout / 5xx / 429: try fallback
         if any(err in error for err in ["Timeout", "5", "429"]):
             if fallback_hops >= 5:  # Max fallback attempts

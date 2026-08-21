@@ -65,3 +65,24 @@ TP_MODIFYING_INTENTS = {
 def primitive_action(intent: str) -> str:
     """Map semantic intent → primitive EA action (fallback: intent as-is)."""
     return INTENT_TO_ACTION.get(intent, intent)
+
+
+def normalize_side(side: str | None, action: str | None = None) -> str:
+    """Normalisasi side dari LLM → "BUY"|"SELL" (20 Aug 2026 — CRITICAL).
+
+    Temuan user: Lumine cuma bisa BUY — CIO kadang output side="SHORT"/
+    "long" (bukan "BUY"/"SELL") → execution gate ``prop_side in ("BUY",
+    "SELL")`` FAIL → SELL TIDAK PERNAH dieksekusi. Fallback ke action:
+    SHORT→SELL, LONG→BUY. Return "" bila tidak bisa ditentukan (HOLD).
+    """
+    s = (side or "").upper().strip()
+    if s in ("SELL", "SHORT"):
+        return "SELL"
+    if s in ("BUY", "LONG"):
+        return "BUY"
+    a = (action or "").upper().strip()
+    if a in ("SELL", "SHORT"):
+        return "SELL"
+    if a in ("BUY", "LONG"):
+        return "BUY"
+    return ""

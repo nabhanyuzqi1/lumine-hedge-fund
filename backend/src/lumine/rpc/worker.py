@@ -1078,6 +1078,13 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     cio_out.parsed.get("action", cio_out.parsed.get("proposal", "HOLD"))
                 ).upper()
                 prop_side = str(cio_out.parsed.get("side", "") or "").upper()
+                # 20 Aug 2026 CRITICAL (temuan user): LLM kadang output
+                # side="SHORT"/"long" (bukan "BUY"/"SELL") → eligible FAIL →
+                # SELL TIDAK PERNAH dieksekusi. Normalisasi (lihat
+                # execution_intent.normalize_side) + fallback ke action.
+                from lumine.trading.execution_intent import normalize_side
+
+                prop_side = normalize_side(prop_side, proposal)
                 prop_size = float(cio_out.parsed.get("size", 0) or 0)
                 prop_sl = cio_out.parsed.get("stop_loss")
                 prop_tp = cio_out.parsed.get("take_profit")
