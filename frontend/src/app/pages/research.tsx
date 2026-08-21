@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { get } from "@/api/client";
+import { ResearchChart, type SeriesPoint } from "@/components/charts/research-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-/**
- * ResearchPage (19 Aug 2026 — Phase 5): Paper Trading / Research.
+/** ResearchPage (19 Aug 2026 — Phase 5): Paper Trading / Research.
  *
  * Bandingkan PAPER (simulasi/sandbox) vs REAL (akun live MT5) — jawab
  * "apakah keputusan AI bagus tapi eksekusi real berbeda?". Sumber:
- * backend /research/summary (orders by portfolio_id, positions by book).
+ * backend /research/summary (orders by portfolio_id, positions by book)
+ * dan /research/series (P&L kumulatif per book).
  */
 
 interface BookMetrics {
@@ -24,10 +25,26 @@ interface ResearchSummary {
   real: BookMetrics;
 }
 
+interface ResearchSeries {
+  paper: SeriesPoint[];
+  real: SeriesPoint[];
+  paper_final_pnl: number;
+  real_final_pnl: number;
+  insight: string;
+}
+
 function useResearchSummary() {
   return useQuery({
     queryKey: ["research-summary"],
     queryFn: () => get<ResearchSummary>("/research/summary"),
+    refetchInterval: 30_000,
+  });
+}
+
+function useResearchSeries() {
+  return useQuery({
+    queryKey: ["research-series"],
+    queryFn: () => get<ResearchSeries>("/research/series"),
     refetchInterval: 30_000,
   });
 }
@@ -65,19 +82,17 @@ function BookCard({
       <CardContent className="space-y-0.5">
         <MetricRow label="Orders filled" value={data?.orders_filled ?? "—"} />
         <MetricRow label="Positions total" value={data?.positions_total ?? "—"} />
-        <MetricRow label="Closed" value={data?.positions_closed ?? "—"} />
-        <MetricRow label="Win rate" value={`${data?.win_rate_pct ?? 0}%`} />
-        <MetricRow
-          label="Realized P&L"
-          value={data ? `$${data.realized_pnl.toFixed(2)}` : "—"}
-        />
+        <MetricRow label="Positions closed" value={data?.positions_closed ?? "—"} />
+        <MetricRow label="Win rate" value={`${data?.win_rate_pct ?? "—"}%`} />
+        <MetricRow label="Realized P&L" value={`$${data?.realized_pnl ?? "—"}`} />
       </CardContent>
     </Card>
   );
 }
 
-export function ResearchPage() {
-  const { data, isError } = useResearchSummary();
+export default function ResearchPage() {
+  const { data, isError, isLoading } = useResearchSummary();
+  const { data: seriesData } = useResearchSeries();
 
   return (
     <div className="mx-auto w-full max-w-[1200px] space-y-4 p-4">
@@ -89,7 +104,11 @@ export function ResearchPage() {
         </p>
       </div>
 
-      {isError ? (
+      {isLoading ? (
+        <div className="rounded-chip border border-line bg-bg px-4 py-6 text-center text-sm text-ink-faint">
+          Memuat summary research…
+        </div>
+      ) : isError ? (
         <div className="rounded-chip border border-line bg-bg px-4 py-6 text-center text-sm text-ink-faint">
           Gagal memuat summary research.
         </div>
@@ -99,6 +118,19 @@ export function ResearchPage() {
           <BookCard title="REAL (MT5 live)" tone="accent" data={data?.real} />
         </div>
       )}
+
+      <ResearchChart
+        paper={seriesData?.paper ?? []}
+        real={seriesData?.real ?? []}
+        waitingLabel="Menunggu posisi tertutup…"
+      />
+
+      {seriesData?.insight ? (
+        <div className="rounded-chip border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-ink">
+          <span className="font-medium text-accent">Insight: </span>
+          {seriesData.insight}
+        </div>
+      ) : null}
 
       <p className="text-[11px] text-ink-faint">
         Paper = simulasi (portfolio_id=&quot;paper&quot;, book=&quot;paper&quot;); Real =

@@ -49,7 +49,7 @@ const LazyNewsRoom = React.lazy(() =>
   import("./pages/news-room").then((m) => ({ default: m.NewsRoomPage }))
 );
 const LazyResearch = React.lazy(() =>
-  import("./pages/research").then((m) => ({ default: m.ResearchPage }))
+  import("./pages/research").then((m) => ({ default: m.default }))
 );
 const LazyWorkflowRunDetail = React.lazy(() =>
   import("./pages/workflow-run-detail").then((m) => ({ default: m.WorkflowRunDetailPage }))

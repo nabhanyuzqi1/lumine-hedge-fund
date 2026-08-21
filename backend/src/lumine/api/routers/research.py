@@ -67,3 +67,69 @@ async def research_summary(
             session, order_portfolio="default", position_book="default"
         )
     return {"paper": paper, "real": real}
+
+
+@router.get("/series")
+async def research_series(
+    _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
+) -> dict[str, Any]:
+    """P&L time-series kumulatif per book (paper vs real) + insight."""
+    async with get_sessionmaker()() as session:
+        rows = (
+            (
+                await session.execute(
+                    select(Position).where(
+                        Position.status == "closed",
+                        Position.book.in_(["paper", "default"]),
+                        Position.mt5_profit.isnot(None),
+                    ).order_by(Position.updated_at.asc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+    return _build_series(rows)
+
+
+def _build_series(rows: list[Any]) -> dict[str, Any]:
+    """Pure builder: closed positions -> kumulatif P&L series + insight.
+
+    Dipisahkan dari handler supaya bisa di-unit-test tanpa DB.
+    """
+    paper_series: list[dict[str, object]] = []
+    real_series: list[dict[str, object]] = []
+    pnl_paper = 0.0
+    pnl_real = 0.0
+    for p in rows:
+        ts = p.updated_at.isoformat() if p.updated_at else ""
+        profit = float(p.mt5_profit or 0)
+        if p.book == "paper":
+            pnl_paper += profit
+            paper_series.append({"ts": ts, "pnl": round(pnl_paper, 2)})
+        else:
+            pnl_real += profit
+            real_series.append({"ts": ts, "pnl": round(pnl_real, 2)})
+
+    delta = round(pnl_real - pnl_paper, 2)
+    if pnl_paper > pnl_real:
+        summary = (
+            f"Paper outperforms Real by ${delta:+.2f}. "
+            f"Paper P&L=${pnl_paper:+.2f}, Real P&L=${pnl_real:+.2f}. "
+            "Keputusan AI bagus, tapi eksekusi real (slippage/spread) lebih buruk."
+        )
+    elif pnl_real > pnl_paper:
+        summary = (
+            f"Real outperforms Paper by ${abs(delta):+.2f}. "
+            f"Paper P&L=${pnl_paper:+.2f}, Real P&L=${pnl_real:+.2f}. "
+            "Eksekusi real lebih baik dari simulasi."
+        )
+    else:
+        summary = f"Paper dan Real seimbang (${pnl_paper:+.2f})."
+
+    return {
+        "paper": paper_series,
+        "real": real_series,
+        "paper_final_pnl": round(pnl_paper, 2),
+        "real_final_pnl": round(pnl_real, 2),
+        "insight": summary,
+    }
