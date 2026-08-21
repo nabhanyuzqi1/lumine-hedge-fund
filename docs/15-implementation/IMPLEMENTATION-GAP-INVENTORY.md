@@ -30,7 +30,7 @@ Bukti audit lengkap: `docs/15-implementation/repository-audit-dev-branch.md` (se
 || B-05 | Storage wiring — **CLOSED (portfolio) 2026-08-14** | `DEMO_DATA` flag + OrderRepository/PositionRepository + migrasi 0011; orders+positions DB-backed; **portfolio summary+equity live dari PostgreSQL** (`_real_summary`/`_real_equity_series`, fallback deterministic saat DB down); sisa: B-08 backfill TCA + realized pnl attribution | 🟡 |
 | B-06 | Endpoint kurang — **CLOSED 2026-08-14** | portfolio CRUD, cancel-all, history, bulk-status, signals/{symbol}, equity — contract 56/56 | ✅ |
 | B-07 | 52 test llm-gateway — **CLOSED 2026-08-14** | 679 pass (registry API, migrasi, anchoring, TCA) | ✅ |
-| B-08 | Historical data backfill TCA | — | 🟢 LOW |
+| B-08 | Historical data backfill TCA — **CLOSED 2026-08-22** | `trade_core/tca_backfill.py`: `backfill_missing_tca()` — outer join fills↔tca_records (idempoten), benchmark arrival dari tick store (missing = honest skip), provenance `regime_id="backfill"` + `benchmark_source="backfill:*"`, per-row isolation; test 4/4 (`test_tca_backfill.py`) | ✅ |
 
 ### Backend — selesai & terverifikasi (sesi 2026-08-14)
 
