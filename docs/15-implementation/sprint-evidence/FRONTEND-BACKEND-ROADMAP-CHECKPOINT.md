@@ -29,7 +29,8 @@ Urutan kerja #1–#4 dari "Recommended Next Steps" **selesai dan terverifikasi l
 3. **PATCH `/api/v1/orders/{id}`** — backend live; ModifyOrderDialog ter-rewire. ✅
 4. **Klaster market (10 endpoint)** — quote/quotes/ohlcv/symbol/symbols/volatility/correlation/spread/session/features + `POST /portfolio/{id}/simulate`. ✅
 5. **Rewire halaman** — sebagian: semua query hook di `src/api/hooks.ts` kini REST-first (fallback fixture), mutation (create/revoke key, cancel, modify, kill-switch) REST penuh. ⏳ halaman lanjutan (WorkflowRunList, Feature/SignalPanel, what-if UI, dsb.) tetap pending.
-6. Bonus: HMAC signing frontend (`auth.ts` sesuai auth.md) diwire ke kedua fetch layer — integrasi end-to-end sekarang fungsional bila env kredensial diisi.
+6. ~~What-if simulate flow~~ — **dihapus dari roadmap** (keputusan user, 21 Aug 2026): tidak akan dibuatkan UI. Backend `POST /api/v1/portfolio/{id}/simulate` tetap live untuk pemakaian internal/testing.
+7. Bonus: HMAC signing frontend (`auth.ts` sesuai auth.md) diwire ke kedua fetch layer — integrasi end-to-end sekarang fungsional bila env kredensial diisi.
 
 Detail: `docs/15-implementation/sprint-evidence/FRONTEND-IMPLEMENTATION-GAP.md` → section "Backend → Frontend Alignment — Resolved".
 

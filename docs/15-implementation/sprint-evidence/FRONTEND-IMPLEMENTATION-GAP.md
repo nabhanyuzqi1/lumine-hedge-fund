@@ -148,7 +148,7 @@ Semua **10 route utama** sudah memiliki halaman yang berfungsi dengan data fixtu
 | Stream gap detection | B-3 | High | - GapBanner "data missed during reconnect"<br>- Per-stream StreamStatusDot |
 | Workflow run list | W3 | Medium | - WorkflowRunList paginated<br>- Navigasi ke run detail |
 | Feature/Signal panel | C-2 | Medium | - FeaturePanel polling `features/{symbol}`<br>- SignalPanel polling `signals/{symbol}` |
-| What-if trade simulation | R-2 | Medium | - POST /portfolio/{id}/simulate flow<br>- Projected NAV/margin/P&L preview cards |
+| ~~What-if trade simulation~~ | R-2 | ~~Medium~~ | **Dihapus dari roadmap** (keputusan user, 21 Aug 2026) — tidak akan diimplementasikan; backend endpoint tetap ada tapi tanpa UI |
 | Analyst/Decision card | W3 | Medium | - AnalystCard confidence meter<br>- DecisionCard → lineage/run navigation |
 | Volatility regime badge | W1 | Medium | - POST /api/market/volatility/{symbol}<br>- Low/normal/high color coding |
 | Spread alert banner | B-3 | Low | - Threshold config modal<br>- Wide spread (>2x normal) detection |
@@ -277,7 +277,7 @@ Lapisan integrasi frontend→backend (`frontend/src/lib/api/*` + `frontend/src/h
 
 **Medium (analytics):**
 5. FeaturePanel + SignalPanel
-6. What-if simulate flow
+6. ~~What-if simulate flow~~ — **dihapus dari roadmap** (21 Aug 2026)
 7. AnalystCard + DecisionCard
 
 **Low:**
