@@ -2,7 +2,7 @@ prompts:
 - sub_role: technical_analyst
   version: v1
   prompt_ref: technical_analyst@v1.prompt
-  expected_hash: 64a61c6bdf4f19a51d2aa125be5f2d45947c97642ac257ab7a10b21aa63852fa
+  expected_hash: 84fcb91dfae53ec8c2d07adc49ca04d07fec42586fdc2b4fa57ef61ff79a5db8
   model_tier_hint: cost-efficient
   variables:
   - symbol
@@ -14,12 +14,13 @@ prompts:
   - ohlc
   - swing_structure
   - output_schema
+  - trade_memory
   - sub_role
   output_schema_ref: schemas/analyst_output.json
 - sub_role: macro_analyst
   version: v1
   prompt_ref: macro_analyst@v1.prompt
-  expected_hash: c5395c0b0fb9623fdf03270305d7fa9e36ced7e55cc3f842c53c3bbbd9c1f01e
+  expected_hash: 582b7d29599aa2442bcbf659d3fdafa9a80126862242b430fdd58a873c33c3eb
   model_tier_hint: context-rich
   variables:
   - symbol
@@ -31,12 +32,13 @@ prompts:
   - fed_stance
   - risk_regime
   - output_schema
+  - trade_memory
   - sub_role
   output_schema_ref: schemas/analyst_output.json
 - sub_role: news_analyst
   version: v1
   prompt_ref: news_analyst@v1.prompt
-  expected_hash: 37e0dbbebf1751be429a91348432f43d8147383ba1bc2e219486e5d374f21d93
+  expected_hash: edf247ff6bd96302bb8d09ed1ac717957d4b56d2aa9fe7a7dff03834219e8d2e
   model_tier_hint: cost-efficient
   variables:
   - symbol
@@ -46,12 +48,13 @@ prompts:
   - relevance_score
   - scheduled_events
   - output_schema
+  - trade_memory
   - sub_role
   output_schema_ref: schemas/analyst_output.json
 - sub_role: smc_analyst
   version: v1
   prompt_ref: smc_analyst@v1.prompt
-  expected_hash: 5ced1cb22e9782e4236037ff9c6a00d648c688c4b1808b0a40b03339a7edf584
+  expected_hash: eb72df5e5f0ff9e1c82aa83d021e3509b36c2bf18d8d68a67b0dda43b24323a6
   model_tier_hint: specialized
   variables:
   - symbol
@@ -62,6 +65,7 @@ prompts:
   - fair_value_gaps
   - market_structure
   - output_schema
+  - trade_memory
   - sub_role
   output_schema_ref: schemas/analyst_output.json
 - sub_role: ic_forum
@@ -91,7 +95,7 @@ prompts:
 - sub_role: cio_proposer
   version: v1
   prompt_ref: cio_proposer@v1.prompt
-  expected_hash: 37d0987cf1169adbf31ca1cfa3c94378078b8d325edf98d33231709e737e5846
+  expected_hash: 7eb31e168f2c7aae5c7fb75fbe82a5156dbd38536a10e9dd4a5d5dccd81be0ba
   model_tier_hint: frontier
   variables:
   - symbol
@@ -104,11 +108,12 @@ prompts:
   - prompt_version_ids
   - debate_held
   - output_schema
+  - trade_memory
   output_schema_ref: schemas/proposal_v1.json
 - sub_role: risk_assessor
   version: v1
   prompt_ref: risk_assessor@v1.prompt
-  expected_hash: 1d5749905c7bfc4aa32d9e4a8fbe4aed878647f6451f2da4b1250ccdd55d9923
+  expected_hash: 6688518a774f9af1f3d4f5e8ab774f5f9e287e5e1253b76e20e51168f6850123
   model_tier_hint: context-rich
   variables:
   - symbol
@@ -117,5 +122,6 @@ prompts:
   - portfolio_context
   - volatility_band
   - output_schema
+  - trade_memory
   - sub_role
   output_schema_ref: schemas/risk_assessment.json

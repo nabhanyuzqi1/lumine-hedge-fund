@@ -900,6 +900,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 },
                 portfolio_context=portfolio_context,
                 volatility_band="normal",
+                trade_memory=_trade_memory_digest,
                 session=session,
             )
             await publisher.publish(
@@ -1020,6 +1021,7 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 policy_version_id="policy@v1",
                 model_version_ids={"default": str(mv_id)},
                 prompt_version_ids={"default": "v1"},
+                trade_memory=_trade_memory_digest,
                 debate_held=debate_held,
                 session=session,
             )

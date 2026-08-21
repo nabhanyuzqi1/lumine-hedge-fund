@@ -75,7 +75,12 @@ def _handler(
 
 def _vars(role: str) -> dict[str, object]:
     """Domain variables for the analyst prompt of ``role``."""
-    common = {"symbol": "XAUUSD", "decision_ts": "2026-08-05T00:00:00Z"}
+    common = {
+        "symbol": "XAUUSD",
+        "decision_ts": "2026-08-05T00:00:00Z",
+        # P2 (21 Aug 2026): trade memory digest — variabel baru di registry
+        "trade_memory": "TRADE MEMORY (1 trade nyata, win 1/1, total P&L $+5.00):\n08-21 BUY XAUUSD 0.10 pnl=$+5.00",
+    }
     match role:
         case "technical_analyst":
             return {

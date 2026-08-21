@@ -38,6 +38,8 @@ _LINEAGE = uuid.uuid4()
 _COMMON = {
     "symbol": "XAUUSD",
     "decision_ts": "2026-08-05T00:00:00Z",
+    # P2 (21 Aug 2026): trade memory digest — variabel baru di registry
+    "trade_memory": "TRADE MEMORY (2 trade nyata terakhir, win 1/2, total P&L $+5.00):\n08-21 BUY XAUUSD 0.10 @4350.0->4400.0 pnl=$+50.00 (500.0p) conf=0.85 — BUY profit layak diulang\n08-20 SELL XAUUSD 0.10 pnl=$-45.00 — hindari setup serupa",
 }
 
 
