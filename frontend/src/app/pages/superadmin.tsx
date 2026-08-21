@@ -418,15 +418,51 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
     if (data?.enabled_symbols) setEnabledSymbols(data.enabled_symbols);
   }, [data?.enabled_symbols]);
   const [form, setForm] = React.useState<ConfigForm>({
-        // 19 Aug 2026: trading params (max_exposure/risk/max_daily_loss)
-        // DIHAPUS — sudah di Trading Profiles. Init hanya mode + data.
-        demo_data: data?.demo_data ?? false,
-        // FIX 18 Aug 2026: default REAL (false), bukan true — user keluh
-        // "paper trading masih nyala terus" padahal sudah matikan; ?? true
-        // membuat checkbox nyala sebelum data backend load.
-        paper_trading: data?.paper_trading ?? false,
-              sandbox_profile: data?.sandbox_profile ?? "",
-            });
+          // 19 Aug 2026: trading params (max_exposure/risk/max_daily_loss)
+          // DIHAPUS — sudah di Trading Profiles. Init hanya mode + data.
+          demo_data: data?.demo_data ?? false,
+          // FIX 18 Aug 2026: default REAL (false), bukan true — user keluh
+          // "paper trading masih nyala terus" padahal sudah matikan; ?? true
+          // membuat checkbox nyala sebelum data backend load.
+          paper_trading: data?.paper_trading ?? false,
+                sandbox_profile: data?.sandbox_profile ?? "",
+              });
+    // P6 (21 Aug 2026): dirty detection — bandingkan form vs snapshot
+    // setelah save terakhir. `savedSnapshot` adalah string JSON form yang
+    // terakhir disimpan (atau null saat belum pernah simpan).
+    const savedSnapshotRef = React.useRef<string | null>(null);
+    React.useEffect(() => {
+      if (data) {
+        const snap = JSON.stringify({
+          demo_data: data.demo_data,
+          paper_trading: data.paper_trading,
+          sandbox_profile: data.sandbox_profile,
+          enabled_symbols: data.enabled_symbols,
+        });
+        savedSnapshotRef.current = snap;
+      }
+    }, [data]);
+    const isDirty = React.useMemo(() => {
+      if (savedSnapshotRef.current === null) return false;
+      const current = JSON.stringify({
+        demo_data: form.demo_data,
+        paper_trading: form.paper_trading,
+        sandbox_profile: form.sandbox_profile,
+        enabled_symbols: enabledSymbols,
+      });
+      return current !== savedSnapshotRef.current;
+    }, [form, enabledSymbols]);
+
+    // Prompt beforeunload kalau ada perubahan belum disimpan
+    React.useEffect(() => {
+      const handler = (e: BeforeUnloadEvent) => {
+        if (isDirty) {
+          e.preventDefault();
+        }
+      };
+      window.addEventListener("beforeunload", handler);
+      return () => window.removeEventListener("beforeunload", handler);
+    }, [isDirty]);
 
   if (isError) return <ErrorBanner message="system-info" />;
 
@@ -440,13 +476,20 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
             payload.paper_trading = form.paper_trading;
             if (form.sandbox_profile) payload.sandbox_profile = form.sandbox_profile;
       update.mutate(payload, {
-              onSuccess: (result) => {
-                toast({ variant: "success", title: "Config saved", description: result.note });
-              },
-              onError: () => {
-                toast({ variant: "danger", title: "Save failed", description: "Periksa session/API key admin." });
-              },
-            });
+                    onSuccess: (result) => {
+                      toast({ variant: "success", title: "Config saved", description: result.note });
+                      // P6: reset dirty state setelah save sukses
+                      savedSnapshotRef.current = JSON.stringify({
+                        demo_data: form.demo_data,
+                        paper_trading: form.paper_trading,
+                        sandbox_profile: form.sandbox_profile,
+                        enabled_symbols: enabledSymbols,
+                      });
+                    },
+                    onError: () => {
+                      toast({ variant: "danger", title: "Save failed", description: "Periksa session/API key admin." });
+                    },
+                  });
           };
 
         // 19 Aug 2026: restart api container (user request — status restart
@@ -490,7 +533,7 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
         {/* 19 Aug 2026: paper_trading checkbox → Mode selector REAL/Sandbox.
             Trading parameters (max_exposure/risk/max_daily_loss) DIHAPUS —
             sudah hidup di Trading Profiles (profil punya risk/SL/TP/BE). */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {(["real", "sandbox"] as const).map((mode) => (
             <button
               key={mode}
@@ -553,7 +596,7 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
                     multi-stream siap. Simpan berlaku realtime
                     (worker baca per call — tanpa restart).
         </p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {SYMBOL_CANDIDATES.map((sym) => {
             const checked = enabledSymbols.includes(sym);
             return (
@@ -583,34 +626,47 @@ function ConfigTab({ data, isError }: { data: SystemInfo | undefined; isError: b
           })}
         </div>
       </div>
-      <div className="flex items-center gap-3">
-              <Button type="submit" variant="primary" size="sm" disabled={update.isPending}>
-                {update.isPending ? "Saving…" : "Save Config"}
-              </Button>
-              <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={restartState === "restarting"}
-                        onClick={handleRestartApi}
-                      >
-                {restartState === "restarting"
-                  ? "Restarting…"
-                  : restartState === "done"
-                    ? "Restart OK ✓"
-                    : restartState === "error"
-                      ? "Restart gagal — coba lagi"
-                      : "Restart API"}
-              </Button>
-              <p className="text-xs text-ink-faint">
-                {restartState === "restarting"
-                  ? "⏳ api container sedang restart (~5-10s)…"
-                  : "Save berlaku realtime; Restart API hanya jika perlu (mis. field env)."}
-              </p>
-            </div>
-          </form>
-        );
-      }
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <Button type="submit" variant="primary" size="sm" disabled={update.isPending}>
+            {update.isPending ? "Saving…" : "Save Config"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={restartState === "restarting"}
+            onClick={handleRestartApi}
+          >
+            {restartState === "restarting"
+              ? "Restarting…"
+              : restartState === "done"
+                ? "Restart OK ✓"
+                : restartState === "error"
+                  ? "Restart gagal — coba lagi"
+                  : "Restart API"}
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          {isDirty ? (
+            <span className="rounded-chip border border-amber/50 bg-amber/10 px-2 py-0.5 text-[10px] font-medium text-amber">
+              ● Unsaved changes
+            </span>
+          ) : (
+            <span className="rounded-chip border border-line bg-bg px-2 py-0.5 text-[10px] font-medium text-ink-faint">
+              ✓ All saved
+            </span>
+          )}
+          <p className="text-xs text-ink-faint">
+            {restartState === "restarting"
+              ? "⏳ api container sedang restart (~5-10s)…"
+              : "Save berlaku realtime; Restart API hanya jika perlu (mis. field env)."}
+          </p>
+        </div>
+      </div>
+    </form>
+  );
+}
 
 function EmbedTab({ url, title }: { url: string; title: string }) {
   return (
