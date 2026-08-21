@@ -811,26 +811,26 @@ void ProcessCommand(const string json)
      }
    else if(action == "CLOSE")
      {
-      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
+      ulong ticket = (ulong)ExtractJsonDouble(json, "ticket");
       ExecuteClose(id, ticket);
      }
    else if(action == "CUT_LOSS")
      {
       // 19 Aug 2026 P0: semantic cut-loss (sama dengan close, alasan eksplisit)
-      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
+      ulong ticket = (ulong)ExtractJsonDouble(json, "ticket");
       ExecuteClose(id, ticket);
      }
    else if(action == "PARTIAL_CLOSE")
      {
       // 19 Aug 2026 P0: tutup sebagian volume (layering / scale-out)
-      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
+      ulong ticket = (ulong)ExtractJsonDouble(json, "ticket");
       double lots = ExtractJsonDouble(json, "volume");
       if(lots == 0) lots = ExtractJsonDouble(json, "lots");
       ExecuteClosePartial(id, ticket, lots);
      }
    else if(action == "MODIFY")
      {
-      ulong ticket = (ulong)StringToInteger(ExtractJsonString(json, "ticket"));
+      ulong ticket = (ulong)ExtractJsonDouble(json, "ticket");
       double sl = ExtractJsonDouble(json, "sl");
       double tp = ExtractJsonDouble(json, "tp");
       ExecuteModify(id, ticket, sl, tp);
