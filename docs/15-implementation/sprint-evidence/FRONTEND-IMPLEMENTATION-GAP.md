@@ -275,15 +275,15 @@ Lapisan integrasi frontend→backend (`frontend/src/lib/api/*` + `frontend/src/h
 3. StreamStatusDot per-stream + GapBanner
 4. WorkflowRunList paginated
 
-**Medium (analytics):**
-5. FeaturePanel + SignalPanel
+**Medium (analytics):** ✅ selesai 21–22 Aug 2026
+5. ~~FeaturePanel + SignalPanel~~ — ✅ SignalPanel sudah live di dashboard (AnalystCard di dalamnya); FeaturePanel baru di terminal (`feature-panel.tsx`, F-06)
 6. ~~What-if simulate flow~~ — **dihapus dari roadmap** (21 Aug 2026)
-7. AnalystCard + DecisionCard
+7. ~~AnalystCard + DecisionCard~~ — ✅ sudah live (`analyst-card.tsx`, `decision-card.tsx` dipakai dashboard + AI insight panel)
 
-**Low:**
-8. Volatility badge, spread alert, session indicator
-9. Exposure summary, CSV export
-10. Bundle analyzer + render profiler
+**Low:** ✅ selesai 22 Aug 2026
+8. ~~Volatility badge, spread alert, session indicator~~ — ✅ `MarketConditionBadges` di terminal chart header (threshold VOL/SPR + tooltip)
+9. ~~Exposure summary, CSV export~~ — ✅ sudah live (ExposureSummaryCard di dashboard; CSV export di journal)
+10. ~~Bundle analyzer + render profiler~~ — ✅ render profiler sudah ada (`usePerformanceMetrics`); bundle analyzer via `pnpm analyze` (rollup-plugin-visualizer → dist/stats.html)
 
 ---
 
