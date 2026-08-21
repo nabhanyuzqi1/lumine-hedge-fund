@@ -1087,6 +1087,7 @@ void ExecuteModify(const string id, ulong ticket, double sl, double tp)
   {
    if(!PositionSelectByTicket(ticket))
      {
+      Print("LumineEA: MODIFY ticket not found: ", ticket);
       QueueResult(BuildResultJson(id, "ERROR", 0, "Position not found: " + IntegerToString(ticket), 0, 0));
       return;
      }
@@ -1101,9 +1102,15 @@ void ExecuteModify(const string id, ulong ticket, double sl, double tp)
    req.tp       = tp;
 
    if(OrderSend(req, res) && res.retcode == TRADE_RETCODE_DONE)
+     {
+      Print("LumineEA: MODIFY OK ticket=", ticket, " sl=", sl, " tp=", tp);
       QueueResult(BuildResultJson(id, "MODIFIED", (long)ticket, "", 0, 0));
+     }
    else
+     {
+      Print("LumineEA: MODIFY FAILED ticket=", ticket, " retcode=", res.retcode, " ", RetcodeStr(res.retcode));
       QueueResult(BuildResultJson(id, "REJECTED", 0, RetcodeStr(res.retcode), 0, 0));
+     }
   }
 
 //+------------------------------------------------------------------+
