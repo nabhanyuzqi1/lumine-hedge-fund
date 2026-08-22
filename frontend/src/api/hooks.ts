@@ -292,16 +292,16 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
   });
 }
 
-export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID) {
+export function useEquityCurve(portfolioId: string = DEFAULT_PORTFOLIO_ID, book: "real" | "paper" = "real") {
   return useQuery({
-    queryKey: ["equity-curve", portfolioId],
+    queryKey: ["equity-curve", portfolioId, book],
     queryFn: async (): Promise<EquityPoint[]> => {
       try {
-        // Backend: GET /api/v1/portfolio/{id}/equity → PaginatedList of
-        // {ts, nav, equity, drawdown} (B-06). Mapped to the chart shape.
+        // Backend: GET /api/v1/portfolio/{id}/equity?book=... → PaginatedList
         const res = await get<{ items: RestEquityPoint[] }>(`/portfolio/${portfolioId}/equity`, {
           limit: "240",
           offset: "0",
+          book,
         });
         if (Array.isArray(res?.items) && res.items.length > 0 && typeof res.items[0]?.nav === "string") {
           return res.items

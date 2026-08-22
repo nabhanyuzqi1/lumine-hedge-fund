@@ -12,6 +12,7 @@ import { ChartCard } from "@/components/charts/chart-card";
 import { DrawdownChart } from "@/components/charts/drawdown-chart";
 import { EquityChart } from "@/components/charts/equity-chart";
 import { PnlSparkline } from "@/components/charts/pnl-sparkline";
+import { cn } from "@/lib/utils";
 
 // ECharts panes are code-split: `echarts/core` never enters the critical
 // bundle. Each lazy pane keeps the <300KB gzip budget.
@@ -42,10 +43,11 @@ function PaneFallback({ title, height = 320 }: { title: string; height?: number 
  * (sebelumnya tanpa lastTick → isStale selalu true → label selalu muncul).
  */
 export function DashboardPage() {
-  const [timeframe, setTimeframe] = useState<Timeframe>("5m");
+const [timeframe, setTimeframe] = useState<Timeframe>("5m");
+const [book, setBook] = useState<"real" | "paper">("real");
 
-  const bars = useMarketBars("XAUUSD", timeframe);
-  const equity = useEquityCurve();
+const bars = useMarketBars("XAUUSD", timeframe);
+const equity = useEquityCurve("default", book);
   const exposure = useExposure();
   const signals = useSignals("XAUUSD");
   const correlation = useCorrelation();
@@ -63,11 +65,30 @@ export function DashboardPage() {
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4">
       {/* Bloomberg-style section header */}
-      <div className="flex items-center gap-3 border-b border-border-subtle pb-2">
-        <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">RESEARCH</span>
-        <span className="h-px flex-1 bg-border-subtle/40" aria-hidden="true" />
-        <span className="font-mono text-[11px] text-text-secondary">XAUUSD · MULTI-FRAME</span>
-      </div>
+            <div className="flex items-center gap-3 border-b border-border-subtle pb-2">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">RESEARCH</span>
+              <span className="h-px flex-1 bg-border-subtle/40" aria-hidden="true" />
+              <span className="font-mono text-[11px] text-text-secondary">XAUUSD · MULTI-FRAME</span>
+              {/* Per-akun selector: REAL (MT5 live) vs PAPER (seed $10k) */}
+              <button
+                onClick={() => setBook("real")}
+                className={cn(
+                  "rounded-chip px-2 py-0.5 text-[10px] font-medium",
+                  book === "real" ? "bg-accent/10 text-accent" : "text-ink-faint hover:text-ink"
+                )}
+              >
+                REAL
+              </button>
+              <button
+                onClick={() => setBook("paper")}
+                className={cn(
+                  "rounded-chip px-2 py-0.5 text-[10px] font-medium",
+                  book === "paper" ? "bg-amber/10 text-amber" : "text-ink-faint hover:text-ink"
+                )}
+              >
+                PAPER
+              </button>
+            </div>
 
       {/* Grid scroll alami halaman (bukan bounded per group — user request);
           hanya tabel individu yang dibatasi (signal panel max-h). */}

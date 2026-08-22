@@ -138,12 +138,45 @@ async def _real_summary(*, portfolio_id: str = "default") -> PortfolioSummary:
     )
 
 
-async def _real_equity_series(total: int, offset: int, limit: int) -> list[EquityPoint] | None:
+async def _mt5_base_equity() -> Decimal:
+    """Saldo akun MT5 live dari EA status (mt5:status, TTL 90s).
+
+    Fallback berantai: equity → balance → 10_000 (seed platform). Redis
+    down / hash kosong → seed $10,000 (bukan 0 — kekosongan data fatal).
+    """
+    try:
+        from lumine.data.redis_client import get_redis
+
+        _r = await get_redis()
+        raw = await _r.hgetall("mt5:status")
+        ov = {
+            (k.decode() if isinstance(k, bytes) else str(k)):
+            (v.decode() if isinstance(v, bytes) else str(v))
+            for k, v in raw.items()
+        }
+        return Decimal(ov.get("equity") or ov.get("balance") or "10000")
+    except Exception:  # nosec B110 — Redis down → seed platform
+        return Decimal(10000)
+
+
+async def _real_equity_series(
+    book: str,
+    total: int,
+    offset: int,
+    limit: int,
+    base_equity_override: Decimal | None = None,
+) -> list[EquityPoint] | None:
     """Equity curve derived from live positions (B-05).
 
     Poin NAV dibangun dari waktu buka posisi (opened_at) dengan mark-to-market
     kumulatif posisi yang sudah terbuka saat itu (mid price live). Tanpa
-    posisi: satu titik NAV=100_000. None saat DB tidak tersedia.
+    posisi: satu titik NAV = base equity akun. None saat DB tidak tersedia.
+
+    Per akun (book): "real" memakai saldo MT5 live (mt5:status.balance)
+    sebagai modal dasar; "paper" memakai seed platform $10,000
+    (docs/08-trading). PITFALL (terbukti prod 22 Aug 2026): nav=running_pnl
+    saja menghasilkan equity ≈ $2.50 padahal akun $99k — NAV harus
+    base_equity + P&L kumulatif, bukan P&L mentah.
     """
     try:
         from lumine.data.models import Position
@@ -155,6 +188,7 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                     await session.execute(
                         select(Position)
                         .where(Position.status == "open")
+                        .where(Position.book == book)
                         .order_by(Position.opened_at)
                     )
                 )
@@ -162,40 +196,20 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                 .all()
             )
 
-            if not rows:
-                # 18 Aug 2026: tanpa posisi open → ambil equity REAL dari
-                # EA status (mt5:status, TTL 90s). Sebelumnya hardcode 0 →
-                # chart equity dashboard selalu datar 0 padahal EA live
-                # (balance 99955).
-                try:
-                    from lumine.data.redis_client import get_redis
+            # Modal dasar per akun: real → saldo EA live; paper → seed $10k.
+            base_equity = await _mt5_base_equity() if book == "real" else Decimal(10000)
+            if base_equity_override is not None:
+                base_equity = base_equity_override
 
-                    _r = await get_redis()
-                    raw = await _r.hgetall("mt5:status")
-                    ov = {
-                        (k.decode() if isinstance(k, bytes) else str(k)):
-                        (v.decode() if isinstance(v, bytes) else str(v))
-                        for k, v in raw.items()
-                    }
-                    eq = Decimal(ov.get("equity") or ov.get("balance") or "0")
-                    nav = eq.quantize(Decimal("0.01"))
-                    return [
-                        EquityPoint(
-                            ts=datetime.now(UTC),
-                            nav=nav,
-                            equity=nav,
-                            drawdown=Decimal(0),
-                        )
-                    ]
-                except Exception:  # nosec B110 — Redis down → fallback 0
-                    return [
-                        EquityPoint(
-                            ts=datetime.now(UTC),
-                            nav=Decimal(0),
-                            equity=Decimal(0),
-                            drawdown=Decimal(0),
-                        )
-                    ]
+            if not rows:
+                return [
+                    EquityPoint(
+                        ts=datetime.now(UTC),
+                        nav=base_equity.quantize(Decimal("0.01")),
+                        equity=base_equity.quantize(Decimal("0.01")),
+                        drawdown=Decimal(0),
+                    )
+                ]
 
             now = datetime.now(UTC)
             points: list[EquityPoint] = []
@@ -209,7 +223,9 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                 if pos.side == "SHORT":
                     pnl = -pnl
                 running_pnl += pnl
-                nav = running_pnl
+                # NAV = modal dasar akun + P&L kumulatif (bukan P&L mentah —
+                # lihat PITFALL di docstring).
+                nav = base_equity + running_pnl
                 peak = max(peak, nav)
                 drawdown = (nav / peak - Decimal(1)) if peak else Decimal(0)
                 points.append(
@@ -221,7 +237,7 @@ async def _real_equity_series(total: int, offset: int, limit: int) -> list[Equit
                     )
                 )
             # Titik akhir: posisi terkini (sekali saja).
-            nav_now = running_pnl.quantize(Decimal("0.01"))
+            nav_now = (base_equity + running_pnl).quantize(Decimal("0.01"))
             # PITFALL: peak bisa 0 jika semua posisi flat/rugi → division by zero.
             final_drawdown = (
                 (nav_now / peak - Decimal(1)).quantize(Decimal("0.0001"))
@@ -310,14 +326,19 @@ async def get_equity_curve(
     portfolio_id: str,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
     pagination: Annotated[Pagination, Depends()],
+    book: str = "real",
 ) -> PaginatedList[EquityPoint]:
     """Equity curve (B-05/B-06) — derived dari live positions (opened_at +
     mark-to-market kumulatif). Fallback deterministik saat DB tidak tersedia
     atau belum ada posisi (bukan demo — lihat _real_equity_series).
 
+    `book` memilih akun: "real" (MT5 live, saldo EA sebagai modal dasar)
+    atau "paper" (seed $10,000). Nilai lain divalidasi ke "real".
+
     NOTE: total dihitung sebelum _real_equity_series agar pagination valid.
     """
     real_items = await _real_equity_series(
+        book="paper" if book == "paper" else "real",
         total=pagination.limit + pagination.offset,
         offset=pagination.offset,
         limit=pagination.limit,
