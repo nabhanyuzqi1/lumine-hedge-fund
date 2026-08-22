@@ -6,6 +6,13 @@ EA polling:
   POST /results → PUBLISH mt5:results
   POST /ticks → LPUSH mt5:ticks
 
+22 Aug 2026 — multi-instance (crypto):
+  Header `X-Instance: crypto` (Caddy route /mt5-proxy-crypto set header)
+  memisahkan STATUS/LOGS/RESULTS per-instance → key `mt5crypto:*`, sehingga
+  instance Exness (BTCUSD 24/7) tidak menimpa status HFM.
+  TICKS & SEED/BARS tetap shared (`mt5:ticks`, `mt5:seed_bars`) — MarketService
+  dan bar builder sudah symbol-generic, BTCUSD otomatis masuk tanpa ubah backend.
+
 Bridge tetap pakai Redis raw (tidak berubah).
 """
 import json
@@ -19,6 +26,19 @@ app = Flask(__name__)
 # Redis connection dari env
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 r = redis.from_url(REDIS_URL, decode_responses=True)
+
+
+def _ns() -> str:
+    """Prefix key per-instance. Tanpa header → `mt5:` (legacy/HFM).
+
+    Instance lain (mis. `crypto`) → `mt5crypto:` — status/logs/results
+    terisolasi sehingga superadmin bisa monitor kedua EA terpisah.
+    """
+    inst = request.headers.get("X-Instance", "")
+    if not inst:
+        return "mt5:"
+    clean = "".join(ch for ch in inst if ch.isalnum() or ch in "-_")
+    return f"mt5{clean}:"
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -54,8 +74,12 @@ def results():
     try:
         data = request.get_json(force=True)
         payload = json.dumps(data)
-        # PUBLISH ke SSE subscribers
+        # PUBLISH ke SSE subscribers: channel shared `mt5:results` (backend
+        # bridge subscribe di sini) + channel per-instance (observability).
+        ns = _ns()
         r.publish("mt5:results", payload)
+        if ns != "mt5:":
+            r.publish(f"{ns}results", payload)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -116,7 +140,8 @@ def deals():
     try:
         data = request.get_json(force=True)
         payload = json.dumps(data)
-        r.lpush("mt5:deals", payload)
+        ns = _ns()
+        r.lpush(f"{ns}deals", payload)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -130,9 +155,11 @@ def status():
     """
     try:
         data = request.get_json(force=True)
-        r.hset("mt5:status", mapping={k: str(v) for k, v in data.items()})
+        ns = _ns()
+        key = f"{ns}status"
+        r.hset(key, mapping={k: str(v) for k, v in data.items()})
         # TTL 90 detik — kalau EA mati, status otomatis kedaluwarsa
-        r.expire("mt5:status", 90)
+        r.expire(key, 90)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         # v4.12 (18 Aug): log BODY request saat parse gagal — EA kirim JSON
@@ -154,8 +181,10 @@ def logs():
     try:
         data = request.get_json(force=True)
         payload = json.dumps(data)
-        r.lpush("mt5:logs", payload)
-        r.ltrim("mt5:logs", 0, 199)
+        ns = _ns()
+        key = f"{ns}logs"
+        r.lpush(key, payload)
+        r.ltrim(key, 0, 199)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

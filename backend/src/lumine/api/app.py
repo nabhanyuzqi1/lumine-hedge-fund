@@ -129,8 +129,75 @@ def _update_bar_builder(symbol: str, bid: float, ask: float, volume: float) -> N
         bar["volume"] = bar.get("volume", 0.0) + volume
 
 
+async def _aggregate_bars(
+    session: object,
+    target_model: object,
+    source_model: object,
+    minutes: int,
+) -> None:
+    """Agregasi OHLCV live dari source ke target (5m→15m→1h→4h).
+
+    PITFALL (22 Aug 2026): sebelumnya 15m/1H/4H hanya terisi seed EA
+    (sekali boot) → candle selisih dengan MT5 asli. Bucket UTC via epoch
+    floor; DO NOTHING agar bar historis EA yang sudah benar tidak ditimpa,
+    hanya bar baru yang belum ada yang di-insert dari data live.
+    """
+    from sqlalchemy import func
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    secs = minutes * 60
+    bucket_expr = func.to_timestamp(
+        func.floor(func.extract("epoch", source_model.ts) / secs) * secs
+    )
+    rows = (
+        await session.execute(
+            select(
+                bucket_expr.label("ts"),
+                source_model.symbol,
+                func.first_value(source_model.open)
+                .over(partition_by=bucket_expr, order_by=source_model.ts)
+                .label("open"),
+                func.max(source_model.high).label("high"),
+                func.min(source_model.low).label("low"),
+                func.last_value(source_model.close)
+                .over(
+                    partition_by=bucket_expr,
+                    order_by=source_model.ts,
+                    range_=("unbounded_preceding", "unbounded_following"),
+                )
+                .label("close"),
+                func.sum(source_model.volume).label("volume"),
+            )
+            .group_by(bucket_expr, source_model.symbol)
+        )
+    ).all()
+    if not rows:
+        return
+    values = [
+        {
+            "ts": ts,
+            "symbol": symbol,
+            "open": o,
+            "high": h,
+            "low": lo,
+            "close": c,
+            "volume": v,
+            "source": "mt5-live",
+        }
+        for ts, symbol, o, h, lo, c, v in rows
+    ]
+    stmt = pg_insert(target_model.__table__).values(values)
+    # PITFALL: bars_1m/5m PK=(ts,symbol); bars_15m/1h/4h PK=ts saja —
+    # conflict target harus mengikuti PK tabel, kalau tidak Postgres
+    # error "no unique or exclusion constraint matching ON CONFLICT".
+    pk_cols = [c.name for c in target_model.__table__.primary_key.columns]
+    conflict = ["ts"] if "symbol" not in pk_cols else ["ts", "symbol"]
+    stmt = stmt.on_conflict_do_nothing(index_elements=conflict)
+    await session.execute(stmt)
+
+
 async def _bar_flush_worker() -> None:
-    """B4: flush bar 1m selesai → bars_1m; agregasi 5m dari bars_1m.
+    """B4: flush bar 1m selesai → bars_1m; agregasi bertingkat.
 
     Tiap 60s: bar yang umurnya >90s dianggap selesai → upsert bars_1m
     (ON CONFLICT (ts, symbol) DO UPDATE) + bangun bars_5m agregat dari
@@ -146,10 +213,15 @@ async def _bar_flush_worker() -> None:
         await asyncio.sleep(60)
         try:
             now = datetime.now(UTC)
+            # PITFALL (22 Aug 2026): threshold lama "umur >90s" membuat bar 1m
+            # terakhir di-flush 90 detik telat → chart selisih 1-2 menit dari
+            # MT5 asli. Bar dianggap SELESAI saat menitnya berganti (ts <
+            # menit berjalan), sehingga candle 1m close tepat di akhir menit.
+            current_minute = now.replace(second=0, microsecond=0)
             ready = [
                 bar
                 for bar in _bar_builder.values()
-                if (now - bar["ts"]).total_seconds() > 90
+                if bar["ts"] < current_minute
             ]
             if not ready:
                 continue
@@ -228,6 +300,16 @@ async def _bar_flush_worker() -> None:
                         index_elements=["ts", "symbol"]
                     )
                     await session.execute(stmt)
+
+                # PITFALL (22 Aug 2026): 15m/1H/4H TIDAK pernah diagregasi live
+                # — hanya hasil seed EA CopyRates (sekali boot), jadi candle
+                # selisih dengan MT5 asli. Agregasi bertingkat dari bars_1m:
+                # 5m → 15m → 1h → 4h (bucket UTC). DO NOTHING agar bar
+                # historis yang sudah benar dari EA tidak ditimpa; bar baru
+                # (belum pernah ada) di-insert dari data live.
+                await _aggregate_bars(session, Bars15M, Bars5M, 15)
+                await _aggregate_bars(session, Bars1H, Bars15M, 60)
+                await _aggregate_bars(session, Bars4H, Bars1H, 240)
                 await session.commit()
                 if ready:
                     print(f"[BARS] flushed {len(ready)} bar 1m live", flush=True)

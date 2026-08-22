@@ -2,14 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 
 import { get } from "@/api/client";
 import { ResearchChart, type SeriesPoint } from "@/components/charts/research-chart";
+import { ResearchWorkspaceSwitcher } from "@/components/research/workspace-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-/** ResearchPage (19 Aug 2026 — Phase 5): Paper Trading / Research.
+/** ResearchPage (19 Aug 2026 · Phase 5): Paper Trading / Research.
  *
  * Bandingkan PAPER (simulasi/sandbox) vs REAL (akun live MT5) — jawab
  * "apakah keputusan AI bagus tapi eksekusi real berbeda?". Sumber:
  * backend /research/summary (orders by portfolio_id, positions by book)
  * dan /research/series (P&L kumulatif per book).
+ *
+ * 22 Aug 2026: tambah ResearchWorkspaceSwitcher — tab eksplisit antar
+ * Portfolio Dashboard (/app/dashboard) dan Research Lab (/app/research).
  */
 
 interface BookMetrics {
@@ -96,12 +100,15 @@ export default function ResearchPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1200px] space-y-4 p-4">
-      <div>
-        <h1 className="text-lg font-semibold text-text-primary">Research</h1>
-        <p className="text-xs text-ink-faint">
-          Perbandingan keputusan AI di simulasi (paper/sandbox) terhadap eksekusi akun
-          live (real). Refresh 30 detik.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-semibold text-text-primary">Research Lab</h1>
+          <p className="text-xs text-ink-faint">
+            Perbandingan keputusan AI di simulasi (paper/sandbox) terhadap eksekusi akun
+            live (real). Refresh 30 detik.
+          </p>
+        </div>
+        <ResearchWorkspaceSwitcher />
       </div>
 
       {isLoading ? (

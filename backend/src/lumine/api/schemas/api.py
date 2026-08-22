@@ -157,6 +157,11 @@ class JournalEntry(BaseModel):
     # orders 0 dan filter portfolio tidak pernah berfungsi).
     portfolio_id: str | None = None
     symbol: str | None = None
+    # 22 Aug 2026: reason — alasan keputusan (AI) di balik order/trade:
+    # kenapa buy/sell/hold. Dari orders.ai_reason atau output_snapshot
+    # verdict workflow. User: "tiap record ga ada alasan sell buy, hold".
+    reason: str | None = None
+    decision: str | None = None
     side: str | None = None
     volume: float | None = None
     price: float | None = None

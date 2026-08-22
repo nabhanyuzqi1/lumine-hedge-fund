@@ -598,6 +598,9 @@ async def get_features(
     """Return computed technical features — dihitung dari bars real.
 
     ZERO-DEMO: tanpa data bars → dict kosong (bukan fitur sintetis).
+    Indikator: ATR(14), RSI(14), EMA(20/50/200), BB width(20), ADX(14),
+    volume_ratio + spread/session live. (22 Aug 2026: diperluas dari
+    sma20/volatility saja — FeaturePanel frontend butuh set lengkap.)
     """
     from lumine.data.models import Bars1H
     from lumine.data.session import get_sessionmaker
@@ -609,21 +612,113 @@ async def get_features(
                 select(Bars1H)
                 .where(Bars1H.symbol == symbol.upper())
                 .order_by(Bars1H.ts.desc())
-                .limit(30)
+                .limit(250)
             )
             rows = list(result.scalars().all())
-        if len(rows) >= 2:
+        if len(rows) >= 20:
             rows.reverse()
             closes = [float(r.close) for r in rows]
+            highs = [float(r.high) for r in rows]
+            lows = [float(r.low) for r in rows]
+            volumes = [float(r.volume) for r in rows]
             last = closes[-1]
-            sma20 = sum(closes[-20:]) / min(20, len(closes))
+
+            # ── SMA20 / trend / volatility (basis lama) ──
+            sma20 = sum(closes[-20:]) / 20
             returns = [closes[i] / closes[i - 1] - 1.0 for i in range(1, len(closes))]
             vol = (
                 sum((r - sum(returns) / len(returns)) ** 2 for r in returns) / len(returns)
             ) ** 0.5
+
+            # ── EMA ──
+            def ema(values: list[float], period: int) -> float:
+                k = 2 / (period + 1)
+                e = values[0]
+                for v in values[1:]:
+                    e = v * k + e * (1 - k)
+                return e
+
+            ema20 = ema(closes[-60:], 20)
+            ema50 = ema(closes[-120:], 50)
+            ema200 = ema(closes[-250:], 200) if len(closes) >= 200 else ema(closes, 200)
+
+            # ── RSI(14) Wilder ──
+            rsi_14: float = 50.0
+            if len(closes) > 15:
+                gains, losses = [], []
+                for i in range(1, len(closes)):
+                    chg = closes[i] - closes[i - 1]
+                    gains.append(max(chg, 0.0))
+                    losses.append(max(-chg, 0.0))
+                avg_gain = sum(gains[:14]) / 14
+                avg_loss = sum(losses[:14]) / 14
+                for i in range(14, len(gains)):
+                    avg_gain = (avg_gain * 13 + gains[i]) / 14
+                    avg_loss = (avg_loss * 13 + losses[i]) / 14
+                if avg_loss > 0:
+                    rs = avg_gain / avg_loss
+                    rsi_14 = 100 - 100 / (1 + rs)
+                else:
+                    rsi_14 = 100.0
+
+            # ── ATR(14) Wilder ──
+            trs: list[float] = []
+            for i in range(1, len(closes)):
+                trs.append(
+                    max(
+                        highs[i] - lows[i],
+                        abs(highs[i] - closes[i - 1]),
+                        abs(lows[i] - closes[i - 1]),
+                    )
+                )
+            atr_14 = sum(trs[:14]) / 14
+            for i in range(14, len(trs)):
+                atr_14 = (atr_14 * 13 + trs[i]) / 14
+
+            # ── Bollinger width(20, 2σ) ──
+            bb20 = closes[-20:]
+            mean = sum(bb20) / 20
+            var = sum((x - mean) ** 2 for x in bb20) / 20
+            std = var ** 0.5
+            bb_width = (4 * std) / mean if mean else 0.0
+
+            # ── ADX(14) ──
+            adx_14: float = 0.0
+            if len(closes) > 30:
+                plus_dm, minus_dm, tr_arr = [], [], []
+                for i in range(1, len(closes)):
+                    up = highs[i] - highs[i - 1]
+                    dn = lows[i - 1] - lows[i]
+                    plus_dm.append(up if (up > dn and up > 0) else 0.0)
+                    minus_dm.append(dn if (dn > up and dn > 0) else 0.0)
+                    tr_arr.append(
+                        max(
+                            highs[i] - lows[i],
+                            abs(highs[i] - closes[i - 1]),
+                            abs(lows[i] - closes[i - 1]),
+                        )
+                    )
+                atr14 = sum(tr_arr[:14]) / 14
+                pdi = 100 * (sum(plus_dm[:14]) / 14) / atr14 if atr14 else 0.0
+                mdi = 100 * (sum(minus_dm[:14]) / 14) / atr14 if atr14 else 0.0
+                dx = (abs(pdi - mdi) / (pdi + mdi) * 100) if (pdi + mdi) > 0 else 0.0
+                adx_14 = round(dx, 2)
+
+            # ── volume_ratio (avg 20 bar) ──
+            vol_avg = sum(volumes[-20:]) / 20 if volumes else 0.0
+            volume_ratio = (volumes[-1] / vol_avg) if vol_avg > 0 else 1.0
+
             features = {
                 "last_price": round(last, 2),
                 "sma20": round(sma20, 2),
+                "ema_20": round(ema20, 2),
+                "ema_50": round(ema50, 2),
+                "ema_200": round(ema200, 2),
+                "rsi_14": round(rsi_14, 2),
+                "atr_14": round(atr_14, 2),
+                "bb_width": round(bb_width, 6),
+                "adx_14": round(adx_14, 2),
+                "volume_ratio": round(volume_ratio, 3),
                 "volatility": round(vol, 4),
                 "trend_slope": round((closes[-1] / closes[0] - 1.0) * 100, 4),
             }

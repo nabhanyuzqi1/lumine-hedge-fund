@@ -593,6 +593,10 @@ export interface JournalEntry {
   summary: string;
   /** Alasan AI (reflection backend) — verbose detail pada baris expand. */
   reason?: string;
+  /** 22 Aug 2026: arah keputusan (BUY/SELL/HOLD) untuk badge cepat. */
+  decision?: string;
+  /** Side/trade direction bila dari order (buy/sell). */
+  side?: string;
   /** Lesson / follow-up dari evaluasi. */
   lesson?: string;
   linked_lineage_id?: string;

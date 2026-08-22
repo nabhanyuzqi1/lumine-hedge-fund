@@ -43,6 +43,10 @@ input bool    InpShowPanel   = true;    // Tampilkan panel UI di chart
 input bool    InpForceSeed   = true;    // WAJIB ON: paksa seed ulang tiap start
 input int     InpStatusInterval = 5;    // Detik antar push status ke Redis
 input int     InpPollMs      = 1000;    // Interval siklus OnTimer (ms): 250-5000.
+// 22 Aug 2026: seed symbols per-instance (comma-separated). HFM instance
+// seed "XAUUSD"; instance crypto (Exness) seed "BTCUSD,ETHUSD" — stream
+// harga crypto 24/7 sehingga Lumine tetap jalan saat forex libur.
+input string  InpSeedSymbols = "XAUUSD";
                                          // <1000 memakai EventSetMillisecondTimer;
                                          // default 1000 = 1 detik (hemat CPU).
                                          // 250 = polling 4x/detik (paling responsif).
@@ -78,7 +82,7 @@ int      g_seedOffset    = 0;       // offset CopyRates pagination
 int      g_seedTotal     = 0;
 int      g_seedSent      = 0;
 
-string   g_seedSymbols[] = {"XAUUSD"};
+string   g_seedSymbols[];      // diisi dari InpSeedSymbols saat OnInit
 ENUM_TIMEFRAMES g_seedTfs[] = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4, PERIOD_D1};
 string   g_seedTfNames[] = {"1m", "5m", "15m", "1h", "4h", "1d"};
 
@@ -156,7 +160,15 @@ int OnInit()
    g_seedChunkSize = MathMax(100, MathMin(1000, InpSeedChunks));
    g_maxBackoff  = MathMax(5, InpMaxBackoff);
    g_panelVisible = InpShowPanel;
-   g_eaBuild      = 400;   // EA v4.0 — build numeric sederhana
+   g_eaBuild      = 400;   // EA v4.0 → build numeric sederhana
+
+       // 22 Aug 2026: parse InpSeedSymbols (comma-separated) ke g_seedSymbols[]
+       // untuk mendukung multi-instance (HFM: XAUUSD, Exness: BTCUSD, ...)
+       string parts[];
+       int count = StringSplit(InpSeedSymbols, ',', parts);
+       ArrayResize(g_seedSymbols, count);
+       for(int i=0; i<count; i++) { g_seedSymbols[i] = parts[i]; }
+       Print("LumineEA: seed symbols = ", InpSeedSymbols, " (", count, " symbols)");
 
    Print("LumineEA v4 starting: proxy=", g_proxyURL,
          " seed=ON(forced) build=", __DATE__, " started=", TimeToString(TimeLocal(), TIME_DATE|TIME_SECONDS));

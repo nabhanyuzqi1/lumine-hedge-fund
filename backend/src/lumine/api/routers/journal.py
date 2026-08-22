@@ -46,6 +46,10 @@ async def list_journal_entries(
                             f"{order.side.upper()} {order.volume} {order.symbol} "
                             f"{'@ ' + str(order.price) if order.price else ''} — {order.status}"
                         ).strip(),
+                        # 22 Aug 2026: alasan keputusan AI (kenapa buy/sell/hold)
+                        # langsung dari orders.ai_reason (decision engine).
+                        reason=order.ai_reason or None,
+                        decision=(order.side or "").upper(),
                         lesson=f"mt5_ticket={order.mt5_ticket}" if order.mt5_ticket else "pending execution",
                         created_at=order.created_at,
                         portfolio_id=order.portfolio_id,
@@ -63,6 +67,20 @@ async def list_journal_entries(
             for step in wf:
                 out = step.output_snapshot or {}
                 symbol = out.get("symbol") or (step.input_snapshot or {}).get("symbol") or "XAUUSD"
+                # 22 Aug 2026: reason dari verdict/summary output agent
+                # (kenapa analyst/CIO memilih arah) — fallback ke reflection.
+                out_reason = (
+                    out.get("rationale")
+                    or out.get("reason")
+                    or out.get("summary")
+                    or out.get("verdict_reason")
+                )
+                out_decision = (
+                    out.get("decision")
+                    or out.get("direction")
+                    or out.get("action")
+                    or out.get("verdict")
+                )
                 items.append(
                     JournalEntry(
                         entry_id=step.id,
@@ -74,6 +92,8 @@ async def list_journal_entries(
                             + (f" — {symbol}" if symbol else "")
                             + (f" — {step.error_message[:100]}" if step.error_message else "")
                         ),
+                        reason=str(out_reason)[:400] if out_reason else None,
+                        decision=str(out_decision)[:40] if out_decision else None,
                         lesson=f"workflow={step.workflow_id}",
                         created_at=step.ts,
                         portfolio_id=None,

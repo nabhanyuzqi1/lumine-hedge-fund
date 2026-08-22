@@ -99,6 +99,39 @@ services:
       retries: 3
       start_period: 60s
 
+  # ── MT5 crypto instance (22 Aug 2026): Exness, BTCUSD streaming 24/7 ───────
+  # Stream harga crypto saat forex libur → MarketService/BTCUSD otomatis
+  # terisi (tick shared queue), status/logs terpisah via X-Instance header.
+  # Setup manual pertama: VNC → buka chart BTCUSD, attach EA LumineEA,
+  # InpProxyURL=http://lumine.biz.id/mt5-proxy-crypto, InpSeedSymbols=BTCUSD,
+  # save profile → backup ke ${WINEPREFIX}/lumine-workspace-crypto-backup.
+  mt5-crypto:
+    build:
+      context: ../scripts/deploy/mt5-crypto
+      dockerfile: Dockerfile
+    container_name: lumine-mt5-crypto
+    ports:
+      - "127.0.0.1:5902:5900"
+      - "127.0.0.1:6903:6901"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD:?VNC_PASSWORD wajib di .env}
+      - RESOLUTION=1280x768x24
+    volumes:
+      - mt5_crypto_data:/root/.wine-mt5-crypto
+      - /opt/lumine-ea:/opt/lumine-ea:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pgrep -x Xvfb >/dev/null 2>&1 &&
+          pgrep -x x11vnc >/dev/null 2>&1 &&
+          pgrep -f 'terminal64\.exe' >/dev/null 2>&1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 180s
+
   # ── 9router LLM gateway (Phase 6 D6-2, Phase 11 deployment) ────────────────
   # Single egress for all LLM traffic. Dashboard on :20128, OpenAI-compatible
   # API on :20128/v1. State (provider keys, OAuth, fallback config) persists
@@ -133,3 +166,5 @@ volumes:
   redis_data:
   9router_data:
   mt5_data:
+  # 22 Aug 2026: volume instance crypto (Exness/BTCUSD) — terpisah dari HFM.
+  mt5_crypto_data:

@@ -4,6 +4,7 @@ import { useCorrelation, useEquityCurve, useExposure, useMarketBars, useSignals 
 import { useMarketWS } from "@/hooks/useMarketWS";
 import { useMarketStore } from "@/stores";
 import { MarketIndicatorsPanel } from "@/components/dashboard/market-indicators-panel";
+import { ResearchWorkspaceSwitcher } from "@/components/research/workspace-switcher";
 import { SignalPanel } from "@/components/dashboard/signal-panel";
 import { ExposureSummaryCard } from "@/components/dashboard/exposure-summary-card";
 import { DecisionCard } from "@/components/dashboard/decision-card";
@@ -65,30 +66,33 @@ const equity = useEquityCurve("default", book);
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4">
       {/* Bloomberg-style section header */}
-            <div className="flex items-center gap-3 border-b border-border-subtle pb-2">
-              <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">RESEARCH</span>
-              <span className="h-px flex-1 bg-border-subtle/40" aria-hidden="true" />
-              <span className="font-mono text-[11px] text-text-secondary">XAUUSD · MULTI-FRAME</span>
-              {/* Per-akun selector: REAL (MT5 live) vs PAPER (seed $10k) */}
-              <button
-                onClick={() => setBook("real")}
-                className={cn(
-                  "rounded-chip px-2 py-0.5 text-[10px] font-medium",
-                  book === "real" ? "bg-accent/10 text-accent" : "text-ink-faint hover:text-ink"
-                )}
-              >
-                REAL
-              </button>
-              <button
-                onClick={() => setBook("paper")}
-                className={cn(
-                  "rounded-chip px-2 py-0.5 text-[10px] font-medium",
-                  book === "paper" ? "bg-amber/10 text-amber" : "text-ink-faint hover:text-ink"
-                )}
-              >
-                PAPER
-              </button>
-            </div>
+                  <div className="flex items-center gap-3 border-b border-border-subtle pb-2">
+                    <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">RESEARCH</span>
+                    <span className="h-px flex-1 bg-border-subtle/40" aria-hidden="true" />
+                    <span className="font-mono text-[11px] text-text-secondary">XAUUSD · MULTI-FRAME</span>
+                    {/* Per-akun selector: REAL (MT5 live) vs PAPER (seed $10k) */}
+                    <button
+                      onClick={() => setBook("real")}
+                      className={cn(
+                        "rounded-chip px-2 py-0.5 text-[10px] font-medium",
+                        book === "real" ? "bg-accent/10 text-accent" : "text-ink-faint hover:text-ink"
+                      )}
+                    >
+                      REAL
+                    </button>
+                    <button
+                      onClick={() => setBook("paper")}
+                      className={cn(
+                        "rounded-chip px-2 py-0.5 text-[10px] font-medium",
+                        book === "paper" ? "bg-amber/10 text-amber" : "text-ink-faint hover:text-ink"
+                      )}
+                    >
+                      PAPER
+                    </button>
+                  </div>
+
+            {/* Workspace Switcher: tab antar Dashboard (portfolio) & Research (paper vs real) */}
+                  <ResearchWorkspaceSwitcher />
 
       {/* Grid scroll alami halaman (bukan bounded per group — user request);
           hanya tabel individu yang dibatasi (signal panel max-h). */}

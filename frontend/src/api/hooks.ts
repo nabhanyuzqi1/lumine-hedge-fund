@@ -79,6 +79,14 @@ interface RestJournalEntry {
   lesson: string;
   created_at: string;
   symbol?: string | null;
+  // 22 Aug 2026: metadata dari backend journal.py (orders + workflow)
+  portfolio_id?: string | null;
+  reason?: string | null;
+  decision?: string | null;
+  side?: string | null;
+  volume?: number | null;
+  price?: number | null;
+  status?: string | null;
 }
 
 interface RestLineageRecord {
@@ -233,11 +241,16 @@ function toJournalEntry(entry: RestJournalEntry): JournalPage["entries"][number]
   return {
     id: entry.entry_id,
     timestamp: entry.created_at,
-    portfolio_id: "portfolio-demo",
-    kind: entry.agent_name.includes("risk") ? "risk" : "note",
+    // 22 Aug 2026: pakai portfolio_id asli dari backend (default=REAL,
+    // paper=PAPER) — sebelumnya hardcoded "portfolio-demo" sehingga journal
+    // selalu tampil sebagai demo walau data real.
+    portfolio_id: entry.portfolio_id ?? "default",
+    kind: entry.agent_name.includes("risk") ? "risk" : entry.side ? "trade" : "note",
     actor: entry.agent_name,
     summary: entry.reflection || entry.lesson,
-    reason: entry.reflection || undefined,
+    reason: entry.reason ?? (entry.reflection || undefined),
+    decision: entry.decision ?? entry.side?.toUpperCase() ?? undefined,
+    side: entry.side ?? undefined,
     lesson: entry.lesson || undefined,
     symbol: entry.symbol ?? undefined,
   };

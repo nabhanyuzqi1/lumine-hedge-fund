@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   CandlestickSeries,
-  HistogramSeries,
   type IChartApi,
   type ISeriesApi,
   createChart,
@@ -17,7 +16,6 @@ import {
   candleFromBar,
   heikinAshiToCandles,
   updateBarWithTick,
-  volumeFromBar,
 } from "@/lib/chart-transform";
 import { cn } from "@/lib/utils";
 
@@ -54,9 +52,11 @@ export interface CandlestickChartProps {
 }
 
 /**
- * XAUUSD candlestick pane with volume overlay (lightweight-charts v5):
+ * XAUUSD candlestick pane (lightweight-charts v5):
  * static series data on `bars` change, debounced incremental `series.update()`
- * on live ticks, timeframe selector in the card toolbar.
+ * on live ticks, timeframe selector in card toolbar.
+ * Catatan (22 Aug 2026): volume histogram dihapus — informasi volume sudah
+ * tersedia di FeaturePanel (volume_ratio), menghindari duplikasi visual.
  */
 export function CandlestickChart({
   bars,
@@ -74,8 +74,7 @@ export function CandlestickChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<{
     candles: ISeriesApi<"Candlestick"> | null;
-    volumes: ISeriesApi<"Histogram"> | null;
-  }>({ candles: null, volumes: null });
+  }>({ candles: null });
   const lastBarRef = useRef<ChartBar | null>(null);
   const [chart, setChart] = useState<IChartApi | null>(null);
 
@@ -94,18 +93,13 @@ export function CandlestickChart({
       wickUpColor: colors.up,
       wickDownColor: colors.down,
     });
-    const volumes = chartInstance.addSeries(HistogramSeries, {
-      priceFormat: { type: "volume" },
-      priceScaleId: "",
-    });
-    chartInstance.priceScale("").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
-    seriesRef.current = { candles, volumes };
+    seriesRef.current = { candles };
     setChart(chartInstance);
 
     return () => {
       chartInstance.remove();
-      seriesRef.current = { candles: null, volumes: null };
+      seriesRef.current = { candles: null };
       lastBarRef.current = null;
     };
   }, []);
@@ -180,17 +174,16 @@ export function CandlestickChart({
   }, [priceLinesKey, priceLines]);
 
   // Full re-render when the bar set changes (timeframe switch, refetch).
-  useEffect(() => {
-    const { candles, volumes } = seriesRef.current;
-    if (!candles || !volumes || bars.length === 0) return;
-    // T5b: Heikin-Ashi mode → transform OHLC ke HA sebelum render.
-    const payload = heikinAshi
-      ? { candles: heikinAshiToCandles(bars), volumes: barsToCandles(bars).volumes }
-      : barsToCandles(bars);
-    candles.setData(payload.candles);
-    volumes.setData(payload.volumes);
-    lastBarRef.current = bars[bars.length - 1] ?? null;
-  }, [bars, heikinAshi]);
+    useEffect(() => {
+      const { candles } = seriesRef.current;
+      if (!candles || bars.length === 0) return;
+      // T5b: Heikin-Ashi mode → transform OHLC ke HA sebelum render.
+      const payload = heikinAshi
+        ? heikinAshiToCandles(bars)
+        : barsToCandles(bars).candles;
+      candles.setData(payload);
+      lastBarRef.current = bars[bars.length - 1] ?? null;
+    }, [bars, heikinAshi]);
 
   // Debounced live tick → mutate the in-progress bar in place.
     useEffect(() => {
@@ -199,8 +192,8 @@ export function CandlestickChart({
       if (replayIndex != null) return;
       const timer = setTimeout(() => {
         const bar = lastBarRef.current;
-        const { candles, volumes } = seriesRef.current;
-        if (!bar || !candles || !volumes) return;
+        const { candles } = seriesRef.current;
+        if (!bar || !candles) return;
         // Guard: lastTick.last null/NaN (SSE partial data) → fallback bid,
         // lalu skip kalau keduanya invalid (jangan crash "Value is null").
         const price = lastTick.last ?? (lastTick as { bid?: number }).bid;
@@ -208,7 +201,6 @@ export function CandlestickChart({
         const updated = updateBarWithTick(bar, price);
         lastBarRef.current = updated;
         candles.update(candleFromBar(updated));
-        volumes.update(volumeFromBar(updated));
       }, TICK_DEBOUNCE_MS);
       return () => clearTimeout(timer);
     }, [lastTick, replayIndex]);
