@@ -799,6 +799,21 @@ void ProcessCommand(const string json)
      {
       string symbol = ExtractJsonString(json, "symbol");
       if(StringLen(symbol) == 0) symbol = Symbol();
+      // PITFALL (22 Aug 2026): simbol belum ada di Market Watch → ASK/BID = 0
+      // → OrderSend gagal [Invalid request]. Auto-select dulu; kalau broker
+      // tidak kenal simbolnya, laporkan ERROR eksplisit (jangan diam-diam).
+      if(SymbolSelect(symbol, true))
+        {
+         Print("LumineEA: OPEN ", symbol, " selected ok (mw=", 
+               SymbolInfoInteger(symbol, SYMBOL_SELECT), ")");
+        }
+      else
+        {
+         Print("LumineEA: OPEN FAILED — unknown symbol: ", symbol);
+         QueueResult(BuildResultJson(id, "ERROR", 0,
+                      "Unknown symbol: " + symbol, 0, 0));
+         return;
+        }
       string side = ExtractJsonString(json, "order_type");
       if(StringLen(side) == 0) side = ExtractJsonString(json, "side");
       StringToUpper(side);
