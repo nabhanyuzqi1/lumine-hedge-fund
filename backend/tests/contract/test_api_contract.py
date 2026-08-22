@@ -534,14 +534,14 @@ def test_rpc_command_status_endpoint(client: TestClient, monkeypatch: pytest.Mon
 
 def test_b06_portfolio_and_orders_endpoints(client: TestClient, mock_db_session: None) -> None:
     """B-06 additions: equity curve, cancel-all, history, bulk, signals/symbol."""
-    # Equity curve (paginated) — ZERO-DEMO: tanpa posisi = 1 titik 0
+    # Equity curve (paginated) — tanpa posisi = 1 titik base_equity (seed $10k)
     response = client.get("/api/v1/portfolio/default/equity?limit=5")
     assert response.status_code == 200
     equity = response.json()["data"]
     assert equity["total"] == 1
     assert len(equity["items"]) == 1
     assert set(equity["items"][0]) == {"ts", "nav", "equity", "drawdown"}
-    assert float(equity["items"][0]["nav"]) == 0.0
+    assert float(equity["items"][0]["nav"]) == 10000.0
 
     # Cancel-all — ZERO-DEMO: DB kosong = 0 dibatalkan (bukan 3 fiktif)
     response = client.delete("/api/v1/portfolio/default/orders")
@@ -735,7 +735,7 @@ def test_rate_limit_429_with_retry_after(monkeypatch: pytest.MonkeyPatch) -> Non
 
     for _ in range(2):
         response = limited_client.post("/api/v1/rpc/run-decision-cycle")
-        assert response.status_code == 200
+    assert response.status_code == 200
 
     exceeded = limited_client.post("/api/v1/rpc/run-decision-cycle")
     assert exceeded.status_code == 429
@@ -761,7 +761,7 @@ def test_rate_limit_disabled_when_limit_is_zero(monkeypatch: pytest.MonkeyPatch)
 
     for _ in range(3):
         response = unlimited_client.post("/api/v1/rpc/run-decision-cycle")
-        assert response.status_code == 200
+    assert response.status_code == 200
 
 
 def test_expired_timestamp_is_401(settings: Settings) -> None:
