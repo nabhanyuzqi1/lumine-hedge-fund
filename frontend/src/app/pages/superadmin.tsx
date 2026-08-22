@@ -106,6 +106,8 @@ interface EAStatus {
   leverage?: string;
   net_pnl?: string;
   error?: string;
+  // 22 Aug 2026: multi-instance — hfm (XAUUSD) + crypto (BTCUSD/Exness)
+  instances?: Record<string, EAStatus>;
 }
 
 function useEACommand() {
@@ -135,60 +137,78 @@ function EAStatusCard() {
   if (isLoading) return <div className="h-8 animate-pulse rounded bg-raised" />;
   if (isError || !data) return <p className="text-xs text-danger">EA status unavailable</p>;
   const num = (v?: string) => (v != null && v !== "" ? Number(v) : null);
-  const pnl = num(data.net_pnl);
-  const tickAge = data.last_tick_ts
-    ? Math.max(0, Math.round(Date.now() / 1000 - Number(data.last_tick_ts)))
-    : null;
+
+  // 22 Aug 2026: multi-instance — render HFM + crypto (Exness) berdampingan.
+  const instances: [string, EAStatus][] = data.instances
+    ? Object.entries(data.instances)
+    : [["hfm", data as EAStatus]];
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Badge tone={data.connected ? "ok" : "warn"} label={data.connected ? "Connected" : "No Status"} />
-        {tickAge != null && (
-          <Badge
-            tone={tickAge < 10 ? "ok" : tickAge < 60 ? "warn" : "danger"}
-            label={`tick ${tickAge}s ago`}
-          />
-        )}
-        {data.ea_version !== "unknown" && (
-          <span className="font-mono text-xs text-ink-dim">v{data.ea_version}</span>
-        )}
-        {data.ea_build !== "unknown" && (
-          <span className="font-mono text-xs text-ink-faint">build {data.ea_build}</span>
-        )}
-        {data.symbol && <span className="font-mono text-xs text-ink-faint">{data.symbol}</span>}
-      </div>
-      <div className="grid grid-cols-2 gap-1 text-[11px]">
-        <span className="text-ink-faint">Seed Phase</span>
-        <span className="font-mono text-ink">{data.seed_phase === "1" ? "RUNNING" : data.seed_phase === "2" ? "DONE" : data.seed_phase || "—"}</span>
-        <span className="text-ink-faint">Seed Done</span>
-        <span className="font-mono text-ink">{data.seed_done === "1" ? "✅ Yes" : "⏳ No"}</span>
-        <span className="text-ink-faint">Ticks Sent</span>
-        <span className="font-mono text-ink">{data.ticks_sent}</span>
-        <span className="text-ink-faint">Ticks Pending</span>
-        <span className="font-mono text-ink">{data.ticks_pending}</span>
-        <span className="text-ink-faint">Bid / Ask</span>
-        <span className="font-mono text-ink">{num(data.bid) != null ? `${num(data.bid)!.toFixed(2)} / ${num(data.ask)!.toFixed(2)}` : "—"}</span>
-        <span className="text-ink-faint">Spread</span>
-        <span className="font-mono text-ink">{num(data.spread) != null ? `${num(data.spread)!.toFixed(1)} pts` : "—"}</span>
-        <span className="text-ink-faint">Session H/L</span>
-        <span className="font-mono text-ink">{num(data.session_high) != null ? `${num(data.session_high)!.toFixed(2)} / ${num(data.session_low)!.toFixed(2)}` : "—"}</span>
-        <span className="text-ink-faint">Equity / Balance</span>
-        <span className="font-mono text-ink">{num(data.equity) != null ? `$${num(data.equity)!.toFixed(2)} / $${num(data.balance)!.toFixed(2)}` : "—"}</span>
-        <span className="text-ink-faint">Margin / Free</span>
-        <span className="font-mono text-ink">{num(data.margin) != null ? `$${num(data.margin)!.toFixed(2)} / $${num(data.free_margin)!.toFixed(2)}` : "—"}</span>
-        <span className="text-ink-faint">Margin Level / Lev</span>
-        <span className="font-mono text-ink">{num(data.margin_level) != null ? `${num(data.margin_level)!.toFixed(0)}% / 1:${data.leverage}` : "—"}</span>
-        <span className="text-ink-faint">Net P&amp;L</span>
-        <span className={`font-mono ${pnl != null && pnl < 0 ? "text-danger" : pnl != null && pnl > 0 ? "text-ok" : "text-ink"}`}>
-          {pnl != null ? `$${pnl.toFixed(2)}` : "—"}
-        </span>
-        {data.last_tick_ts && (
-          <>
-            <span className="text-ink-faint">Last Tick</span>
-            <span className="font-mono text-ink text-[10px]">{new Date(Number(data.last_tick_ts) * 1000).toLocaleTimeString()}</span>
-          </>
-        )}
-      </div>
+    <div className="space-y-3">
+      {instances.map(([key, inst]) => {
+        const pnl = num(inst.net_pnl);
+        const tickAge = inst.last_tick_ts
+          ? Math.max(0, Math.round(Date.now() / 1000 - Number(inst.last_tick_ts)))
+          : null;
+        const label = key === "hfm" ? "HFM" : key === "crypto" ? "Crypto" : key;
+        return (
+          <div key={key} className="rounded border border-line/40 bg-raised/40 p-2">
+            <div className="mb-1 flex items-center gap-2">
+              <Badge tone={inst.connected ? "ok" : "warn"} label={label} />
+              <Badge tone={inst.connected ? "ok" : "warn"} label={inst.connected ? "Connected" : "No Status"} />
+              {tickAge != null && (
+                <Badge
+                  tone={tickAge < 10 ? "ok" : tickAge < 60 ? "warn" : "danger"}
+                  label={`tick ${tickAge}s ago`}
+                />
+              )}
+              {inst.ea_version !== "unknown" && (
+                <span className="font-mono text-xs text-ink-dim">v{inst.ea_version}</span>
+              )}
+              {inst.ea_build !== "unknown" && (
+                <span className="font-mono text-xs text-ink-faint">build {inst.ea_build}</span>
+              )}
+              {inst.symbol && <span className="font-mono text-xs text-ink-faint">{inst.symbol}</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-1 text-[11px]">
+              <span className="text-ink-faint">Seed Phase</span>
+              <span className="font-mono text-ink">{inst.seed_phase === "1" ? "RUNNING" : inst.seed_phase === "2" ? "DONE" : inst.seed_phase || "—"}</span>
+              <span className="text-ink-faint">Seed Done</span>
+              <span className="font-mono text-ink">{inst.seed_done === "1" ? "✅ Yes" : "⏳ No"}</span>
+              <span className="text-ink-faint">Ticks Sent</span>
+              <span className="font-mono text-ink">{inst.ticks_sent}</span>
+              {key === "hfm" && (
+                <>
+                  <span className="text-ink-faint">Ticks Pending</span>
+                  <span className="font-mono text-ink">{inst.ticks_pending}</span>
+                </>
+              )}
+              <span className="text-ink-faint">Bid / Ask</span>
+              <span className="font-mono text-ink">{num(inst.bid) != null ? `${num(inst.bid)!.toFixed(2)} / ${num(inst.ask)!.toFixed(2)}` : "—"}</span>
+              <span className="text-ink-faint">Spread</span>
+              <span className="font-mono text-ink">{num(inst.spread) != null ? `${num(inst.spread)!.toFixed(1)} pts` : "—"}</span>
+              <span className="text-ink-faint">Session H/L</span>
+              <span className="font-mono text-ink">{num(inst.session_high) != null ? `${num(inst.session_high)!.toFixed(2)} / ${num(inst.session_low)!.toFixed(2)}` : "—"}</span>
+              <span className="text-ink-faint">Equity / Balance</span>
+              <span className="font-mono text-ink">{num(inst.equity) != null ? `$${num(inst.equity)!.toFixed(2)} / $${num(inst.balance)!.toFixed(2)}` : "—"}</span>
+              <span className="text-ink-faint">Margin / Free</span>
+              <span className="font-mono text-ink">{num(inst.margin) != null ? `$${num(inst.margin)!.toFixed(2)} / $${num(inst.free_margin)!.toFixed(2)}` : "—"}</span>
+              <span className="text-ink-faint">Margin Level / Lev</span>
+              <span className="font-mono text-ink">{num(inst.margin_level) != null ? `${num(inst.margin_level)!.toFixed(0)}% / 1:${inst.leverage}` : "—"}</span>
+              <span className="text-ink-faint">Net P&L</span>
+              <span className={`font-mono ${pnl != null && pnl < 0 ? "text-danger" : pnl != null && pnl > 0 ? "text-ok" : "text-ink"}`}>
+                {pnl != null ? `$${pnl.toFixed(2)}` : "—"}
+              </span>
+              {inst.last_tick_ts && (
+                <>
+                  <span className="text-ink-faint">Last Tick</span>
+                  <span className="font-mono text-ink text-[10px]">{new Date(Number(inst.last_tick_ts) * 1000).toLocaleTimeString()}</span>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
       <div className="flex flex-wrap gap-1 pt-1">
         <button
           type="button"
@@ -391,16 +411,19 @@ function OverviewTab({ data, isError }: { data: SystemInfo | undefined; isError:
       <Card>
         <CardHeader><CardTitle>Quick Links</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          <a href="/novnc/" target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
-            MT5 noVNC Desktop →
-          </a>
-          <a href="/dozzle/" target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
-            Dozzle Log Viewer →
-          </a>
-          <a href="https://router.lumine.biz.id" target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
-            9router Dashboard →
-          </a>
-        </CardContent>
+                  <a href="/novnc/" target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
+                    MT5 HFM Desktop →
+                  </a>
+                  <a href="/novnc-crypto/" target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
+                    MT5 Crypto Desktop (Exness/BTCUSD) →
+                  </a>
+                  <a href="/dozzle/" target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
+                    Dozzle Log Viewer →
+                  </a>
+                  <a href="https://router.lumine.biz.id" target="_blank" rel="noreferrer" className="block text-xs text-accent hover:underline">
+                    9router Dashboard →
+                  </a>
+                </CardContent>
       </Card>
     </div>
   );

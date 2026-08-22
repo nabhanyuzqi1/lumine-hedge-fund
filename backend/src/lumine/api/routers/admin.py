@@ -720,45 +720,54 @@ async def update_system_config(  # noqa: C901, PLR0912, PLR0915 — fixed field 
 async def get_ea_status(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("admin")],
 ) -> dict:
-    """EA status: version, seed phase, last tick, ticks sent — dari Redis mt5:status hash."""
+    """EA status: version, seed phase, last tick, ticks sent — dari Redis.
+
+    22 Aug 2026 — multi-instance: HFM (mt5:status, XAUUSD) + crypto
+    (mt5crypto:status, BTCUSD/Exness). Return per-instance di `instances`
+    (top-level tetap field HFM untuk backward-compat frontend).
+    """
     try:
         r = await get_redis()
-        raw = await r.hgetall("mt5:status")
-        # mt5:ticks queue length → proxy untuk "ticks pending"
         ticks_pending = await r.llen("mt5:ticks")
-        # mt5:logs — recent EA log lines (LPUSH by EA, newest first)
         logs_raw = await r.lrange("mt5:logs", 0, 49)
         logs = [ln.decode() if isinstance(ln, bytes) else str(ln) for ln in logs_raw]
-        status = {k.decode() if isinstance(k, bytes) else k: v.decode() if isinstance(v, bytes) else v
-                  for k, v in raw.items()} if raw else {}
-        return {
-            "ea_version": status.get("ea_version", "unknown"),
-            "ea_build": status.get("ea_build", "unknown"),
-            "seed_phase": status.get("seed_phase", "unknown"),
-            "seed_done": status.get("seed_done", "0"),
-            "last_tick_ts": status.get("last_tick_ts"),
-            "ticks_sent": status.get("ticks_sent", "0"),
-            "ticks_pending": ticks_pending,
-            "proxy_url": status.get("proxy_url", "unknown"),
-            "symbol": status.get("symbol", "unknown"),
-            "bid": status.get("bid"),
-            "ask": status.get("ask"),
-            "spread": status.get("spread"),
-            "session_high": status.get("session_high"),
-            "session_low": status.get("session_low"),
-            "equity": status.get("equity"),
-            "balance": status.get("balance"),
-            "margin": status.get("margin"),
-            "free_margin": status.get("free_margin"),
-            "margin_level": status.get("margin_level"),
-            "leverage": status.get("leverage"),
-            "net_pnl": status.get("net_pnl"),
-            # v4.11 (18 Aug 2026): connected = tick FRESH (<30s), bukan
-            # sekadar hash ada — status Redis punya TTL 90s, EA bisa mati
-            # tapi status masih tampil "Connected" hingga 90s.
-            "connected": _ea_fresh(status),
-            "logs": logs,
-        }
+
+        async def _build(key: str) -> dict:
+            raw = await r.hgetall(key)
+            status = {k.decode() if isinstance(k, bytes) else k: v.decode() if isinstance(v, bytes) else v
+                      for k, v in raw.items()} if raw else {}
+            return {
+                "ea_version": status.get("ea_version", "unknown"),
+                "ea_build": status.get("ea_build", "unknown"),
+                "seed_phase": status.get("seed_phase", "unknown"),
+                "seed_done": status.get("seed_done", "0"),
+                "last_tick_ts": status.get("last_tick_ts"),
+                "ticks_sent": status.get("ticks_sent", "0"),
+                "proxy_url": status.get("proxy_url", "unknown"),
+                "symbol": status.get("symbol", "unknown"),
+                "bid": status.get("bid"),
+                "ask": status.get("ask"),
+                "spread": status.get("spread"),
+                "session_high": status.get("session_high"),
+                "session_low": status.get("session_low"),
+                "equity": status.get("equity"),
+                "balance": status.get("balance"),
+                "margin": status.get("margin"),
+                "free_margin": status.get("free_margin"),
+                "margin_level": status.get("margin_level"),
+                "leverage": status.get("leverage"),
+                "net_pnl": status.get("net_pnl"),
+                "connected": _ea_fresh(status),
+            }
+
+        hfm = await _build("mt5:status")
+        crypto = await _build("mt5crypto:status")
+        # crypto logs (mt5crypto:logs) — gabung jika ada
+        crypto_logs_raw = await r.lrange("mt5crypto:logs", 0, 49)
+        crypto_logs = [ln.decode() if isinstance(ln, bytes) else str(ln) for ln in crypto_logs_raw]
+        hfm["logs"] = logs
+        crypto["logs"] = crypto_logs
+        return {**hfm, "instances": {"hfm": hfm, "crypto": crypto}}
     except Exception as exc:
         return {"connected": False, "error": str(exc), "logs": []}
 
