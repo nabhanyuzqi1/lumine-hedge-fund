@@ -7,7 +7,6 @@ vi.mock("lightweight-charts");
 
 import { CandlestickChart, TICK_DEBOUNCE_MS } from "@/components/charts/candlestick-chart";
 import type { ChartBar } from "@/data/fixtures";
-import { CHART_COLORS } from "@/lib/chart-theme";
 import type { MarketTick } from "@/stores";
 
 /**
