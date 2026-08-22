@@ -414,7 +414,9 @@ export function LLMRoutingTab() {
                   Belum ada LLM call tercatat. Trigger decision cycle untuk melihat routing live.
                 </p>
               ) : (
-                <table className="w-full text-left font-mono text-[10px]">
+                <div className="overflow-x-auto">
+
+                  <table className="w-full text-left font-mono text-[10px]">
                   <thead className="sticky top-0 bg-bg-raised text-ink-faint">
                     <tr>
                       <th className="px-3 py-1.5">time</th>
@@ -480,6 +482,7 @@ export function LLMRoutingTab() {
                     ))}
                   </tbody>
                 </table>
+              </div>
               )}
             </div>
           </div>

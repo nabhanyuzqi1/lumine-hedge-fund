@@ -56,7 +56,8 @@ export function WorkflowRunListPage() {
             </p>
           )}
           {data && (
-            <table className="w-full text-left text-sm" data-testid="runs-table">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm" data-testid="runs-table">
               <thead className="border-b border-border-subtle text-xs text-text-tertiary">
                 <tr>
                   <th className="py-2 pr-3 font-medium">Run</th>
@@ -93,7 +94,8 @@ export function WorkflowRunListPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
 
           <div className="flex items-center justify-end gap-2 pt-3">
