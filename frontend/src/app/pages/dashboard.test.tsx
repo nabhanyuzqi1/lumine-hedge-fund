@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("lightweight-charts");
@@ -20,9 +21,11 @@ const mockEcharts = echarts as unknown as {
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={client}>
-      <DashboardPage />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={client}>
+        <DashboardPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 

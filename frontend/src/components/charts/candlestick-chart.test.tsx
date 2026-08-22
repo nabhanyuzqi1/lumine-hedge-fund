@@ -53,25 +53,21 @@ describe("CandlestickChart", () => {
     vi.useRealTimers();
   });
 
-  it("creates candle + volume series and loads bars once", () => {
+  it("creates candle series only and loads bars once", () => {
     render(<CandlestickChart bars={BARS} timeframe="5m" />);
 
     expect(lwc.createChart).toHaveBeenCalledTimes(1);
     const chart = mockLwc.__getCharts()[0];
     expect(chart).toBeDefined();
 
+    // 22 Aug 2026: volume histogram dihapus — volume ada di FeaturePanel.
     const addCalls = chart!.addSeries.mock.calls;
-    expect(addCalls.map((call) => call[0])).toEqual(["CandlestickSeries", "HistogramSeries"]);
+    expect(addCalls.map((call) => call[0])).toEqual(["CandlestickSeries"]);
 
     const candles = chart!.addSeries.mock.results[0]!.value as MockSeries;
-    const volumes = chart!.addSeries.mock.results[1]!.value as MockSeries;
     expect(candles.setData).toHaveBeenCalledWith([
       { time: 1000, open: 100, high: 110, low: 95, close: 105 },
       { time: 2000, open: 105, high: 108, low: 100, close: 98 },
-    ]);
-    expect(volumes.setData).toHaveBeenCalledWith([
-      { time: 1000, value: 500, color: CHART_COLORS.up },
-      { time: 2000, value: 700, color: CHART_COLORS.down },
     ]);
   });
 
@@ -81,7 +77,6 @@ describe("CandlestickChart", () => {
 
     const chart = mockLwc.__getCharts()[0]!;
     const candles = chart.addSeries.mock.results[0]!.value as MockSeries;
-    const volumes = chart.addSeries.mock.results[1]!.value as MockSeries;
 
     // Inside the debounce window: no update yet.
     act(() => {
@@ -100,11 +95,6 @@ describe("CandlestickChart", () => {
       high: 112,
       low: 100,
       close: 112,
-    });
-    expect(volumes.update).toHaveBeenCalledWith({
-      time: 2000,
-      value: 700,
-      color: CHART_COLORS.up,
     });
   });
 

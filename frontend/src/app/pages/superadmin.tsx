@@ -258,21 +258,96 @@ function EAStatusCard() {
 
 function EALogsPanel() {
   const { data, isLoading } = useEAStatus();
+  const [mode, setMode] = React.useState<"split" | "merged">("split");
+  const instances = data?.instances;
+  const hfmLogs = instances?.hfm?.logs ?? data?.logs ?? [];
+  const cryptoLogs = instances?.crypto?.logs ?? [];
+  const merged = [...hfmLogs, ...cryptoLogs].sort((a, b) => {
+    const ta = /(\d{2}:\d{2}:\d{2})/.exec(a)?.[1] ?? "";
+    const tb = /(\d{2}:\d{2}:\d{2})/.exec(b)?.[1] ?? "";
+    return ta.localeCompare(tb);
+  });
+
+  const LogLine = ({ line, tag }: { line: string; tag: "HFM" | "CRYPTO" }) => (
+    <li
+      className={`flex items-start gap-1.5 whitespace-pre-wrap rounded px-1 py-0.5 ${
+        line.includes("ERROR") || line.includes("failed")
+          ? "bg-danger/10 text-danger"
+          : line.includes("RECOVERED") || line.includes("OK")
+            ? "bg-ok/10 text-ok"
+            : ""
+      }`}
+    >
+      <span className={`mt-0.5 shrink-0 rounded px-1 font-semibold ${tag === "HFM" ? "bg-accent/20 text-accent" : "bg-warn/20 text-warn"}`}>
+        {tag}
+      </span>
+      <span>{line}</span>
+    </li>
+  );
+
   return (
     <div className="rounded-panel border border-line bg-bg-raised p-3">
-      <h3 className="mb-2 font-mono text-xs font-semibold text-ink">EA Logs (live)</h3>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-mono text-xs font-semibold text-ink">EA Logs (live)</h3>
+        <div className="flex items-center gap-1">
+          {(["split", "merged"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
+                mode === m ? "border-accent bg-accent/10 text-accent" : "border-line text-ink-faint hover:text-ink"
+              }`}
+            >
+              {m === "split" ? "Terpisah" : "Gabung"}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="space-y-1">{[...Array(3)].map((_, i) => <div key={i} className="h-4 animate-pulse rounded bg-raised" />)}</div>
-      ) : (data?.logs?.length ?? 0) === 0 ? (
-        <p className="text-xs text-ink-faint">No logs in mt5:logs — EA mungkin belum push logs ke Redis</p>
+      ) : mode === "merged" ? (
+        (merged.length ?? 0) === 0 ? (
+          <p className="text-xs text-ink-faint">Belum ada log EA (mt5:logs / mt5crypto:logs kosong)</p>
+        ) : (
+          <ul className="max-h-64 space-y-0.5 overflow-auto overscroll-none font-mono text-[10px] text-ink-dim">
+            {merged.map((line, i) => (
+              <LogLine key={i} line={line} tag={hfmLogs.includes(line) ? "HFM" : "CRYPTO"} />
+            ))}
+          </ul>
+        )
       ) : (
-        <ul className="max-h-64 space-y-0.5 overflow-auto overscroll-none font-mono text-[10px] text-ink-dim">
-          {(data?.logs ?? []).map((line, i) => (
-            <li key={i} className={`whitespace-pre-wrap rounded px-1 py-0.5 ${line.includes("ERROR") || line.includes("failed") ? "bg-danger/10 text-danger" : line.includes("RECOVERED") || line.includes("OK") ? "bg-ok/10 text-ok" : ""}`}>
-              {line}
-            </li>
-          ))}
-        </ul>
+        <div className="grid gap-2 lg:grid-cols-2">
+          <div className="min-w-0">
+            <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-accent">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" /> HFM — XAUUSD
+            </p>
+            {hfmLogs.length === 0 ? (
+              <p className="text-xs text-ink-faint">No logs (mt5:logs kosong)</p>
+            ) : (
+              <ul className="max-h-56 space-y-0.5 overflow-auto overscroll-none font-mono text-[10px] text-ink-dim">
+                {hfmLogs.map((line, i) => (
+                  <LogLine key={i} line={line} tag="HFM" />
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="min-w-0 border-l border-line pl-2 lg:pl-3">
+            <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-warn">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-warn" /> Crypto — BTCUSD
+            </p>
+            {cryptoLogs.length === 0 ? (
+              <p className="text-xs text-ink-faint">No logs (mt5crypto:logs kosong — EA crypto belum attach)</p>
+            ) : (
+              <ul className="max-h-56 space-y-0.5 overflow-auto overscroll-none font-mono text-[10px] text-ink-dim">
+                {cryptoLogs.map((line, i) => (
+                  <LogLine key={i} line={line} tag="CRYPTO" />
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -711,6 +786,55 @@ function EmbedTab({ url, title }: { url: string; title: string }) {
   );
 }
 
+// 22 Aug 2026: MT5 Desktop multi-instance — HFM (XAUUSD) & Crypto (BTCUSD/Exness).
+function MT5DesktopTab() {
+  const [view, setView] = React.useState<"split" | "hfm" | "crypto">("split");
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setView("split")}
+          className={`rounded border px-3 py-1 font-mono text-[10px] uppercase tracking-wider ${
+            view === "split" ? "border-accent bg-accent/10 text-accent" : "border-line text-ink-faint hover:text-ink"
+          }`}
+        >
+          Split (keduanya)
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("hfm")}
+          className={`rounded border px-3 py-1 font-mono text-[10px] uppercase tracking-wider ${
+            view === "hfm" ? "border-accent bg-accent/10 text-accent" : "border-line text-ink-faint hover:text-ink"
+          }`}
+        >
+          HFM — XAUUSD
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("crypto")}
+          className={`rounded border px-3 py-1 font-mono text-[10px] uppercase tracking-wider ${
+            view === "crypto" ? "border-accent bg-accent/10 text-accent" : "border-line text-ink-faint hover:text-ink"
+          }`}
+        >
+          Crypto — Exness/BTCUSD
+        </button>
+      </div>
+
+      {view === "split" ? (
+        <div className="grid gap-4 xl:grid-cols-2">
+          <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />
+          <EmbedTab url="/novnc-crypto/" title="MT5 Crypto (Exness/BTCUSD) — noVNC Desktop" />
+        </div>
+      ) : view === "hfm" ? (
+        <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />
+      ) : (
+        <EmbedTab url="/novnc-crypto/" title="MT5 Crypto (Exness/BTCUSD) — noVNC Desktop" />
+      )}
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function SuperadminPage() {
@@ -817,7 +941,7 @@ export function SuperadminPage() {
                 {tab === "llm" && <LLMRoutingTab />}
                 {tab === "mt5" && (
           <div className="space-y-4">
-            <EmbedTab url="/novnc/" title="MT5 HFM — noVNC Desktop (session-protected)" />
+            <MT5DesktopTab />
             <EALogsPanel />
           </div>
         )}
