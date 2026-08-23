@@ -2316,7 +2316,13 @@ paths:
       description: 'Return computed technical features — dihitung dari bars real.
 
 
-        ZERO-DEMO: tanpa data bars → dict kosong (bukan fitur sintetis).'
+        ZERO-DEMO: tanpa data bars → dict kosong (bukan fitur sintetis).
+
+        Indikator: ATR(14), RSI(14), EMA(20/50/200), BB width(20), ADX(14),
+
+        volume_ratio + spread/session live. (22 Aug 2026: diperluas dari
+
+        sma20/volatility saja — FeaturePanel frontend butuh set lengkap.)'
       operationId: get_features_api_v1_market_features__symbol__get
       parameters:
       - name: symbol
@@ -3663,8 +3669,14 @@ paths:
       tags:
       - admin
       summary: Get Ea Status
-      description: 'EA status: version, seed phase, last tick, ticks sent — dari Redis
-        mt5:status hash.'
+      description: 'EA status: version, seed phase, last tick, ticks sent — dari Redis.
+
+
+        22 Aug 2026 — multi-instance: HFM (mt5:status, XAUUSD) + crypto
+
+        (mt5crypto:status, BTCUSD/Exness). Return per-instance di `instances`
+
+        (top-level tetap field HFM untuk backward-compat frontend).'
       operationId: get_ea_status_api_v1_admin_ea_status_get
       parameters:
       - name: X-Lumine-API-Key
@@ -3715,8 +3727,11 @@ paths:
         / PANEL_TOGGLE / PING).
 
 
-        Body: {"action": "SEED_NOW"} — EA polling /commands tiap 1 detik, langsung
-        eksekusi.'
+        Body: {"action": "SEED_NOW", "instance": "crypto"} — EA polling /commands
+        tiap 1 detik, langsung eksekusi.
+
+        instance opsional: "crypto" → mt5crypto:commands, default/omit → mt5:commands
+        (HFM).'
       operationId: post_ea_command_api_v1_admin_ea_command_post
       parameters:
       - name: X-Lumine-API-Key
@@ -4772,6 +4787,16 @@ components:
           - type: string
           - type: 'null'
           title: Symbol
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        decision:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Decision
         side:
           anyOf:
           - type: string
