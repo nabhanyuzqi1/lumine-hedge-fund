@@ -144,7 +144,7 @@ async def _aggregate_bars(
     floor; DO NOTHING agar bar historis EA yang sudah benar tidak ditimpa,
     hanya bar baru yang belum ada yang di-insert dari data live.
     """
-    from sqlalchemy import func
+    from sqlalchemy import func, select
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     secs = minutes * 60
@@ -208,7 +208,7 @@ async def _bar_flush_worker() -> None:
     from sqlalchemy import func, select
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-    from lumine.data.models import Bars1M, Bars5M
+    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
     from lumine.data.session import get_sessionmaker
 
     while True:

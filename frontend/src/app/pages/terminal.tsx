@@ -552,6 +552,8 @@ function TradingWorkspace() {
           }
         >
           <LazyCandlestickChart
+                      key={selectedSymbol}
+                      symbol={selectedSymbol}
                       bars={bars.data ?? []}
                       lastTick={lastTick}
                       timeframe={timeframe}

@@ -49,6 +49,8 @@ export interface CandlestickChartProps {
    *  chart menampilkan window [index-window, index] via visible range. */
   replayIndex?: number | null;
   replayWindow?: number;
+  /** Symbol pair yang ditampilkan (untuk title bukan hardcoded XAUUSD). */
+  symbol?: string;
 }
 
 /**
@@ -70,6 +72,7 @@ export function CandlestickChart({
   priceLines = [],
   replayIndex = null,
   replayWindow = 80,
+  symbol = "XAUUSD",
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<{
@@ -225,7 +228,7 @@ export function CandlestickChart({
 
   return (
     <ChartCard
-      title="XAUUSD — Price Action"
+      title={`${symbol} — Price Action`}
       description={`${timeframe} candlesticks · volume overlay${isStale && bars.length > 0 ? ` · last bar: ${new Date((bars[bars.length - 1]!.time) * 1000).toLocaleDateString()}` : ""}`}
       toolbar={
         <div
