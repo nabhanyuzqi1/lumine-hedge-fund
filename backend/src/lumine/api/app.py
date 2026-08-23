@@ -163,10 +163,10 @@ async def _aggregate_bars(
                 func.min(source_model.low).label("low"),
                 func.last_value(source_model.close)
                 .over(
-                    partition_by=bucket_expr,
-                    order_by=source_model.ts,
-                    range_=("unbounded_preceding", "unbounded_following"),
-                )
+                                    partition_by=bucket_expr,
+                                    order_by=source_model.ts,
+                                    rows=("unbounded_preceding", "unbounded_following"),
+                                )
                 .label("close"),
                 func.sum(source_model.volume).label("volume"),
             )
