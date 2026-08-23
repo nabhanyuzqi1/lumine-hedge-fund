@@ -800,7 +800,8 @@ async def post_ea_command(
 ) -> dict:
     """Kirim command ke EA MT5 via Redis (SEED_NOW / RESEED / STATUS / PANEL_TOGGLE / PING).
 
-    Body: {"action": "SEED_NOW"} — EA polling /commands tiap 1 detik, langsung eksekusi.
+    Body: {"action": "SEED_NOW", "instance": "crypto"} — EA polling /commands tiap 1 detik, langsung eksekusi.
+    instance opsional: "crypto" → mt5crypto:commands, default/omit → mt5:commands (HFM).
     """
     action = str(body.get("action", "")).upper().strip()
     allowed = {"SEED_NOW", "RESEED", "STATUS", "PANEL_TOGGLE", "PING"}
@@ -808,12 +809,18 @@ async def post_ea_command(
         return {"ok": False, "error": f"action harus salah satu dari: {sorted(allowed)}"}
     try:
         r = await get_redis()
+        instance = str(body.get("instance", "")).strip()
+        if instance == "crypto":
+            cmd_key = "mt5crypto:commands"
+        else:
+            cmd_key = "mt5:commands"
         payload = {
             "id": f"web-{int(time.time())}",
             "command_id": f"web-{int(time.time())}",
             "action": action,
+            "instance": instance or "hfm",
         }
-        await r.rpush("mt5:commands", json.dumps(payload))
-        return {"ok": True, "queued": payload}
+        await r.rpush(cmd_key, json.dumps(payload))
+        return {"ok": True, "queued": payload, "queue": cmd_key}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}

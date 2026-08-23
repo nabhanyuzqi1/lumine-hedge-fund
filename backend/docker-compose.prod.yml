@@ -118,7 +118,7 @@ services:
       - RESOLUTION=1280x768x24
     volumes:
       - mt5_crypto_data:/root/.wine-mt5-crypto
-      - /opt/lumine-ea:/opt/lumine-ea:ro
+      - /opt/lumine-ea-crypto:/opt/lumine-ea:ro
     restart: unless-stopped
     healthcheck:
       test:

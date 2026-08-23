@@ -237,9 +237,14 @@ function PositionsTable({ positions, symbol }: { positions: PositionFixture[]; s
   );
 }
 
-/** Bloomberg-style ticker tape: last price per instrument from the market store. */
+/** Bloomberg-style ticker tape: last price per instrument from the market store.
+ * 23 Aug 2026: Setiap pair bisa diklik untuk memilih pair yang ditampilkan di chart.
+ * Ini menghindari tabrakan data antar pair (XAUUSD vs BTCUSD).
+ */
 function TickerTape() {
   const ticks = useMarketStore((s) => s.ticks);
+  const selectedSymbol = useUiStore((s) => s.selectedSymbol);
+  const setSelectedSymbol = useUiStore((s) => s.setSelectedSymbol);
   // 21 Aug 2026 A7 (temuan user): DXY harus bareng pair lain di tape,
   // bukan badge terpisah di atas workspace. Data DXY dari /market/dxy
   // (worker 60s), bukan SSE MT5 — jadi di-poll via useDXY di sini.
@@ -250,21 +255,35 @@ function TickerTape() {
     <div
       className="flex items-center gap-0 overflow-x-auto border-y border-line bg-bg font-mono text-[10px] tabular-nums"
       data-testid="ticker-tape"
-      role="marquee"
-      aria-label="Market ticker"
+      role="tablist"
+      aria-label="Market ticker — klik untuk memilih pair"
     >
       {TICKER_SYMBOLS.map((symbol) => {
         const tick = ticks[symbol];
+        const isSelected = selectedSymbol === symbol;
         return (
-          <span key={symbol} className="flex items-center gap-1.5 whitespace-nowrap border-r border-line px-3 py-1">
-            <span className="text-ink-dim">{symbol}</span>
-            <span className="text-ink">{fmt(tick?.last)}</span>
+          <button
+            key={symbol}
+            type="button"
+            onClick={() => setSelectedSymbol(symbol)}
+            className={cn(
+              "flex items-center gap-1.5 whitespace-nowrap border-r border-line px-3 py-1 transition-colors",
+              isSelected
+                ? "bg-accent/15 text-accent"
+                : "hover:bg-raised hover:text-ink cursor-pointer"
+            )}
+            role="tab"
+            aria-selected={isSelected}
+            aria-label={`Pilih ${symbol} untuk monitoring`}
+          >
+            <span className={isSelected ? "text-accent font-medium" : "text-ink-dim"}>{symbol}</span>
+            <span className={isSelected ? "text-accent" : "text-ink"}>{fmt(tick?.last)}</span>
             {tick && (
-              <span className="text-ink-faint">
+              <span className={isSelected ? "text-accent/70" : "text-ink-faint"}>
                 {tick.bid?.toFixed(2)}/{tick.ask?.toFixed(2)}
               </span>
             )}
-          </span>
+          </button>
         );
       })}
       <span className="flex items-center gap-1.5 whitespace-nowrap border-r border-line px-3 py-1" data-testid="ticker-dxy">

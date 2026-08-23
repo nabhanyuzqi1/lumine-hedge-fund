@@ -92,3 +92,7 @@ backend/test_debug.py
 
 # Hermes internal (plans/temp)
 .hermes/
+
+# Other tool caches
+.cursor/
+.obsidian/

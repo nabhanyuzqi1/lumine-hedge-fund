@@ -120,6 +120,16 @@ echo "==> MT5 data dir: ${MT5_DATA_DIR}"
 mkdir -p "${MT5_DATA_DIR}/Experts"
 cp -f /opt/lumine-ea/LumineEA.mq5 "${MT5_DATA_DIR}/Experts/LumineEA.mq5"
 
+# 23 Aug 2026: MT5 runtime (build 6140) membaca EA dari folder INSTALL
+# Program Files/MetaTrader 5/MQL5/Experts — bukan hanya Common/MQL5.
+# Copy ke kedua lokasi agar EA terbaru benar-benar terpakai.
+INSTALL_MQL5="/root/.wine-mt5-crypto/drive_c/Program Files/MetaTrader 5/MQL5"
+if [[ -d "${INSTALL_MQL5}" ]]; then
+  mkdir -p "${INSTALL_MQL5}/Experts"
+  cp -f /opt/lumine-ea/LumineEA.mq5 "${INSTALL_MQL5}/Experts/LumineEA.mq5"
+  echo "==> EA juga di-copy ke install folder: ${INSTALL_MQL5}/Experts"
+fi
+
 # Patch terminal.ini — whitelist proxy
 TERMINAL_INI="${MT5_DATA_DIR}/terminal.ini"
 if [[ -f "${TERMINAL_INI}" ]]; then
@@ -137,11 +147,19 @@ fi
 METAEDITOR="${MT5_BIN%/terminal64.exe}/MetaEditor64.exe"
 if [[ -f "${METAEDITOR}" ]]; then
   echo "==> Compile LumineEA (crypto instance)..."
-  # copy EA source
+  # copy EA source — || true: wine bisa return non-zero walau compile sukses,
+  # dan `set -euo pipefail` akan mematikan entrypoint → container crash-loop.
   wine "${METAEDITOR}" /compile:"${MT5_DATA_DIR}/Experts/LumineEA.mq5" /log:"${MT5_DATA_DIR}/Experts/compile-crypto.log" 2>/dev/null || true
   sleep 2
   if [[ -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" ]]; then
     echo "==> Compile OK: LumineEA.ex5"
+    # 23 Aug 2026: MT5 runtime (portable.txt) load EA dari INSTALL folder —
+    # copy hasil compile ke sana agar EA terbaru benar-benar terpakai.
+    if [[ -d "${INSTALL_MQL5}" ]]; then
+      mkdir -p "${INSTALL_MQL5}/Experts"
+      cp -f "${MT5_DATA_DIR}/Experts/LumineEA.ex5" "${INSTALL_MQL5}/Experts/LumineEA.ex5"
+      echo "==> ex5 juga di-copy ke install folder"
+    fi
   else
     echo "WARN: compile mungkin gagal — cek log"
     cat "${MT5_DATA_DIR}/Experts/compile-crypto.log" 2>/dev/null | tail -10

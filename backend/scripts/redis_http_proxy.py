@@ -29,16 +29,28 @@ r = redis.from_url(REDIS_URL, decode_responses=True)
 
 
 def _ns() -> str:
-    """Prefix key per-instance. Tanpa header → `mt5:` (legacy/HFM).
+    """Prefix key per-instance. Tanpa indikasi → `mt5:` (legacy/HFM).
 
-    Instance lain (mis. `crypto`) → `mt5crypto:` — status/logs/results
-    terisolasi sehingga superadmin bisa monitor kedua EA terpisah.
+    Instance lain → `mt5crypto:` — status/logs/results terisolasi.
+
+    23 Aug 2026 — Caddy 2.11.4 TIDAK bisa menambah header/query request
+    ke upstream (header_up/rewrite diabaikan). Deteksi dari Host header:
+    - `lumine.biz.id` (domain) → HFM
+    - `166.88.227.177` (IP langsung, EA crypto) → crypto
     """
+    host = request.headers.get("Host", "")
+    if "166.88.227.177" in host:
+        return "mt5crypto:"
+    # Fallback: query param atau X-Instance header (test internal)
+    qinst = request.args.get("instance", "")
+    if qinst:
+        clean = "".join(ch for ch in qinst if ch.isalnum() or ch in "-_")
+        return f"mt5{clean}:"
     inst = request.headers.get("X-Instance", "")
-    if not inst:
-        return "mt5:"
-    clean = "".join(ch for ch in inst if ch.isalnum() or ch in "-_")
-    return f"mt5{clean}:"
+    if inst:
+        clean = "".join(ch for ch in inst if ch.isalnum() or ch in "-_")
+        return f"mt5{clean}:"
+    return "mt5:"
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -51,13 +63,19 @@ def health():
 
 @app.route("/commands", methods=["GET"])
 def commands():
-    """BRPOP mt5:commands dengan timeout (long-polling untuk EA).
+    """BRPOP mt5:commands / mt5crypto:commands dengan timeout (long-polling untuk EA).
     Query param: timeout=30 (default 30s).
     Return: {id, action, symbol, ...} atau {} jika timeout.
+
+    23 Aug 2026 — per-instance: header X-Instance (Caddy route /mt5-proxy-crypto)
+    memisahkan command queue sehingga EA HFM dan EA crypto TIDAK saling
+    mengambil command milik instance lain.
     """
     timeout = int(request.args.get("timeout", 30))
+    ns = _ns()
+    key = f"{ns}commands"
     try:
-        result = r.brpop("mt5:commands", timeout=timeout)
+        result = r.brpop(key, timeout=timeout)
         if result:
             _, payload = result
             return jsonify(json.loads(payload)), 200
