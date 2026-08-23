@@ -591,7 +591,7 @@ async def get_session(
 
 
 @router.get("/features/{symbol}", response_model=FeatureSet)
-async def get_features(
+async def get_features(  # noqa: C901, PLR0915
     symbol: str,
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:market")],
 ) -> FeatureSet:
@@ -675,7 +675,7 @@ async def get_features(
             for i in range(14, len(trs)):
                 atr_14 = (atr_14 * 13 + trs[i]) / 14
 
-            # ── Bollinger width(20, 2σ) ──
+            # ── Bollinger width(20, 2σ) ──  # noqa: RUF003
             bb20 = closes[-20:]
             mean = sum(bb20) / 20
             var = sum((x - mean) ** 2 for x in bb20) / 20

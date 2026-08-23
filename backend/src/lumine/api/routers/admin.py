@@ -728,7 +728,6 @@ async def get_ea_status(
     """
     try:
         r = await get_redis()
-        ticks_pending = await r.llen("mt5:ticks")
         logs_raw = await r.lrange("mt5:logs", 0, 49)
         logs = [ln.decode() if isinstance(ln, bytes) else str(ln) for ln in logs_raw]
 
