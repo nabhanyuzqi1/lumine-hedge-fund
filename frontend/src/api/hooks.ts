@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { get } from "@/api/client";
@@ -273,6 +274,13 @@ function toApiKeyFixture(key: AdminKey): ApiKeyFixture {
  */
 
 export function useMarketBars(symbol: string, timeframe: Timeframe) {
+  // 23 Aug 2026: track symbol berubah — reset placeholder sync.
+  // keepPreviousData menampilkan data pair LAMA saat ganti ticker,
+  // dan jika fetch gagal, data lama retained selamanya → chart "hardcoded".
+  const prevSymbol = useRef(symbol);
+  const symbolChanged = prevSymbol.current !== symbol;
+  prevSymbol.current = symbol;
+
   return useQuery({
     queryKey: ["market-bars", symbol, timeframe],
     queryFn: async (): Promise<ChartBar[]> => {
@@ -300,8 +308,13 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
     // 23 Aug 2026: TAPI jangan retain saat SYMBOL BERUBAH — keepPreviousData
     // menampilkan bars pair lama saat ganti ticker → chart seolah tidak
     // update ("hardcoded"). Retain hanya untuk symbol yang sama.
-    placeholderData: (prev, query) =>
-      query.queryKey[1] === prev?.queryKey?.[1] ? prev : undefined,
+    // 23 Aug 2026: jangan retain data saat SYMBOL BERUBAH — keepPreviousData
+    // menampilkan bars pair lama saat ganti ticker → chart seolah tidak update.
+    // Retain hanya untuk refetch symbol yang sama (placeholderData default).
+    // retain data hanya saat symbol SAMA (refetch/refresh).
+    // Saat symbol berubah → placeholder undefined → data kosong →
+    // chart loading (tidak "hardcoded" data lama).
+    placeholderData: symbolChanged ? undefined : keepPreviousData,
     // 18 Aug 2026: 1s → 5s — bar terakhir sudah di-update live oleh WS
     // tick. Refetch 1s hanya render storm + WebGL churn → browser crash
     // STATUS_BREAKPOINT di dashboard (chart + WS + refetch bersamaan).
