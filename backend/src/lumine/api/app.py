@@ -199,7 +199,7 @@ async def _bar_flush_worker() -> None:
     (ON CONFLICT (ts, symbol) DO UPDATE) + bangun bars_5m agregat dari
     bars_1m (ON CONFLICT DO NOTHING — bar 5m yang sudah ada tidak diubah).
     """
-    from sqlalchemy import func, select
+    from sqlalchemy import func, select, text
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     from lumine.data.models import Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
@@ -257,7 +257,7 @@ async def _bar_flush_worker() -> None:
                 agg_rows = (
                     await session.execute(
                         select(
-                            func.date_trunc("hour", Bars1M.ts) + func.interval("5 min") * func.floor(
+                            func.date_trunc("hour", Bars1M.ts) + text("interval '5 min'") * func.floor(
                                 func.extract("minute", Bars1M.ts) / 5
                             ),
                             Bars1M.symbol,
@@ -267,10 +267,10 @@ async def _bar_flush_worker() -> None:
                             func.max(Bars1M.close),
                             func.sum(Bars1M.volume),
                         )
-                        .where(Bars1M.ts >= five_min_bucket - func.interval("1 hour"))
+                        .where(Bars1M.ts >= five_min_bucket - text("interval '1 hour'"))
                         .group_by(
                             func.date_trunc("hour", Bars1M.ts)
-                            + func.interval("5 min")
+                            + text("interval '5 min'")
                             * func.floor(func.extract("minute", Bars1M.ts) / 5),
                             Bars1M.symbol,
                         )
