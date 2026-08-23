@@ -297,7 +297,11 @@ export function useMarketBars(symbol: string, timeframe: Timeframe) {
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
     // 19 Aug 2026 P0: retain data terakhir saat refetch gagal — dashboard
     // tidak boleh ilang-muncul saat WS/REST down.
-    placeholderData: keepPreviousData,
+    // 23 Aug 2026: TAPI jangan retain saat SYMBOL BERUBAH — keepPreviousData
+    // menampilkan bars pair lama saat ganti ticker → chart seolah tidak
+    // update ("hardcoded"). Retain hanya untuk symbol yang sama.
+    placeholderData: (prev, query) =>
+      query.queryKey[1] === prev?.queryKey?.[1] ? prev : undefined,
     // 18 Aug 2026: 1s → 5s — bar terakhir sudah di-update live oleh WS
     // tick. Refetch 1s hanya render storm + WebGL churn → browser crash
     // STATUS_BREAKPOINT di dashboard (chart + WS + refetch bersamaan).

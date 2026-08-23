@@ -136,6 +136,7 @@ async def _aggregate_bars(
     target_model: object,
     source_model: object,
     minutes: int,
+    lookback_hours: int = 48,
 ) -> None:
     """Agregasi OHLCV live dari source ke target (5m→15m→1h→4h).
 
@@ -144,7 +145,7 @@ async def _aggregate_bars(
     floor; DO NOTHING agar bar historis EA yang sudah benar tidak ditimpa,
     hanya bar baru yang belum ada yang di-insert dari data live.
     """
-    from sqlalchemy import func, select
+    from sqlalchemy import func, select, text
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
     secs = minutes * 60
@@ -164,6 +165,7 @@ async def _aggregate_bars(
                 func.max(source_model.close).label("close"),
                 func.sum(source_model.volume).label("volume"),
             )
+            .where(source_model.ts >= func.now() - text(f"interval '{lookback_hours} hours'"))
             .group_by(bucket_expr, source_model.symbol)
         )
     ).all()
@@ -303,9 +305,9 @@ async def _bar_flush_worker() -> None:
                 # 5m → 15m → 1h → 4h (bucket UTC). DO NOTHING agar bar
                 # historis yang sudah benar dari EA tidak ditimpa; bar baru
                 # (belum pernah ada) di-insert dari data live.
-                await _aggregate_bars(session, Bars15M, Bars5M, 15)
-                await _aggregate_bars(session, Bars1H, Bars15M, 60)
-                await _aggregate_bars(session, Bars4H, Bars1H, 240)
+                await _aggregate_bars(session, Bars15M, Bars5M, 15, lookback_hours=168)
+                await _aggregate_bars(session, Bars1H, Bars15M, 60, lookback_hours=720)
+                await _aggregate_bars(session, Bars4H, Bars1H, 240, lookback_hours=2160)
                 await session.commit()
                 if ready:
                     print(f"[BARS] flushed {len(ready)} bar 1m live", flush=True)
