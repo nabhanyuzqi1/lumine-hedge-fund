@@ -151,7 +151,7 @@ async def _aggregate_bars(
     )
     rows = (
         await session.execute(
-            select(
+            select(  # noqa: F821
                 bucket_expr.label("ts"),
                 source_model.symbol,
                 func.first_value(source_model.open)
@@ -307,9 +307,9 @@ async def _bar_flush_worker() -> None:
                 # 5m → 15m → 1h → 4h (bucket UTC). DO NOTHING agar bar
                 # historis yang sudah benar dari EA tidak ditimpa; bar baru
                 # (belum pernah ada) di-insert dari data live.
-                await _aggregate_bars(session, Bars15M, Bars5M, 15)
-                await _aggregate_bars(session, Bars1H, Bars15M, 60)
-                await _aggregate_bars(session, Bars4H, Bars1H, 240)
+                await _aggregate_bars(session, Bars15M, Bars5M, 15)  # noqa: F821
+                await _aggregate_bars(session, Bars1H, Bars15M, 60)  # noqa: F821
+                await _aggregate_bars(session, Bars4H, Bars1H, 240)  # noqa: F821
                 await session.commit()
                 if ready:
                     print(f"[BARS] flushed {len(ready)} bar 1m live", flush=True)

@@ -810,10 +810,7 @@ async def post_ea_command(
     try:
         r = await get_redis()
         instance = str(body.get("instance", "")).strip()
-        if instance == "crypto":
-            cmd_key = "mt5crypto:commands"
-        else:
-            cmd_key = "mt5:commands"
+        cmd_key = "mt5crypto:commands" if instance == "crypto" else "mt5:commands"
         payload = {
             "id": f"web-{int(time.time())}",
             "command_id": f"web-{int(time.time())}",
