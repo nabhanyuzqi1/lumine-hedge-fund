@@ -74,6 +74,12 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy redis-http-proxy:8765
     }
 
+
+    handle /mt5-proxy-crypto/* {
+        uri strip_prefix /mt5-proxy-crypto
+        reverse_proxy redis-http-proxy:8765
+    }
+
     # ── noVNC (MT5 desktop) — single-login: /novnc → vnc.html dengan
     # autoconnect + password dari env (tanpa login VNC kedua).
     # PITFALL: `redir` di dalam `handle {}` pecah di Caddy 2.11 (target jadi

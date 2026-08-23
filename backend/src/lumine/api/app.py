@@ -103,8 +103,10 @@ async def _tick_worker() -> None:
             publisher = _app_state.get("sse_publisher")
             if publisher is not None:
                 await publisher.publish_tick_update(symbol, bid, ask)
-        except Exception:
-            pass  # transient / malformed tick — skip
+        except Exception as exc:
+            # 23 Aug 2026: log error — `pass` buta membuat tick worker
+            # diam-diam mati (bar builder kosong, chart tidak update).
+            print(f"[TICK] worker error: {type(exc).__name__}: {str(exc)[:200]}", flush=True)
 
 
 def _update_bar_builder(symbol: str, bid: float, ask: float, volume: float) -> None:
@@ -313,8 +315,10 @@ async def _bar_flush_worker() -> None:
                 await session.commit()
                 if ready:
                     print(f"[BARS] flushed {len(ready)} bar 1m live", flush=True)
-        except Exception:
-            pass  # transient — skip cycle
+        except Exception as exc:
+            # 23 Aug 2026: log error — flush gagal diam-diam = chart selisih
+            # menit (bar 1m tidak pernah close di DB).
+            print(f"[BARS] flush error: {type(exc).__name__}: {str(exc)[:200]}", flush=True)
 
 
 async def _handle_order_fill(result: ResultMessage, sse_publisher: object) -> None:
