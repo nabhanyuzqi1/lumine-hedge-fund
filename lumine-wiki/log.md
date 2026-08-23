@@ -46,3 +46,25 @@ Log of all INGEST operations and major vault changes.
 - ✅ Seed semua timeframe: 1m 100k, 5m 67k, 15m 22k, 1h 5.6k, 4h 1.4k, 1d 235
 - ✅ `mt5:status` HFM tidak tertimpa
 - ⚠️ Ticks belum masuk mt5:ticks (ticks_sent=0) — NEXT TASK
+
+## 2026-08-23 (part 2) — Bar builder live + CI hijau + frontend filter
+**Status: BTCUSD chart realtime — bar 1m update live**
+
+### Fix
+1. **Backend: silent exception logging** — `except Exception: pass` di tick_worker & bar_flush_worker menjadi `print(error)` — debugging diam-diam mati
+2. **EA v4.22**: `g_ticksSent++` di SendTick (counter tidak pernah di-increment — bug)
+3. **Caddyfile.prod**: route `/mt5-proxy-crypto/*` di-commit ke repo (sebelumnya hanya di VPS)
+4. **Frontend**: semua panel terminal filter by selectedSymbol (OrdersTable, ActivityLog, RiskGauges exposure, CommitteeFeed)
+5. **CI**: F821/F841/SIM108/C901/PLR0915/RUF003 — semua lint errors fixed, CI hijau
+
+### Bar builder live
+- Seed worker: consume mt5:seed_bars → insert bars_1m
+- Tick worker: consume mt5:ticks → _update_bar_builder + MarketService + SSE
+- Bar flush worker: tiap 60s flush bar ts < current_minute → bars_1m + agregasi 5m/15m/1h/4h
+- Bar terakhir BTCUSD: 18:48 (update live)
+- EA crypto intermittent 521 (Cloudflare origin) — masih perlu investigasi
+
+### Masih Open
+- EA crypto intermittent 521 (Cloudflare → origin kadang down)
+- ActivityLog tidak punya field symbol (filter by message/stream — tidak sempurna)
+- CommitteeFeed tidak punya field symbol (filter by decision/agent text — tidak sempurna)

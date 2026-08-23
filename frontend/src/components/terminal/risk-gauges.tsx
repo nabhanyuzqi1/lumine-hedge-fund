@@ -26,8 +26,12 @@ function toneFor(value: number, cap: number): Gauge["tone"] {
  * Risk gauges — ZERO-DEMO: semua angka dari backend real
  * (portfolio summary + positions dari PostgreSQL/MT5).
  * Kalau data tidak tersedia → tampil "—" (bukan angka fiktif).
+ *
+ * 23 Aug 2026: terima prop `symbol` — exposure dihitung dari posisi pair
+ * tersebut saja (tidak campur posisi pair lain); leverage/margin tetap
+ * account-level (risiko akun memang agregat).
  */
-export function RiskGauges() {
+export function RiskGauges({ symbol }: { symbol?: string }) {
   const summary = usePortfolioSummary("default");
   const positions = usePositionList("default");
 
@@ -36,10 +40,13 @@ export function RiskGauges() {
   const openPnl = summary.data?.open_pnl ?? null;
   const closedPnl = summary.data?.closed_pnl ?? null;
 
-  // Gross notional dari positions (volume × current_price), pakai harga
-  // current_price backend (live/fallback last close).
+  // Gross notional dari positions — filter per symbol jika dipilih,
+  // sehingga exposure menyesuaikan pair yang sedang dimonitor.
+  const symbolPositions = symbol
+    ? (positions.data ?? []).filter((p) => p.symbol === symbol)
+    : (positions.data ?? []);
   const notional =
-    positions.data?.reduce(
+    symbolPositions.reduce(
       (acc, p) => acc + (p.volume ?? 0) * (p.current_price ?? p.entry_price ?? 0),
       0
     ) ?? null;

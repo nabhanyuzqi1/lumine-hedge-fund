@@ -13,10 +13,21 @@ const LEVEL_TONE: Record<LogLevel, "info" | "ok" | "warn" | "danger"> = {
  * Stream/event activity log (W1 right column + W3 run detail): ring-buffer
  * entries from the activity store, newest first. SSE handlers and demo
  * streams both `appendLog` — identical code path.
+ *
+ * 23 Aug 2026: terima prop `symbol` — filter entries yang relevan dengan
+ * pair yang dipilih (message atau stream menyebut symbol). Entry global
+ * (system/committee tanpa symbol) tetap tampil.
  */
-export function ActivityLog({ limit = 24 }: { limit?: number }) {
+export function ActivityLog({ limit = 24, symbol }: { limit?: number; symbol?: string }) {
   const entries = useActivityStore(useShallow((s) => s.getEntries()));
-  const shown = [...entries].reverse().slice(0, limit);
+  let shown = [...entries].reverse().slice(0, limit);
+
+  // Filter by symbol jika diberikan
+  if (symbol) {
+    shown = shown.filter(
+      (e) => e.message.includes(symbol) || e.stream.includes(symbol)
+    );
+  }
 
   if (shown.length === 0) {
     return (

@@ -26,7 +26,7 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "4.21"
+#property version   "4.22"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy-crypto"; // Redis HTTP proxy URL (via Caddy+Cloudflare)
@@ -617,7 +617,10 @@ void SendTick()
 
    int res = HttpPostJson("/ticks", json, 2000);
    if(res == 200)
+     {
       g_lastTickSent = TimeLocal();
+      g_ticksSent++;   // 23 Aug 2026: counter tidak pernah di-increment (bug) — monitoring akurat
+     }
    else if(res != -1 && !g_proxyDown)
       Print("LumineEA: SendTick failed http=", res, " (queued-retry via backoff)");
    // -1 sudah ditangani MarkProxyFail di HttpPostJson path (200-only marks ok;

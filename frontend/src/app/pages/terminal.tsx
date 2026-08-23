@@ -488,7 +488,7 @@ function TradingWorkspace() {
           <QuotePanel symbol={selectedSymbol} />
         </ChartCard>
         <ChartCard title={t("terminal.risk")} description={t("terminal.riskDescription")}>
-                  <RiskGauges />
+                  <RiskGauges symbol={selectedSymbol} />
                 </ChartCard>
                 {/* F-06 (roadmap): FeaturePanel — computed features real dari bars
                     (ATR/RSI/EMA/volatility/spread/session). */}
@@ -531,7 +531,7 @@ function TradingWorkspace() {
                   </CardHeader>
                   <CardContent>
                     <CommitteeDecisionSummary />
-                    <CommitteeFeed />
+                    <CommitteeFeed symbol={selectedSymbol} />
                   </CardContent>
                 </Card>
                 <Card>
@@ -540,7 +540,7 @@ function TradingWorkspace() {
                     <CardDescription>{t("terminal.activityDescription")}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ActivityLog limit={12} />
+                    <ActivityLog limit={12} symbol={selectedSymbol} />
                   </CardContent>
                 </Card>
       </div>
@@ -661,7 +661,10 @@ function TradingWorkspace() {
                 ))}
               </div>
             ) : (
-              <OrdersTable orders={orders.data ?? []} onModify={setModifyTarget} />
+              <OrdersTable
+                orders={(orders.data ?? []).filter((o) => o.symbol === selectedSymbol)}
+                onModify={setModifyTarget}
+              />
             )}
           </CardContent>
         </Card>

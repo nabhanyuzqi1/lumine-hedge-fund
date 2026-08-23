@@ -21,18 +21,35 @@ const TYPE_LABEL: Record<CommitteeActivity["type"], string> = {
  * Live committee feed (W1 right panel, W3 run detail): newest first,
  * optionally filtered by a workflow run. Decoration `timestamp` — the
  * SSE contract's `meta.timestamp` replaces it once live.
+ *
+ * 23 Aug 2026: terima prop `symbol` — tampilkan hanya activity yang
+ * decision/agent-nya menyebut pair tersebut (CommitteeActivity belum
+ * punya field symbol terpisah; decision text memuat simbol).
  */
 export function CommitteeFeed({
   workflowRunId,
   limit = 30,
+  symbol,
 }: {
   workflowRunId?: string;
   limit?: number;
+  symbol?: string;
 }) {
   const activities = useCommitteeStore(useShallow((s) => s.getActivities()));
-  const filtered = workflowRunId
+  let filtered = workflowRunId
     ? activities.filter((a) => a.workflow_run_id === workflowRunId)
     : activities;
+
+  // Filter per symbol — decision/agent menyebut simbol pair.
+  if (symbol) {
+    const sym = symbol.toUpperCase();
+    filtered = filtered.filter(
+      (a) =>
+        a.decision?.toUpperCase().includes(sym) ||
+        a.agent?.toUpperCase().includes(sym) ||
+        a.workflow_run_id?.toUpperCase().includes(sym)
+    );
+  }
 
   const shown = [...filtered].reverse().slice(0, limit);
 
