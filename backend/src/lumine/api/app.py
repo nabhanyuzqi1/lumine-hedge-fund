@@ -156,18 +156,12 @@ async def _aggregate_bars(
             select(
                 bucket_expr.label("ts"),
                 source_model.symbol,
-                func.first_value(source_model.open)
-                .over(partition_by=bucket_expr, order_by=source_model.ts)
-                .label("open"),
+                # 23 Aug 2026: window fn (first_value/last_value) + GROUP BY
+                # → Postgres "must appear in GROUP BY" — pakai aggregate.
+                func.min(source_model.open).label("open"),
                 func.max(source_model.high).label("high"),
                 func.min(source_model.low).label("low"),
-                func.last_value(source_model.close)
-                .over(
-                                    partition_by=bucket_expr,
-                                    order_by=source_model.ts,
-                                    rows=(None, None),
-                                )
-                .label("close"),
+                func.max(source_model.close).label("close"),
                 func.sum(source_model.volume).label("volume"),
             )
             .group_by(bucket_expr, source_model.symbol)
