@@ -114,8 +114,25 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                     _v = _json.loads(avail_raw)
                     avail = [str(m) for m in _v] if isinstance(_v, list) else []
                 filtered: list[str] = []
+                # 24 Aug 2026 FIX: manual chain (default_model+fallback) SEMUA
+                # di-filter out (model tidak in avail — ox-alpha rank low jadi
+                # discovery never probe → avail only gemini) → worker jav
+                # avail[:3] = gemini, IGNORING user manual setting. Root cause
+                # "routing tidak baca setting": model manual default missing
+                # from available_models → false-negative filter.
+                # FIX: manual model tetap diHRT in chain (filter SEPARATE):
+                # filter hanya circuit-open; avail-filter JANGAN apply ke
+                # manual_default model (user chois TIDAK boleh di-remowe by
+                # avail heuristic — probe LIVE per-cycle if absent).
+                filtered = []
+                manual_default = overlay.get("default_model", "")
                 for m in chain:
                     if is_circuit_open(m, overlay):
+                        continue
+                    if m == manual_default:
+                        # Per-cycle live check: manual default trust, bukan
+                        # stale avail list (probe 200/401 output).
+                        filtered.append(m)
                         continue
                     if avail is not None and m not in avail:
                         continue
@@ -123,6 +140,9 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 # 18 Aug 2026: manual chain SEMUA non-available (budget
                 # habis / tidak respond probe) → jatuh ke available_models
                 # dari discovery (model yang benar-benar bisa dipanggil).
+                # 24 Aug 2026: fallback avail[:3] SELALU ke last resort —
+                # manual_default request tetap "heard" untila cycle call
+                # menghit 401/404 langsung.
                 if not filtered and avail:
                     filtered = avail[:3]
                 chain = filtered or chain

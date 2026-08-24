@@ -87,6 +87,25 @@ async def open_circuit(redis: Any, model: str) -> None:
         pass
 
 
+async def close_circuit(redis: Any, model: str) -> None:
+    """Hapus model dari circuit (probe sukses → model sehat kembali).
+
+    24 Aug 2026 FIX: probe yang berhasil SEKARANG mereset circuit — dulu
+    model yang pernah 401/429 dibiarkan circuit-open selama 120s walau
+    probe berikutnya 200 (user-set manual default tidak pernah di-probe
+    lagi → selamanya ke-skip → routing jatuh ke fallback gemini).
+    """
+    try:
+        overlay = await get_overlay(redis)
+        circuits = json.loads(overlay.get("circuit_open", "{}"))
+        if model in circuits:
+            circuits.pop(model, None)
+            await redis.hset(ROUTING_KEY, mapping={"circuit_open": json.dumps(circuits)})
+            logger.info("llm routing: circuit closed for %s (probe OK)", model)
+    except Exception:  # nosec B110 — best-effort
+        pass
+
+
 async def resolve_route_models(
     redis: Any,
     *,
@@ -158,8 +177,8 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
     try:
         payload = await asyncio.to_thread(_fetch)
     except Exception as exc:
-        return {"chosen": None, "models": [], "error": str(exc)[:150]}
 
+        return {"chosen": None, "models": [], "error": str(exc)[:150]}
     models = [str(m.get("id", "")) for m in payload.get("data", []) if m.get("id")]
     if not models:
         return {"chosen": None, "models": [], "error": "no models returned"}
@@ -221,12 +240,20 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
     # (skip 120s) → discovery berikutnya tidak probe lagi.
     ranked = sorted(candidates, key=_score, reverse=True)
     probe_pool = ranked[:8]
+    # 24 Aug 2026 FIX "routing tidak baca setting": manual default model
+    # (user chois) TIDAK pernah di-probe karena rank low (ox-alpha tier2
+    # sub2 → not in top-8) → available_models tanpa ox-alpha → worker
+    # filter-chain false-negative → fallback gemini. User setting DITOHRU.
+    # Solusi: manual default model ALWAYS masuk probe_pool (cuando seja
+    # circuit-open from prev failure — probe live da chance to rescue).
+    _manual = str(overlay.get("default_model") or "")
+    if _manual and _manual not in probe_pool:
+        probe_pool = [_manual, *probe_pool[:7]]
 
     async def _probe(mid: str) -> tuple[str, bool]:
         """Minimal chat call — 200 = available, 429/4xx/5xx = skip.
-        urllib blocking → jalankan di thread (async-safe).
+        urllib blocking -> jalankan di thread (async-safe).
         """
-
         def _probe_sync() -> tuple[str, bool]:
             import urllib.request
 
@@ -251,18 +278,23 @@ async def auto_select_best_model(redis: Any, gateway_url: str, gateway_key: str)
                     resp.read()
                     return mid, True
             except urllib.error.HTTPError as exc:
-                # 429 budget exceeded / quota habis → circuit open (skip 120s).
+                # 429 budget exceeded / quota habis -> circuit open (skip 120s).
                 if exc.code == 429 or exc.code >= 500:
-                    # circuit di-lakukan dari luar (async) — tandai saja.
                     pass
                 return mid, False
             except Exception:
                 return mid, False
 
         ok = await asyncio.to_thread(_probe_sync)
-        if not ok[1]:
+        if ok[1]:
+            # 24 Aug 2026: probe OK -> rescue circuit (probe sukses = sehat;
+            # dulu circuit 120s tidak pernah di-reset walau model sudah pulih
+            # -> manual default skip selamanya).
+            await close_circuit(redis, mid)
+        else:
             await open_circuit(redis, mid)
         return ok
+
 
     available: list[str] = []
     if probe_pool:
