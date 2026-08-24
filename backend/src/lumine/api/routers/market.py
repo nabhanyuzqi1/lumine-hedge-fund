@@ -360,7 +360,7 @@ async def get_ohlcv(
                     rows = [r for r in rows if r.ts >= since]
                 rows = rows[:limit]
             else:
-                stmt = select(model).order_by(model.ts.desc()).limit(limit)
+                stmt = select(model).where(model.symbol == symbol.upper()).order_by(model.ts.desc()).limit(limit)
                 if since is not None:
                     stmt = stmt.where(model.ts >= since)
                 result = await session.execute(stmt)
