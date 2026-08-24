@@ -394,7 +394,9 @@ async def list_positions(
 
     async with get_sessionmaker()() as session:
         repo = PositionRepository(session)
-        positions = await repo.list_open()
+        # 24 Aug 2026: list_recent — tampilkan open + closed history
+        # (list_open → tabel kosong saat 0 posisi open = "tabel mati").
+        positions = await repo.list_recent(limit=50)
         items: list[Position] = []
         for pos in positions:
             current = await _live_mid(pos.symbol)

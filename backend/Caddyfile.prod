@@ -112,6 +112,32 @@ http://lumine.biz.id, http://www.lumine.biz.id, http://166.88.227.177 {
         reverse_proxy lumine-mt5:6901
     }
 
+    # ── noVNC MT5 CRYPTO (24 Aug 2026): instance terpisah, container
+    # lumine-mt5-crypto port 6901 internal. Sebelumnya 404 karena /novnc
+    # hanya mem-proxy ke lumine-mt5 (HFM).
+    @novnc_crypto_root {
+        path /novnc-crypto /novnc-crypto/
+    }
+    redir @novnc_crypto_root "/novnc-crypto/vnc.html?autoconnect=true&path=/novnc-crypto/websockify&password={$VNC_PASSWORD}&resize=scale" permanent
+
+    @novnc_crypto_ws {
+        path /novnc-crypto/websockify*
+    }
+    handle @novnc_crypto_ws {
+        uri strip_prefix /novnc-crypto
+        reverse_proxy lumine-mt5-crypto:6901
+    }
+
+    @novnc_crypto {
+        path /novnc-crypto*
+    }
+    handle @novnc_crypto {
+        forward_auth api:8000 {
+            uri /api/auth/verify?role=admin
+        }
+        uri strip_prefix /novnc-crypto
+        reverse_proxy lumine-mt5-crypto:6901
+    }
     @dozzle {
         path /dozzle*
     }

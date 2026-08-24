@@ -172,6 +172,20 @@ class PositionRepository:
         )
         return items
 
+    async def list_recent(self, limit: int = 50) -> list[Position]:
+        """Semua posisi terbaru (open + closed) - tabel position TIDAK boleh
+        kosong saat tidak ada posisi open (24 Aug 2026: user lapor tabel
+        position mati karena seluruh posisi closed -> list_open kosong).
+        """
+        items = list(
+            (
+                await self._session.execute(
+                    select(Position).order_by(Position.updated_at.desc()).limit(limit)
+                )
+            ).scalars()
+        )
+        return items
+
     async def get(self, position_id: UUID) -> Position | None:
         return await self._session.get(Position, position_id)
 
