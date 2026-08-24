@@ -39,6 +39,16 @@ logger = logging.getLogger(__name__)
 # 24 Aug 2026: multi-instance — HFM (mt5:positions) & crypto (mt5crypto:positions)
 POSITIONS_KEY = "mt5:positions"
 POSITIONS_KEYS = ["mt5:positions", "mt5crypto:positions"]
+# 24 Aug 2026 FIX: close-loop TIDAK boleh menutup posisi symbol lain.
+# mt5crypto:positions snapshot KOSONG (EA crypto tanpa posisi) → dulu
+# close-loop menutup SEMUA open positions termasuk XAUUSD (MT5 HFM):
+# tiap cycle: mt5 upsert → open, mt5crypto upsert [] → close → row
+# SELALU closed walau MT5 punya posisi open real. Map key → symbol
+# yang BOLEH di-close oleh snapshot instance tsb.
+POSITIONS_KEY_SYMBOLS: dict[str, str] = {
+    "mt5:positions": "XAUUSD",
+    "mt5crypto:positions": "BTCUSD",
+}
 # Redis key: EA push deals/history (list)
 DEALS_KEY = "mt5:deals"
 
@@ -125,13 +135,26 @@ class PositionSyncWorker:
                 await r.delete(key)
                 continue
 
+
             positions_payload = newest.get("positions", [])
-            await self._upsert_positions(positions_payload)
+            allowed_symbol = POSITIONS_KEY_SYMBOLS.get(key, "")
+            await self._upsert_positions(
+                positions_payload,
+                allowed_symbols={allowed_symbol} if allowed_symbol else None,
+            )
             # Clear queue setelah diproses (snapshot sudah dikonsumsi)
             await r.delete(key)
 
-    async def _upsert_positions(self, payload: list[dict[str, Any]]) -> None:
-        """Upsert MT5 positions; tutup posisi yang tidak ada di snapshot."""
+    async def _upsert_positions(
+        self, payload: list[dict[str, Any]], allowed_symbols: set[str] | None = None
+    ) -> None:
+        """Upsert MT5 positions; tutup posisi yang tidak ada di snapshot.
+
+        24 Aug 2026 FIX: close-loop di-scope ke allowed_symbols (symbol
+        milik instance/key tsb). Tanpa ini snapshot crypto (kosong)
+        menutup posisi XAUUSD HFM -> status di DB selalu closed walau MT5
+        masih open. allowed_symbols=None -> close SEMUA (key tunggal).
+        """
         tickets: set[int] = set()
         closed_positions: list[Any] = []
         async with get_sessionmaker()() as session:
@@ -163,6 +186,10 @@ class PositionSyncWorker:
             ).scalars().all()
             for pos in existing:
                 if pos.mt5_ticket not in tickets:
+                    # 24 Aug 2026 FIX: jangan tutup posisi symbol lain -
+                    # snapshot instance ini hanya berhak menutup symbol-nya.
+                    if allowed_symbols is not None and pos.symbol not in allowed_symbols:
+                        continue
                     pos.status = "closed"
                     session.add(pos)
                     logger.info("position %s (ticket %s) closed by sync", pos.position_id, pos.mt5_ticket)

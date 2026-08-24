@@ -458,6 +458,10 @@ class Position(Base):
         DateTime(timezone=True),
         nullable=False,
         default=_utcnow,
+        # 24 Aug 2026: onupdate - status/profit berubah via sync harus
+        # tercermin di updated_at (dulu tetap 19 Agu walau di-update tiap
+        # 10s - UI tidak tahu posisi mati/stale).
+        onupdate=_utcnow,
     )
     status: Mapped[str] = mapped_column(Text, nullable=False, default="open")
     # MT5 ticket (sync B1: posisi open dari MT5 di-identifikasi via ticket;
