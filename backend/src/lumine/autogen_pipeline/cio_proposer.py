@@ -66,7 +66,21 @@ async def run_cio_proposer(
             "symbol": symbol,
             "decision_ts": decision_ts,
             "ic_output": json.dumps(ic_output, indent=2),
-            "analyst_inputs": json.dumps(analyst_inputs, indent=2),
+            # 24 Aug 2026: analyst_inputs GIGANTIC (semua argumen lengkap,
+            # ~15KB) → model murah EOF/timeout sebelum output. Ringkas:
+            # hanya sub_role + bias + confidence + argument (terpotong 300).
+            "analyst_inputs": json.dumps(
+                [
+                    {
+                        "sub_role": a.get("sub_role", "?"),
+                        "bias": a.get("bias", "neutral"),
+                        "confidence": a.get("confidence"),
+                        "argument": str(a.get("argument", ""))[:300],
+                    }
+                    for a in (analyst_inputs or [])
+                ],
+                indent=2,
+            ),
             "portfolio_context": json.dumps(portfolio_context, indent=2),
             "policy_version_id": policy_version_id,
             "model_version_ids": json.dumps(model_version_ids),
