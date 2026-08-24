@@ -446,3 +446,41 @@ posisi open via PositionRepository.
 - EA HFM kirim snapshot /positions tiap ~10 detik ke `mt5:positions`
 - EA crypto kirim ke `mt5crypto:positions` — snapshot [] kalau 0 posisi
 - Close-loop JANGAN pernah menutup posisi di luar instance symbol map
+
+
+
+## Chart Bersih: Normalisasi Timestamp Bar (24 Agu 2026)
+
+**Gejala:** chart 1m/5m XAUUSD "berantakan" — banyak doji/noise, susunan candle
+tidak kontinu. Root cause: EA seed (CopyRates) kadang menulis bar dengan
+timestamp :01 (detik 1) bercampur bar live :00 → candle tanggal bergeser 1
+detik → chart terlihat tidak sinkron/rapi.
+
+Fix:
+1. backend `_seed_worker`: `ts = ...replace(second=0, microsecond=0)` —
+   bar seed selalu ter-normalisasi ke menit.
+2. SQL cleanup: hapus bar :01 yang punya kembaran :00 (live authoritative),
+   normalisasi sisa, rebuild 15m/1h/4h/1d dari 1m bersih (flush worker).
+Verifikasi: `SELECT COUNT(*) FROM bars_1m WHERE EXTRACT(SECOND FROM ts)!=0` = 0.
+
+## LLM Kelola Take-Profit / Trailing (24 Agu 2026) — fitur baru
+
+CIO Proposer sekarang WAJIB menambahkan `position_management` per posisi open
+di SETIAP decision cycle (output JSON):
+```json
+{"ticket": 123, "action": "trail|partial_close|take_profit|hold",
+ "new_sl": ..., "volume": ..., "reason": "...", "confidence": 0.0-1.0}
+```
+Gate deterministik di worker (TIDAK ASAL CLOSE):
+- `trail`: posisi profit + new_sl LEBIH BAIK (BUY naik, SELL turun) + conf ≥ 0.60
+- `partial_close`: profit + volume ≤ 50% size
+- `take_profit`: profit + conf ≥ 0.60 → CLOSE
+- posisi RUGI → tidak pernah di-close oleh LLM (biarkan SL)
+Command dikirim langsung ke `{ns}commands` (EA dukung MODIFY/CLOSE/PARTIAL_CLOSE).
+Prompt CIO di docs/prompts + registry hash di-update (backend/docs/prompts wajib di-sync — CI pk check).
+
+## Reset Orders & Positions (24 Agu 2026)
+- Reset: DELETE orders/fills/tca_records; posisi hanya sisakan yang open di MT5.
+- PENTING: set `lumine:deals_cutoff_ts` ke timestamp reset — tanpa itu
+  _deals_worker re-insert deal history LAMA ke orders (fresh-start cutoff 17 Agu
+  sudah ada di _deals_worker namun harus di-set manual saat reset).
