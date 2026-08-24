@@ -632,7 +632,10 @@ def _make_bar_table(
         ),
         "symbol": mapped_column(
             Text,
-            primary_key=partitioned,
+            # 24 Aug 2026: symbol SELALU PK (partitioned atau tidak).
+            # Migration DB: bars_15m/1h/4h/1d PK ts-only → (ts, symbol) karena
+            # BTCUSD & XAUUSD bentrok ts → satu symbol hilang (hole candle).
+            primary_key=True,
             nullable=False,
         ),
         "open": mapped_column(Numeric(20, 5), nullable=False),

@@ -13,6 +13,7 @@ from lumine.data.models import (
     Bars1M,
     Bars4H,
     Bars5M,
+    Bars15M,
     Base,
     CalendarVersion,
     FeatureVersion,
@@ -73,16 +74,12 @@ class TestBarModels:
         assert columns >= {"ts", "symbol", "open", "high", "low", "close", "volume", "source"}
 
     def test_partitioned_bars_use_composite_ts_symbol_pk(self) -> None:
-        # _make_bar_table (models.py:533-545): partitioned tables make
-        # symbol part of the composite (ts, symbol) PK — Postgres requires
-        # unique constraints on partitioned tables to include the
-        # partition key. Bars1M/Bars5M must carry it; Bars1H must not.
-        for table in (Bars1M, Bars5M):
-            pk = {c.name for c in table.__table__.primary_key.columns}
-            assert pk == {"ts", "symbol"}, f"{table.__tablename__} PK = {pk}"
-        for table in (Bars1H, Bars4H, Bars1D):
-            pk = {c.name for c in table.__table__.primary_key.columns}
-            assert pk == {"ts"}, f"{table.__tablename__} PK = {pk}"
+            # 24 Aug 2026: SEMUA bar table pakai composite (ts, symbol) PK —
+            # sebelumnya 15m/1h/4h/1d PK ts-only → BTCUSD & XAUUSD bentrok ts
+            # → satu symbol hilang (hole candle). Migration DB + model sync.
+            for table in (Bars1M, Bars5M, Bars15M, Bars1H, Bars4H, Bars1D):
+                pk = {c.name for c in table.__table__.primary_key.columns}
+                assert pk == {"ts", "symbol"}, f"{table.__tablename__} PK = {pk}"
 
     def test_partitioned_bars_declare_range_partitioning(self) -> None:
         # The RANGE (ts) clause (models.py:531) is a table option, not a
