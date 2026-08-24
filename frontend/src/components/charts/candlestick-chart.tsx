@@ -136,16 +136,16 @@ export function CandlestickChart({
       height,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "var(--text-secondary, #a0a0a0)",
+        textColor: "#a7b3c5",
       },
       grid: {
-        vertLines: { color: "var(--border-subtle, #2a2a2a)" },
-        horzLines: { color: "var(--border-subtle, #2a2a2a)" },
+        vertLines: { color: "#151d2b" },
+        horzLines: { color: "#151d2b" },
       },
       crosshair: { mode: 0 },
-      rightPriceScale: { borderColor: "var(--border-subtle, #2a2a2a)" },
+      rightPriceScale: { borderColor: "#1c2534" },
       timeScale: {
-        borderColor: "var(--border-subtle, #2a2a2a)",
+        borderColor: "#1c2534",
         timeVisible: true,
         secondsVisible: false,
       },
@@ -153,12 +153,12 @@ export function CandlestickChart({
       handleScale: { axisPressedMouseMove: false },
     });
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "var(--up, #22c55e)",
-      downColor: "var(--down, #ef4444)",
-      borderUpColor: "var(--up, #22c55e)",
-      borderDownColor: "var(--down, #ef4444)",
-      wickUpColor: "var(--up, #22c55e)",
-      wickDownColor: "var(--down, #ef4444)",
+      upColor: "#34d399",
+      downColor: "#f0555b",
+      borderUpColor: "#34d399",
+      borderDownColor: "#f0555b",
+      wickUpColor: "#34d399",
+      wickDownColor: "#f0555b",
     });
     chartRef.current = chart;
     setChartInstance(chart);

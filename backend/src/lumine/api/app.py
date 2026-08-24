@@ -160,12 +160,18 @@ async def _aggregate_bars(
             select(
                 bucket_expr.label("ts"),
                 source_model.symbol,
-                # 23 Aug 2026: window fn (first_value/last_value) + GROUP BY
-                # → Postgres "must appear in GROUP BY" — pakai aggregate.
-                func.min(source_model.open).label("open"),
+                # 24 Aug 2026: first-open / last-close per bucket — MIN/MAX
+                # membuat close candle mengikuti nilai ekstrem (close 1h
+                # "menyeret" pola 1m, candle tampak kotor). array_agg pattern
+                # SAMA dengan query 15m di market.py yang sudah terbukti.
+                func.array_agg(source_model.open, order_by=source_model.ts)[1].label("open"),
                 func.max(source_model.high).label("high"),
                 func.min(source_model.low).label("low"),
-                func.max(source_model.close).label("close"),
+                func.array_agg(source_model.close, order_by=source_model.ts)[
+                    func.array_length(
+                        func.array_agg(source_model.close, order_by=source_model.ts), 1
+                    )
+                ].label("close"),
                 func.sum(source_model.volume).label("volume"),
             )
             .where(source_model.ts >= func.now() - text(f"interval '{lookback_hours} hours'"))
