@@ -213,7 +213,7 @@ async def _bar_flush_worker() -> None:
     from sqlalchemy import func, select, text
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-    from lumine.data.models import Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
+    from lumine.data.models import Bars1D, Bars1H, Bars1M, Bars4H, Bars5M, Bars15M
     from lumine.data.session import get_sessionmaker
 
     while True:
@@ -314,9 +314,14 @@ async def _bar_flush_worker() -> None:
                 # 5m → 15m → 1h → 4h (bucket UTC). DO NOTHING agar bar
                 # historis yang sudah benar dari EA tidak ditimpa; bar baru
                 # (belum pernah ada) di-insert dari data live.
+                # 24 Aug 2026: agregasi bertingkat sinkron (array_agg first/last).
+                # lookback panjang agar 1h/4h/1d menutup jangka luas TANPA
+                # bergantung seed EA (CopyRates broker yang OHLC-nya beda
+                # dari agregasi lokal → candle "kotor"/tidak sinkron).
                 await _aggregate_bars(session, Bars15M, Bars5M, 15, lookback_hours=168)
-                await _aggregate_bars(session, Bars1H, Bars15M, 60, lookback_hours=720)
-                await _aggregate_bars(session, Bars4H, Bars1H, 240, lookback_hours=2160)
+                await _aggregate_bars(session, Bars1H, Bars15M, 60, lookback_hours=8760)   # 1 tahun 1h
+                await _aggregate_bars(session, Bars4H, Bars1H, 240, lookback_hours=8760)   # 1 tahun 4h
+                await _aggregate_bars(session, Bars1D, Bars4H, 1440, lookback_hours=35040) # 4 tahun 1d
                 await session.commit()
                 if ready:
                     print(f"[BARS] flushed {len(ready)} bar 1m live", flush=True)
@@ -389,7 +394,13 @@ async def _seed_worker() -> None:
             _key, [_payload] = item
             payload = _payload
             data = json.loads(payload)
-            model = bar_models.get(data.get("timeframe", ""))
+            tf = data.get("timeframe", "")
+            # 24 Aug 2026: 1h/4h/1d WAJIB dari agregasi lokal (_aggregate_bars)
+            # agar sinkron dengan 1m/5m/15m. Seed EA (CopyRates broker) OHLC-nya
+            # beda → candle "kotor". Seed hanya untuk 1m/5m/15m.
+            if tf in ("1h", "4h", "1d", "1H", "4H", "1D"):
+                continue
+            model = bar_models.get(tf)
             if model is None:
                 continue
             async with get_sessionmaker()() as session:
