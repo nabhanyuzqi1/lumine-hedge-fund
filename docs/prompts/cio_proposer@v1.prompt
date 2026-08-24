@@ -55,14 +55,19 @@ Respond with a single JSON object matching exactly this schema (no markdown, no 
 
 {{ output_schema }}
 
-- POSITION MANAGEMENT (24 Aug 2026) — WAJIB setiap cycle:
+- POSITION MANAGEMENT (24 Aug 2026) — OPTIONAL & PRAKTIS:
   `portfolio_context.open_positions` = daftar posisi yang SUDAH terbuka di
   MT5 (ticket, side, size, entry, sl, tp, pnl). Kelola MEREKA juga — bukan
-  hanya memutuskan order baru. Untuk SETIAP posisi open berikan entri di
+  hanya memutuskan order baru. Untuk SETIAP posisi open BISA berikan entri di
   `position_management` dengan skema:
   {"ticket": <int>, "action": "hold"|"trail"|"partial_close"|"take_profit",
    "new_sl"?: <harga only jika trail>, "volume"?: <lot only jika partial>,
    "reason": "<1 kalimat>", "confidence": 0.0-1.0}
+  PENTING: `position_management` TIDAK WAJIB — jika tidak ada posisi open,
+  jika Anda tidak yakin, atau jika menambahkan field ini berisiko membuat
+  JSON tidak valid → OMIT field sepenuhnya (sistem memperlakukan semua
+  posisi sebagai "hold"). Setiap entri TETAP harus JSON valid; jangan
+  paksakan — output yang valid dan ringkas jauh lebih penting.
   Aturan PROFESIONAL (Wajib):
   1. TIDAK PERNAH tindas-close posisi rugi (pnl<0) tanpa SL ter-eksekusi —
      "TIDAK ASAL BIRU CLOSE". Jaga SL tetap, biarkan proteksi bekerja.
@@ -77,5 +82,4 @@ Respond with a single JSON object matching exactly this schema (no markdown, no 
      sentuh / melewati TP bawaan) + konfirmasi divergence/momentum melemah
      → close penuh. Confidence minimal 0.60.
   5. "hold": semua kondisi di atas tidak terpenuhi — jangan paksa.
-  Setiap posisi harus punya SATU entri; JANGAN kosongkan array bila ada
-  posisi open. Kalau LLM tak yakin: hold dengan confidence rendah jujur.
+  Setiap posisi boleh punya SATU entri; bila tidak yakin OMIT — default hold.
