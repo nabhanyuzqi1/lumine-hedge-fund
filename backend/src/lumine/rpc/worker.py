@@ -143,13 +143,19 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                         continue
                     filtered.append(m)
                 # 18 Aug 2026: manual chain SEMUA non-available (budget
-                # habis / tidak respond probe) → jatuh ke available_models
+                # habis / tidak respond probe) -> jatuh ke available_models
                 # dari discovery (model yang benar-benar bisa dipanggil).
-                # 24 Aug 2026: fallback avail[:3] SELALU ke last resort —
-                # manual_default request tetap "heard" untila cycle call
-                # menghit 401/404 langsung.
-                if not filtered and avail:
-                    filtered = avail[:3]
+                # 24 Aug 2026 v2: manual chain TIDAK pernah dibiarkan pendek -
+                # EXTEND dengan avail (model probe-200 dari discovery) sebagai
+                # backup. Dulu fallback hanya glm (429 rate-limit) -> chain
+                # 2 rute habis -> cycle abort. Sekarang chain = manual + avail
+                # (dedup, circuit-open skipped) -> ox-alpha timeout -> glm 429
+                # -> gemini/solar dll tetap ada.
+                if avail:
+                    for _a in avail:
+                        if _a not in filtered and not is_circuit_open(_a, overlay):
+                            filtered.append(_a)
+                chain = filtered or chain or (avail[:3] if avail else chain)
                 chain = filtered or chain
             except Exception:  # nosec B110 — filter best-effort
                 pass  # filter best-effort — chain tetap dipakai apa adanya
