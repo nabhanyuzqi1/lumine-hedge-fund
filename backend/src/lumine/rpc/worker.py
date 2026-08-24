@@ -126,12 +126,17 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 # avail heuristic — probe LIVE per-cycle if absent).
                 filtered = []
                 manual_default = overlay.get("default_model", "")
+                manual_fallbacks = parse_fallbacks(overlay.get("fallback_models"))
                 for m in chain:
                     if is_circuit_open(m, overlay):
                         continue
-                    if m == manual_default:
-                        # Per-cycle live check: manual default trust, bukan
-                        # stale avail list (probe 200/401 output).
+                    # 24 Aug 2026: manual default + SEMUA fallback manual
+                    # di-trust (tanpa avail-filter) - hanya circuit-open yang
+                    # bisa menghapusnya. glm-5.2 kadang tidak di avail (rank
+                    # rendah), tapi HARUS tetap di chain sebagai backup saat
+                    # ox-alpha timeout - dulu ke-filter avail: chain = 1
+                    # rute: 'all 1 route(s) exhausted' - cycle abort.
+                    if m == manual_default or m in manual_fallbacks:
                         filtered.append(m)
                         continue
                     if avail is not None and m not in avail:
