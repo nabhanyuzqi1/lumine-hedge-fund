@@ -874,6 +874,17 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 )
 
             if not analyst_inputs:
+                # 24 Aug 2026: set cooldown saat upstream 5xx/429 - cycle
+                # tiap 5 menit tetap lanjut, tapi scheduler skip sampe
+                # 9router pulih (hindari spam & habiskan quota).
+                try:
+                    _cd = _r if _r is not None else await get_redis()
+                    await _cd.set("lumine:llm_down_until", str(now.timestamp() + 900), ex=960)
+                    print("decision_cycle: llm_down_until set (upstream 5xx)", flush=True)
+                except Exception:
+                    pass
+                msg = "all analysts failed - aborting cycle"
+                raise RuntimeError(msg)
                 msg = "all analysts failed — aborting cycle"
                 raise RuntimeError(msg)
 

@@ -520,6 +520,15 @@ async def _decision_scheduler() -> None:
             status = _market_status()
             if status["open"]:
                 r = await get_redis()
+                # 24 Aug 2026: cooldown upstream 5xx — skip cycle sementara
+                # kalau worker set llm_down_until (9router/Cloudflare down).
+                try:
+                    _down = await r.get("lumine:llm_down_until")
+                    if _down and float(_down) > __import__("time").time():
+                        await asyncio.sleep(300)
+                        continue
+                except Exception:
+                    pass
                 lock = await r.set("lumine:decision_cycle_lock", "1", nx=True, ex=240)
                 if lock:
                     await enqueue_command("run_decision_cycle", {"reason": "scheduler"})
