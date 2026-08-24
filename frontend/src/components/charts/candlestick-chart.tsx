@@ -1,65 +1,113 @@
 import { useEffect, useRef, useState } from "react";
-
 import {
-  CandlestickSeries,
+  ColorType,
   type IChartApi,
   type ISeriesApi,
+  CandlestickSeries,
   createChart,
+  type CandlestickData,
+  type Time,
 } from "lightweight-charts";
-
 import { ChartCard } from "@/components/charts/chart-card";
 import type { ChartBar } from "@/data/fixtures";
 import { useChartResize } from "@/hooks/useChartResize";
-import { buildLwcOptions, getChartColors } from "@/lib/chart-theme";
-import {
-  barsToCandles,
-  candleFromBar,
-  heikinAshiToCandles,
-  updateBarWithTick,
-} from "@/lib/chart-transform";
 import { cn } from "@/lib/utils";
 
-export const TIMEFRAMES = ["1m", "5m", "15m", "1H", "4H", "1D"] as const;
-export type Timeframe = (typeof TIMEFRAMES)[number];
+// ── Types ────────────────────────────────────────────────────────────────────
 
-/** Batch live ticks into one series update — exit criterion: <150ms switch, no dropped frames. */
-export const TICK_DEBOUNCE_MS = 100;
+export type Timeframe = "1m" | "5m" | "15m" | "1H" | "4H" | "1D";
 
 export interface PriceLine {
   price: number;
+  color: string;
   title: string;
-  color?: string;
+  lineStyle?: number;
+  axisLabelVisible?: boolean;
 }
 
 export interface CandlestickChartProps {
   bars: ChartBar[];
-  /** Live tick used to mutate the in-progress bar (debounced). */
   lastTick?: { last?: number; bid?: number; timestamp?: string } | null;
   timeframe: Timeframe;
-  onTimeframeChange?: (timeframe: Timeframe) => void;
+  onTimeframeChange?: (tf: Timeframe) => void;
   height?: number;
-  /** Fallback label saat data live belum masuk/stale (market tutup dll). */
   waitingLabel?: string;
-  /** T5b: Heikin-Ashi toggle (transform OHLC → HA). */
   heikinAshi?: boolean;
   onHeikinAshiChange?: (v: boolean) => void;
-  /** T5b: price lines (TP/SL/Entry) via createPriceLine. */
   priceLines?: PriceLine[];
-  /** T5c: replay mode — index bar aktif (null = normal). Saat aktif,
-   *  chart menampilkan window [index-window, index] via visible range. */
   replayIndex?: number | null;
   replayWindow?: number;
-  /** Symbol pair yang ditampilkan (untuk title bukan hardcoded XAUUSD). */
+  /** Pair symbol untuk title chart. */
   symbol?: string;
 }
 
-/**
- * XAUUSD candlestick pane (lightweight-charts v5):
- * static series data on `bars` change, debounced incremental `series.update()`
- * on live ticks, timeframe selector in card toolbar.
- * Catatan (22 Aug 2026): volume histogram dihapus — informasi volume sudah
- * tersedia di FeaturePanel (volume_ratio), menghindari duplikasi visual.
- */
+const TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "1H", "4H", "1D"];
+const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
+  "1m": 60,
+  "5m": 300,
+  "15m": 900,
+  "1H": 3600,
+  "4H": 14400,
+  "1D": 86400,
+};
+export const TICK_DEBOUNCE_MS = 150;
+
+// ── Helpers (inline, no chart-transform dependency) ───────────────────────────
+
+/** Convert ChartBar[] → CandlestickData[], filter invalid, sort by time, dedupe. */
+function toCandles(bars: ChartBar[]): CandlestickData[] {
+  const seen = new Set<number>();
+  const out: CandlestickData[] = [];
+  for (const b of bars) {
+    // Guard: NaN/null crash lightweight-charts v5 "Value is null"
+    if (
+      !Number.isFinite(b.time) || b.time <= 0 ||
+      !Number.isFinite(b.open) || !Number.isFinite(b.high) ||
+      !Number.isFinite(b.low) || !Number.isFinite(b.close)
+    ) continue;
+    if (seen.has(b.time)) continue; // dedupe
+    seen.add(b.time);
+    out.push({
+      time: b.time as Time,
+      open: b.open,
+      high: b.high,
+      low: b.low,
+      close: b.close,
+    });
+  }
+  out.sort((a, b) => Number(a.time) - Number(b.time));
+  return out;
+}
+
+/** Mutate a bar with a new tick price (live update). */
+function applyTick(bar: CandlestickData, price: number): CandlestickData {
+  return {
+    ...bar,
+    close: price,
+    high: Math.max(bar.high, price),
+    low: Math.min(bar.low, price),
+  };
+}
+
+/** Heikin-Ashi: transform OHLC array. */
+function heikinAshiCandles(candles: CandlestickData[]): CandlestickData[] {
+  if (candles.length === 0) return [];
+  const out: CandlestickData[] = [];
+  let prevHa: CandlestickData | null = null;
+  for (const c of candles) {
+    const haClose: number = (c.open + c.high + c.low + c.close) / 4;
+    const haOpen: number = prevHa ? (prevHa.open + prevHa.close) / 2 : (c.open + c.close) / 2;
+    const haHigh: number = Math.max(c.high, haOpen, haClose);
+    const haLow: number = Math.min(c.low, haOpen, haClose);
+    const ha: CandlestickData = { time: c.time, open: haOpen, high: haHigh, low: haLow, close: haClose };
+    out.push(ha);
+    prevHa = ha;
+  }
+  return out;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function CandlestickChart({
   bars,
   lastTick,
@@ -71,165 +119,155 @@ export function CandlestickChart({
   onHeikinAshiChange,
   priceLines = [],
   replayIndex = null,
-  replayWindow = 80,
   symbol = "XAUUSD",
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const seriesRef = useRef<{
-    candles: ISeriesApi<"Candlestick"> | null;
-  }>({ candles: null });
-  const lastBarRef = useRef<ChartBar | null>(null);
-  const [chart, setChart] = useState<IChartApi | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const [chartInstance, setChartInstance] = useState<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const lastBarCache = useRef<CandlestickData | null>(null);
+  const priceLineRefs = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
 
-  // Chart instance + series creation — runs once per mount.
+  // ── Mount / unmount ────────────────────────────────────────────────────────
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const colors = getChartColors();
-    const chartInstance = createChart(container, buildLwcOptions());
-    const candles = chartInstance.addSeries(CandlestickSeries, {
-      upColor: colors.up,
-      downColor: colors.down,
-      borderUpColor: colors.up,
-      borderDownColor: colors.down,
-      wickUpColor: colors.up,
-      wickDownColor: colors.down,
+    if (!containerRef.current) return;
+    const chart = createChart(containerRef.current, {
+      width: containerRef.current.clientWidth,
+      height,
+      layout: {
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: "var(--text-secondary, #a0a0a0)",
+      },
+      grid: {
+        vertLines: { color: "var(--border-subtle, #2a2a2a)" },
+        horzLines: { color: "var(--border-subtle, #2a2a2a)" },
+      },
+      crosshair: { mode: 0 },
+      rightPriceScale: { borderColor: "var(--border-subtle, #2a2a2a)" },
+      timeScale: {
+        borderColor: "var(--border-subtle, #2a2a2a)",
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      handleScroll: { vertTouchDrag: false },
+      handleScale: { axisPressedMouseMove: false },
     });
-
-    seriesRef.current = { candles };
-    setChart(chartInstance);
+    const series = chart.addSeries(CandlestickSeries, {
+      upColor: "var(--up, #22c55e)",
+      downColor: "var(--down, #ef4444)",
+      borderUpColor: "var(--up, #22c55e)",
+      borderDownColor: "var(--down, #ef4444)",
+      wickUpColor: "var(--up, #22c55e)",
+      wickDownColor: "var(--down, #ef4444)",
+    });
+    chartRef.current = chart;
+    setChartInstance(chart);
+    seriesRef.current = series;
+    lastBarCache.current = null;
 
     return () => {
-      chartInstance.remove();
-      seriesRef.current = { candles: null };
-      lastBarRef.current = null;
+      chart.remove();
+      chartRef.current = null;
+      setChartInstance(null);
+      seriesRef.current = null;
     };
-  }, []);
+  }, [height]);
 
-  // Forward wheel events to the page scroller so the chart doesn't trap
-  // mouse-wheel scroll. lightweight-charts registers a non-passive wheel
-  // listener that swallows events — we capture them first (capture phase)
-  // and mirror the deltaY to the nearest overflow-y-auto ancestor.
+  // ── Resize ─────────────────────────────────────────────────────────────────
+  useChartResize(chartInstance, containerRef);
+
+  // ── Bars → setData ─────────────────────────────────────────────────────────
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const onWheel = (e: WheelEvent) => {
-      // Find the nearest scrollable ancestor outside the chart container
-      let el: HTMLElement | null = container.parentElement;
-      while (el) {
-        const style = window.getComputedStyle(el);
-        const overflow = style.overflowY;
-        if ((overflow === "auto" || overflow === "scroll") && el.scrollHeight > el.clientHeight) {
-          el.scrollBy({ top: e.deltaY, behavior: "auto" });
-          break;
+    const series = seriesRef.current;
+    if (!series) return;
+    if (bars.length === 0) return;
+    let candles = toCandles(bars);
+    if (heikinAshi) candles = heikinAshiCandles(candles);
+    if (candles.length === 0) return;
+    series.setData(candles);
+    lastBarCache.current = candles[candles.length - 1] ?? null;
+  }, [bars, heikinAshi]);
+
+  // ── Live tick → debounced bar update ───────────────────────────────────────
+  useEffect(() => {
+    if (!lastTick) return;
+    if (replayIndex != null) return;
+    const series = seriesRef.current;
+    if (!series) return;
+    const price = lastTick.last ?? lastTick.bid;
+    if (price == null || !Number.isFinite(price) || price <= 0) return;
+
+    const timer = setTimeout(() => {
+      if (!lastBarCache.current) return;
+      const updated = applyTick(lastBarCache.current, price);
+      lastBarCache.current = updated;
+      series.update(updated);
+    }, TICK_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [lastTick, replayIndex]);
+
+  // ── Price lines ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    // Remove old price lines
+    for (const pl of priceLineRefs.current) series.removePriceLine(pl);
+    priceLineRefs.current = [];
+    // Add new ones
+    // Guard: createPriceLine mungkin undefined (mock/jsdom) — skip aman.
+    priceLineRefs.current = priceLines
+      .map((pl) => {
+        try {
+          return (series as unknown as {
+            createPriceLine?: (opts: object) => object | null;
+          }).createPriceLine?.({
+            price: pl.price,
+            color: pl.color,
+            title: pl.title,
+            lineStyle: pl.lineStyle ?? 2,
+            axisLabelVisible: pl.axisLabelVisible ?? true,
+          }) as ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> | null;
+        } catch {
+          return null;
         }
-        el = el.parentElement;
-      }
-    };
-    container.addEventListener("wheel", onWheel, { passive: true, capture: true });
-    return () => container.removeEventListener("wheel", onWheel, { capture: true });
-  }, []);
-
-  useChartResize(chart, containerRef);
-
-  // T5c: replay — visible range mengekor index aktif. Replay aktif →
-  // live tick dibekukan (guard di bawah).
-  useEffect(() => {
-    if (!chart || replayIndex == null) return;
-    const total = bars.length;
-    if (total === 0) return;
-    const from = Math.max(0, replayIndex - replayWindow);
-    chart.timeScale().setVisibleLogicalRange({
-      from,
-      to: Math.max(from + 1, replayIndex),
-    });
-  }, [chart, replayIndex, replayWindow, bars.length]);
-
-  // T5b: price lines (TP/SL/Entry) — createPriceLine per level.
-  // Recreate saat daftar level berubah (hapus semua → create ulang).
-  // PITFALL (18 Aug 2026): parent pass array BARU tiap render (positions
-  // refetch 1s) → recreate price line tiap detik → WebGL churn →
-  // browser renderer crash STATUS_BREAKPOINT. Fix: bandingkan JSON isi.
-  const priceLinesKey = JSON.stringify(priceLines);
-  const prevKeyRef = useRef("");
-  useEffect(() => {
-    const { candles } = seriesRef.current;
-    if (!candles) return;
-    if (prevKeyRef.current === priceLinesKey) return;
-    prevKeyRef.current = priceLinesKey;
-    const created = priceLines.map((pl) => {
-      if (!Number.isFinite(pl.price) || pl.price <= 0) return null;
-      return candles.createPriceLine({
-        price: pl.price,
-        title: pl.title,
-        color: pl.color ?? "#f59e0b",
-        lineWidth: 1 as const,
-        lineStyle: 2 as const,
-        axisLabelVisible: true,
-      });
-    });
+      })
+      .filter((pl): pl is ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> => pl != null);
     return () => {
-      for (const line of created) {
-        if (line) candles.removePriceLine(line);
-      }
+      for (const pl of priceLineRefs.current) series.removePriceLine(pl);
+      priceLineRefs.current = [];
     };
-  }, [priceLinesKey, priceLines]);
+  }, [priceLines]);
 
-  // Full re-render when the bar set changes (timeframe switch, refetch).
-    useEffect(() => {
-      const { candles } = seriesRef.current;
-      if (!candles || bars.length === 0) return;
-      // T5b: Heikin-Ashi mode → transform OHLC ke HA sebelum render.
-      const payload = heikinAshi
-        ? heikinAshiToCandles(bars)
-        : barsToCandles(bars).candles;
-      candles.setData(payload);
-      lastBarRef.current = bars[bars.length - 1] ?? null;
-    }, [bars, heikinAshi]);
+  // ── Replay index ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    if (replayIndex != null && bars.length > 0) {
+      const candles = toCandles(bars);
+      const target = candles[replayIndex] ?? null;
+      if (target) {
+        chart.timeScale().setVisibleRange({
+          from: (Number(target.time) - 3600) as Time,
+          to: target.time,
+        });
+      }
+    }
+  }, [replayIndex, bars]);
 
-  // Debounced live tick → mutate the in-progress bar in place.
-    useEffect(() => {
-      if (!lastTick) return;
-      // T5c: replay aktif → jangan mutasi bar live (frozen snapshot).
-      if (replayIndex != null) return;
-      const timer = setTimeout(() => {
-        const bar = lastBarRef.current;
-        const { candles } = seriesRef.current;
-        if (!bar || !candles) return;
-        // Guard: lastTick.last null/NaN (SSE partial data) → fallback bid,
-        // lalu skip kalau keduanya invalid (jangan crash "Value is null").
-        const price = lastTick.last ?? (lastTick as { bid?: number }).bid;
-        if (price == null || !Number.isFinite(price) || price <= 0) return;
-        const updated = updateBarWithTick(bar, price);
-        lastBarRef.current = updated;
-        candles.update(candleFromBar(updated));
-      }, TICK_DEBOUNCE_MS);
-      return () => clearTimeout(timer);
-    }, [lastTick, replayIndex]);
-
-    // Data freshness: TANPA tick live dalam 2× interval → stale. PITFALL
-    // (17 Aug 2026): logika lama pakai umur bar terakhir vs interval —
-    // untuk 1H/4H bar terakhir selalu "baru" saat market buka TAPI bar
-    // terakhir itu wajar lebih tua dari 10 menit (bar 4H berganti tiap 4
-    // jam) → overlay "market closed" tampil padahal market BUKA dan chart
-    // malah tidak live. Sebaliknya dengan live tick: kalau EA kirim tick
-    // <30s lalu, market jelas buka → jangan stale.
-    // Freshness: tick live <30s → market BUKA, pasti tidak stale (18 Aug).
-    // lastTick.last null → fallback bid (EA kirim bid/ask; last di-set
-    // backend = bid). Umur bar terakhir TIDAK dipakai (bar 4H wajar tua).
-    const tickPrice = lastTick?.last ?? lastTick?.bid;
-    const tickFresh =
-      lastTick != null &&
-      tickPrice != null &&
-      Number.isFinite(tickPrice) &&
-      Date.now() - Date.parse(lastTick.timestamp ?? "") < 30_000;
-    const isStale = bars.length > 0 && waitingLabel != null && !tickFresh;
+  // ── Stale detection ────────────────────────────────────────────────────────
+  const tickPrice = lastTick?.last ?? lastTick?.bid;
+  const tickFresh =
+    lastTick != null &&
+    tickPrice != null &&
+    Number.isFinite(tickPrice) &&
+    Date.now() - Date.parse(lastTick.timestamp ?? "") < 30_000;
+  const isStale = bars.length > 0 && waitingLabel != null && !tickFresh;
 
   return (
     <ChartCard
       title={`${symbol} — Price Action`}
-      description={`${timeframe} candlesticks · volume overlay${isStale && bars.length > 0 ? ` · last bar: ${new Date((bars[bars.length - 1]!.time) * 1000).toLocaleDateString()}` : ""}`}
+      description={`${timeframe} candlesticks · volume overlay${isStale ? ` · last bar: ${new Date((bars[bars.length - 1]!.time) * 1000).toLocaleDateString()}` : ""}`}
       toolbar={
         <div
           role="group"
@@ -240,49 +278,52 @@ export function CandlestickChart({
             <button
               key={tf}
               type="button"
-              onClick={() => onTimeframeChange?.(tf)}
               aria-pressed={tf === timeframe}
+              onClick={() => onTimeframeChange?.(tf)}
               className={cn(
-                "rounded px-2 py-1 font-mono text-[11px] transition-colors",
+                "rounded px-2 py-1 text-[11px] font-medium transition-colors",
                 tf === timeframe
-                  ? "bg-accent text-white"
-                  : "text-text-muted hover:text-text-primary"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               )}
             >
               {tf}
             </button>
           ))}
-          {onHeikinAshiChange && (
-            <button
-              type="button"
-              onClick={() => onHeikinAshiChange(!heikinAshi)}
-              aria-pressed={heikinAshi}
-              className={cn(
-                "ml-1 rounded px-2 py-1 font-mono text-[11px] transition-colors",
-                heikinAshi
-                  ? "bg-cyan-500/20 text-cyan-300"
-                  : "text-text-muted hover:text-text-primary"
-              )}
-            >
-              HA
-            </button>
-          )}
+          <span className="mx-1 h-4 w-px bg-border-subtle" />
+          <button
+            type="button"
+            aria-pressed={heikinAshi}
+            onClick={() => onHeikinAshiChange?.(!heikinAshi)}
+            className={cn(
+              "rounded px-2 py-1 text-[11px] font-medium transition-colors",
+              heikinAshi
+                ? "bg-accent text-white shadow-sm"
+                : "text-text-secondary hover:text-text-primary"
+            )}
+            title="Toggle Heikin-Ashi"
+          >
+            HA
+          </button>
         </div>
       }
-      height={height}
-          >
-            <div
-              ref={containerRef}
-              className="h-full w-full"
-              style={{ touchAction: "none" }}
-            />
-            {isStale && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="rounded-md border border-amber-500/30 bg-bg-base/80 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-amber-400 backdrop-blur">
-                  {waitingLabel}
-                </div>
-              </div>
-            )}
-          </ChartCard>
+    >
+      {isStale && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <span className="rounded-md bg-bg-overlay/80 px-3 py-1.5 text-xs text-text-tertiary backdrop-blur-sm">
+            {waitingLabel}
+          </span>
+        </div>
+      )}
+      <div
+        ref={containerRef}
+        className="relative"
+        style={{ height }}
+        data-testid="candlestick-chart"
+      />
+    </ChartCard>
   );
 }
+
+// ── Re-export ─────────────────────────────────────────────────────────────────
+export { TIMEFRAMES, TIMEFRAME_SECONDS };
