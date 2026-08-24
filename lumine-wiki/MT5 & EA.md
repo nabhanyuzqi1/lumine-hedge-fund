@@ -351,3 +351,60 @@ Sinkronisasi: close bar 1h = close bar 15m terakhir dalam bucket 1h (bukan max/e
 ### Warna Candle (lightweight-charts)
 CSS `var(--...)` TIDAK di-resolve oleh canvas lightweight-charts → candle hitam.
 Gunakan hex langsung: up `#34d399` (hijau), down `#f0555b` (merah) — dari CHART_COLORS di lib/chart-theme.ts.
+
+
+
+## PITFALL: PK bars_15m/1h/4h/1d Wajib (ts, symbol) — TIDAK ts-only (24 Aug 2026)
+
+**Gejala:** candle XAUUSD & BTCUSD "kotor" — hole parah di 15m/1h (XAU cuma
+24 bar/24jam dari 96; BTC 1h 18 dari 24), close tidak sinkron antar symbol.
+
+**Root cause:** bars_15m/1h/4h/1d PK = ts SAJA (tanpa symbol). Karena BTCUSD
+& XAUUSD punya bucket ts yang SAMA → `ON CONFLICT DO NOTHING` → bar symbol
+kedua TIDAK PERNAH masuk. Migration untuk 4 tabel:
+
+```sql
+ALTER TABLE bars_15m DROP CONSTRAINT bars_15m_pkey;
+ALTER TABLE bars_15m ADD PRIMARY KEY (ts, symbol);
+-- (1h, 4h, 1d sama)
+DELETE FROM bars_15m; DELETE FROM bars_1h; DELETE FROM bars_4h; DELETE FROM bars_1d;
+```
+
+ORM `_make_bar_table` (models.py) WAJIB `symbol primary_key=True` untuk semua
+tabel (partitioned ATAU tidak) — sebelumnya `primary_key=partitioned` → 15m+
+ts-only → ON CONFLICT gagal setelah migration DB.
+
+**Seed worker:** skip 15m juga (hanya 1m/5m dari EA). Semua TF ≥ 15m dari
+agregasi lokal (first-open/last-close) supaya close SINKRON antar symbol.
+
+## PITFALL: LLM Routing Tidak Baca Setting Manual Default (24 Aug 2026)
+
+**Gejala:** user set default model (mis. `r9u/routers9/stealth/ox-alpha`) via
+superadmin, tapi decision cycle SELALU pakai `ag/gemini-3.7-flash-high`.
+
+**Root cause 3-lapis:**
+1. `auto_select_best_model` probe_pool = `ranked[:8]` (skor tier heuristic)
+   → model rank-rendah (ox-alpha tier2) TIDAK PERNAH di-probe → tidak masuk
+   `available_models`.
+2. rpc worker filter chain: `if m not in avail: continue` → chain manual
+   kosong → `filtered = avail[:3]` = gemini (ranking heuristic).
+3. Circuit breaker 120s TIDAK pernah di-reset walau probe sukses → model
+   sehat tetap skip.
+
+**Fix 3 lapis (backend/src/lumine/):**
+- `routing_overlay.py` `auto_select_best_model`: manual default model SELALU
+  masuk probe_pool (+ probe OK → `close_circuit()`).
+- `rpc/worker.py`: manual_default TIDAK difilter avail heuristic — hanya
+  circuit-open yang skip.
+Verifikasi: `[ROUTING] chain=['r9u/routers9/stealth/ox-alpha']` di log api.
+
+## noVNC MT5 Crypto (24 Aug 2026)
+Route /novnc-crypto WAJIB ada di Caddyfile.prod → `reverse_proxy
+lumine-mt5-crypto:6901` (container terpisah). Tanpa itu: **404** — /novnc
+hanya ke lumine-mt5 (HFM). WebSocket /novnc-crypto/websockify* TANPA
+forward_auth (Caddy 2.11 pecah WS upgrade); halaman di-auth.
+
+## Positioning: Tabel Position Kosong (24 Aug 2026)
+GET /api/v1/portfolio/positions pakai list_open → tabel KOSONG saat 0 posisi
+open (padahal ada 24 closed history). Fix: PositionRepository.list_recent(50)
+→ tampilkan open + closed history.
