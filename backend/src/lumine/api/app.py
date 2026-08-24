@@ -424,7 +424,7 @@ async def _seed_worker() -> None:
                 now_utc = datetime.now(UTC)
                 rows = [
                     model(
-                        ts=datetime.fromtimestamp(int(b["ts"]), UTC),
+                        ts=datetime.fromtimestamp(int(b["ts"]), UTC).replace(second=0, microsecond=0),
                         symbol=str(data["symbol"]).upper(),
                         open=Decimal(str(b["open"])),
                         high=Decimal(str(b["high"])),
