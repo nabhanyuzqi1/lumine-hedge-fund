@@ -515,6 +515,7 @@ async def _decision_scheduler() -> None:
     from lumine.data.redis_client import get_redis
     from lumine.rpc.queue import enqueue_command
 
+    _iv = 600  # default 10m: 9router limit ~10 req/min; 1 cycle ~8 request
     while True:
         try:
             status = _market_status()
@@ -525,17 +526,25 @@ async def _decision_scheduler() -> None:
                 try:
                     _down = await r.get("lumine:llm_down_until")
                     if _down and float(_down) > __import__("time").time():
-                        await asyncio.sleep(300)
+                        await asyncio.sleep(_iv)
                         continue
                 except Exception:
                     pass
-                lock = await r.set("lumine:decision_cycle_lock", "1", nx=True, ex=240)
+                # Interval configurable via Redis system_config (default
+                # 240s; kalau 9router sering kena limit 10req/min → set 600).
+                try:
+                    _iv_raw = await r.hget("lumine:system_config", "decision_cycle_interval_seconds")
+                    if _iv_raw:
+                        _iv = max(120, int(_iv_raw))
+                except Exception:
+                    pass
+                lock = await r.set("lumine:decision_cycle_lock", "1", nx=True, ex=max(240, _iv))
                 if lock:
                     await enqueue_command("run_decision_cycle", {"reason": "scheduler"})
-                    print("decision_scheduler: cycle triggered", flush=True)
+                    print(f"decision_scheduler: cycle triggered (interval={_iv}s)", flush=True)
         except Exception as exc:  # scheduler tidak boleh mati
             print(f"decision_scheduler error: {type(exc).__name__}: {str(exc)[:200]}", flush=True)
-        await asyncio.sleep(300)
+        await asyncio.sleep(_iv)
 
 
 async def _deals_worker() -> None:  # noqa: C901 — deal pipeline bercabang (cutoff, dedupe, upsert)
