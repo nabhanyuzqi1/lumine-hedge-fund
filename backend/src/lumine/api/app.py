@@ -287,7 +287,7 @@ async def _bar_flush_worker() -> None:
                             func.max(Bars1M.close),
                             func.sum(Bars1M.volume),
                         )
-                        .where(Bars1M.ts >= five_min_bucket - text("interval '1 hour'"))
+                        .where(Bars1M.ts >= five_min_bucket - timedelta(hours=1))
                         .group_by(
                             func.date_trunc("hour", Bars1M.ts)
                             + text("interval '5 min'")
