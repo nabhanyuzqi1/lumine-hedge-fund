@@ -217,6 +217,10 @@ async def _bar_flush_worker() -> None:
     from lumine.data.session import get_sessionmaker
 
     while True:
+        print(
+            f"[BARS-WORKER] cycle bb={list(_bar_builder.keys())}",
+            flush=True,
+        )
         await asyncio.sleep(60)
         try:
             now = datetime.now(UTC)
