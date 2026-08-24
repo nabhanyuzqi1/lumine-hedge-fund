@@ -408,3 +408,41 @@ forward_auth (Caddy 2.11 pecah WS upgrade); halaman di-auth.
 GET /api/v1/portfolio/positions pakai list_open → tabel KOSONG saat 0 posisi
 open (padahal ada 24 closed history). Fix: PositionRepository.list_recent(50)
 → tampilkan open + closed history.
+
+
+
+## PITFALL: PositionSync close-loop — snapshot crypto kosong menutup posisi HFM (24 Agu 2026)
+
+**Gejala:** posisi XAUUSD real (1 open, floating +280) TIDAK pernah muncul di
+DB/UI — status selalu closed, updated_at stagnan 19 Agu. User lapor "24
+posisi filled tapi belum entry, order tidak masuk EA, LLM tidak tahu posisi".
+Tabel position = closed history saja, 0 open.
+
+**Root cause:** `_sync_once` memproses 2 key per cycle:
+1. `mt5:positions` (snapshot EA HFM, n=1 posisi XAUUSD) → upsert OPEN ✅
+2. `mt5crypto:positions` (snapshot EA crypto, n=0 — EA crypto TIDAK punya
+   posisi) → `_upsert_positions([])` → close-loop menutup SEMUA posisi open
+   TANPA filter symbol → row XAUUSD (HFM) di-close tiap 10 detik ❌
+
+Jadi tiap cycle: open (dari mt5) → langsung closed (dari mt5crypto). DB
+selalu closed walau MT5 real punya posisi open. Sinyal/analyst hanya lihat
+0 posisi → order/sinyal duplikat, tidak sinkron.
+
+**Fix (position_sync.py):**
+```python
+POSITIONS_KEY_SYMBOLS = {"mt5:positions": "XAUUSD", "mt5crypto:positions": "BTCUSD"}
+# _sync_once → allowed_symbols={...}
+# _upsert_positions(payload, allowed_symbols): close-loop skip pos.symbol
+#   not in allowed_symbols
+```
+Plus: `Position.updated_at` pakai `onupdate=_utcnow` — sleep: sebelumnya
+updated_at tetap 19 Agu walau mt5_profit di-update tiap 10s.
+
+**Verifikasi:** SELECT status FROM positions → 1 open (ticket 258048867,
+mt5_profit live, updated_at hari ini), 23 closed. LLM thermal dewan baca
+posisi open via PositionRepository.
+
+## Catatan EA
+- EA HFM kirim snapshot /positions tiap ~10 detik ke `mt5:positions`
+- EA crypto kirim ke `mt5crypto:positions` — snapshot [] kalau 0 posisi
+- Close-loop JANGAN pernah menutup posisi di luar instance symbol map
