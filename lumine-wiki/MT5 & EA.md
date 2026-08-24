@@ -330,3 +330,24 @@ redis-cli HGET mt5:status ea_build  # returns "__DATE__"
 - chart01.chr parameter input override default source → perlu update chart01.chr juga
 - `|| true` WAJIB di compile command (`set -euo pipefail` → crash-loop tanpa ini)
 - WebRequestUrl hash di common.ini WAJIB ada — tanpa hash, whitelist tidak aktif (4014)
+
+
+## PITFALL: Candle Close Harus Sinkron per Timeframe (24 Aug 2026)
+
+Agregasi bar (5m/15m/1h/4h dari bar 1m) WAJIB pakai first-open / last-close:
+
+```python
+# BENAR (array_agg — pattern query 15m di market.py):
+func.array_agg(open ORDER BY ts)[1]                                        # open bar PERTAMA
+func.array_agg(close ORDER BY ts)[array_length(array_agg(close ORDER BY ts), 1)]  # close bar TERAKHIR
+
+# SALAH (MIN/MAX — close mengikuti nilai ekstrem):
+func.min(open)  # open bukan dari bar pertama
+func.max(close) # close mengikuti high — candle 1h "menyeret" pola 1m → kotor
+```
+
+Sinkronisasi: close bar 1h = close bar 15m terakhir dalam bucket 1h (bukan max/ekstrem).
+
+### Warna Candle (lightweight-charts)
+CSS `var(--...)` TIDAK di-resolve oleh canvas lightweight-charts → candle hitam.
+Gunakan hex langsung: up `#34d399` (hijau), down `#f0555b` (merah) — dari CHART_COLORS di lib/chart-theme.ts.
