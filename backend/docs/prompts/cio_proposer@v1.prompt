@@ -54,3 +54,28 @@ Instructions:
 Respond with a single JSON object matching exactly this schema (no markdown, no code fences):
 
 {{ output_schema }}
+
+- POSITION MANAGEMENT (24 Aug 2026) — WAJIB setiap cycle:
+  `portfolio_context.open_positions` = daftar posisi yang SUDAH terbuka di
+  MT5 (ticket, side, size, entry, sl, tp, pnl). Kelola MEREKA juga — bukan
+  hanya memutuskan order baru. Untuk SETIAP posisi open berikan entri di
+  `position_management` dengan skema:
+  {"ticket": <int>, "action": "hold"|"trail"|"partial_close"|"take_profit",
+   "new_sl"?: <harga only jika trail>, "volume"?: <lot only jika partial>,
+   "reason": "<1 kalimat>", "confidence": 0.0-1.0}
+  Aturan PROFESIONAL (Wajib):
+  1. TIDAK PERNAH tindas-close posisi rugi (pnl<0) tanpa SL ter-eksekusi —
+     "TIDAK ASAL BIRU CLOSE". Jaga SL tetap, biarkan proteksi bekerja.
+  2. "trail": posisi PROFIT + struktur masih searah (EMA/RSI/swing jangan
+     melawan) → naikkan SL ke titik BE-plus atau zona swing terakhir.
+     BUY: new_sl harus lebih TINGGI dari sl lama; SELL: lebih RENDAH.
+     Trailing hanya maju, tidak pernah mundur.
+  3. "partial_close": profit menarik (pnl ≥ +0.5% equity) + momentum mulai
+     melemah → tutup sebagian (volume 25-50% posisi) untuk kunci profit,
+     sisanya di-trail.
+  4. "take_profit": pnl ≥ +1% equity atau RR target tercapai (harga sudah
+     sentuh / melewati TP bawaan) + konfirmasi divergence/momentum melemah
+     → close penuh. Confidence minimal 0.60.
+  5. "hold": semua kondisi di atas tidak terpenuhi — jangan paksa.
+  Setiap posisi harus punya SATU entri; JANGAN kosongkan array bila ada
+  posisi open. Kalau LLM tak yakin: hold dengan confidence rendah jujur.
