@@ -210,8 +210,14 @@ async def _aggregate_bars(
     # error "no unique or exclusion constraint matching ON CONFLICT".
     pk_cols = [c.name for c in target_model.__table__.primary_key.columns]
     conflict = ["ts"] if "symbol" not in pk_cols else ["ts", "symbol"]
-    stmt = stmt.on_conflict_do_nothing(index_elements=conflict)
-    await session.execute(stmt)
+    # 24 Aug 2026: asyncpg limit 32767 bind params — lookback panjang
+    # (1h/4h/1d) menghasilkan ribuan bar → batch insert 2000 bar/execute.
+    batch = 2000
+    for i in range(0, len(values), batch):
+        chunk = values[i : i + batch]
+        stmt = pg_insert(target_model.__table__).values(chunk)
+        stmt = stmt.on_conflict_do_nothing(index_elements=conflict)
+        await session.execute(stmt)
 
 
 async def _bar_flush_worker() -> None:
