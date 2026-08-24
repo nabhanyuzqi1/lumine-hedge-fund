@@ -111,6 +111,8 @@ def ticks():
     namespace harus terpisah per instance agar tidak konflik).
     """
     try:
+        raw = request.get_data(cache=True)
+        print(f"[TICKS-RAW] len={len(raw)} head={raw[:150]}", flush=True)
         data = request.get_json(force=True)
         payload = json.dumps(data)
         ns = _ns()
@@ -127,12 +129,20 @@ def seed_bars():
     24 Aug 2026: + _ns() — sebelumnya SHARED.
     """
     try:
+        raw = request.get_data(cache=True)
+        print(f"[SEED/BARS] len={len(raw)} head={raw[:150]}", flush=True)
         data = request.get_json(force=True)
         payload = json.dumps(data)
         ns = _ns()
         r.lpush(f"{ns}seed_bars", payload)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
+        # 24 Aug 2026: log error detail — 500 silent membuat EA retry
+        # selamanya (seed tidak pernah maju).
+        import traceback
+
+        traceback.print_exc()
+        print(f"[SEED/BARS-ERR] {type(e).__name__}: {e}", flush=True)
         return jsonify({"error": str(e)}), 500
 
 

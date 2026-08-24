@@ -523,7 +523,7 @@ void SeedNextChunk()
      {
       MqlRates r = rates[i];
       if(i > 0) json += ",";
-      json += StringFormat("{\\\"ts\\\":%I64d,\\\"open\\\":%.5f,\\\"high\\\":%.5f,\\\"low\\\":%.5f,\\\"close\\\":%.5f,\\\"volume\\\":%.2f}",
+      json += StringFormat("{\"ts\":%I64d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
                            (long)(r.time - g_gmtOffset), r.open, r.high, r.low, r.close, (double)r.tick_volume);
      }
    json += "]}";
