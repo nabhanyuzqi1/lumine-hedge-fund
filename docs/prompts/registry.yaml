@@ -95,7 +95,7 @@ prompts:
 - sub_role: cio_proposer
   version: v1
   prompt_ref: cio_proposer@v1.prompt
-  expected_hash: 7eb31e168f2c7aae5c7fb75fbe82a5156dbd38536a10e9dd4a5d5dccd81be0ba
+  expected_hash: 45f37f1bf41cf728874c48da1a99987533a936edbbba5224f63f2b609f5f34c2
   model_tier_hint: frontier
   variables:
   - symbol

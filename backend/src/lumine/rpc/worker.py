@@ -896,6 +896,10 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
                 "net_exposure_usd": float(position_summary["net_size"]) * float(last["close"]),
                 "margin_used": 0.0,
                 "open_pnl": float(position_summary["unrealized_pnl"]),
+                # 24 Aug 2026: detail tiap posisi open (ticket/side/lot/entry/
+                # SL/TP/PnL) — CIO & risk assessor WAJIB lihat ini untuk
+                # keputusan take-profit / trailing / partial close.
+                "open_positions": open_positions_json,
                 "analyst_alignment": {
                     "bullish": _bull,
                     "bearish": _bear,
@@ -1301,6 +1305,120 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             except Exception as _exec_exc:  # nosec B110 — eksekusi tidak boleh crash cycle
                 print(f"[EXEC] error: {str(_exec_exc)[:150]}", flush=True)
 
+            # -- POSITION MANAGEMENT (24 Aug 2026) --------------------------
+            # LLM (CIO proposer) memberi `position_management` - kelola posisi
+            # yang SUDAH terbuka: trail SL / partial_close / take_profit.
+            # Guard ketat: TIDAK ASAL CLOSE - tidak pernah close posisi rugi;
+            # trailing hanya MAJU; kunci profit hanya saat profit + confidence.
+            try:
+                _pm_raw = cio_out.parsed.get("position_management")
+                if _pm_raw:
+                    _pm_items = _pm_raw if isinstance(_pm_raw, list) else [_pm_raw]
+                    _open_ops: dict[int, dict[str, Any]] = {}
+                    try:
+                        _open_ops = {
+                            int(o.get("ticket")): o
+                            for o in _json.loads(open_positions_json or "[]")
+                            if o.get("ticket") is not None
+                        }
+                    except Exception:
+                        _open_ops = {}
+                    _mgmt_conf = 0.60
+                    try:
+                        if _active_profile.get("mgmt_min_confidence"):
+                            _mgmt_conf = float(_active_profile["mgmt_min_confidence"])
+                    except Exception:
+                        pass
+                    _ns = "mt5:"
+                    if symbol.upper() == "BTCUSD":
+                        _ns = "mt5crypto:"
+                    for _m in _pm_items:
+                        try:
+                            _ticket = int(_m.get("ticket") or 0)
+                            _pos = _open_ops.get(_ticket)
+                            if not _ticket or _pos is None:
+                                print(f"[EXEC-MGMT] skip unknown ticket {_ticket}", flush=True)
+                                continue
+                            _act = str(_m.get("action", "hold")).lower()
+                            try:
+                                _conf = float(_m.get("confidence") or 0)
+                            except (TypeError, ValueError):
+                                _conf = 0.0
+                            _pnl = float(_pos.get("pnl") or 0)
+                            _side = str(_pos.get("side") or "").lower()
+                            _size = float(_pos.get("size") or 0)
+                            try:
+                                _sl_cur = float(_pos.get("sl") or 0)
+                            except (TypeError, ValueError):
+                                _sl_cur = 0.0
+                            try:
+                                _tp_cur = float(_pos.get("tp") or 0)
+                            except (TypeError, ValueError):
+                                _tp_cur = 0.0
+                            _side_long = _side in ("buy", "long")
+                            _cmd: dict[str, Any] | None = None
+                            if _act == "trail":
+                                # Trailing stop: WAJIB posisi profit, SL baru
+                                # lebih baik (hanya maju), confidence terpenuhi.
+                                _new_sl = float(_m.get("new_sl") or 0)
+                                _good = _new_sl > 0 and _pnl > 0 and _conf >= _mgmt_conf
+                                if _side_long:
+                                    _good = _good and _new_sl > _sl_cur
+                                else:
+                                    _good = _good and _new_sl < _sl_cur
+                                if _good:
+                                    _cmd = {
+                                        "command_id": str(uuid4()),
+                                        "action": "MODIFY",
+                                        "ticket": _ticket,
+                                        "sl": _new_sl,
+                                        "tp": _tp_cur or 0,
+                                    }
+                            elif _act == "partial_close":
+                                # Guard: profit + volume wajar (<= 50% size)
+                                _vol = float(_m.get("volume") or 0)
+                                if _pnl > 0 and _vol >= 0.01 and _conf >= _mgmt_conf:
+                                    if _vol > _size * 0.5:
+                                        _vol = round(_size * 0.5, 2)
+                                    _cmd = {
+                                        "command_id": str(uuid4()),
+                                        "action": "PARTIAL_CLOSE",
+                                        "ticket": _ticket,
+                                        "volume": _vol,
+                                    }
+                            elif _act == "take_profit":
+                                # Guard: posisi WAJIB profit (TIDAK ASAL CLOSE)
+                                if _pnl > 0 and _conf >= _mgmt_conf:
+                                    _cmd = {
+                                        "command_id": str(uuid4()),
+                                        "action": "CLOSE",
+                                        "ticket": _ticket,
+                                    }
+                            else:
+                                # hold / lainnya -> tidak ada aksi
+                                pass
+                            if _cmd is not None:
+                                try:
+                                    if _r is None:
+                                        _r = await get_redis()
+                                    await _r.rpush(
+                                        f"{_ns}commands",
+                                        _json.dumps(_cmd, ensure_ascii=False),
+                                    )
+                                    print(
+                                        f"[EXEC-MGMT] {_act} ticket={_ticket} "
+                                        f"conf={_conf:.2f} pnl={_pnl:.2f} -> EA",
+                                        flush=True,
+                                    )
+                                except Exception as _rerr:
+                                    print(
+                                        f"[EXEC-MGMT] push failed: {str(_rerr)[:120]}",
+                                        flush=True,
+                                    )
+                        except Exception as _mitem_exc:
+                            print(f"[EXEC-MGMT] item error: {str(_mitem_exc)[:120]}", flush=True)
+            except Exception as _pm_exc:
+                print(f"[EXEC-MGMT] block error: {str(_pm_exc)[:160]}", flush=True)
             return {
                 "status": "completed",
                 "decision": action.lower(),
