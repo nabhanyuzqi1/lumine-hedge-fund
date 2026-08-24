@@ -387,6 +387,7 @@ async def _seed_worker() -> None:
             if model is None:
                 continue
             async with get_sessionmaker()() as session:
+                now_utc = datetime.now(UTC)
                 rows = [
                     model(
                         ts=datetime.fromtimestamp(int(b["ts"]), UTC),
@@ -399,6 +400,11 @@ async def _seed_worker() -> None:
                         source="mt5",
                     )
                     for b in data.get("bars", [])
+                    # 24 Aug 2026: guard — EA lama kirim ts waktu SERVER MT5
+                    # (UTC+2) → bar miring 2 jam ke depan. Skip bar dengan
+                    # ts > now+90m (masa depan) sampai EA v4.23 ter-deploy.
+                    if datetime.fromtimestamp(int(b["ts"]), UTC)
+                    <= now_utc + timedelta(minutes=90)
                 ]
                 if rows:
                     from sqlalchemy.dialects.postgresql import insert as pg_insert

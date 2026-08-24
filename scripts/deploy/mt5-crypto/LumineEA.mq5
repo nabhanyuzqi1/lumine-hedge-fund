@@ -26,7 +26,7 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "4.22"
+#property version   "4.23"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy-crypto"; // Redis HTTP proxy URL (via Caddy+Cloudflare)
@@ -79,6 +79,7 @@ int      g_seedPhase     = 0;       // 0=idle 1=running 2=done
 int      g_seedSymIdx    = 0;
 int      g_seedTfIdx     = 0;
 int      g_seedOffset    = 0;       // offset CopyRates pagination
+int      g_gmtOffset     = 0;       // server MT5 vs UTC (detik) — 24 Aug: seed bars wajib UTC
 int      g_seedTotal     = 0;
 int      g_seedSent      = 0;
 
@@ -471,6 +472,7 @@ void SeedNextChunk()
 
    if(g_seedOffset == 0)
      {
+      g_gmtOffset = (int)(TimeCurrent() - TimeGMT());   // server vs UTC (detik)
       g_seedTotal = iBars(sym, tf);
       if(g_seedTotal <= 0)
         {
@@ -521,8 +523,8 @@ void SeedNextChunk()
      {
       MqlRates r = rates[i];
       if(i > 0) json += ",";
-      json += StringFormat("{\"ts\":%I64d,\"open\":%.5f,\"high\":%.5f,\"low\":%.5f,\"close\":%.5f,\"volume\":%.2f}",
-                           (long)r.time, r.open, r.high, r.low, r.close, (double)r.tick_volume);
+      json += StringFormat("{\\\"ts\\\":%I64d,\\\"open\\\":%.5f,\\\"high\\\":%.5f,\\\"low\\\":%.5f,\\\"close\\\":%.5f,\\\"volume\\\":%.2f}",
+                           (long)(r.time - g_gmtOffset), r.open, r.high, r.low, r.close, (double)r.tick_volume);
      }
    json += "]}";
 
@@ -635,6 +637,7 @@ void SeedRecentM1()
   {
    string sym = NormalizeSymbol(g_seedSymbols[0]);
    MqlRates rates[];
+   g_gmtOffset = (int)(TimeCurrent() - TimeGMT());
    int got = CopyRates(sym, PERIOD_M1, 0, 120, rates);
    if(got <= 0)
      {
@@ -647,7 +650,7 @@ void SeedRecentM1()
      {
       if(i != got - 1) bars += ",";
       bars += StringFormat("{\"ts\":%d,\"open\":%s,\"high\":%s,\"low\":%s,\"close\":%s,\"volume\":%s}",
-         (long)rates[i].time,
+         (long)(rates[i].time - g_gmtOffset),
          DoubleToString(rates[i].open, 2), DoubleToString(rates[i].high, 2),
          DoubleToString(rates[i].low, 2), DoubleToString(rates[i].close, 2),
          DoubleToString(rates[i].tick_volume, 0));
