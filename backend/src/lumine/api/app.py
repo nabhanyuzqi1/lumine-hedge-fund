@@ -274,12 +274,16 @@ async def _bar_flush_worker() -> None:
                 five_min_bucket = now.replace(
                     minute=(now.minute // 5) * 5, second=0, microsecond=0
                 )
+                # 24 Aug 2026: bucket_expr variable SAMA untuk SELECT & GROUP
+                # BY — sebelumnya ekspresi ditulis ulang → Postgres anggap
+                # kolom beda → GroupingError.
+                bucket_expr = func.date_trunc("hour", Bars1M.ts) + text(
+                    "interval '5 min'"
+                ) * func.floor(func.extract("minute", Bars1M.ts) / 5)
                 agg_rows = (
                     await session.execute(
                         select(
-                            func.date_trunc("hour", Bars1M.ts) + text("interval '5 min'") * func.floor(
-                                func.extract("minute", Bars1M.ts) / 5
-                            ),
+                            bucket_expr.label("bucket"),
                             Bars1M.symbol,
                             func.min(Bars1M.open),
                             func.max(Bars1M.high),
@@ -288,12 +292,7 @@ async def _bar_flush_worker() -> None:
                             func.sum(Bars1M.volume),
                         )
                         .where(Bars1M.ts >= five_min_bucket - timedelta(hours=1))
-                        .group_by(
-                            func.date_trunc("hour", Bars1M.ts)
-                            + text("interval '5 min'")
-                            * func.floor(func.extract("minute", Bars1M.ts) / 5),
-                            Bars1M.symbol,
-                        )
+                        .group_by(bucket_expr, Bars1M.symbol)
                     )
                 ).all()
                 if agg_rows:
