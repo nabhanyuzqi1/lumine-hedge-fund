@@ -60,6 +60,8 @@ _app_state: dict[str, object] = {}
 # Format: {symbol: {"ts": datetime, "open": f, "high": f, "low": f,
 #                   "close": f, "volume": f}}
 _bar_builder: dict[str, dict[str, Any]] = {}
+# 24 Aug 2026: bar 1m final (menit berganti) menunggu flush ke DB.
+_bar_ready: dict[str, dict[str, Any]] = {}
 
 
 async def _tick_worker() -> None:
@@ -113,11 +115,20 @@ async def _tick_worker() -> None:
 
 
 def _update_bar_builder(symbol: str, bid: float, ask: float, volume: float) -> None:
-    """Update bar 1m berjalan (bucket per menit UTC)."""
+    """Update bar 1m berjalan (bucket per menit UTC).
+
+    24 Aug 2026 FIX: saat menit berganti, bar LAMA dipindah ke _bar_ready
+    (antrian siap-flush). Sebelumnya bar lama di-REPLACE diam-diam →
+    flush worker `ready = ts < current_minute` SELALU kosong → bar 1m live
+    tidak pernah di-flush ke DB (bar 1m selama ini hanya dari seed EA).
+    """
     now = datetime.now(UTC)
     minute_ts = now.replace(second=0, microsecond=0)
     bar = _bar_builder.get(symbol)
     if bar is None or bar["ts"] != minute_ts:
+        # Menit berganti → bar lama final, antri untuk flush
+        if bar is not None:
+            _bar_ready[symbol] = dict(bar)
         _bar_builder[symbol] = {
             "ts": minute_ts,
             "symbol": symbol,
@@ -224,18 +235,12 @@ async def _bar_flush_worker() -> None:
         await asyncio.sleep(60)
         try:
             now = datetime.now(UTC)
-            # PITFALL (22 Aug 2026): threshold lama "umur >90s" membuat bar 1m
-            # terakhir di-flush 90 detik telat → chart selisih 1-2 menit dari
-            # MT5 asli. Bar dianggap SELESAI saat menitnya berganti (ts <
-            # menit berjalan), sehingga candle 1m close tepat di akhir menit.
-            current_minute = now.replace(second=0, microsecond=0)
-            ready = [
-                bar
-                for bar in _bar_builder.values()
-                if bar["ts"] < current_minute
-            ]
-            if not ready:
-                continue
+            # 24 Aug 2026: bar 1m final dari _bar_ready (antrian saat menit
+            # berganti), bukan _bar_builder (bar berjalan ts == current_minute
+            # -> SELALU tidak ready). Sebelumnya bar builder simpan 1 bar,
+            # bar lama di-replace -> ready kosong -> TIDAK PERNAH flush.
+            ready = list(_bar_ready.values())
+            _bar_ready.clear()
             async with get_sessionmaker()() as session:
                 for bar in ready:
                     stmt = (
