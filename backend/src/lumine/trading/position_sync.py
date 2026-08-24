@@ -36,7 +36,9 @@ from lumine.trading.market_service import MarketService
 logger = logging.getLogger(__name__)
 
 # Redis key: EA push snapshot positions (list, newest first)
+# 24 Aug 2026: multi-instance — HFM (mt5:positions) & crypto (mt5crypto:positions)
 POSITIONS_KEY = "mt5:positions"
+POSITIONS_KEYS = ["mt5:positions", "mt5crypto:positions"]
 # Redis key: EA push deals/history (list)
 DEALS_KEY = "mt5:deals"
 
@@ -100,30 +102,33 @@ class PositionSyncWorker:
             await asyncio.sleep(self.interval)
 
     async def _sync_once(self) -> None:
-        """One sync cycle: consume Redis snapshot → upsert DB."""
+        """One sync cycle: consume Redis snapshot → upsert DB.
+        24 Aug 2026: loop over POSITIONS_KEYS (multi-instance).
+        """
         r = await self._get_redis()
-        raw_items = await r.lrange(POSITIONS_KEY, 0, -1)
-        if not raw_items:
-            return
-        # Ambil snapshot paling baru (index 0 = LPUSH paling baru)
-        newest: dict[str, Any] | None = None
-        for raw in raw_items:
-            try:
-                parsed = json.loads(raw if isinstance(raw, str) else raw.decode())
-            except (json.JSONDecodeError, UnicodeDecodeError):
+        for key in POSITIONS_KEYS:
+            raw_items = await r.lrange(key, 0, -1)
+            if not raw_items:
                 continue
-            if isinstance(parsed, dict) and isinstance(parsed.get("positions"), list):
-                if newest is None:
-                    newest = parsed
-        if newest is None:
-            # Bersihkan key — data invalid tidak diproses ulang
-            await r.delete(POSITIONS_KEY)
-            return
+            # Ambil snapshot paling baru (index 0 = LPUSH paling baru)
+            newest: dict[str, Any] | None = None
+            for raw in raw_items:
+                try:
+                    parsed = json.loads(raw if isinstance(raw, str) else raw.decode())
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+                if isinstance(parsed, dict) and isinstance(parsed.get("positions"), list):
+                    if newest is None:
+                        newest = parsed
+            if newest is None:
+                # Bersihkan key — data invalid tidak diproses ulang
+                await r.delete(key)
+                continue
 
-        positions_payload = newest.get("positions", [])
-        await self._upsert_positions(positions_payload)
-        # Clear queue setelah diproses (snapshot sudah dikonsumsi)
-        await r.delete(POSITIONS_KEY)
+            positions_payload = newest.get("positions", [])
+            await self._upsert_positions(positions_payload)
+            # Clear queue setelah diproses (snapshot sudah dikonsumsi)
+            await r.delete(key)
 
     async def _upsert_positions(self, payload: list[dict[str, Any]]) -> None:
         """Upsert MT5 positions; tutup posisi yang tidak ada di snapshot."""

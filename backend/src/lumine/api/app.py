@@ -80,10 +80,13 @@ async def _tick_worker() -> None:
         return
     while True:
         try:
-            item = await r.brpop("mt5:ticks", timeout=5)
+            item = await r.blmpop(
+                5, 2, "mt5:ticks", "mt5crypto:ticks", direction="LEFT"
+            )
             if not item:
                 continue
-            _, payload = item
+            _key, [_payload] = item
+            payload = _payload
             data = json.loads(payload)
             symbol = str(data["symbol"]).upper()
             bid = float(data["bid"])
@@ -372,10 +375,13 @@ async def _seed_worker() -> None:
         return
     while True:
         try:
-            item = await r.brpop("mt5:seed_bars", timeout=5)
+            item = await r.blmpop(
+                5, 2, "mt5:seed_bars", "mt5crypto:seed_bars", direction="LEFT"
+            )
             if not item:
                 continue
-            _, payload = item
+            _key, [_payload] = item
+            payload = _payload
             data = json.loads(payload)
             model = bar_models.get(data.get("timeframe", ""))
             if model is None:
@@ -502,10 +508,13 @@ async def _deals_worker() -> None:  # noqa: C901 — deal pipeline bercabang (cu
         return
     while True:
         try:
-            item = await r.brpop("mt5:deals", timeout=5)
+            item = await r.blmpop(
+                5, 2, "mt5:deals", "mt5crypto:deals", direction="LEFT"
+            )
             if not item:
                 continue
-            _, payload = item
+            _key, [_payload] = item
+            payload = _payload
             data = json.loads(payload)
             deals = data.get("deals", [])
             if not deals:

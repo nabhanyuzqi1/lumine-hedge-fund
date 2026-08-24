@@ -104,29 +104,33 @@ def results():
 
 @app.route("/ticks", methods=["POST"])
 def ticks():
-    """LPUSH mt5:ticks (tick data dari EA: bid, ask, timestamp).
+    """LPUSH ke namespace instance (mt5:ticks HFM / mt5crypto:ticks crypto).
     Body: {symbol, bid, ask, timestamp}
+    24 Aug 2026: + _ns() — sebelumnya SHARED mt5:ticks untuk semua EA
+    (XAUUSD & BTCUSD campur 1 list; payload symbol menyelamatkan, tapi
+    namespace harus terpisah per instance agar tidak konflik).
     """
     try:
         data = request.get_json(force=True)
         payload = json.dumps(data)
-        # LPUSH ke journal (batas 1000)
-        r.lpush("mt5:ticks", payload)
-        r.ltrim("mt5:ticks", 0, 999)
+        ns = _ns()
+        r.lpush(f"{ns}ticks", payload)
+        r.ltrim(f"{ns}ticks", 0, 999)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route("/seed/bars", methods=["POST"])
 def seed_bars():
-    """LPUSH mt5:seed_bars (history bars dari EA: CopyRates chunk).
+    """LPUSH ke namespace instance (mt5:seed_bars / mt5crypto:seed_bars).
     Body: {symbol, timeframe, bars: [{ts, open, high, low, close, volume}]}
-    Worker di API backend consume → insert bars_* table.
+    24 Aug 2026: + _ns() — sebelumnya SHARED.
     """
     try:
         data = request.get_json(force=True)
         payload = json.dumps(data)
-        r.lpush("mt5:seed_bars", payload)
+        ns = _ns()
+        r.lpush(f"{ns}seed_bars", payload)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -134,15 +138,16 @@ def seed_bars():
 
 @app.route("/positions", methods=["POST"])
 def positions():
-    """LPUSH mt5:positions (snapshot open positions dari EA, tiap ~10s).
+    """LPUSH ke namespace instance (mt5:positions / mt5crypto:positions).
     Body: {snapshot_ts, positions: [{ticket, symbol, type, volume,
     price_open, sl, tp, profit, time}]}
-    PositionSyncWorker di API backend consume → upsert tabel positions.
+    24 Aug 2026: + _ns() — sebelumnya SHARED.
     """
     try:
         data = request.get_json(force=True)
         payload = json.dumps(data)
-        r.lpush("mt5:positions", payload)
+        ns = _ns()
+        r.lpush(f"{ns}positions", payload)
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
