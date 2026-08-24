@@ -484,3 +484,27 @@ Prompt CIO di docs/prompts + registry hash di-update (backend/docs/prompts wajib
 - PENTING: set `lumine:deals_cutoff_ts` ke timestamp reset — tanpa itu
   _deals_worker re-insert deal history LAMA ke orders (fresh-start cutoff 17 Agu
   sudah ada di _deals_worker namun harus di-set manual saat reset).
+
+
+
+## 9ROUTER RATE LIMIT (limit 10 req/menit) — penting (24 Agu 2026)
+
+- 9router (provider LLM lumine) limit ~10 request/menit. 1 decision cycle
+  butuh ~8 request (4 analyst parallel + risk + IC + CIO + debate/journal).
+- Kalau user sedang chat Hermes (pakai provider lumine yang SAMA), kuota
+  kepakai → cycle kena HTTP 521/429 "all N route(s) exhausted" walau semua
+  model healthy. BUKAN bug kode — inflasi request.
+
+Mitigasi (sudah di-deploy):
+1. `lumine:system_config.decision_cycle_interval_seconds` (default 600,
+   sekarang 900 = 15m) — cycle lebih jarang, hemat kuota.
+2. Cooldown `lumine:llm_down_until` (worker set +15m saat semua analyst
+   5xx/429) — scheduler skip sampai pulih, anti-spam.
+3. Prompt CIO diringkas (analyst_inputs lengkap → sub_role/bias/conf/arg
+   300ch; 21KB → 11KB) — model murah tidak EOF/timeout.
+4. Chain = manual (ox-alpha, glm) + semua avail (gemini/solar non-r9s) —
+   fallback otomatis ke model non-r9s saat ox-alpha kena limit.
+
+Catatan: kalau cycle GAGAL saat chat aktif, jangan panik — cycle berikutnya
+(saat chat berhenti) akan sukses; cooldown mencegah spam; kill switch tetap
+melindungi eksekusi.
