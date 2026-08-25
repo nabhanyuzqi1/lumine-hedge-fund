@@ -567,3 +567,41 @@ kontinu 19:59-20:07 kedua symbol.
   posisi CLOSED tetap menggambar garis di chart BTCUSD
 - Fix: `buildPriceLines(positions, selectedSymbol)` — garis hanya symbol
   aktif; `usePositions` hanya balikan posisi open
+
+## FIX — Chart kotor multipair + ticker tape mati (25 Agu 2026, commit 8812661/d2f0d3c/71157a3)
+
+**Gejala:** candle BTCUSD/XAUUSD "gap, naik-turun tak terbaca, cuma posisi
+terakhir yang tampil"; header pair ticks mati sampai pair diklik; tabel
+posisi campur closed; research/dashboard hardcode XAUUSD.
+
+**Root cause & Fix:**
+1. **Chart flicker/gap** (`candlestick-chart.tsx`): poll 5s balikin snapshot
+   LEBIH PENDEK dari cache live (bar belum di-flush) → `setData()` menghapus
+   candle live lalu `update()` bikin lagi = flicker. Tick dulu DIAPLIKASIKAN
+   ke bar cache terakhir apa pun TF → close candle 15m/1H ketimpa harga live.
+   - Guard snapshot-pendek: tolak `setData(candles.length < prevLen)`
+   - Dedupe LAST-WINS per timestamp (bukan skip-first)
+   - **Tick bucketing per timeframe**: tick membentuk candle bucket-nya
+     sendiri (floor(now/60|300|900|3600|14400|86400)); bucket < cached =
+     stale-skip; bucket baru = tutup candle lama mulai segar
+   - Sanitize OHLC invariant high=max(h,o,c), low=min(l,o,c)
+2. **Ticker tape per-symbol** (`ws.py`): WS filter tick `?symbol=X` saja →
+   tape pair lain mati. Fix: dukung `?symbol=ALL` (tanpa filter); terminal
+   pakai ALL, dashboard WS ikut selector.
+3. **Posisi closed bocor** (`portfolio.py`): endpoint positions pakai
+   `list_recent` (open+closed). Fix: default `list_open(limit=50)`;
+   `repositories.list_open` dapat param limit. Terminal juga filter tabel
+   orders+positions per selectedSymbol.
+4. **Multipair UI**: TICKER_SYMBOLS tinggal XAUUSD/BTCUSD;
+   CORRELATION_SYMBOLS & news-room quotes ikut; dashboard dapat selector
+   XAUUSD/BTCUSD (hapus hardcode); research backend `?symbol=` filter
+   (summary+series) + UI toggle Semua/XAUUSD/BTCUSD; openapi.yaml regen.
+5. **EA v4.24**: default `InpPollMs` 1000→500ms — EventSetMillisecondTimer
+   auto saat <1000 → tick <1s tanpa ketinggalan.
+
+**Verifikasi VPS (23:07 UTC):** SSE market-data 24 tick_update/25s KEDUA
+symbol; bars_1m 58 bar/jam kontinu kedua pair; `/api/v1/portfolio/positions`
+hanya open; research `?symbol=BTCUSD` OK; CI hijau (backend 606, frontend
+181 test). Catatan auth verifikasi: HMAC key di Redis `lumine:api_key:*`
+(bukan `auth:key:*`), login admin = `/api/auth/login` {username,password}.
+
