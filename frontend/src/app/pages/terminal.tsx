@@ -562,7 +562,7 @@ function TradingWorkspace() {
                       heikinAshi={heikinAshi}
                       onHeikinAshiChange={setHeikinAshi}
                       replayIndex={replayIndex}
-                      priceLines={buildPriceLines(positions.data ?? [])}
+                      priceLines={buildPriceLines(positions.data ?? [], selectedSymbol)}
                     />
         </Suspense>
 
@@ -688,10 +688,13 @@ function TradingWorkspace() {
  * T5b: price lines dari posisi aktif — Entry (biru), SL (merah),
  * TP (hijau). Hanya untuk symbol yang sedang ditampilkan.
  */
-function buildPriceLines(positions: PositionFixture[]): PriceLine[] {
+function buildPriceLines(positions: PositionFixture[], symbol?: string): PriceLine[] {
   const lines: PriceLine[] = [];
+  const sym = (symbol || "XAUUSD").toUpperCase();
   for (const p of positions) {
-    if (p.symbol.toUpperCase() !== "XAUUSD") continue;
+    if (p.symbol.toUpperCase() !== sym) continue;
+    // (symbol filter sudah cukup — usePositions hanya mengembalikan posisi
+    // aktif/open; posisi closed tidak pernah masuk data chart)
     if (p.avg_entry_price != null && Number.isFinite(p.avg_entry_price)) {
       lines.push({
         price: p.avg_entry_price,
