@@ -90,6 +90,16 @@ class MT5Bridge:
     RESULT_CHANNEL = "mt5:results"
     IDEMPOTENCY_PREFIX = "mt5:idempotency:"
     TIMEOUT_SECONDS = 30
+    # 24 Aug 2026 CRITICAL: routing per-instance (EA HFM xau vs EA crypto btc).
+    # Sebelumnya semua symbol LPUSH ke mt5:commands -> sinyal BTCUSD bisa
+    # dieksekusi EA HFM (salah instance).
+    COMMAND_QUEUE_ROUTES: tuple[tuple[str, str], ...] = (
+        ("XAUUSD", "mt5:commands"),
+        ("BTCUSD", "mt5crypto:commands"),
+    )
+
+    def _queue_for(self, symbol: str) -> str:
+        return dict(self.COMMAND_QUEUE_ROUTES).get(symbol.upper(), self.COMMAND_QUEUE)
 
     def __init__(self, redis_client: redis.Redis):
         self.redis = redis_client
@@ -113,7 +123,7 @@ class MT5Bridge:
 
         # Push to command queue
         payload = json.dumps(message.as_payload())
-        await self.redis.lpush(self.COMMAND_QUEUE, payload)
+        await self.redis.lpush(self._queue_for(message.symbol), payload)
 
         return message.command_id
 

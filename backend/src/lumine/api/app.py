@@ -604,6 +604,11 @@ async def _deals_worker() -> None:  # noqa: C901 — deal pipeline bercabang (cu
                         )
                     ).scalar_one_or_none()
                     if existing is not None:
+                        # 24 Aug 2026: backfill profit utk order yang sudah
+                        # ada (dibuat sebelum kolom profit ditambahkan).
+                        if existing.profit is None and d.get("profit") is not None:
+                            existing.profit = Decimal(str(d["profit"]))
+                            session.add(existing)
                         continue
                     ts = datetime.fromtimestamp(deal_time, UTC)
                     side = "sell" if int(d.get("type", 0)) == 1 else "buy"
@@ -619,7 +624,12 @@ async def _deals_worker() -> None:  # noqa: C901 — deal pipeline bercabang (cu
                             status="filled",
                             filled_volume=Decimal(str(d.get("volume", 0))),
                             mt5_ticket=ticket,
-                            created_at=ts,
+                            # 24 Aug 2026: P&L realisasi (C1) — deal EA
+                            # mengirim profit (DEAL_PROFIT); tanpa ini
+                            # sistem/LLM buta win/loss trade tertutup.
+                            profit=Decimal(str(d.get("profit", 0)))
+                                if d.get("profit") is not None
+                                else None,
                             updated_at=ts,
                         )
                     )

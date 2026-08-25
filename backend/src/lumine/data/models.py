@@ -419,6 +419,10 @@ class Order(Base):
     status: Mapped[str] = mapped_column(Text, nullable=False)
     filled_volume: Mapped[Decimal] = mapped_column(Numeric(20, 4), nullable=False, default=Decimal(0))
     rejected_reason: Mapped[str | None] = mapped_column(Text)
+    # 24 Aug 2026: P&L REALISASI dari deal MT5 (DEAL_PROFIT) — tanpa ini
+    # sistem/LLM buta terhadap win/loss trade yang sudah ditutup bro
+    # (tabel orders hanya price, tidak pernah profit).
+    profit: Mapped[Decimal | None] = mapped_column(Numeric(20, 4))
     mt5_ticket: Mapped[int | None] = mapped_column(BigInteger)  # ticket MT5 hasil FILLED (migrasi 0013)
     # 19 Aug 2026 A5: alasan keputusan LLM (buy/sell/TP/action + entry area +
     # alignment + profile + model) — JSON string, detail order menampilkannya.

@@ -912,12 +912,32 @@ async def _handle_run_decision_cycle(payload: dict[str, Any], publisher: SSEPubl
             )
             _neut = len(analyst_inputs) - _bull - _bear
             _consensus = "bullish" if _bull > _bear else ("bearish" if _bear > _bull else "mixed")
+            # 24 Aug 2026: realized P&L (C1) — jumlah profit order tertutup
+            # dari deal MT5. Tanpa ini LLM buta win/loss trade selesai.
+            realized_pnl = 0.0
+            try:
+                from sqlalchemy import func as _func
+                from sqlalchemy import select as _sa_select
+
+                from lumine.data.models import Order as _OrderRow
+
+                _rp = (
+                    await session.execute(
+                        _sa_select(_func.coalesce(_func.sum(_OrderRow.profit), 0)).where(
+                            _OrderRow.symbol == symbol
+                        )
+                    )
+                ).scalar_one_or_none()
+                realized_pnl = float(_rp or 0)
+            except Exception:
+                pass
             portfolio_context = {
                 "symbol": symbol,
                 "position_summary": position_summary,
                 "net_exposure_usd": float(position_summary["net_size"]) * float(last["close"]),
                 "margin_used": 0.0,
                 "open_pnl": float(position_summary["unrealized_pnl"]),
+                "realized_pnl": realized_pnl,
                 # 24 Aug 2026: detail tiap posisi open (ticket/side/lot/entry/
                 # SL/TP/PnL) — CIO & risk assessor WAJIB lihat ini untuk
                 # keputusan take-profit / trailing / partial close.
