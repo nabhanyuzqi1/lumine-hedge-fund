@@ -61,8 +61,10 @@ _app_state: dict[str, object] = {}
 #                   "close": f, "volume": f}}
 _bar_builder: dict[str, dict[str, Any]] = {}
 # 24 Aug 2026: bar 1m final (menit berganti) menunggu flush ke DB.
-_bar_ready: dict[str, dict[str, Any]] = {}
-
+# 24 Aug 2026: bar 1m final ANTRIAN (append); flush pop semua.
+_bar_ready: list[dict[str, Any]] = []
+# 24 Aug 2026: counter cycle flush — agregasi berat tiap 10 cycle.
+_agg_cycle: dict[str, int] = {"v": 0}
 
 async def _tick_worker() -> None:
     """Consume mt5:ticks (EA LPUSH via proxy) → MarketService.update_tick.
@@ -128,7 +130,7 @@ def _update_bar_builder(symbol: str, bid: float, ask: float, volume: float) -> N
     if bar is None or bar["ts"] != minute_ts:
         # Menit berganti → bar lama final, antri untuk flush
         if bar is not None:
-            _bar_ready[symbol] = dict(bar)
+            _bar_ready.append(dict(bar))
         _bar_builder[symbol] = {
             "ts": minute_ts,
             "symbol": symbol,
@@ -238,6 +240,7 @@ async def _bar_flush_worker() -> None:
             f"[BARS-WORKER] cycle bb={list(_bar_builder.keys())}",
             flush=True,
         )
+        _agg_cycle["v"] += 1
         await asyncio.sleep(60)
         try:
             now = datetime.now(UTC)
@@ -245,7 +248,7 @@ async def _bar_flush_worker() -> None:
             # berganti), bukan _bar_builder (bar berjalan ts == current_minute
             # -> SELALU tidak ready). Sebelumnya bar builder simpan 1 bar,
             # bar lama di-replace -> ready kosong -> TIDAK PERNAH flush.
-            ready = list(_bar_ready.values())
+            ready = list(_bar_ready)
             _bar_ready.clear()
             async with get_sessionmaker()() as session:
                 for bar in ready:
@@ -332,10 +335,21 @@ async def _bar_flush_worker() -> None:
                 # lookback panjang agar 1h/4h/1d menutup jangka luas TANPA
                 # bergantung seed EA (CopyRates broker yang OHLC-nya beda
                 # dari agregasi lokal → candle "kotor"/tidak sinkron).
-                await _aggregate_bars(session, Bars15M, Bars5M, 15, lookback_hours=8760)  # 1 tahun 15m
-                await _aggregate_bars(session, Bars1H, Bars15M, 60, lookback_hours=8760)   # 1 tahun 1h
-                await _aggregate_bars(session, Bars4H, Bars1H, 240, lookback_hours=8760)   # 1 tahun 4h
-                await _aggregate_bars(session, Bars1D, Bars4H, 1440, lookback_hours=35040) # 4 tahun 1d
+                # 24 Aug 2026 FIX gap: agregasi berat (lookback 1-4 tahun)
+                # tiap 60s MEMBUAT worker tersendat menit-menit → bar 1m
+                # hilang tiap ~5 menit (chart gap). Jalankan lookback PENUH
+                # tiap 10 cycle (10 menit); cycle biasa lookback pendek 6 jam
+                # (bar 1m baru cukup utk agregat TF tinggi).
+                _heavy = (_agg_cycle.get("v", 0) % 10 == 0)
+                if _heavy:
+                    await _aggregate_bars(session, Bars15M, Bars5M, 15, lookback_hours=8760)
+                    await _aggregate_bars(session, Bars1H, Bars15M, 60, lookback_hours=8760)
+                    await _aggregate_bars(session, Bars4H, Bars1H, 240, lookback_hours=8760)
+                    await _aggregate_bars(session, Bars1D, Bars4H, 1440, lookback_hours=35040)
+                else:
+                    await _aggregate_bars(session, Bars15M, Bars5M, 15, lookback_hours=6)
+                    await _aggregate_bars(session, Bars1H, Bars15M, 60, lookback_hours=6)
+                    await _aggregate_bars(session, Bars4H, Bars1H, 240, lookback_hours=6)
                 await session.commit()
                 if ready:
                     print(f"[BARS] flushed {len(ready)} bar 1m live", flush=True)
@@ -704,6 +718,7 @@ async def _dxy_worker() -> None:
             await fetch_and_cache_dxy(r)
         except Exception as exc:
             print(f"[DXY] worker error: {str(exc)[:150]}", flush=True)
+        _agg_cycle["v"] += 1
         await asyncio.sleep(60)  # poll tiap 60 detik
 
 
@@ -738,6 +753,7 @@ async def _model_discovery_worker() -> None:
                 print(f"[MODELS] auto-select → {res['chosen']} ({len(res['models'])} models)", flush=True)
         except Exception as exc:
             print(f"[MODELS] worker error: {str(exc)[:120]}", flush=True)
+        _agg_cycle["v"] += 1
         await asyncio.sleep(60)
 
 
