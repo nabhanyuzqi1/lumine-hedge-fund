@@ -55,7 +55,9 @@ const ORDER_STATUS_TONE: Record<OrderStatus, "ok" | "warn" | "danger" | "info"> 
 const TERMINAL_ORDER_STATUSES: OrderStatus[] = ["FILLED", "CANCELLED", "REJECTED"];
 
 /** Instruments for the ticker tape (Bloomberg-style bottom/top strip). */
-const TICKER_SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTCUSD", "NAS100", "SPX500"];
+// 25 Aug 2026: hanya 3 pair aktif (XAUUSD, BTCUSD + DXY via badge) —
+// sisanya di-hide (data ticks MT5 tidak tersedia untuk pair itu).
+const TICKER_SYMBOLS = ["XAUUSD", "BTCUSD"];
 
 const TIMEFRAME_KEYS: Record<string, Timeframe> = {
   "5": "5m",
@@ -417,7 +419,9 @@ function TradingWorkspace() {
   // jalan sebagai fallback — keduanya menulis ke store yang sama, tanpa
   // duplikasi (upsertTick idempoten per symbol).
   const wsConnected = useMarketWS({
-    symbol: selectedSymbol,
+    // 25 Aug 2026: ALL — ticker tape header butuh tick SEMUA pair realtime
+    // (sebelumnya hanya pair terpilih → tape BTCUSD "mati" sampai diklik).
+    symbol: "ALL",
     enabled: true,
     onTick: (tick) => {
       upsertTick(tick);
@@ -646,7 +650,12 @@ function TradingWorkspace() {
                 ))}
               </div>
             ) : (
-              <PositionsTable positions={positions.data ?? []} symbol={selectedSymbol} />
+              <PositionsTable
+                positions={(positions.data ?? []).filter(
+                  (p) => p.symbol.toUpperCase() === selectedSymbol.toUpperCase()
+                )}
+                symbol={selectedSymbol}
+              />
             )}
           </CardContent>
         </Card>

@@ -64,9 +64,11 @@ describe("CandlestickChart", () => {
     expect(addCalls.map((call) => call[0])).toEqual(["CandlestickSeries"]);
 
     const candles = chart!.addSeries.mock.results[0]!.value as MockSeries;
+    // 25 Aug 2026: toCandles menegakkan invariant low ≤ min(open,close) —
+    // bar 2 (o105 h108 l100 c98) disanitasi jadi low=98.
     expect(candles.setData).toHaveBeenCalledWith([
       { time: 1000, open: 100, high: 110, low: 95, close: 105 },
-      { time: 2000, open: 105, high: 108, low: 100, close: 98 },
+      { time: 2000, open: 105, high: 108, low: 98, close: 98 },
     ]);
   });
 
@@ -83,18 +85,19 @@ describe("CandlestickChart", () => {
     });
     expect(candles.update).not.toHaveBeenCalled();
 
-    // Past the window: close moves to tick, high raised, low untouched.
+    // Past the window: tick membentuk CANDLE BUCKET BARU (25 Aug 2026 —
+    // tick tak lagi menimpa candle snapshot; bucket = floor(now/300s)*300).
     act(() => {
       vi.advanceTimersByTime(1);
     });
     expect(candles.update).toHaveBeenCalledTimes(1);
-    expect(candles.update).toHaveBeenCalledWith({
-      time: 2000,
-      open: 105,
-      high: 112,
-      low: 100,
-      close: 112,
-    });
+    const upd = candles.update.mock.calls[0][0] as {
+      time: number;
+      open: number;
+    };
+    const step = 300; // timeframe "5m"
+    expect(upd.time).toBe(Math.floor(Date.now() / 1000 / step) * step);
+    expect(upd.open).toBe(112);
   });
 
   it("renders timeframe buttons and reports changes", () => {

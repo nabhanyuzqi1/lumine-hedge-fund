@@ -65,13 +65,25 @@ function toCandles(bars: ChartBar[]): CandlestickData[] {
       !Number.isFinite(b.open) || !Number.isFinite(b.high) ||
       !Number.isFinite(b.low) || !Number.isFinite(b.close)
     ) continue;
-    if (seen.has(b.time)) continue; // dedupe
+    // 25 Aug 2026: dedupe LAST-WINS — snapshot poll bisa memuat bar yang
+    // sama dua kali (live cache vs flush backend); versi terakhir selalu
+    // paling benar. Skip-first membuat candle "nyangkut" di harga lama.
+    if (seen.has(b.time)) {
+      const idx = out.findIndex((c) => Number(c.time) === b.time);
+      if (idx >= 0) out.splice(idx, 1);
+    }
     seen.add(b.time);
+    // Sanitize OHLC tanpa mengubah makna data: pastikan kontrak
+    // high = max(high, open, close), low = min(low, open, close).
+    // Ini bukan fake-OHLC — hanya menegakkan invariant yang dilanggar
+    // oleh rounding Decimal→float di pipeline.
+    const hi = Math.max(b.high, b.open, b.close);
+    const lo = Math.min(b.low, b.open, b.close);
     out.push({
       time: b.time as Time,
       open: b.open,
-      high: b.high,
-      low: b.low,
+      high: hi,
+      low: lo,
       close: b.close,
     });
   }
@@ -126,6 +138,9 @@ export function CandlestickChart({
   const [chartInstance, setChartInstance] = useState<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const lastBarCache = useRef<CandlestickData | null>(null);
+  // 25 Aug 2026: panjang snapshot setData terakhir — tolak snapshot pendek
+  // (backend belum flush bar live → snapshot lebih pendek dari chart).
+  const lastSnapshotLength = useRef(0);
   const priceLineRefs = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
 
   // ── Mount / unmount ────────────────────────────────────────────────────────
@@ -181,14 +196,31 @@ export function CandlestickChart({
     const series = seriesRef.current;
     if (!series) return;
     if (bars.length === 0) return;
+    // 25 Aug 2026 FIX candle "ngebug/naik-turun tidak simetris": poll 5s
+    // bisa mengembalikan snapshot yang LEBIH PENDEK dari cache live
+    // (bar terbaru belum di-flush backend). setData() dengan data lebih
+    // pendek MENGHAPUS candle live lalu update() membuatnya lagi →
+    // flicker/bentuk aneh. Guard: tolak snapshot pendek, terima yang
+    // >= panjang sebelumnya. Dedupe last-wins (bukan skip-first).
+    const prevLen = lastSnapshotLength.current;
     let candles = toCandles(bars);
     if (heikinAshi) candles = heikinAshiCandles(candles);
     if (candles.length === 0) return;
+    // Tolak snapshot LEBIH PENDEK dari setData sebelumnya (backend belum
+    // flush bar live → poll balikin history pendek → menghapus candle live).
+    if (candles.length < prevLen) return;
     series.setData(candles);
     lastBarCache.current = candles[candles.length - 1] ?? null;
+    lastSnapshotLength.current = candles.length;
   }, [bars, heikinAshi]);
 
-  // ── Live tick → debounced bar update ───────────────────────────────────────
+  // ── Live tick → debounced bar update (bucket per timeframe) ────────────────
+  // 25 Aug 2026 FIX candle "terlalu naik/terlalu turun tidak simetris":
+  // sebelumnya tick DIAPLIKASIKAN ke bar cache terakhir apa pun timeframe-
+  // nya. Saat chart 15m/1H, harga live menimpa close candle 15m yang
+  // datanya dari snapshot backend → candle "lompat" tiap poll vs tick.
+  // Sekarang tick membentuk candle bucket-nya sendiri (60s/300s/...),
+  // dedupe last-wins, dan update() hanya utk bucket >= terakhir.
   useEffect(() => {
     if (!lastTick) return;
     if (replayIndex != null) return;
@@ -198,14 +230,44 @@ export function CandlestickChart({
     if (price == null || !Number.isFinite(price) || price <= 0) return;
 
     const timer = setTimeout(() => {
-      if (!lastBarCache.current) return;
-      const updated = applyTick(lastBarCache.current, price);
-      lastBarCache.current = updated;
-      series.update(updated);
+      const step = TIMEFRAME_SECONDS[timeframe] ?? 60;
+      // Bucket UTC: satu interval = SATU candle logis
+      const bucket = Math.floor(Date.now() / 1000 / step) * step;
+      const cached = lastBarCache.current;
+      if (cached == null) {
+        // Belum ada snapshot — mulai candle bucket baru dari tick
+        lastBarCache.current = {
+          time: bucket as Time,
+          open: price,
+          high: price,
+          low: price,
+          close: price,
+        };
+        series.update(lastBarCache.current);
+        return;
+      }
+      const cachedTime = Number(cached.time);
+      if (bucket < cachedTime) return; // stale — jangan overwrite candle baru
+      if (bucket === cachedTime) {
+        const merged = applyTick(cached, price);
+        lastBarCache.current = merged;
+        series.update(merged);
+        return;
+      }
+      // Bucket BARU — tutup candle lama, mulai candle segar
+      const fresh: CandlestickData = {
+        time: bucket as Time,
+        open: price,
+        high: price,
+        low: price,
+        close: price,
+      };
+      lastBarCache.current = fresh;
+      series.update(fresh);
     }, TICK_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [lastTick, replayIndex]);
+  }, [lastTick, replayIndex, timeframe]);
 
   // ── Price lines ────────────────────────────────────────────────────────────
   useEffect(() => {

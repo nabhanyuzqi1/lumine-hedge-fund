@@ -51,7 +51,8 @@ const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
   "1D": 86_400,
 };
 
-export const CORRELATION_SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USOIL", "BTCUSD"];
+// 25 Aug 2026: hanya pair aktif (DXY bukan symbol MT5 — via /market/dxy)
+export const CORRELATION_SYMBOLS = ["XAUUSD", "BTCUSD"];
 
 /* ── Backend REST shapes (backend/src/lumine/api/schemas/api.py) ───────── */
 

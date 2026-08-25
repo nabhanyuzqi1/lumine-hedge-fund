@@ -43,25 +43,29 @@ function PaneFallback({ title, height = 320 }: { title: string; height?: number 
  * mutasi bar + label "Waiting for live data" HANYA saat benar-benar stale
  * (sebelumnya tanpa lastTick → isStale selalu true → label selalu muncul).
  */
+// 25 Aug 2026: multipair — selector XAUUSD / BTCUSD (hapus hardcode).
+const DASHBOARD_SYMBOLS = ["XAUUSD", "BTCUSD"] as const;
+
 export function DashboardPage() {
 const [timeframe, setTimeframe] = useState<Timeframe>("5m");
 const [book, setBook] = useState<"real" | "paper">("real");
+const [symbol, setSymbol] = useState<(typeof DASHBOARD_SYMBOLS)[number]>("XAUUSD");
 
-const bars = useMarketBars("XAUUSD", timeframe);
+const bars = useMarketBars(symbol, timeframe);
 const equity = useEquityCurve("default", book);
   const exposure = useExposure();
-  const signals = useSignals("XAUUSD");
+  const signals = useSignals(symbol);
   const correlation = useCorrelation();
 
   // WS tick → store → lastTick (sama dengan terminal). Tanpa ini chart
   // dashboard BEKU & label stale selalu tampil (isStale butuh lastTick).
   const upsertTick = useMarketStore((state) => state.upsertTick);
   useMarketWS({
-    symbol: "XAUUSD",
+    symbol,
     enabled: true,
     onTick: (tick) => upsertTick(tick),
   });
-  const lastTick = useMarketStore((s) => s.ticks["XAUUSD"] ?? null);
+  const lastTick = useMarketStore((s) => s.ticks[symbol] ?? null);
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4">
@@ -69,7 +73,7 @@ const equity = useEquityCurve("default", book);
                   <div className="flex items-center gap-3 border-b border-border-subtle pb-2">
                     <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">RESEARCH</span>
                     <span className="h-px flex-1 bg-border-subtle/40" aria-hidden="true" />
-                    <span className="font-mono text-[11px] text-text-secondary">XAUUSD · MULTI-FRAME</span>
+                    <span className="font-mono text-[11px] uppercase tracking-widest text-text-secondary">{symbol} · MULTI-FRAME</span>
                     {/* Per-akun selector: REAL (MT5 live) vs PAPER (seed $10k) */}
                     <button
                       onClick={() => setBook("real")}
@@ -89,6 +93,26 @@ const equity = useEquityCurve("default", book);
                     >
                       PAPER
                     </button>
+                  </div>
+
+            {/* Pair selector: multipair dashboard (25 Aug 2026) */}
+                  <div className="flex items-center rounded-chip border border-border-subtle p-0.5">
+                    {DASHBOARD_SYMBOLS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        aria-pressed={s === symbol}
+                        onClick={() => setSymbol(s)}
+                        className={cn(
+                          "rounded-chip px-2 py-0.5 font-mono text-[10px] font-medium",
+                          s === symbol
+                            ? "bg-accent/10 text-accent"
+                            : "text-ink-faint hover:text-ink",
+                        )}
+                      >
+                        {s}
+                      </button>
+                    ))}
                   </div>
 
             {/* Workspace Switcher: tab antar Dashboard (portfolio) & Research (paper vs real) */}
@@ -129,8 +153,8 @@ const equity = useEquityCurve("default", book);
           <LazyConfidence points={signals.data ?? []} />
         </Suspense>
 
-        <MarketIndicatorsPanel symbol="XAUUSD" />
-        <SignalPanel symbol="XAUUSD" />
+        <MarketIndicatorsPanel symbol={symbol} />
+        <SignalPanel symbol={symbol} />
         <ExposureSummaryCard />
 
         <DecisionCard

@@ -69,10 +69,16 @@ async def ws_market(
             if payload is None:
                 continue
             # Filter: kirim hanya event yang relevan untuk symbol ini.
+            # 25 Aug 2026: ?symbol=ALL → tanpa filter (ticker tape multi-pair;
+            # sebelumnya tape BTCUSD mati sampai pair di-klik).
             data = payload.get("data", {})
             tick = data.get("tick") if isinstance(data.get("tick"), dict) else None
             ev_symbol = tick.get("symbol") if tick else data.get("symbol")
-            if ev_symbol is not None and str(ev_symbol).upper() != symbol.upper():
+            if (
+                symbol.upper() != "ALL"
+                and ev_symbol is not None
+                and str(ev_symbol).upper() != symbol.upper()
+            ):
                 continue
             await _safe_send(websocket, payload)
     except WebSocketDisconnect:

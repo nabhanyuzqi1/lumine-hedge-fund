@@ -91,25 +91,35 @@ async def _tick_worker() -> None:
                 continue
             _key, [_payload] = item
             payload = _payload
-            data = json.loads(payload)
-            symbol = str(data["symbol"]).upper()
-            bid = float(data["bid"])
-            ask = float(data["ask"])
-            await market_service.update_tick(
-                symbol,
-                bid,
-                ask,
-                volume=float(data.get("volume", 0.0)),
-            )
-            # B4: bangun bar 1m live dari tick (untuk flush ke bars_1m)
-            _update_bar_builder(symbol, bid, ask, float(data.get("volume", 0.0)))
-            # B5 (17 Aug 2026): publish tick ke SSEPublisher → WebSocket
-            # /api/v1/ws/market menerima tick_update. Sebelumnya hanya SSE
-            # /streams/market-data yang dapat tick (loop internal baca
-            # MarketService) — WS connect tapi tidak pernah dapat frame tick.
-            publisher = _app_state.get("sse_publisher")
-            if publisher is not None:
-                await publisher.publish_tick_update(symbol, bid, ask)
+            # 25 Aug 2026: DRAIN batch — EA 500ms + burst market volatil
+            # bisa menumpuk queue; proses sisa antrean langsung (maks 50)
+            # agar chart tidak telat beberapa detik.
+            batch: list[str] = [payload]
+            while len(batch) < 50:
+                nxt = await r.lpop("mt5:ticks") or await r.lpop("mt5crypto:ticks")
+                if nxt is None:
+                    break
+                batch.append(nxt)
+            for raw in batch:
+                data = json.loads(raw)
+                symbol = str(data["symbol"]).upper()
+                bid = float(data["bid"])
+                ask = float(data["ask"])
+                await market_service.update_tick(
+                    symbol,
+                    bid,
+                    ask,
+                    volume=float(data.get("volume", 0.0)),
+                )
+                # B4: bangun bar 1m live dari tick (untuk flush ke bars_1m)
+                _update_bar_builder(symbol, bid, ask, float(data.get("volume", 0.0)))
+                # B5 (17 Aug 2026): publish tick ke SSEPublisher → WebSocket
+                # /api/v1/ws/market menerima tick_update. Sebelumnya hanya SSE
+                # /streams/market-data yang dapat tick (loop internal baca
+                # MarketService) — WS connect tapi tidak pernah dapat frame tick.
+                publisher = _app_state.get("sse_publisher")
+                if publisher is not None:
+                    await publisher.publish_tick_update(symbol, bid, ask)
         except Exception as exc:
             # 23 Aug 2026: log error — `pass` buta membuat tick worker
             # diam-diam mati (bar builder kosong, chart tidak update).

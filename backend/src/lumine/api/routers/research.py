@@ -27,20 +27,24 @@ async def _book_metrics(
     *,
     order_portfolio: str,
     position_book: str,
+    symbol: str | None = None,
 ) -> dict[str, Any]:
-    """Aggregate metrics untuk satu 'book' (paper/real)."""
-    order_count = (
-        await session.execute(
-            select(func.count(Order.order_id)).where(
-                Order.portfolio_id == order_portfolio,
-                Order.status == "filled",
-            )
-        )
-    ).scalar_one()
+    """Aggregate metrics untuk satu 'book' (paper/real).
 
-    pos_rows = (
-        await session.execute(select(Position).where(Position.book == position_book))
-    ).scalars().all()
+    25 Aug 2026: `symbol` opsional — research multipair (XAUUSD vs BTCUSD).
+    """
+    order_stmt = select(func.count(Order.order_id)).where(
+        Order.portfolio_id == order_portfolio,
+        Order.status == "filled",
+    )
+    if symbol:
+        order_stmt = order_stmt.where(Order.symbol == symbol.upper())
+    order_count = (await session.execute(order_stmt)).scalar_one()
+
+    pos_stmt = select(Position).where(Position.book == position_book)
+    if symbol:
+        pos_stmt = pos_stmt.where(Position.symbol == symbol.upper())
+    pos_rows = (await session.execute(pos_stmt)).scalars().all()
     closed = [p for p in pos_rows if p.status == "closed"]
     win = sum(1 for p in closed if (p.mt5_profit or 0) > 0)
     realized_pnl = sum(float(p.mt5_profit or 0) for p in closed)
@@ -57,14 +61,16 @@ async def _book_metrics(
 @router.get("/summary")
 async def research_summary(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
+    symbol: str | None = None,
 ) -> dict[str, Any]:
-    """Paper vs Real comparison summary."""
+    """Paper vs Real comparison summary (25 Aug 2026: filter ?symbol=)."""
+    sym = symbol.upper() if symbol and symbol.upper() != "ALL" else None
     async with get_sessionmaker()() as session:
         paper = await _book_metrics(
-            session, order_portfolio="paper", position_book="paper"
+            session, order_portfolio="paper", position_book="paper", symbol=sym
         )
         real = await _book_metrics(
-            session, order_portfolio="default", position_book="default"
+            session, order_portfolio="default", position_book="default", symbol=sym
         )
     return {"paper": paper, "real": real}
 
@@ -72,19 +78,22 @@ async def research_summary(
 @router.get("/series")
 async def research_series(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
+    symbol: str | None = None,
 ) -> dict[str, Any]:
-    """P&L time-series kumulatif per book (paper vs real) + insight."""
+    """P&L time-series kumulatif per book (paper vs real) + insight.
+
+    25 Aug 2026: filter ?symbol= utk research multipair.
+    """
+    stmt = select(Position).where(
+        Position.status == "closed",
+        Position.book.in_(["paper", "default"]),
+        Position.mt5_profit.isnot(None),
+    )
+    if symbol and symbol.upper() != "ALL":
+        stmt = stmt.where(Position.symbol == symbol.upper())
     async with get_sessionmaker()() as session:
         rows = (
-            (
-                await session.execute(
-                    select(Position).where(
-                        Position.status == "closed",
-                        Position.book.in_(["paper", "default"]),
-                        Position.mt5_profit.isnot(None),
-                    ).order_by(Position.updated_at.asc())
-                )
-            )
+            (await session.execute(stmt.order_by(Position.updated_at.asc())))
             .scalars()
             .all()
         )

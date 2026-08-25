@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 
 import { get } from "@/api/client";
@@ -37,18 +39,27 @@ interface ResearchSeries {
   insight: string;
 }
 
-function useResearchSummary() {
+// 25 Aug 2026: multipair — hook menerima symbol (ALL = semua pair).
+const RESEARCH_SYMBOLS = ["ALL", "XAUUSD", "BTCUSD"] as const;
+
+function useResearchSummary(symbol: string = "ALL") {
   return useQuery({
-    queryKey: ["research-summary"],
-    queryFn: () => get<ResearchSummary>("/research/summary"),
+    queryKey: ["research-summary", symbol],
+    queryFn: () =>
+      get<ResearchSummary>(
+        symbol === "ALL" ? "/research/summary" : `/research/summary?symbol=${symbol}`,
+      ),
     refetchInterval: 30_000,
   });
 }
 
-function useResearchSeries() {
+function useResearchSeries(symbol: string = "ALL") {
   return useQuery({
-    queryKey: ["research-series"],
-    queryFn: () => get<ResearchSeries>("/research/series"),
+    queryKey: ["research-series", symbol],
+    queryFn: () =>
+      get<ResearchSeries>(
+        symbol === "ALL" ? "/research/series" : `/research/series?symbol=${symbol}`,
+      ),
     refetchInterval: 30_000,
   });
 }
@@ -95,8 +106,10 @@ function BookCard({
 }
 
 export default function ResearchPage() {
-  const { data, isError, isLoading } = useResearchSummary();
-  const { data: seriesData } = useResearchSeries();
+  // 25 Aug 2026: selector pair — research per-symbol (multipair).
+  const [symbol, setSymbol] = useState<string>("ALL");
+  const { data, isError, isLoading } = useResearchSummary(symbol);
+  const { data: seriesData } = useResearchSeries(symbol);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] space-y-4 p-4">
@@ -108,7 +121,31 @@ export default function ResearchPage() {
             live (real). Refresh 30 detik.
           </p>
         </div>
-        <ResearchWorkspaceSwitcher />
+        <div className="flex items-center gap-2">
+          {/* Pair filter: ALL / XAUUSD / BTCUSD */}
+          <div
+            role="group"
+            aria-label="Filter pair research"
+            className="flex items-center rounded-md border border-border-subtle bg-bg-overlay p-0.5"
+          >
+            {RESEARCH_SYMBOLS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={s === symbol}
+                onClick={() => setSymbol(s)}
+                className={`rounded px-2 py-1 text-[11px] font-medium transition-colors ${
+                  s === symbol
+                    ? "bg-accent text-white shadow-sm"
+                    : "text-text-secondary hover:text-text-primary"
+                }`}
+              >
+                {s === "ALL" ? "Semua" : s}
+              </button>
+            ))}
+          </div>
+          <ResearchWorkspaceSwitcher />
+        </div>
       </div>
 
       {isLoading ? (

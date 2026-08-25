@@ -127,7 +127,7 @@ function useQuotes() {
     queryKey: ["quotes"],
     queryFn: () =>
       get<Record<string, Quote>>(
-        "/market/quotes?symbols=XAUUSD&symbols=XAGUSD&symbols=USOIL&symbols=BTCUSD"
+        "/market/quotes?symbols=XAUUSD&symbols=BTCUSD"
       ),
     refetchInterval: 30_000,
   });

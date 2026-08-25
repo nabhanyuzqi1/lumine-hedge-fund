@@ -383,20 +383,31 @@ async def cancel_all_orders(
 async def list_positions(
     _principal: Annotated[AuthenticatedPrincipal, require_scope("read:portfolio")],
     pagination: Annotated[Pagination, Depends()],
+    status: str = "open",
 ) -> PaginatedList[Position]:
-    """List open positions (ZERO-DEMO: real data dari tabel positions).
+    """List positions (ZERO-DEMO: real data dari tabel positions).
 
+    25 Aug 2026 FIX "posisi closed nyangkut di semua pair": default
+    status=open — hanya posisi aktif. History closed → ?status=all.
     Mark-to-market pakai harga live MarketService; kalau feed kosong
     (market libur) fallback ke avg_entry → unrealized_pnl flat 0.
     """
     from lumine.data.repositories import PositionRepository
     from lumine.data.session import get_sessionmaker
 
+    status_norm = (status or "open").lower()
     async with get_sessionmaker()() as session:
         repo = PositionRepository(session)
-        # 24 Aug 2026: list_recent — tampilkan open + closed history
-        # (list_open → tabel kosong saat 0 posisi open = "tabel mati").
-        positions = await repo.list_recent(limit=50)
+        if status_norm == "all":
+            # 24 Aug 2026: history view (open + closed)
+            positions = await repo.list_recent(limit=50)
+        elif status_norm == "closed":
+            positions = await repo.list_recent(limit=50, status="closed")
+        else:
+            # DEFAULT open: chart price-lines & tabel positions hanya
+            # boleh baca posisi AKTIF (posisi closed bikin garis Entry/
+            # SL muncul di chart padahal posisi sudah TP/SL).
+            positions = await repo.list_open(limit=50)
         items: list[Position] = []
         for pos in positions:
             current = await _live_mid(pos.symbol)

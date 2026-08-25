@@ -160,30 +160,32 @@ class PositionRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def list_open(self) -> list[Position]:
+    async def list_open(self, limit: int = 50) -> list[Position]:
         items = list(
             (
                 await self._session.execute(
                     select(Position)
                     .where(Position.status == "open")
                     .order_by(Position.opened_at.desc())
+                    .limit(limit)
                 )
             ).scalars()
         )
         return items
 
-    async def list_recent(self, limit: int = 50) -> list[Position]:
+    async def list_recent(
+        self, limit: int = 50, status: str | None = None
+    ) -> list[Position]:
         """Semua posisi terbaru (open + closed) - tabel position TIDAK boleh
         kosong saat tidak ada posisi open (24 Aug 2026: user lapor tabel
         position mati karena seluruh posisi closed -> list_open kosong).
+        25 Aug 2026: filter status opsional ("closed" utk history view).
         """
-        items = list(
-            (
-                await self._session.execute(
-                    select(Position).order_by(Position.updated_at.desc()).limit(limit)
-                )
-            ).scalars()
-        )
+        stmt = select(Position).order_by(Position.updated_at.desc()).limit(limit)
+        if status is not None:
+            stmt = stmt.where(Position.status == status)
+            # order tetap updated_at desc
+        items = list((await self._session.execute(stmt)).scalars())
         return items
 
     async def get(self, position_id: UUID) -> Position | None:

@@ -36,7 +36,8 @@ const HEARTBEAT_TIMEOUT_MS = 90_000;
 
 function wsUrl(symbol: string): string {
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
-  return `${proto}://${window.location.host}/api/v1/ws/market?symbol=${encodeURIComponent(symbol)}`;
+  // 25 Aug 2026: symbol="ALL" → backend tanpa filter (multi-pair tape).
+  return `${proto}://${window.location.host}/api/v1/ws/market?symbol=${encodeURIComponent(symbol || "ALL")}`;
 }
 
 export function useMarketWS(options: UseMarketWSOptions) {
