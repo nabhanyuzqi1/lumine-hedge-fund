@@ -540,3 +540,30 @@ Verifikasi: `_queue_for('btcusd')` -> mt5crypto:commands; fallback -> mt5:comman
   limit besar) → "hanya posisi terakhir terbaca"
 - Fix: `DELETE ... WHERE ts < '2026-01-01'` + normalisasi :01 (duplikat
   menit hapus, sec=0); 0 dupe; close 1m = 15m identik (79315.55)
+
+
+
+## PITFALL: Gap 1m tiap ~5 menit (25 Agu 2026) — agregasi berat throttle flush
+
+**Gejala:** bar 1m hilang TEPAT tiap ~5 menit (18:56,19:01,19:05...) →
+chart "kotor, gap-gap", padahal harami candle aman (TF lama kontinu).
+
+**Root cause:** `_bar_flush_worker` sleep(60) → flush 1m → AGREGASI 15m/1h/4h/1d
+dengan lookback 1-4 TAHUN (8760/35040 jam) tiap cycle. Saat agregasi berat
+jalan (beberapa menit!), `_bar_builder` menimpa bar yang belum di-flush →
+beberapa menit hilang tergantikan.
+
+**Fix (app.py):**
+1. `_bar_ready` dict → LIST antrian (append; flush pop semua) — bar tidak
+   lagi ditimpa saat menit berganti sebelum di-flush
+2. Agregasi lookback PENUH hanya tiap 10 cycle (10 menit); cycle lain
+   lookback 6 jam (cukup utk TF tinggi — 15m/1h dari 1m 6 jam terakhir)
+
+**Verifikasi:** 0 bar missing dalam 30 menit (sebelumnya 4-7/min), 9/9 menit
+kontinu 19:59-20:07 kedua symbol.
+
+## PIT — garis Entry/SL/TP "nyangkut" di chart (25 Agu 2026)
+- `buildPriceLines` (terminal.tsx) hardcode XAUUSD + tidak filter status →
+  posisi CLOSED tetap menggambar garis di chart BTCUSD
+- Fix: `buildPriceLines(positions, selectedSymbol)` — garis hanya symbol
+  aktif; `usePositions` hanya balikan posisi open
