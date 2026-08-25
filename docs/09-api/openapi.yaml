@@ -396,14 +396,25 @@ paths:
       tags:
       - portfolio
       summary: List Positions
-      description: 'List open positions (ZERO-DEMO: real data dari tabel positions).
+      description: 'List positions (ZERO-DEMO: real data dari tabel positions).
 
+
+        25 Aug 2026 FIX "posisi closed nyangkut di semua pair": default
+
+        status=open — hanya posisi aktif. History closed → ?status=all.
 
         Mark-to-market pakai harga live MarketService; kalau feed kosong
 
         (market libur) fallback ke avg_entry → unrealized_pnl flat 0.'
       operationId: list_positions_api_v1_portfolio_positions_get
       parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          default: open
+          title: Status
       - name: limit
         in: query
         required: false
@@ -577,9 +588,17 @@ paths:
       tags:
       - research
       summary: Research Summary
-      description: Paper vs Real comparison summary.
+      description: 'Paper vs Real comparison summary (25 Aug 2026: filter ?symbol=).'
       operationId: research_summary_api_v1_summary_get
       parameters:
+      - name: symbol
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Symbol
       - name: X-Lumine-API-Key
         in: header
         required: false
@@ -624,9 +643,20 @@ paths:
       tags:
       - research
       summary: Research Series
-      description: P&L time-series kumulatif per book (paper vs real) + insight.
+      description: 'P&L time-series kumulatif per book (paper vs real) + insight.
+
+
+        25 Aug 2026: filter ?symbol= utk research multipair.'
       operationId: research_series_api_v1_series_get
       parameters:
+      - name: symbol
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Symbol
       - name: X-Lumine-API-Key
         in: header
         required: false
