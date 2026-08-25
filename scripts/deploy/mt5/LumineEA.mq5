@@ -26,7 +26,7 @@
 //|  - Self-heal: tidak pernah ExpertRemove, selalu retry            |
 //+------------------------------------------------------------------+
 #property copyright "Lumine"
-#property version   "4.23"
+#property version   "4.24"
 #property strict
 
 input string  InpProxyURL    = "http://lumine.biz.id/mt5-proxy"; // Redis HTTP proxy URL (via Caddy+Cloudflare)
@@ -42,7 +42,8 @@ input int     InpDealsInterval    = 30;  // Detik antar snapshot deals/history
 input bool    InpShowPanel   = true;    // Tampilkan panel UI di chart
 input bool    InpForceSeed   = true;    // WAJIB ON: paksa seed ulang tiap start
 input int     InpStatusInterval = 5;    // Detik antar push status ke Redis
-input int     InpPollMs      = 1000;    // Interval siklus OnTimer (ms): 250-5000.
+input int     InpPollMs      = 500;     // Interval siklus OnTimer (ms): 250-5000.
+// 25 Aug 2026: default 500 — tick <1s (EventSetMillisecondTimer auto saat <1000).
 // 22 Aug 2026: seed symbols per-instance (comma-separated). HFM instance
 // seed "XAUUSD"; instance crypto (Exness) seed "BTCUSD,ETHUSD" — stream
 // harga crypto 24/7 sehingga Lumine tetap jalan saat forex libur.
@@ -1363,7 +1364,7 @@ void SendStatus()
    g_marginLevel = (margin > 0 ? (equity / margin) * 100.0 : 0.0);
 
    string json = StringFormat(
-      "{\"ea_version\":\"4.23\",\"ea_build\":%d,\"seed_phase\":%d,\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,"
+      "{\"ea_version\":\"4.24\",\"ea_build\":%d,\"seed_phase\":%d,\"seed_done\":%d,\"ticks_sent\":%d,\"last_tick_ts\":%I64d,"
       "\"proxy_url\":\"%s\",\"symbol\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,"
       "\"spread\":%.1f,\"session_high\":%.2f,\"session_low\":%.2f,"
       "\"equity\":%.2f,\"balance\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,"
