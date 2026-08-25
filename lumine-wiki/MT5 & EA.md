@@ -508,3 +508,35 @@ Mitigasi (sudah di-deploy):
 Catatan: kalau cycle GAGAL saat chat aktif, jangan panik — cycle berikutnya
 (saat chat berhenti) akan sukses; cooldown mencegah spam; kill switch tetap
 melindungi eksekusi.
+
+
+
+## PITFALL: Command Routing Per-Instance (24 Agu 2026) — CRITICAL
+
+**Gejala:** user lapor "EA salah kirim sinyal" — trading 2 tempat (XAUUSD HFM +
+BTCUSD crypto) tapi risiko tertukar.
+
+**Root cause:** `MT5Bridge.send_command` SELALU LPUSH ke `mt5:commands` (EA
+HFM XAUUSD) TERLEPAS dari symbol. Sinyal SELL BTCUSD dari AI bisa dieksekusi
+EA HFM sebagai posisi XAUUSD — posisi SILANG account, kerugian tak terduga.
+
+**Fix (`backend/src/lumine/trading/mt5_bridge.py`):**
+```python
+COMMAND_QUEUE_ROUTES = (("XAUUSD", "mt5:commands"), ("BTCUSD", "mt5crypto:commands"))
+def _queue_for(self, symbol): return dict(COMMAND_QUEUE_ROUTES).get(symbol.upper(), COMMAND_QUEUE)
+# send_command: await self.redis.lpush(self._queue_for(message.symbol), payload)
+```
+Verifikasi: `_queue_for('btcusd')` -> mt5crypto:commands; fallback -> mt5:commands.
+
+## P&L Realisasi (24 Agu 2026) — sistem & LLM sekarang baca win/loss
+- Kolom `orders.profit` (migration `ALTER TABLE orders ADD profit numeric(20,4)`)
+- `_deals_worker`: simpan `profit` (DEAL_PROFIT EA) + backfill existing order
+- `portfolio_context.realized_pnl` = SUM(orders.profit) per symbol → LLM/CIO
+  tahu total realized P&L; `open_pnl`/`open_positions` = unrealized (sudah ada)
+
+## Chart Kotor BTCUSD: Bar Prasejarah (1970/2023 dummy) — 24 Agu 2026
+- bar 1m `1970-01-01` + 2023 harga imaginasi (1.00 / 100.00) dari seed rusak
+  merusak skala chart (API order_by ts desc limit → bar 1970 masuk saat
+  limit besar) → "hanya posisi terakhir terbaca"
+- Fix: `DELETE ... WHERE ts < '2026-01-01'` + normalisasi :01 (duplikat
+  menit hapus, sec=0); 0 dupe; close 1m = 15m identik (79315.55)
