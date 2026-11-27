@@ -1004,9 +1004,24 @@ table.data tbody tr:hover {
     display: none;
   }
 
-  /* Nav mobile: hamburger menggantikan topnav; drawer memuat nav + Keluar. */
+  /* Nav mobile: hamburger menggantikan topnav; drawer memuat nav + Keluar.
+     Tombol dan drawer sama-sama di kanan supaya arah buka-tutup konsisten. */
   .nav-burger {
     display: inline-flex;
+    order: 3;
+  }
+
+  .topbar-inner .brand {
+    order: 1;
+  }
+
+  .topbar-inner .topbar-side {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .topbar-inner {
+    gap: 8px;
   }
 
   /* topbar muat di 390px: harga live disembunyikan (Dashboard sudah

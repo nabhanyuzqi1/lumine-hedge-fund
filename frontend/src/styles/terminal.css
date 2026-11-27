@@ -1897,10 +1897,17 @@
     display: contents;
   }
 
-  .term-root .term-chart-card { order: 1; }
-  /* Dock (posisi/pending) selalu di bawah chart: chart dulu yang penuh. */
-  .term-root .term-col-main > .dock { order: 2; }
-  .term-root .term-order { order: 3; }
+  /* Urutan mobile/tablet: chart, order baru, monitor order, ringkasan,
+     chat agent. Kedua kolom di-flatten (display:contents) supaya semua kartu
+     jadi item grid yang sama dan urutannya bisa ditentukan di satu tempat. */
+  .term-root .term-col-main,
+  .term-root .term-col-side {
+    display: contents;
+  }
+
+  /* Urutan final diatur blok (max-width:1023px) di akhir file: saat kedua
+     kolom di-flatten, kartu bukan lagi anak DOM .term-grid sehingga selector
+     '>' tidak pernah cocok. */
   .term-root .term-sum { order: 3; }
   .term-root .term-positions { order: 4; }
 
@@ -2561,4 +2568,21 @@
   .term-root .as-body {
     max-height: 240px;
   }
+}
+
+/* ── Urutan kartu tablet & mobile ─────────────────────────────────────────
+   Chart -> Order baru -> Monitor order -> Ringkasan -> Chat agent.
+   Kedua kolom di-flatten supaya semua kartu jadi item grid yang sama; karena
+   kartu bukan anak DOM .term-grid, urutan memakai selector turunan. */
+@media (max-width: 1023px) {
+  .term-root .term-col-main,
+  .term-root .term-col-side {
+    display: contents;
+  }
+
+  .term-root .term-grid .term-chart-card { order: 1; }
+  .term-root .term-grid .term-order { order: 2; }
+  .term-root .term-grid .dock { order: 3; }
+  .term-root .term-grid .term-sum { order: 4; }
+  .term-root .term-grid .agent-stream { order: 5; }
 }
