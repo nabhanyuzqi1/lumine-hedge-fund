@@ -1,0 +1,21 @@
+# Fund2 candle rollup M1->M5 server-side (DoD t_86507d65 opsi 1).
+# Proses TERPISAH dari fund2-api (pola fund2-alerts): rollup berbasis upsert
+# idempotent, aman berdampingan dengan flush-hook ingest di API.
+# Bar M5 hasil rollup memakai konvensi kunci candle fund2 (jam broker di
+# timezone sesi DB) sehingga meneruskan history seed EA.
+# Copy ke ~/.config/systemd/user/ lalu: systemctl --user enable --now fund2-candle-rollup
+[Unit]
+Description=Fund2 candle rollup M1->M5 (server-side, feed M5 anti-gantung seed EA)
+After=network.target fund2-postgres.service
+Wants=fund2-postgres.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tekka/fund2/api
+EnvironmentFile=/home/tekka/fund2/api/.env
+ExecStart=/home/tekka/fund2/api/.venv/bin/python -m app.candle_rollup
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

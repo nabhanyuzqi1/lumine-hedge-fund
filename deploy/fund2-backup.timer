@@ -1,0 +1,14 @@
+[Unit]
+Description=Fund2 daily backup timer (04:30 UTC = 11:30 WIB, sebelum sesi Eropa)
+After=network-online.target
+
+[Timer]
+OnCalendar=*-*-* 04:30:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Timer]
+Persistent=true
+
+[Install]
+WantedBy=timers.target

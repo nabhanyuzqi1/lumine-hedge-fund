@@ -1,0 +1,24 @@
+# Fund2 LLM agent loop (t_f2llm1, KEPUTUSAN_OWNER G1).
+# Proses TERPISAH dari fund2-api (pola fund2-alerts): loop agent menarik
+# konteks pasar, memanggil LLM (kredensial di api/.env.llm, bukan repo),
+# lalu mengirim keputusan ke API fund2 dengan kredensial role 'agent'.
+# Copy ke ~/.config/systemd/user/ lalu: systemctl --user daemon-reload
+#                                       systemctl --user enable --now fund2-llm-agent
+[Unit]
+Description=Fund2 LLM agent loop (Full LLM trading G1)
+After=network.target fund2-api.service fund2-postgres.service
+Wants=fund2-api.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tekka/fund2/api
+# .env = DATABASE_URL dll; .env.llm = LLM_BASE_URL/LLM_API_KEY + kredensial
+# agent (secret, tidak masuk repo; lihat .gitignore).
+EnvironmentFile=/home/tekka/fund2/api/.env
+EnvironmentFile=/home/tekka/fund2/api/.env.llm
+ExecStart=/home/tekka/fund2/api/.venv/bin/python -m app.llm_agent_loop
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

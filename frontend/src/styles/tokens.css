@@ -1,0 +1,99 @@
+/* Lumine Fund · design tokens — monochrome glass institutional risk ops.       */
+/* Palet mengikuti referensi owner:                                             */
+/*   docs/ui-references/doc_0fd2ef08a331_lumine_fund_monochrome_glass_...html   */
+/*   ground #09090B · panel #111113 · sub-panel #18181B · border zinc-800/80    */
+/*   emerald #10B981 · crimson #EF4444 · amber #F59E0B                          */
+/* Nama token legacy (--gold*, --surface-2/3, --line*) DIPERTAHANKAN sebagai    */
+/* alias ke palet baru supaya seluruh rule existing ikut berubah tanpa         */
+/* disentuh satu per satu.                                                      */
+
+:root {
+  /* ground: near-black netral dingin (zinc) */
+  --bg-app: #09090b;
+  --bg: #09090b;
+  --bg-deep: #050506;
+
+  /* permukaan: panel utama + sub-panel (inset, chip, table head) */
+  --surface-1: #111113;
+  --surface: #111113;
+  --surface-sub: #18181b;
+  --surface-2: #18181b;
+  --surface-3: #212126;
+
+  /* garis: zinc-800/80 hairline, zinc-700 untuk batas input */
+  --border-subtle: rgba(39, 39, 42, 0.8);
+  --line: #27272a;
+  --line-strong: #3f3f46;
+
+  /* teks: putih bersih + abu netral */
+  --text: #f4f5f8;
+  --text-muted: #8b909e;
+  --text-faint: #838a9a;
+
+  /* aksen utama monokrom (putih). --gold* = alias legacy, bukan emas. */
+  --accent: #f4f5f8;
+  --accent-bright: #ffffff;
+  --accent-dim: #3a3f4d;
+  --accent-ink: #09090b;
+  --gold: #f4f5f8;
+  --gold-bright: #ffffff;
+  --gold-dim: #3a3f4d;
+  --gold-ink: #09090b;
+
+  /* semantik pasar */
+  --emerald: #10b981;
+  --crimson: #ef4444;
+  --amber: #f59e0b;
+  --up: #10b981;
+  --up-strong: #34d399;
+  --down: #ef4444;
+  --down-strong: #f87171;
+  --up-dim: rgba(16, 185, 129, 0.13);
+  --down-dim: rgba(239, 68, 68, 0.13);
+  --warn: #f59e0b;
+  --warn-dim: rgba(245, 158, 11, 0.13);
+  /* strip alert: amber-950/30 di atas zinc-950, teks amber-200 */
+  --alert-bg: rgba(69, 26, 3, 0.3);
+  --alert-border: rgba(245, 158, 11, 0.3);
+  --alert-text: #fde68a;
+
+  /* kaca frosted: panel #0D0F15 di atas near-black, border putih tipis */
+  --glass-bg: rgba(17, 17, 19, 0.74);
+  --glass-nav-bg: rgba(9, 9, 11, 0.9);
+  --glass-border: rgba(39, 39, 42, 0.8);
+  --glass-border-hover: rgba(63, 63, 70, 0.9);
+  --glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.85);
+  --glass-blur: 24px;
+
+  /* type: Inter body, Plus Jakarta Sans judul, mono tabular untuk angka */
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  /* geometry */
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 16px;
+  --topbar-h: 48px;
+  --pad: 16px;
+
+  /* motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 180ms;
+
+  color-scheme: dark;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --pad: 24px;
+  }
+}
+
+/* utility angka: harga, P/L, volume, timestamp selalu tabular-nums supaya
+   digit tidak bergeser saat nilai berubah tiap tick. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}

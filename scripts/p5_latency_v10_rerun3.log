@@ -1,0 +1,22 @@
+[09:35:43] login ok, csrf ok
+[09:35:43] resume: 0 sampel v10 existing
+[09:35:43] synthetic EA antar-burst start
+[09:35:44] pre-flight OK; lanjut burst 1/25
+[09:37:43] burst 1/25 (p5-latency-gate-v10-b01) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   total sampel v10: 0/200
+   burst 1 SEMUA order ditolak (8/8); strike 1/2
+      order 1/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+      order 2/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+      order 3/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+      order 4/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+      order 5/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+      order 6/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+      order 7/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+      order 8/8 ditolak (http 422): ['kill-switch aktif (mode: STOP_NEW_ORDERS)']
+    Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+[09:37:43] flatten http 200 requested=0
+[09:39:43] burst 2/25 (p5-latency-gate-v10-b02) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   total sampel v10: 0/200
+   burst 2 SEMUA order ditolak (8/8); strike 2/2
+ABORT: gate memblokir semua order -- stop, jangan spam.
+SELESAI total waktu 240s; burst=2 sampel=0 ditolak=16

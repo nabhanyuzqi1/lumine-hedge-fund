@@ -1,0 +1,23 @@
+[09:17:17] login ok, csrf ok
+[09:17:17] resume: 0 sampel v10 existing
+[09:17:17] synthetic EA antar-burst start
+[09:17:18] pre-flight OK; lanjut burst 1/25
+[09:19:17] burst 1/25 (p5-latency-gate-v10-b01) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   total sampel v10: 0/200
+   burst 1 SEMUA order ditolak (8/8); strike 1/2
+      order 1/8 ditolak (http 422): ['daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 2/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 3/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 4/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 5/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 6/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 7/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 8/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+    Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+[09:19:17] flatten http 200 requested=0
+[09:19:18] release kill-switch http 200 {'state': {'active': False, 'mode': None, 'strategy': None, 'reason': None, 'source': None, 'actor': None, 'activated_at
+[09:21:20] burst 2/25 (p5-latency-gate-v10-b02) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   total sampel v10: 0/200
+   burst 2 SEMUA order ditolak (8/8); strike 2/2
+ABORT: gate memblokir semua order -- stop, jangan spam.
+SELESAI total waktu 242s; burst=2 sampel=0 ditolak=16

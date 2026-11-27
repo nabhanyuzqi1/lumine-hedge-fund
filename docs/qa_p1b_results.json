@@ -1,0 +1,200 @@
+[
+  {
+    "area": "disconnect",
+    "name": "disconnect_10x_reconcile",
+    "ok": true,
+    "detail": "10/10"
+  },
+  {
+    "area": "killswitch",
+    "name": "mismatch_auto_killswitch",
+    "ok": true,
+    "detail": "state=GLOBAL_HALT active=True"
+  },
+  {
+    "area": "killswitch",
+    "name": "mismatch_position_flagged",
+    "ok": true,
+    "detail": "raw={'detected_at': '2026-11-24T22:39:45.417345+00:00', 'unexplained': True}"
+  },
+  {
+    "area": "killswitch",
+    "name": "mismatch_event_audited",
+    "ok": true,
+    "detail": "event=('source', 'mode')"
+  },
+  {
+    "area": "killswitch",
+    "name": "manual_stop_new_orders",
+    "ok": true,
+    "detail": "200 STOP_NEW_ORDERS"
+  },
+  {
+    "area": "killswitch",
+    "name": "orders_blocked_when_active",
+    "ok": true,
+    "detail": "422 ['kill-switch aktif (mode: STOP_NEW_ORDERS)']"
+  },
+  {
+    "area": "killswitch",
+    "name": "status_endpoint",
+    "ok": true,
+    "detail": "200 keys=['events', 'metrics', 'paused_strategies', 'recovery_checklist', 'slippage_warning', 'state', 'triggers']"
+  },
+  {
+    "area": "killswitch",
+    "name": "release",
+    "ok": true,
+    "detail": "200"
+  },
+  {
+    "area": "killswitch",
+    "name": "global_halt_release_needs_checklist",
+    "ok": true,
+    "detail": "400"
+  },
+  {
+    "area": "killswitch",
+    "name": "global_halt_release_with_checklist",
+    "ok": true,
+    "detail": "200"
+  },
+  {
+    "area": "killswitch",
+    "name": "pause_strategy_scoped",
+    "ok": true,
+    "detail": "breakout=422 manual=201"
+  },
+  {
+    "area": "killswitch",
+    "name": "auto_halt_daily_drawdown",
+    "ok": true,
+    "detail": "422 mode=GLOBAL_HALT audit=1"
+  },
+  {
+    "area": "killswitch",
+    "name": "auto_trigger_ea_offline",
+    "ok": true,
+    "detail": "fired=['ea_offline']"
+  },
+  {
+    "area": "killswitch",
+    "name": "auto_trigger_3_failed",
+    "ok": true,
+    "detail": "fired=['consecutive_failed'] mode=STOP_NEW_ORDERS"
+  },
+  {
+    "area": "killswitch",
+    "name": "flatten_needs_confirm",
+    "ok": true,
+    "detail": "400"
+  },
+  {
+    "area": "killswitch",
+    "name": "flatten_creates_close_orders",
+    "ok": true,
+    "detail": "200 requested=1"
+  },
+  {
+    "area": "killswitch",
+    "name": "flatten_close_command_e2e",
+    "ok": true,
+    "detail": "cmd_ok=True pos=[(800003, 'CLOSED')]"
+  },
+  {
+    "area": "killswitch",
+    "name": "triggers_update",
+    "ok": true,
+    "detail": "200 now=5"
+  },
+  {
+    "area": "killswitch",
+    "name": "state_persisted_in_db",
+    "ok": true,
+    "detail": "post=200 raw={'mode': 'STOP_NEW_ORDERS', 'actor': 'qaadmin', 'active': True, 'reason': 'qa-persist', 'source': 'dashboard', 'strategy': None, 'activated_at': '2026-11-24T22:39:47.621741+00:00'}"
+  },
+  {
+    "area": "security",
+    "name": "login_rate_limit_429",
+    "ok": true,
+    "detail": "codes=[401, 401, 401, 401, 401, 429, 429, 429, 429, 429, 429, 429]"
+  },
+  {
+    "area": "security",
+    "name": "account_lockout_after_failures",
+    "ok": true,
+    "detail": "failed_count=5 locked_until=2026-11-25 05:54:48.782123+07:00"
+  },
+  {
+    "area": "security",
+    "name": "cookie_httponly_samesite",
+    "ok": true,
+    "detail": "[' Path=/', ' SameSite=strict']"
+  },
+  {
+    "area": "security",
+    "name": "cookie_secure_absent",
+    "ok": null,
+    "detail": "Secure belum diset (loopback P1); WAJIB flip saat cutover domain (PRD 7)"
+  },
+  {
+    "area": "security",
+    "name": "orders_requires_session",
+    "ok": true,
+    "detail": "401"
+  },
+  {
+    "area": "security",
+    "name": "orders_requires_csrf",
+    "ok": true,
+    "detail": "403"
+  },
+  {
+    "area": "security",
+    "name": "logout_invalidates",
+    "ok": true,
+    "detail": "401"
+  },
+  {
+    "area": "security",
+    "name": "bridge_bearer_required",
+    "ok": true,
+    "detail": "no=True bad=True"
+  },
+  {
+    "area": "security",
+    "name": "bridge_bearer_valid_ok",
+    "ok": true,
+    "detail": "200"
+  },
+  {
+    "area": "security",
+    "name": "hmac_not_accepted_by_api",
+    "ok": null,
+    "detail": "EA v5.00 kirim HMAC X-Fund2-* -> API 401 401 (API masih Bearer; kontrak HMAC di dummy_bridge/EA v0 saja). Real EA belum bisa konek."
+  },
+  {
+    "area": "security",
+    "name": "heartbeat_endpoint_missing",
+    "ok": null,
+    "detail": "POST /bridge/heartbeat -> 200; EA MarkBridgeFail tiap 2 dtk (backoff s.d. 60s)"
+  },
+  {
+    "area": "security",
+    "name": "tick_batch_format_mismatch",
+    "ok": null,
+    "detail": "EA kirim {symbol,ticks:[..]} -> API 200 (API minta {symbol,bid,ask})"
+  },
+  {
+    "area": "security",
+    "name": "password_adaptive_hash",
+    "ok": true,
+    "detail": "prefix=$argon2id (Argon2id; bcrypt legacy direhash saat login)"
+  },
+  {
+    "area": "security",
+    "name": "orders_per_minute_limit",
+    "ok": true,
+    "detail": "12/12 ditolak rate limit"
+  }
+]

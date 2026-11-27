@@ -1,0 +1,83 @@
+{
+  "phase": "extended_soak",
+  "duration_s": 360.0,
+  "warmup_s": 30.0,
+  "concurrency": 20,
+  "requests": 32848,
+  "rps": 91.2,
+  "p50_ms": 30.8,
+  "p95_ms": 220.8,
+  "p99_ms": 370.5,
+  "max_ms": 789.9,
+  "status_counts": {
+    "401": 8080,
+    "200": 19744,
+    "422": 5024
+  },
+  "errors_5xx_or_exc": 0,
+  "error_samples": [],
+  "per_minute": [
+    {
+      "minute": 1,
+      "n": 5515,
+      "p50_ms": 30.8,
+      "p95_ms": 219.7,
+      "p99_ms": 367.6
+    },
+    {
+      "minute": 2,
+      "n": 5604,
+      "p50_ms": 30.0,
+      "p95_ms": 196.5,
+      "p99_ms": 359.0
+    },
+    {
+      "minute": 3,
+      "n": 5407,
+      "p50_ms": 32.4,
+      "p95_ms": 229.1,
+      "p99_ms": 385.7
+    },
+    {
+      "minute": 4,
+      "n": 5558,
+      "p50_ms": 29.8,
+      "p95_ms": 201.4,
+      "p99_ms": 334.8
+    },
+    {
+      "minute": 5,
+      "n": 5399,
+      "p50_ms": 30.1,
+      "p95_ms": 230.6,
+      "p99_ms": 380.3
+    },
+    {
+      "minute": 6,
+      "n": 5363,
+      "p50_ms": 32.4,
+      "p95_ms": 237.7,
+      "p99_ms": 376.9
+    },
+    {
+      "minute": 7,
+      "n": 2,
+      "p50_ms": 50.6,
+      "p95_ms": 86.3,
+      "p99_ms": 86.3
+    }
+  ],
+  "rss_kb_start": 105276,
+  "rss_kb_end": 111536,
+  "rss_kb_peak": 111536,
+  "rss_growth_pct": 5.9,
+  "criteria": {
+    "zero_5xx": true,
+    "rss_growth_le_20pct": true,
+    "p95_drift_le_1_5x": true,
+    "no_error_burst": true
+  },
+  "passed": true,
+  "generated_at": "2026-11-25T21:57:16+0700",
+  "note": "in-process ASGITransport, isolated DB; bukan angka produksi"
+}

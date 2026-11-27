@@ -1,0 +1,235 @@
+{
+  "generated_at": "2026-11-26T02:15:23+0700",
+  "task": "t_128a9dee",
+  "db_target": "postgresql://127.0.0.1:5433/fund2",
+  "docs": {
+    "present": {
+      "RELEASE_PACKET_v2.2.md": {
+        "exists": true,
+        "bytes": 11237,
+        "marker_found": true
+      },
+      "CANARY_PLAN_v2.2.md": {
+        "exists": true,
+        "bytes": 9037,
+        "marker_found": true
+      },
+      "GENERAL_RELEASE_PLAN_v2.2.md": {
+        "exists": true,
+        "bytes": 6157,
+        "marker_found": true
+      },
+      "ROLLBACK_PLAN_v2.2.md": {
+        "exists": true,
+        "bytes": 10668,
+        "marker_found": true
+      },
+      "CHECKLIST_ROLLBACK_v2.2.md": {
+        "exists": true,
+        "bytes": 3763,
+        "marker_found": true
+      },
+      "ARTEFAK_RILIS_v2.2.md": {
+        "exists": true,
+        "bytes": 6192,
+        "marker_found": true
+      },
+      "RISK_REGISTER_v2.2.md": {
+        "exists": true,
+        "bytes": 24084,
+        "marker_found": true
+      },
+      "LOAD_SOAK_v2.2.md": {
+        "exists": true,
+        "bytes": 5785,
+        "marker_found": true
+      },
+      "OBSERVABILITY_v2.2.md": {
+        "exists": true,
+        "bytes": 3878,
+        "marker_found": true
+      },
+      "RUNBOOK_v2.2.md": {
+        "exists": true,
+        "bytes": 15235,
+        "marker_found": true
+      },
+      "PRASYARAT_LIVE_v2.2.md": {
+        "exists": true,
+        "bytes": 13746,
+        "marker_found": true
+      },
+      "RELEASE_CHECKLIST_v2.2.md": {
+        "exists": true,
+        "bytes": 12849,
+        "marker_found": true
+      },
+      "DR_v2.2.md": {
+        "exists": true,
+        "bytes": 7355,
+        "marker_found": true
+      },
+      "INCIDENT_PLAYBOOK_v2.2.md": {
+        "exists": true,
+        "bytes": 4762,
+        "marker_found": true
+      }
+    },
+    "missing": [],
+    "pass": true
+  },
+  "git": {
+    "head": "62bbe5d",
+    "branch": "master",
+    "dirty": true,
+    "dirty_files": [
+      "A  api/alembic/versions/m013_risk_config_overrides.py",
+      " M api/app/alerts.py",
+      "M  api/app/auto_sl.py",
+      " M api/app/db.py",
+      " M api/app/kill_switch.py",
+      " M api/app/llm_risk.py",
+      "M  api/app/main.py",
+      " M api/app/metrics.py",
+      "MM api/app/risk.py",
+      "A  api/app/risk_config.py"
+    ],
+    "tags": [],
+    "has_release_tag": false,
+    "pass_clean": false
+  },
+  "health": {
+    "ok": true,
+    "env": "demo",
+    "raw": {
+      "ok": true,
+      "subscribers": 1,
+      "env": "demo"
+    },
+    "pass": true
+  },
+  "services": {
+    "units": {
+      "fund2-api": "active",
+      "fund2-postgres": "active",
+      "fund2-alerts": "active",
+      "fund2-paper-runner": "active",
+      "fund2-llm-agent": "active",
+      "fund2-hfm-recorder": "active",
+      "fund2-shadow-runner": "active",
+      "fund2-candle-rollup": "inactive"
+    },
+    "pass": false
+  },
+  "db": {
+    "settings_actual": {
+      "max_volume": 1.0,
+      "max_orders_per_min": 10,
+      "daily_drawdown_pct": 10.0,
+      "max_daily_drawdown": 100.0,
+      "total_drawdown_pct": 15.0,
+      "consecutive_failed_orders": 100,
+      "ea_offline_seconds": 60.0,
+      "ea_offline_halt_seconds": null,
+      "max_total_volume_lot": 0.3,
+      "max_risk_per_trade_pct": 0.5,
+      "max_spread": 0.5,
+      "max_tick_age_s": 3.0,
+      "max_feed_age_s": 60.0,
+      "daily_start_balance": 9733.86,
+      "max_daily_drawdown_ceiling": 292.02
+    },
+    "guardrail_drift": [
+      {
+        "key": "max_volume",
+        "expected": 0.1,
+        "actual": 1.0
+      },
+      {
+        "key": "max_orders_per_min",
+        "expected": 5,
+        "actual": 10
+      },
+      {
+        "key": "daily_drawdown_pct",
+        "expected": 3.0,
+        "actual": 10.0
+      },
+      {
+        "key": "total_drawdown_pct",
+        "expected": 8.0,
+        "actual": 15.0
+      },
+      {
+        "key": "consecutive_failed_orders",
+        "expected": 3,
+        "actual": 100
+      },
+      {
+        "key": "ea_offline_seconds",
+        "expected": 6.0,
+        "actual": 60.0
+      }
+    ],
+    "guardrail_open": [
+      "ea_offline_halt_seconds: setting tidak ditemukan (wajib 60 s, v2.1 \u00a75.7)",
+      "max_daily_drawdown=100.0: lebih ketat dari \u00a7I 292.02 (3% x daily_start_balance)"
+    ],
+    "kill_switch_active": false,
+    "halted": false,
+    "strategy_mode_ml_gbm": "paper",
+    "alembic_db": "m013",
+    "alembic_head_line": "m013 (head)",
+    "alembic_sync": true,
+    "live_indicators_off": true,
+    "guardrails_pass": false
+  },
+  "backup": {
+    "file": "backup-20261125T043315Z.json",
+    "status": "ok",
+    "offsite": 1,
+    "age_hours": 14.7,
+    "sha256": "637b8b44b6c68d3b",
+    "pass": true
+  },
+  "pytest": {
+    "file": "QA_v22_pytest_25nov_fix_run2.log",
+    "tail": " in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.\n    util.warn_deprecated(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1127 passed, 1 warning in 773.39s (0:12:53)",
+    "has_passed": true,
+    "has_failed": false,
+    "pass": true
+  },
+  "soak": {
+    "file": "QA_v22_soak_extended_20261125T215716Z.json",
+    "duration_s": 360.0,
+    "requests": 32848,
+    "p95_ms": 220.8,
+    "rss_growth_pct": 5.9,
+    "errors": 0,
+    "criteria": {
+      "zero_5xx": true,
+      "rss_growth_le_20pct": true,
+      "p95_drift_le_1_5x": true,
+      "no_error_burst": true
+    },
+    "pass": true
+  },
+  "gates": {
+    "paket_dokumen": true,
+    "git_bersih_dan_tag": false,
+    "runtime_demo_env": true,
+    "layanan_inti_aktif": false,
+    "live_off": true,
+    "guardrails_sesuai_policy": false,
+    "schema_sync": true,
+    "backup_segar": true,
+    "pytest_penuh_lulus": true,
+    "soak_extended_lulus": true
+  },
+  "verdict": "PAKET BELUM SIAP RILIS",
+  "no_go_reasons": [
+    "git_bersih_dan_tag",
+    "layanan_inti_aktif",
+    "guardrails_sesuai_policy"
+  ]
+}

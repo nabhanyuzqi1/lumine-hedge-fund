@@ -1,0 +1,35 @@
+### systemctl --user status ringkas - 2026-11-26 02:28:22 WIB
+fund2-postgres           active=active    NRestarts=1    since=Thu 2026-11-26 01:19:55 WIB
+fund2-api                active=active    NRestarts=0    since=Thu 2026-11-26 02:24:14 WIB
+fund2-candle-rollup      active=active    NRestarts=0    since=Thu 2026-11-26 02:24:58 WIB
+fund2-alerts             active=active    NRestarts=12   since=Thu 2026-11-26 02:27:07 WIB
+fund2-paper-runner       active=active    NRestarts=1    since=Thu 2026-11-26 01:19:55 WIB
+fund2-shadow-runner      active=active    NRestarts=1    since=Thu 2026-11-26 01:19:55 WIB
+fund2-hfm-recorder       active=active    NRestarts=0    since=Thu 2026-11-26 01:19:45 WIB
+fund2-llm-agent          active=active    NRestarts=0    since=Thu 2026-11-26 02:24:14 WIB
+
+### unit candle-rollup
+● fund2-candle-rollup.service - Fund2 candle rollup M1->M5 (server-side, feed M5 anti-gantung seed EA)
+     Loaded: loaded (/home/tekka/.config/systemd/user/fund2-candle-rollup.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-11-26 02:24:58 WIB; 3min 24s ago
+   Main PID: 303943 (python)
+      Tasks: 1 (limit: 9475)
+     Memory: 23.2M (peak: 23.7M)
+        CPU: 414ms
+     CGroup: /user.slice/user-1000.slice/user@1000.service/app.slice/fund2-candle-rollup.service
+             └─303943 /home/tekka/fund2/api/.venv/bin/python -m app.candle_rollup
+
+Nov 26 02:24:58 tekka systemd[1165]: Started fund2-candle-rollup.service - Fund2 candle rollup M1->M5 (server-side, feed M5 anti-gantung seed EA).
+Nov 26 02:24:58 tekka python[303943]: [2026-11-25T19:24:58+00:00] candle-rollup daemon aktif (siklus 60s)
+
+### watchdog loop fund2-alerts (STALE/start)
+Nov 26 02:04:47 tekka python[192512]: 2026-11-26 02:04:47,997 CRITICAL fund2.alerts: alerts daemon STALE: tidak ada tick alert > 300s (recap 5m); dump stack lalu keluar exit 70 agar systemd restart
+Nov 26 02:04:54 tekka python[238854]: 2026-11-26 02:04:54,947 INFO fund2.alerts: alerts daemon start pid=238854 (budget db 300s, watchdog 300s, interval 15s)
+Nov 26 02:10:25 tekka python[238854]: 2026-11-26 02:10:25,045 CRITICAL fund2.alerts: alerts daemon STALE: tidak ada tick alert > 300s (recap 5m); dump stack lalu keluar exit 70 agar systemd restart
+Nov 26 02:10:31 tekka python[268859]: 2026-11-26 02:10:31,746 INFO fund2.alerts: alerts daemon start pid=268859 (budget db 300s, watchdog 300s, interval 15s)
+Nov 26 02:16:01 tekka python[268859]: 2026-11-26 02:16:01,836 CRITICAL fund2.alerts: alerts daemon STALE: tidak ada tick alert > 300s (recap 5m); dump stack lalu keluar exit 70 agar systemd restart
+Nov 26 02:16:08 tekka python[293422]: 2026-11-26 02:16:08,377 INFO fund2.alerts: alerts daemon start pid=293422 (budget db 300s, watchdog 300s, interval 15s)
+Nov 26 02:21:38 tekka python[293422]: 2026-11-26 02:21:38,468 CRITICAL fund2.alerts: alerts daemon STALE: tidak ada tick alert > 300s (recap 5m); dump stack lalu keluar exit 70 agar systemd restart
+Nov 26 02:21:44 tekka python[300427]: 2026-11-26 02:21:44,814 INFO fund2.alerts: alerts daemon start pid=300427 (budget db 300s, watchdog 300s, interval 15s)
+Nov 26 02:27:00 tekka python[300427]: 2026-11-26 02:27:00,224 CRITICAL fund2.alerts: alerts daemon STALE: tidak ada tick alert > 300s (recap 5m); dump stack lalu keluar exit 70 agar systemd restart
+Nov 26 02:27:08 tekka python[306051]: 2026-11-26 02:27:08,089 INFO fund2.alerts: alerts daemon start pid=306051 (budget db 300s, watchdog 300s, interval 15s)

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run anomaly detector 5 min after daily recap (07:05 WIB)
+
+[Timer]
+OnCalendar=*-*-* 07:05:00
+Persistent=true
+Unit=fund2-anomaly.service
+
+[Install]
+WantedBy=timers.target

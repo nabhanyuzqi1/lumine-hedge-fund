@@ -1,0 +1,58 @@
+{
+  "catalog": [
+    "claude-lucif",
+    "claude-lucif-flash",
+    "lucif",
+    "lucif-claude",
+    "lucif-flash"
+  ],
+  "effective": {
+    "parallel": true,
+    "roles": {
+      "technical": "lucif-claude"
+    },
+    "specialist": "lucif-flash",
+    "synth": "lucif",
+    "fallback": "lucif-claude"
+  },
+  "roles_saved": {
+    "technical": "lucif-claude"
+  },
+  "role_keys": [
+    "technical",
+    "macro",
+    "sentiment",
+    "portfolio"
+  ],
+  "role_defaults": {
+    "technical": "lucif-claude"
+  },
+  "last_cycle": {
+    "cycle_id": "3327e61421a14d1f",
+    "at": "2026-11-26T12:03:58.409732+07:00",
+    "symbol": "XAUUSD",
+    "roles": {
+      "portfolio": {
+        "model": "lucif-flash",
+        "state": "ok",
+        "latency_ms": 2575.0
+      },
+      "technical": {
+        "model": "lucif-claude",
+        "state": "ok",
+        "latency_ms": 2713.0
+      },
+      "sentiment": {
+        "model": "lucif-flash",
+        "state": "ok",
+        "latency_ms": 2724.0
+      },
+      "macro": {
+        "model": "lucif-flash",
+        "state": "ok",
+        "latency_ms": 2881.0
+      }
+    }
+  },
+  "env_model": "lucif"
+}

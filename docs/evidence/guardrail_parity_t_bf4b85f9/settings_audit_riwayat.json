@@ -1,0 +1,415 @@
+[
+  {
+    "id": 7,
+    "key": "kill_switch_triggers",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-23T15:55:25.818729+07:00",
+    "old_value": null,
+    "new_value": null
+  },
+  {
+    "id": 12,
+    "key": "kill_switch_triggers",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-23T15:58:32.296436+07:00",
+    "old_value": null,
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 61.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 13,
+    "key": "kill_switch_triggers",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-23T15:59:21.389554+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 61.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 18,
+    "key": "kill_switch_triggers",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-23T16:26:20.895160+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 29,
+    "key": "max_volume",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-24T02:01:15.134872+07:00",
+    "old_value": 1.0,
+    "new_value": 1.0
+  },
+  {
+    "id": 31,
+    "key": "max_orders_per_min",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-24T02:01:15.145767+07:00",
+    "old_value": 10,
+    "new_value": 10
+  },
+  {
+    "id": 76,
+    "key": "kill_switch_triggers",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-24T23:25:26.351800+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 5.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 85,
+    "key": "max_daily_drawdown",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-24T23:50:08.361050+07:00",
+    "old_value": 100.0,
+    "new_value": 100000.0
+  },
+  {
+    "id": 95,
+    "key": "max_daily_drawdown",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-24T23:56:22.417067+07:00",
+    "old_value": 100000.0,
+    "new_value": 100.0
+  },
+  {
+    "id": 210,
+    "key": "kill_switch_triggers",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-25T10:26:14.090782+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 5.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 5.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 10.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 216,
+    "key": "kill_switch_triggers",
+    "changed_by": "fund2",
+    "source": "db",
+    "changed_at": "2026-11-25T12:04:07.447475+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 5.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 10.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 10.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 15.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 100,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 341,
+    "key": "kill_switch_triggers",
+    "changed_by": "qa_guardrail",
+    "source": "db",
+    "changed_at": "2026-11-26T02:59:02.300126+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 10.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 15.0,
+      "check_interval_seconds": 5.0,
+      "consecutive_failed_orders": 100,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 10.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 15.0,
+      "check_interval_seconds": 5.0,
+      "ea_offline_halt_seconds": 45.0,
+      "consecutive_failed_orders": 100,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 342,
+    "key": "kill_switch_triggers",
+    "changed_by": "qa_guardrail",
+    "source": "db",
+    "changed_at": "2026-11-26T02:59:32.386978+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 10.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 15.0,
+      "check_interval_seconds": 5.0,
+      "ea_offline_halt_seconds": 45.0,
+      "consecutive_failed_orders": 100,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 10.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 15.0,
+      "check_interval_seconds": 5.0,
+      "ea_offline_halt_seconds": 60.0,
+      "consecutive_failed_orders": 100,
+      "ea_offline_requires_positions": true
+    }
+  },
+  {
+    "id": 356,
+    "key": "max_volume",
+    "changed_by": "ceo_guardrail",
+    "source": "db",
+    "changed_at": "2026-11-26T06:39:31.357983+07:00",
+    "old_value": 1.0,
+    "new_value": 0.1
+  },
+  {
+    "id": 357,
+    "key": "max_orders_per_min",
+    "changed_by": "ceo_guardrail",
+    "source": "db",
+    "changed_at": "2026-11-26T06:39:31.364183+07:00",
+    "old_value": 10,
+    "new_value": 5
+  },
+  {
+    "id": 358,
+    "key": "max_daily_drawdown",
+    "changed_by": "ceo_guardrail",
+    "source": "db",
+    "changed_at": "2026-11-26T06:39:31.367958+07:00",
+    "old_value": 100.0,
+    "new_value": 292.02
+  },
+  {
+    "id": 359,
+    "key": "kill_switch_triggers",
+    "changed_by": "ceo_guardrail",
+    "source": "db",
+    "changed_at": "2026-11-26T06:39:31.371724+07:00",
+    "old_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 10.0,
+      "ea_offline_seconds": 60.0,
+      "total_drawdown_pct": 15.0,
+      "check_interval_seconds": 5.0,
+      "ea_offline_halt_seconds": 60.0,
+      "consecutive_failed_orders": 100,
+      "ea_offline_requires_positions": true
+    },
+    "new_value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 6.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "ea_offline_halt_seconds": 60.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    }
+  }
+]

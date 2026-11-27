@@ -1,0 +1,1016 @@
+/* Lumine Fund · logs-history.css
+   Halaman gabungan "Riwayat & Log" (3 sub-tab). Semua kelas berprefix `lh-`
+   dan seluruh aturan di-scope oleh `.lh-page`, jadi file ini tidak menyentuh
+   halaman lain.
+
+   Patokan:
+   1. Full-width, padding panel 16px (24px mulai 1024px).
+   2. Tabel 13,5px, header 12px uppercase halus, baris lega >= 44px, zebra tipis.
+   3. Kolom RISK hanya memuat badge pendek (maks 2) + tombol +N.
+   4. Drawer kanan 420px (full-width di layar sempit), overlay gelap. */
+
+.lh-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ── header halaman ─────────────────────────────────────────────────────── */
+.lh-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  min-width: 0;
+}
+
+.lh-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lh-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.lh-sub {
+  margin: 0;
+  max-width: 78ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.lh-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* chip netral kecil yang dipakai header, drawer, dan panel */
+.lh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.lh-chip.is-ok {
+  border-color: color-mix(in srgb, var(--emerald) 40%, var(--line));
+  background: var(--up-dim);
+  color: var(--up-strong);
+}
+
+.lh-chip.is-bad {
+  border-color: color-mix(in srgb, var(--crimson) 40%, var(--line));
+  background: var(--down-dim);
+  color: var(--down-strong);
+}
+
+/* ── panel ──────────────────────────────────────────────────────────────── */
+.lh-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.lh-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+}
+
+@media (min-width: 1024px) {
+  .lh-panel {
+    padding: 24px;
+  }
+}
+
+.lh-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+  min-width: 0;
+}
+
+.lh-panel-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.lh-panel-title h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.lh-panel-title p {
+  margin: 0;
+  max-width: 82ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.lh-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ── segmen tab status ──────────────────────────────────────────────────── */
+.lh-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-sub);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.lh-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.lh-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lh-tab.is-active {
+  background: var(--surface-3);
+  color: var(--accent-bright);
+  font-weight: 600;
+}
+
+/* ── tabel ──────────────────────────────────────────────────────────────── */
+.lh-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+}
+
+.lh-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.lh-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--surface-sub);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.lh-table tbody td {
+  height: 44px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--text);
+}
+
+.lh-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.lh-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.lh-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+.lh-table tbody tr.is-open td {
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-2));
+}
+
+.lh-row {
+  cursor: pointer;
+}
+
+.lh-num,
+.lh-table td.lh-num,
+.lh-table th.lh-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lh-col-time {
+  white-space: nowrap;
+}
+
+.lh-col-symbol {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.lh-row-open {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lh-row-open:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lh-side {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.lh-side.is-buy {
+  border-color: color-mix(in srgb, var(--emerald) 36%, var(--line));
+  background: var(--up-dim);
+  color: var(--up-strong);
+}
+
+.lh-side.is-sell {
+  border-color: color-mix(in srgb, var(--crimson) 36%, var(--line));
+  background: var(--down-dim);
+  color: var(--down-strong);
+}
+
+.lh-price {
+  display: table-cell;
+}
+
+.lh-price-main {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.lh-price-sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.lh-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.lh-status.is-ok {
+  border-color: color-mix(in srgb, var(--emerald) 34%, var(--line));
+  background: var(--up-dim);
+  color: var(--up-strong);
+}
+
+.lh-status.is-bad {
+  border-color: color-mix(in srgb, var(--crimson) 34%, var(--line));
+  background: var(--down-dim);
+  color: var(--down-strong);
+}
+
+/* ── kolom RISK: maksimum dua badge + "+N" ──────────────────────────────── */
+.lh-table th.lh-col-risk,
+.lh-table td.lh-col-risk {
+  min-width: 248px;
+  width: 248px;
+  white-space: nowrap;
+}
+
+/* Satu baris: dua badge + "+N" tidak pernah membuat baris tabel membengkak. */
+.lh-risk {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lh-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 164px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lh-badge.is-reject {
+  border-color: color-mix(in srgb, var(--crimson) 38%, var(--line));
+  background: var(--down-dim);
+  color: var(--down-strong);
+}
+
+.lh-badge.is-pass {
+  border-color: color-mix(in srgb, var(--emerald) 38%, var(--line));
+  background: var(--up-dim);
+  color: var(--up-strong);
+}
+
+.lh-more {
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.lh-more:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.lh-risk-empty {
+  color: var(--text-faint);
+}
+
+.lh-empty {
+  margin: 0;
+  padding: 40px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.lh-muted {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ── pagination ─────────────────────────────────────────────────────────── */
+.lh-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+.lh-pager-info {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.lh-pager-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lh-pager-page {
+  min-width: 58px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* ── drawer detail order ────────────────────────────────────────────────── */
+.lh-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(3, 3, 5, 0.64);
+  backdrop-filter: blur(2px);
+  animation: lh-fade 120ms ease-out;
+}
+
+.lh-drawer {
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100vw);
+  height: 100dvh;
+  background: var(--surface-1);
+  border-left: 1px solid var(--line-strong);
+  box-shadow: -24px 0 48px rgba(0, 0, 0, 0.55);
+  animation: lh-slide 180ms var(--ease);
+}
+
+.lh-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lh-drawer-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lh-drawer-kicker {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.lh-drawer-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.lh-drawer-id {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow-wrap: anywhere;
+}
+
+.lh-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.lh-close:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.lh-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lh-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px;
+}
+
+.lh-drawer-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.lh-drawer-status-note {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.lh-drawer-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.lh-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lh-section-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* alasan penolakan: daftar pendek, bukan paragraf panjang */
+.lh-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lh-reason {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-left: 2px solid color-mix(in srgb, var(--crimson) 60%, transparent);
+  border-radius: 0 6px 6px 0;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.lh-reason-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--down-strong);
+}
+
+.lh-reason-text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+/* rincian order */
+.lh-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-sub);
+  overflow: hidden;
+}
+
+.lh-kv-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 42%) minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lh-kv-row:last-child {
+  border-bottom: 0;
+}
+
+.lh-kv-row dt {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.lh-kv-row dd {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.lh-kv-row dd.lh-kv-id {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+/* jejak status */
+.lh-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0 0 0 4px;
+  list-style: none;
+}
+
+.lh-timeline-item {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 6px 0 6px 16px;
+  border-left: 1px solid var(--line);
+}
+
+.lh-timeline-dot {
+  position: absolute;
+  left: -3px;
+  top: 12px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.lh-timeline-state {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.lh-timeline-time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.lh-debug {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lh-debug p {
+  margin: 0 0 4px;
+}
+
+/* ── event kill-switch ──────────────────────────────────────────────────── */
+.lh-ks-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-sub);
+}
+
+.lh-ks-state.is-on {
+  border-color: color-mix(in srgb, var(--crimson) 42%, var(--line));
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.08), transparent 70%), var(--surface-sub);
+}
+
+.lh-ks-state.is-off {
+  border-color: color-mix(in srgb, var(--emerald) 34%, var(--line));
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.06), transparent 70%), var(--surface-sub);
+}
+
+.lh-ks-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--emerald);
+}
+
+.lh-ks-state.is-on .lh-ks-dot {
+  background: var(--crimson);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.16);
+}
+
+.lh-ks-state-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.lh-ks-state-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lh-ks-state-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.lh-ks-state-reason {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.lh-ks-state-paused {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.lh-level {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.lh-level.is-soft {
+  border-color: color-mix(in srgb, var(--warn) 42%, var(--line));
+  background: var(--warn-dim);
+  color: var(--alert-text);
+}
+
+.lh-level.is-hard {
+  border-color: color-mix(in srgb, var(--crimson) 46%, var(--line));
+  background: var(--down-dim);
+  color: var(--down-strong);
+}
+
+.lh-legend {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.lh-legend strong {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.lh-ks-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lh-ks-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-sub);
+  min-width: 0;
+}
+
+.lh-ks-card.is-soft {
+  border-left-color: var(--warn);
+}
+
+.lh-ks-card.is-hard {
+  border-left-color: var(--crimson);
+}
+
+.lh-ks-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lh-ks-time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.lh-ks-action {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lh-ks-action-dim {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.lh-ks-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+}
+
+.lh-ks-meta div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lh-ks-meta dt {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.lh-ks-meta dd {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.lh-tone-ok {
+  color: var(--up-strong);
+}
+
+.lh-tone-warn {
+  color: var(--alert-text);
+}
+
+.lh-tone-neutral {
+  color: var(--text-muted);
+}
+
+.lh-ks-reason {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ── audit & sesi ───────────────────────────────────────────────────────── */
+.lh-actor {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.lh-actor-sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.lh-note {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+/* ── fokus & gerak ──────────────────────────────────────────────────────── */
+.lh-page :is(button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@keyframes lh-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lh-slide {
+  from { transform: translateX(16px); opacity: 0.6; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lh-overlay,
+  .lh-drawer {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .lh-title {
+    font-size: 20px;
+  }
+
+  .lh-table {
+    font-size: 13px;
+    min-width: 600px;
+  }
+
+  .lh-table th.lh-col-risk,
+  .lh-table td.lh-col-risk {
+    min-width: 188px;
+    width: 188px;
+  }
+
+  .lh-drawer-title {
+    font-size: 15px;
+  }
+}

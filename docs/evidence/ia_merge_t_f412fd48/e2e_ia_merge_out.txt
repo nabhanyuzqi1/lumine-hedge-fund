@@ -1,0 +1,30 @@
+PASS login admin
+PASS 2FA challenge
+PASS GET /admin/risk-settings 200
+PASS respons memuat blok llm
+PASS blok llm punya interval + auto_lot + risk
+PASS triggers + trigger_ranges tersedia
+PASS floor interval 30 s
+PASS PUT admin risk-settings menerima 4 setelan sekaligus
+PASS interval tersimpan 900
+PASS auto-lot ON tersimpan
+PASS llm_risk max_layers 2
+PASS llm_risk tidak kehilangan key lain
+PASS GET /llm-agent/config melaporkan interval aktif 900
+PASS config memuat system prompt + versi
+PASS trigger harian 3% tersimpan
+PASS trigger total 8% tersimpan
+PASS modes auto-trigger tidak hilang
+PASS trigger lain utuh (EA halt)
+PASS legacy PUT /kill-switch/triggers menolak DD 500% (422)
+PASS DD tetap 3% setelah penolakan
+PASS kanal admin juga menolak DD total 500% (422)
+PASS interval 10 s ditolak floor 30 s (422)
+PASS key llm_risk asing ditolak (422)
+PASS password salah -> 403
+PASS interval tetap 900 setelah password salah
+PASS settings_audit memuat llm_interval_s
+PASS settings_audit memuat kill_switch_triggers
+PASS baris audit berisi old_value/new_value
+
+RINGKASAN: SEMUA LULUS

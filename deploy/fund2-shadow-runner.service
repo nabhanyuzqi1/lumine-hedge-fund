@@ -1,0 +1,17 @@
+# Fund2 shadow runner (PRD v2.2 §9 — sinyal live TANPA order ke broker).
+# Copy ke ~/.config/systemd/user/ lalu: systemctl --user daemon-reload
+#                                       systemctl --user enable --now fund2-shadow-runner
+[Unit]
+Description=Fund2 shadow runner (sinyal live tanpa order, PRD v2.2 §9)
+After=network.target fund2-postgres.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tekka/fund2/api
+EnvironmentFile=/home/tekka/fund2/api/.env
+ExecStart=/home/tekka/fund2/api/.venv/bin/python -u -m shadow.runner
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

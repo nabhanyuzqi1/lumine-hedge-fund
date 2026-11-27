@@ -1,0 +1,246 @@
+[09:42:35] login ok, csrf ok
+[09:42:35] resume: 0 sampel v10 existing
+[09:42:35] synthetic EA antar-burst start
+[09:42:36] pre-flight OK; lanjut burst 1/25
+[09:44:35] burst 1/25 (p5-latency-gate-v10-b01) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 1, ditolak: 0, timeout: 0)
+   total sampel v10: 8/200
+[09:44:35] flatten http 200 requested=7
+[09:44:36] flatten http 200 requested=6
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[09:48:14] flatten http 200 requested=5
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  rounds 2/4 belum siap; ulangi flatten
+[09:51:53] flatten http 200 requested=2
+  [r3] belum bersih (pending=1, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+[09:56:59] burst 2/25 (p5-latency-gate-v10-b02) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 1, ditolak: 0, timeout: 0)
+   total sampel v10: 16/200
+[09:56:59] flatten http 200 requested=7
+[09:57:00] flatten http 200 requested=4
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[10:00:38] flatten http 200 requested=3
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  [r2] belum bersih (pending=0, open=2); tunggu 15s
+  rounds 2/4 belum siap; ulangi flatten
+[10:04:16] flatten http 200 requested=2
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+[10:09:23] burst 3/25 (p5-latency-gate-v10-b03) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 0, ditolak: 0, timeout: 0)
+   total sampel v10: 24/200
+[10:09:23] flatten http 200 requested=8
+[10:09:24] flatten http 200 requested=8
+[10:11:30] burst 4/25 (p5-latency-gate-v10-b04) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 1, ditolak: 0, timeout: 0)
+   total sampel v10: 32/200
+[10:11:30] flatten http 200 requested=9
+[10:11:31] flatten http 200 requested=8
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[10:15:10] flatten http 200 requested=5
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  [r2] belum bersih (pending=1, open=3); tunggu 15s
+  rounds 2/4 belum siap; ulangi flatten
+[10:18:48] flatten http 200 requested=3
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  rounds 3/4 belum siap; ulangi flatten
+[10:22:27] flatten http 200 requested=2
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+[10:27:31] burst 5/25 (p5-latency-gate-v10-b05) exit=1 TANPA RINGKASAN
+   total sampel v10: 32/200
+STDERR: n
+    result = func(*args)
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 1362, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 1336, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno 111] Connection refused>
+Traceback (most recent call last):
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 1333, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              encode_chunked=req.has_header('Transfer-encoding'))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/http/client.py", line 1386, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/http/client.py", line 1432, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/http/client.py", line 1381, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/http/client.py", line 1141, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/http/client.py", line 1085, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/http/client.py", line 1051, in connect
+    self.sock = self._create_connection(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        (self.host,self.port), self.timeout, self.source_address)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/socket.py", line 874, in create_connection
+    raise exceptions[0]
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/socket.py", line 859, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/tekka/fund2/scripts/_p5_latency_driver_v9.py", line 338, in <module>
+    main()
+    ~~~~^^
+  File "/home/tekka/fund2/scripts/_p5_latency_driver_v9.py", line 325, in main
+    flatten(sess, conn)
+    ~~~~~~~^^^^^^^^^^^^
+  File "/home/tekka/fund2/scripts/_p5_latency_driver_v9.py", line 165, in flatten
+    ensure_2fa(sess, conn)
+    ~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/tekka/fund2/scripts/_p5_latency_driver_v9.py", line 120, in ensure_2fa
+    st, body = sess.req("POST", "/auth/2fa/challenge", body={"code": totp_code(conn)})
+               ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/fund2/scripts/_p5_latency_driver_v9.py", line 87, in req
+    resp = urllib.request.urlopen(req, timeout=timeout)
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 487, in open
+    response = self._open(req, data)
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 1362, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tekka/.local/share/uv/python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/urllib/request.py", line 1336, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno 111] Connection refused>

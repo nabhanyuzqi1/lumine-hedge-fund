@@ -1,0 +1,4242 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LUMINE FUND — Autonomous Quantitative &amp; Risk-Ops Platform</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Three.js r128 WebGL Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans, Inter & IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'monospace'],
+          },
+          colors: {
+            obsidian: '#06070A',
+            alabaster: '#F4F5F8',
+            zincMuted: '#8B909E',
+            emeraldSignal: '#10B981',
+            crimsonSignal: '#EF4444',
+            amberWarn: '#F59E0B',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #06070A;
+      color: #F4F5F8;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1, h2, h3, h4, .font-heading {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      letter-spacing: -0.03em;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Monochrome Frosted-Glass Surfaces */
+    .glass-card {
+      background: rgba(13, 15, 21, 0.74);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
+        0 24px 48px -16px rgba(0, 0, 0, 0.85);
+      transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .glass-nav {
+      background: rgba(10, 12, 17, 0.82);
+      backdrop-filter: blur(26px);
+      -webkit-backdrop-filter: blur(26px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+        0 18px 40px -12px rgba(0, 0, 0, 0.88);
+    }
+
+    /* PPT-Style Wheel-Locked Slide Transitions & Synchronized Card Choreography */
+    .ppt-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(36px) scale(0.985);
+      transition:
+        opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.65s;
+    }
+
+    .ppt-slide.is-past {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-36px) scale(0.985);
+    }
+
+    .ppt-slide.is-active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    .ppt-slide .stagger-el {
+      opacity: 0;
+      transform: translateY(20px);
+      transition:
+        opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      transition-delay: calc(var(--stagger, 0) * 90ms + 90ms);
+    }
+
+    .ppt-slide.is-active .stagger-el {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Status Beacons */
+    @keyframes beaconEmerald {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.65); }
+      50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    }
+    .pulse-emerald {
+      animation: beaconEmerald 2.2s infinite ease-in-out;
+    }
+
+    @keyframes beaconCrimson {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.65); }
+      50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    }
+    .pulse-crimson {
+      animation: beaconCrimson 2.2s infinite ease-in-out;
+    }
+
+    /* Custom Range Slider */
+    input[type='range'].lumine-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.12);
+      outline: none;
+    }
+    input[type='range'].lumine-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      background: #F4F5F8;
+      border: 2px solid #06070A;
+      box-shadow: 0 0 14px rgba(244, 245, 248, 0.55);
+      cursor: pointer;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #06070A;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#06070A] text-[#F4F5F8] selection:bg-[#F4F5F8] selection:text-[#06070A]">
+
+  <!-- ===================================================================== -->
+  <!-- PERSISTENT FULL-VIEWPORT THREE.JS WEBGL STAGE                         -->
+  <!-- ===================================================================== -->
+  <canvas
+    id="webgl-stage"
+    aria-hidden="true"
+    class="fixed inset-0 z-0 h-full w-full pointer-events-none transition-opacity duration-700"
+  ></canvas>
+
+  <!-- Subtle Radial Ambient Vignette -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none fixed inset-0 z-[1] bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(244,245,248,0.03)_0%,transparent_65%),radial-gradient(ellipse_90%_75%_at_50%_100%,rgba(6,7,10,0.84)_0%,transparent_80%)]"
+  ></div>
+
+  <!-- ===================================================================== -->
+  <!-- 1. PUBLIC LANDING TOP NAVBAR (Only Visible on Public Landing Page)    -->
+  <!-- ===================================================================== -->
+  <header id="header-landing" class="fixed top-0 left-0 right-0 z-40 pt-4 px-4 sm:px-8 pointer-events-none">
+    <div class="glass-nav pointer-events-auto mx-auto flex h-14 w-full max-w-[1680px] items-center justify-between gap-4 rounded-2xl px-4 sm:px-6">
+
+      <!-- Left: LUMINE FUND Geometric Emblem & Wordmark -->
+      <button
+        type="button"
+        onclick="goToSlide(0)"
+        class="flex items-center gap-3 text-left group focus:outline-none"
+      >
+        <span class="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.04] group-hover:border-white/30 transition-colors">
+          <svg class="h-4 w-4 text-[#F4F5F8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2" />
+            <line x1="12" y1="22" x2="12" y2="12" />
+            <polyline points="21 7 12 12 3 7" />
+          </svg>
+        </span>
+        <div class="flex items-baseline gap-2">
+          <span class="font-display text-sm font-bold tracking-[0.18em] text-[#F4F5F8]">LUMINE</span>
+          <span class="font-mono text-[10px] font-medium tracking-[0.2em] text-[#8B909E]">FUND</span>
+        </div>
+      </button>
+
+      <!-- Center: Clean Topic Links (Intelligence, Liquidity, Pipeline, Strategies, Risk, Investors) -->
+      <nav aria-label="Landing Navigation" class="hidden md:flex items-center gap-1 lg:gap-2">
+        <button
+          type="button"
+          data-topic-slide="1"
+          onclick="goToSlide(1)"
+          class="landing-topic-btn rounded-lg px-3 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-colors"
+        >
+          Intelligence
+        </button>
+        <button
+          type="button"
+          data-topic-slide="2"
+          onclick="goToSlide(2)"
+          class="landing-topic-btn rounded-lg px-3 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-colors"
+        >
+          Liquidity
+        </button>
+        <button
+          type="button"
+          data-topic-slide="3"
+          onclick="goToSlide(3)"
+          class="landing-topic-btn rounded-lg px-3 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-colors"
+        >
+          Pipeline
+        </button>
+        <button
+          type="button"
+          data-topic-slide="4"
+          onclick="goToSlide(4)"
+          class="landing-topic-btn rounded-lg px-3 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-colors"
+        >
+          Strategies
+        </button>
+        <button
+          type="button"
+          data-topic-slide="5"
+          onclick="goToSlide(5)"
+          class="landing-topic-btn rounded-lg px-3 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-colors"
+        >
+          Risk
+        </button>
+        <button
+          type="button"
+          data-topic-slide="6"
+          onclick="goToSlide(6)"
+          class="landing-topic-btn rounded-lg px-3 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-colors"
+        >
+          Investors
+        </button>
+      </nav>
+
+      <!-- Right: High-Contrast "Investor Login →" CTA Button -->
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          onclick="openLoginPortal('signin')"
+          class="inline-flex items-center gap-2 rounded-xl bg-[#F4F5F8] px-4 py-2 text-xs font-semibold text-[#06070A] shadow-[0_8px_24px_rgba(244,245,248,0.18)] hover:bg-white transition-all"
+        >
+          <span>Investor Login</span>
+          <span>→</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- 2. AUTHENTICATED WORKSPACE TOP NAVBAR (Only Visible After Login)      -->
+  <!-- ===================================================================== -->
+  <header id="header-workstation" class="hidden fixed top-0 left-0 right-0 z-40 pt-3.5 px-4 sm:px-8 pointer-events-none">
+    <div class="glass-nav pointer-events-auto mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between gap-4 rounded-2xl px-4 sm:px-6">
+
+      <!-- Left: Emblem -->
+      <button
+        type="button"
+        onclick="switchWorkspaceTab('terminal')"
+        class="flex items-center gap-3 text-left group focus:outline-none"
+      >
+        <span class="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.04]">
+          <svg class="h-4 w-4 text-[#F4F5F8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2" />
+            <line x1="12" y1="22" x2="12" y2="12" />
+            <polyline points="21 7 12 12 3 7" />
+          </svg>
+        </span>
+        <div class="flex items-baseline gap-2">
+          <span class="font-display text-sm font-bold tracking-[0.18em] text-[#F4F5F8]">LUMINE</span>
+          <span class="font-mono text-[10px] font-medium tracking-[0.2em] text-[#8B909E]">FUND</span>
+        </div>
+      </button>
+
+      <!-- Center: Segmented Tabs ('Live Terminal', 'Strategy Lab', 'Ops & Logs') -->
+      <nav
+        aria-label="Workstation Tabs"
+        class="flex items-center gap-1 rounded-xl border border-white/[0.07] bg-[#06070A]/85 p-1 overflow-x-auto max-w-full"
+      >
+        <button
+          id="ws-nav-terminal"
+          type="button"
+          onclick="switchWorkspaceTab('terminal')"
+          class="ws-seg-btn inline-flex items-center gap-2 rounded-lg bg-[#F4F5F8] px-3.5 py-1.5 text-xs font-semibold text-[#06070A] shadow-sm transition-all shrink-0"
+        >
+          <span>Live Terminal</span>
+          <span
+            class="rounded-md border border-[#F59E0B]/40 bg-[#F59E0B]/15 px-1.5 py-0.2 font-mono text-[10px] font-semibold text-[#F59E0B] tabular-nums"
+          >
+            9
+          </span>
+        </button>
+
+        <button
+          id="ws-nav-strategy"
+          type="button"
+          onclick="switchWorkspaceTab('strategy')"
+          class="ws-seg-btn inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all shrink-0"
+        >
+          <span>Strategy Lab</span>
+        </button>
+
+        <button
+          id="ws-nav-ops"
+          type="button"
+          onclick="switchWorkspaceTab('ops')"
+          class="ws-seg-btn inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all shrink-0"
+        >
+          <span>Ops &amp; Logs</span>
+        </button>
+      </nav>
+
+      <!-- Right: Sessions, Dynamic EA Status, DEMO Badge, Operator Badge & Logout -->
+      <div class="flex items-center gap-2.5 font-mono text-[11px]">
+        <div class="hidden xl:flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.02] px-3 py-1.5 text-[#8B909E]">
+          <span class="inline-flex items-center gap-1.5 text-[#10B981]">
+            <span class="h-1.5 w-1.5 rounded-full bg-[#10B981]"></span>
+            ASIA
+          </span>
+          <span class="text-white/20">·</span>
+          <span>LONDON</span>
+          <span class="text-white/20">·</span>
+          <span>NY</span>
+        </div>
+
+        <span
+          id="global-ea-badge"
+          class="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-[#EF4444]/35 bg-[#EF4444]/10 px-3 py-1.5 font-semibold text-[#EF4444]"
+        >
+          <span id="global-ea-dot" class="h-2 w-2 rounded-full bg-[#EF4444] pulse-crimson"></span>
+          <span id="global-ea-text">EA · OFFLINE</span>
+        </span>
+
+        <span class="hidden md:inline-block rounded-lg border border-white/[0.1] bg-white/[0.04] px-2.5 py-1.5 font-semibold tracking-wider text-[#F4F5F8]">
+          DEMO
+        </span>
+
+        <span
+          id="ws-operator-badge"
+          class="hidden lg:inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-[#06070A]/80 px-2.5 py-1.5 text-[#8B909E]"
+        >
+          <span class="h-1.5 w-1.5 rounded-full bg-[#10B981]"></span>
+          <span id="ws-operator-name">INST-8841</span>
+        </span>
+
+        <button
+          type="button"
+          onclick="logoutToLanding()"
+          class="rounded-lg border border-white/[0.14] bg-white/[0.04] px-3 py-1.5 font-sans text-xs font-medium text-[#F4F5F8] hover:bg-white/[0.1] transition-colors"
+        >
+          Logout
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 1: PUBLIC LANDING PAGE (Wheel-Locked 7-Slide Cinematic Deck)     -->
+  <!-- ===================================================================== -->
+  <main id="view-landing" class="fixed inset-0 z-10 h-screen w-screen overflow-hidden">
+
+    <!-- Right-Edge Ultra-Minimalist Vertical Indicator Ticks (No Numbers or Text Labels) -->
+    <aside
+      aria-label="Slide Progress"
+      class="hidden sm:flex fixed right-7 top-1/2 -translate-y-1/2 z-30 flex-col items-center gap-3"
+    >
+      <button type="button" onclick="goToSlide(0)" aria-label="Section 1" class="ppt-rail-btn p-1 focus:outline-none">
+        <span class="ppt-rail-bar block h-8 w-0.5 rounded-full bg-[#F4F5F8] transition-all duration-300"></span>
+      </button>
+      <button type="button" onclick="goToSlide(1)" aria-label="Section 2" class="ppt-rail-btn p-1 focus:outline-none">
+        <span class="ppt-rail-bar block h-3.5 w-0.5 rounded-full bg-white/20 hover:bg-white/50 transition-all duration-300"></span>
+      </button>
+      <button type="button" onclick="goToSlide(2)" aria-label="Section 3" class="ppt-rail-btn p-1 focus:outline-none">
+        <span class="ppt-rail-bar block h-3.5 w-0.5 rounded-full bg-white/20 hover:bg-white/50 transition-all duration-300"></span>
+      </button>
+      <button type="button" onclick="goToSlide(3)" aria-label="Section 4" class="ppt-rail-btn p-1 focus:outline-none">
+        <span class="ppt-rail-bar block h-3.5 w-0.5 rounded-full bg-white/20 hover:bg-white/50 transition-all duration-300"></span>
+      </button>
+      <button type="button" onclick="goToSlide(4)" aria-label="Section 5" class="ppt-rail-btn p-1 focus:outline-none">
+        <span class="ppt-rail-bar block h-3.5 w-0.5 rounded-full bg-white/20 hover:bg-white/50 transition-all duration-300"></span>
+      </button>
+      <button type="button" onclick="goToSlide(5)" aria-label="Section 6" class="ppt-rail-btn p-1 focus:outline-none">
+        <span class="ppt-rail-bar block h-3.5 w-0.5 rounded-full bg-white/20 hover:bg-white/50 transition-all duration-300"></span>
+      </button>
+      <button type="button" onclick="goToSlide(6)" aria-label="Section 7" class="ppt-rail-btn p-1 focus:outline-none">
+        <span class="ppt-rail-bar block h-3.5 w-0.5 rounded-full bg-white/20 hover:bg-white/50 transition-all duration-300"></span>
+      </button>
+    </aside>
+
+    <!-- Subtle Bottom-Left Prev / Next Chevron Buttons (No Slide Numbers or Instructional Text) -->
+    <div class="fixed bottom-6 left-6 sm:left-12 z-30">
+      <div class="glass-nav inline-flex items-center gap-1 rounded-full p-1">
+        <button
+          id="btn-slide-prev"
+          type="button"
+          onclick="stepSlide(-1)"
+          aria-label="Previous"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-[#8B909E] hover:bg-white/[0.08] hover:text-[#F4F5F8] transition-colors"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+        </button>
+        <button
+          id="btn-slide-next"
+          type="button"
+          onclick="stepSlide(1)"
+          aria-label="Next"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-[#8B909E] hover:bg-white/[0.08] hover:text-[#F4F5F8] transition-colors"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 1 (Index 0 — Hero): Beyond Market Noise.                      -->
+    <!-- =================================================================== -->
+    <section id="ppt-slide-0" class="ppt-slide is-active flex items-center px-6 sm:px-12 pt-20 pb-20">
+      <div class="mx-auto w-full max-w-[1640px]">
+        <div class="max-w-2xl">
+          <h1 style="--stagger: 0" class="stagger-el font-display text-5xl sm:text-7xl font-bold leading-[1.03] text-[#F4F5F8]">
+            Beyond Market Noise.
+          </h1>
+
+          <p style="--stagger: 1" class="stagger-el mt-6 text-base sm:text-lg leading-relaxed text-[#8B909E]">
+            Raw market microstructure chaos passes through LUMINE’s frosted-glass optical filter—isolating clean directional liquidity from false volatility spikes.
+          </p>
+
+          <!-- Interactive 3D Optical Filter Toggle -->
+          <div style="--stagger: 2" class="stagger-el mt-8 inline-flex items-center gap-1.5 rounded-2xl border border-white/[0.1] bg-[#0D0F15]/85 p-1.5 backdrop-blur-xl font-mono text-xs">
+            <button
+              type="button"
+              id="btn-filter-filtered"
+              onclick="setSlide01FilterMode('filtered')"
+              class="rounded-xl bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A] transition-all"
+            >
+              Optical Filter: ON
+            </button>
+            <button
+              type="button"
+              id="btn-filter-raw"
+              onclick="setSlide01FilterMode('raw')"
+              class="rounded-xl px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+            >
+              Raw Market Chaos
+            </button>
+          </div>
+
+          <!-- Primary Hero CTAs -->
+          <div style="--stagger: 3" class="stagger-el mt-8 flex flex-wrap items-center gap-3.5">
+            <button
+              type="button"
+              onclick="openLoginPortal('signin')"
+              class="inline-flex items-center gap-2 rounded-full bg-[#F4F5F8] px-7 py-3.5 text-sm font-semibold text-[#06070A] shadow-[0_14px_34px_rgba(244,245,248,0.2)] hover:bg-white transition-all"
+            >
+              <span>Investor Login</span>
+              <span>→</span>
+            </button>
+
+            <button
+              type="button"
+              onclick="openLoginPortal('request')"
+              class="inline-flex items-center gap-2 rounded-full border border-white/[0.14] bg-[#0D0F15]/80 px-7 py-3.5 text-sm font-medium text-[#F4F5F8] backdrop-blur-xl hover:border-white/30 transition-all"
+            >
+              <span>Request Investor Access</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 2 (Index 1 — Artificial Intelligence): Autonomous Neural Core -->
+    <!-- =================================================================== -->
+    <section id="ppt-slide-1" class="ppt-slide flex items-center px-6 sm:px-12 pt-20 pb-20">
+      <div class="mx-auto w-full max-w-[1640px]">
+        <div class="max-w-xl space-y-6">
+          <h2 style="--stagger: 0" class="stagger-el font-display text-4xl sm:text-6xl font-bold leading-[1.05] text-[#F4F5F8]">
+            Autonomous Neural Intelligence.
+          </h2>
+
+          <p style="--stagger: 1" class="stagger-el text-sm sm:text-base leading-relaxed text-[#8B909E]">
+            Multi-agent deep learning models continuously synthesize orderbook entropy, macro regime shifts, and tail-risk anomalies in sub-millisecond inference cycles.
+          </p>
+
+          <!-- Interactive AI Agent Selector Buttons -->
+          <div style="--stagger: 2" class="stagger-el flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-agent="0"
+              onclick="selectAiAgent(0)"
+              class="ai-agent-btn rounded-xl bg-[#F4F5F8] px-4 py-2.5 font-mono text-xs font-semibold text-[#06070A] transition-all"
+            >
+              Alpha Synthesis Agent
+            </button>
+            <button
+              type="button"
+              data-agent="1"
+              onclick="selectAiAgent(1)"
+              class="ai-agent-btn rounded-xl border border-white/[0.1] bg-[#0D0F15]/80 px-4 py-2.5 font-mono text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+            >
+              Regime Classifier
+            </button>
+            <button
+              type="button"
+              data-agent="2"
+              onclick="selectAiAgent(2)"
+              class="ai-agent-btn rounded-xl border border-white/[0.1] bg-[#0D0F15]/80 px-4 py-2.5 font-mono text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+            >
+              Sentinel Risk AI
+            </button>
+          </div>
+
+          <!-- Live Neural Inference Metrics Card -->
+          <div style="--stagger: 3" class="stagger-el glass-card rounded-3xl p-6 font-mono text-xs tabular-nums">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
+              <span id="ai-agent-title" class="text-sm font-semibold text-[#F4F5F8]">ALPHA SYNTHESIS AGENT · v4.2</span>
+              <span id="ai-agent-status" class="inline-flex items-center gap-1.5 rounded-full border border-[#10B981]/35 bg-[#10B981]/10 px-3 py-0.5 text-[#10B981]">
+                <span class="h-1.5 w-1.5 rounded-full bg-[#10B981] pulse-emerald"></span>
+                <span>ACTIVE</span>
+              </span>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-4">
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">PARAMETERS</div>
+                <div id="ai-metric-params" class="mt-1 text-base sm:text-lg font-semibold text-[#F4F5F8]">128M</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">INFERENCE</div>
+                <div id="ai-metric-latency" class="mt-1 text-base sm:text-lg font-semibold text-[#10B981]">0.18ms</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">CONFIDENCE</div>
+                <div id="ai-metric-conf" class="mt-1 text-base sm:text-lg font-semibold text-[#F4F5F8]">99.4%</div>
+              </div>
+            </div>
+
+            <p id="ai-agent-desc" class="mt-4 border-t border-white/[0.07] pt-3.5 font-sans text-xs leading-relaxed text-[#8B909E]">
+              Cross-venue tensor attention isolates institutional orderflow imbalances across XAUUSD and BTCUSD before spread expansion.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 3 (Index 2 — Live Market Liquidity): Volumetric L2 Canyon     -->
+    <!-- =================================================================== -->
+    <section id="ppt-slide-2" class="ppt-slide flex items-center px-6 sm:px-12 pt-20 pb-20">
+      <div class="mx-auto w-full max-w-[1640px]">
+        <div class="max-w-xl space-y-6">
+          <h2 style="--stagger: 0" class="stagger-el font-display text-4xl sm:text-6xl font-bold leading-[1.05] text-[#F4F5F8]">
+            Institutional Liquidity Depth.
+          </h2>
+
+          <p style="--stagger: 1" class="stagger-el text-sm sm:text-base leading-relaxed text-[#8B909E]">
+            Aggregated tier-one ECN liquidity rendered in real time—measuring resting bid/ask depth walls and spread compression across global matching engines.
+          </p>
+
+          <!-- Interactive Venue Selector Tabs (XAUUSD / BTCUSD / EURUSD) -->
+          <div style="--stagger: 2" class="stagger-el inline-flex rounded-2xl border border-white/[0.1] bg-[#0D0F15]/85 p-1.5 font-mono text-xs backdrop-blur-xl">
+            <button
+              type="button"
+              data-s2-sym="XAUUSD"
+              onclick="selectLiquidityVenue('XAUUSD')"
+              class="s2-venue-btn rounded-xl bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A] transition-all"
+            >
+              XAUUSD
+            </button>
+            <button
+              type="button"
+              data-s2-sym="BTCUSD"
+              onclick="selectLiquidityVenue('BTCUSD')"
+              class="s2-venue-btn rounded-xl px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+            >
+              BTCUSD
+            </button>
+            <button
+              type="button"
+              data-s2-sym="EURUSD"
+              onclick="selectLiquidityVenue('EURUSD')"
+              class="s2-venue-btn rounded-xl px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+            >
+              EURUSD
+            </button>
+          </div>
+
+          <!-- Dynamic L2 Telemetry Readout Card -->
+          <div style="--stagger: 3" class="stagger-el glass-card rounded-3xl p-6 font-mono text-xs tabular-nums">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
+              <span id="s2-pair-title" class="text-sm font-semibold text-[#F4F5F8]">XAUUSD · SPOT METALS L2</span>
+              <span id="s2-spread-pill" class="rounded-full border border-[#10B981]/35 bg-[#10B981]/10 px-3 py-0.5 text-[#10B981]">
+                SPREAD 0.36
+              </span>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-4">
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">BEST BID</div>
+                <div id="s2-bid-val" class="mt-1 text-base sm:text-lg font-semibold text-[#10B981]">2,642.67</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">BEST ASK</div>
+                <div id="s2-ask-val" class="mt-1 text-base sm:text-lg font-semibold text-[#EF4444]">2,643.03</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">BOOK DEPTH</div>
+                <div id="s2-depth-val" class="mt-1 text-base sm:text-lg font-semibold text-[#F4F5F8]">$42.8M</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 4 (Index 3 — Execution Pipeline): Three-Gate Optical Pipeline -->
+    <!-- =================================================================== -->
+    <section id="ppt-slide-3" class="ppt-slide flex items-center px-6 sm:px-12 pt-20 pb-20">
+      <div class="mx-auto w-full max-w-[1640px]">
+        <div class="max-w-xl">
+          <h2 style="--stagger: 0" class="stagger-el font-display text-4xl sm:text-6xl font-bold leading-[1.05] text-[#F4F5F8]">
+            Three-Gate Optical Pipeline.
+          </h2>
+          <p style="--stagger: 1" class="stagger-el mt-4 text-sm sm:text-base text-[#8B909E]">
+            Every tick traverses deterministic validation, hard risk verification, and direct FIX routing before capital is committed.
+          </p>
+
+          <!-- 3 Interactive Gate Cards -->
+          <div style="--stagger: 2" class="stagger-el mt-6 space-y-3">
+            <button
+              type="button"
+              onclick="focusPipelineGate(0)"
+              class="s3-gate-btn glass-card w-full text-left rounded-2xl p-5 border-white/25 bg-white/[0.05]"
+              data-gate="0"
+            >
+              <div class="flex items-center justify-between font-mono text-xs">
+                <span class="font-semibold text-[#F4F5F8]">Signal Ingestion</span>
+                <span class="text-[#10B981]">142K TICKS/S</span>
+              </div>
+              <p class="mt-1.5 text-xs text-[#8B909E]">
+                Validates M1/M5 candle freshness (&lt;10m threshold) and filters 1-hour liquidity gaps prior to inference.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onclick="focusPipelineGate(1)"
+              class="s3-gate-btn glass-card w-full text-left rounded-2xl p-5 opacity-75 hover:opacity-100"
+              data-gate="1"
+            >
+              <div class="flex items-center justify-between font-mono text-xs">
+                <span class="font-semibold text-[#F4F5F8]">Pre-Trade Risk Gate</span>
+                <span class="text-[#EF4444]">TERARM INTERLOCK</span>
+              </div>
+              <p class="mt-1.5 text-xs text-[#8B909E]">
+                Enforces hard daily drawdown limits (-$100.00) and requires 4-step operator Ack Checklist to unlock.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onclick="focusPipelineGate(2)"
+              class="s3-gate-btn glass-card w-full text-left rounded-2xl p-5 opacity-75 hover:opacity-100"
+              data-gate="2"
+            >
+              <div class="flex items-center justify-between font-mono text-xs">
+                <span class="font-semibold text-[#F4F5F8]">Sub-Millisecond Execution</span>
+                <span class="text-[#10B981]">0.42ms ROUTING</span>
+              </div>
+              <p class="mt-1.5 text-xs text-[#8B909E]">
+                Direct institutional FIX/API routing with continuous T0→T2 and T0→T4 p95 latency telemetry.
+              </p>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 5 (Index 4 — Alpha Strategy Engines): Uncorrelated Regimes    -->
+    <!-- =================================================================== -->
+    <section id="ppt-slide-4" class="ppt-slide flex items-center px-6 sm:px-12 pt-20 pb-20">
+      <div class="mx-auto w-full max-w-[1640px]">
+        <div class="max-w-xl space-y-5">
+          <h2 style="--stagger: 0" class="stagger-el font-display text-4xl sm:text-6xl font-bold leading-[1.05] text-[#F4F5F8]">
+            Uncorrelated Volatility Regimes.
+          </h2>
+
+          <p style="--stagger: 1" class="stagger-el text-sm sm:text-base text-[#8B909E]">
+            Three independent execution engines dynamically adapt across session breakouts, mean-reversion bands, and 24/7 digital asset ranges.
+          </p>
+
+          <!-- 3 Strategy Selector Pills -->
+          <div style="--stagger: 2" class="stagger-el space-y-2.5">
+            <button
+              type="button"
+              onclick="selectStrategyEngine(0)"
+              class="s4-strat-btn glass-card w-full text-left rounded-2xl p-4 border-white/25 bg-white/[0.05]"
+              data-s4="0"
+            >
+              <div class="flex items-center justify-between font-mono text-xs">
+                <span class="font-semibold text-[#F4F5F8]">London Breakout + Spread Filter v1.1.0</span>
+                <span class="text-[#10B981]">+$412.50</span>
+              </div>
+              <div class="mt-1 font-mono text-[11px] text-[#8B909E]">XAUUSD · M5 · Volatility Compression Breakout</div>
+            </button>
+
+            <button
+              type="button"
+              onclick="selectStrategyEngine(1)"
+              class="s4-strat-btn glass-card w-full text-left rounded-2xl p-4 opacity-75 hover:opacity-100"
+              data-s4="1"
+            >
+              <div class="flex items-center justify-between font-mono text-xs">
+                <span class="font-semibold text-[#F4F5F8]">Mean Reversion (Bollinger re-entry) v1.0.0</span>
+                <span class="text-[#EF4444]">-$127.89</span>
+              </div>
+              <div class="mt-1 font-mono text-[11px] text-[#8B909E]">XAUUSD · M1 · Standard Deviation Band Re-Entry</div>
+            </button>
+
+            <button
+              type="button"
+              onclick="selectStrategyEngine(2)"
+              class="s4-strat-btn glass-card w-full text-left rounded-2xl p-4 opacity-75 hover:opacity-100"
+              data-s4="2"
+            >
+              <div class="flex items-center justify-between font-mono text-xs">
+                <span class="font-semibold text-[#F4F5F8]">BTC Range Breakout 24/7 v1.0.0</span>
+                <span class="text-[#10B981]">+$289.10</span>
+              </div>
+              <div class="mt-1 font-mono text-[11px] text-[#8B909E]">BTCUSD · M5 · Continuous Weekend Channel Expansion</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 6 (Index 5 — Capital Containment): Automated Risk Gyroscope   -->
+    <!-- =================================================================== -->
+    <section id="ppt-slide-5" class="ppt-slide flex items-center px-6 sm:px-12 pt-20 pb-20">
+      <div class="mx-auto w-full max-w-[1640px]">
+        <div class="max-w-xl space-y-6">
+          <h2 style="--stagger: 0" class="stagger-el font-display text-4xl sm:text-6xl font-bold leading-[1.05] text-[#F4F5F8]">
+            Automated Risk Gyroscope.
+          </h2>
+
+          <p style="--stagger: 1" class="stagger-el text-sm sm:text-base leading-relaxed text-[#8B909E]">
+            Three concentric containment rings monitor portfolio equity in real time—engaging <span class="font-mono text-[#EF4444]">TERARM</span> global order halt automatically at <span class="font-mono text-[#EF4444]">-3.0%</span> drawdown.
+          </p>
+
+          <!-- Interactive Drawdown Stress Slider Card -->
+          <div style="--stagger: 2" class="stagger-el glass-card rounded-3xl p-6 space-y-5">
+            <div class="flex items-center justify-between font-mono text-xs">
+              <span class="text-[#8B909E]">DRAWDOWN STRESS SIMULATOR</span>
+              <span id="s5-status-pill" class="rounded-full border border-[#EF4444]/40 bg-[#EF4444]/15 px-3 py-1 font-semibold text-[#EF4444]">
+                TERARM · HALT GLOBAL
+              </span>
+            </div>
+
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-2.5 tabular-nums">
+                <span class="text-[#8B909E]">Simulated Session Drawdown</span>
+                <span id="s5-dd-readout" class="text-base font-semibold text-[#EF4444]">-3.07% (LOCKED)</span>
+              </div>
+              <input
+                id="s5-stress-slider"
+                type="range"
+                min="0"
+                max="3.5"
+                step="0.05"
+                value="3.07"
+                oninput="updateRiskStress(this.value)"
+                class="lumine-slider w-full"
+              />
+              <div class="mt-2 flex justify-between font-mono text-[10px] text-[#8B909E] tabular-nums">
+                <span>0.0% NOMINAL</span>
+                <span>-1.5% WATCH</span>
+                <span class="text-[#EF4444]">-3.0% HARD LOCK</span>
+                <span>-3.5%</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 border-t border-white/[0.08] pt-4 font-mono text-xs tabular-nums">
+              <div>
+                <div class="text-[10px] text-[#8B909E]">RING 01</div>
+                <div id="s5-r1" class="mt-1 font-semibold text-[#EF4444]">LOCKED</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-[#8B909E]">RING 02</div>
+                <div id="s5-r2" class="mt-1 font-semibold text-[#EF4444]">LOCKED</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-[#8B909E]">ORDER GATE</div>
+                <div id="s5-gate" class="mt-1 font-semibold text-[#EF4444]">BLOCKED</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 7 (Index 6 — Human Active Investors & Global Horizon CTA)     -->
+    <!-- =================================================================== -->
+    <section id="ppt-slide-6" class="ppt-slide flex items-center px-6 sm:px-12 pt-20 pb-20">
+      <div class="mx-auto w-full max-w-[1640px]">
+        <div class="max-w-2xl space-y-5">
+          <h2 style="--stagger: 0" class="stagger-el font-display text-4xl sm:text-6xl font-bold leading-[1.05] text-[#F4F5F8]">
+            Built for Active Investors &amp; Allocators.
+          </h2>
+
+          <p style="--stagger: 1" class="stagger-el text-sm sm:text-base leading-relaxed text-[#8B909E]">
+            Trusted by institutional family offices, quantitative allocators, and accredited partners operating across Tokyo, London, and New York liquidity sessions.
+          </p>
+
+          <!-- Active Human Investor Social Proof & Global Hub Telemetry -->
+          <div style="--stagger: 2" class="stagger-el glass-card rounded-3xl p-5 sm:p-6 space-y-4">
+            <!-- Key Verified Investor Metrics -->
+            <div class="grid grid-cols-3 gap-4 border-b border-white/[0.08] pb-4 font-mono tabular-nums">
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">ACTIVE INVESTORS</div>
+                <div class="mt-1 text-lg sm:text-2xl font-semibold text-[#F4F5F8]">1,240+</div>
+                <div class="mt-0.5 text-[10px] text-[#10B981]">VERIFIED ALLOCATORS</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">COMMITTED CAPITAL</div>
+                <div class="mt-1 text-lg sm:text-2xl font-semibold text-[#F4F5F8]">$148.4M</div>
+                <div class="mt-0.5 text-[10px] text-[#8B909E]">AUDITED AUM</div>
+              </div>
+              <div>
+                <div class="text-[10px] uppercase text-[#8B909E]">RETENTION RATE</div>
+                <div class="mt-1 text-lg sm:text-2xl font-semibold text-[#10B981]">99.2%</div>
+                <div class="mt-0.5 text-[10px] text-[#8B909E]">ANNUAL LP RENEWAL</div>
+              </div>
+            </div>
+
+            <!-- Verified Human Allocator Badges -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center -space-x-2.5">
+                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-[#06070A] bg-gradient-to-br from-zinc-200 to-zinc-500 font-display text-xs font-bold text-[#06070A]" title="Marcus Vance · Family Office CIO">
+                  MV
+                </div>
+                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-[#06070A] bg-gradient-to-br from-emerald-300 to-emerald-600 font-display text-xs font-bold text-[#06070A]" title="Elena Rostova · Quant Allocator">
+                  ER
+                </div>
+                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-[#06070A] bg-gradient-to-br from-zinc-300 to-zinc-600 font-display text-xs font-bold text-[#06070A]" title="Kenji Takahashi · Institutional LP">
+                  KT
+                </div>
+                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-[#06070A] bg-[#161922] font-mono text-[10px] font-semibold text-[#F4F5F8]">
+                  +1.2K
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 font-mono text-[11px] text-[#8B909E]">
+                <span class="h-2 w-2 rounded-full bg-[#10B981] pulse-emerald"></span>
+                <span>48 ALLOCATORS ONLINE NOW</span>
+              </div>
+            </div>
+
+            <!-- Interactive Global Hub Session Clocks (Tokyo / London / NY) -->
+            <div class="grid grid-cols-3 gap-2.5 pt-1 font-mono text-xs tabular-nums">
+              <button
+                type="button"
+                onmouseenter="focusGlobeHub('ASIA')"
+                onclick="focusGlobeHub('ASIA')"
+                data-hub="ASIA"
+                class="s6-hub-btn rounded-xl border border-[#10B981]/45 bg-white/[0.05] p-3 text-left transition-all"
+              >
+                <div class="flex items-center gap-1.5 text-[#10B981] font-semibold text-[11px]">
+                  <span class="h-1.5 w-1.5 rounded-full bg-[#10B981]"></span>
+                  <span>ASIA · TY3</span>
+                </div>
+                <div id="clock-asia" class="mt-1 text-xs sm:text-sm font-semibold text-[#F4F5F8]">09:47:00 JST</div>
+              </button>
+
+              <button
+                type="button"
+                onmouseenter="focusGlobeHub('LONDON')"
+                onclick="focusGlobeHub('LONDON')"
+                data-hub="LONDON"
+                class="s6-hub-btn rounded-xl border border-white/[0.08] bg-[#06070A]/60 p-3 text-left opacity-80 hover:opacity-100 transition-all"
+              >
+                <div class="flex items-center gap-1.5 text-[#8B909E] font-semibold text-[11px]">
+                  <span class="h-1.5 w-1.5 rounded-full bg-[#8B909E]"></span>
+                  <span>LONDON · LD4</span>
+                </div>
+                <div id="clock-london" class="mt-1 text-xs sm:text-sm font-semibold text-[#F4F5F8]">02:47:00 GMT</div>
+              </button>
+
+              <button
+                type="button"
+                onmouseenter="focusGlobeHub('NY')"
+                onclick="focusGlobeHub('NY')"
+                data-hub="NY"
+                class="s6-hub-btn rounded-xl border border-white/[0.08] bg-[#06070A]/60 p-3 text-left opacity-80 hover:opacity-100 transition-all"
+              >
+                <div class="flex items-center gap-1.5 text-[#8B909E] font-semibold text-[11px]">
+                  <span class="h-1.5 w-1.5 rounded-full bg-[#8B909E]"></span>
+                  <span>NY · NY4</span>
+                </div>
+                <div id="clock-ny" class="mt-1 text-xs sm:text-sm font-semibold text-[#F4F5F8]">21:47:00 EST</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Primary Investor Onboarding & Portal CTAs -->
+          <div style="--stagger: 3" class="stagger-el flex flex-wrap items-center gap-4 pt-1">
+            <button
+              type="button"
+              onclick="openLoginPortal('signin')"
+              class="inline-flex items-center gap-2 rounded-full bg-[#F4F5F8] px-8 py-4 text-sm font-semibold text-[#06070A] shadow-[0_16px_38px_rgba(244,245,248,0.22)] hover:bg-white transition-all"
+            >
+              <span>Enter Investor Portal</span>
+              <span>→</span>
+            </button>
+
+            <button
+              type="button"
+              onclick="openLoginPortal('request')"
+              class="inline-flex items-center gap-2 rounded-full border border-white/[0.14] bg-[#0D0F15]/85 px-7 py-4 text-sm font-medium text-[#F4F5F8] backdrop-blur-xl hover:border-white/30 transition-all"
+            >
+              <span>Request Capital Allocation</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 2: DEDICATED INSTITUTIONAL LOGIN & ACCESS REQUEST PORTAL         -->
+  <!-- ===================================================================== -->
+  <section id="view-login" class="hidden fixed inset-0 z-30 flex items-center justify-center px-4 sm:px-8 overflow-y-auto">
+
+    <!-- Top-Left Back Navigation -->
+    <div class="fixed top-6 left-6 sm:left-10 z-40">
+      <button
+        type="button"
+        onclick="returnToLanding()"
+        class="glass-nav inline-flex items-center gap-2.5 rounded-full px-5 py-2.5 text-xs font-medium text-[#F4F5F8] hover:border-white/25 transition-all"
+      >
+        <span>←</span>
+        <span>Back to LUMINE FUND</span>
+      </button>
+    </div>
+
+    <!-- Centered Frosted-Glass Institutional Auth Card -->
+    <div class="glass-card relative w-full max-w-md rounded-3xl p-7 sm:p-9 my-16">
+      <!-- Brand Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.04]">
+            <svg class="h-4 w-4 text-[#F4F5F8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2" />
+              <line x1="12" y1="22" x2="12" y2="12" />
+              <polyline points="21 7 12 12 3 7" />
+            </svg>
+          </span>
+          <div>
+            <div class="font-display text-sm font-bold tracking-[0.18em] text-[#F4F5F8]">LUMINE FUND</div>
+            <div class="font-mono text-[10px] tracking-widest text-[#8B909E]">INSTITUTIONAL GATEWAY</div>
+          </div>
+        </div>
+
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-[#10B981]/35 bg-[#10B981]/10 px-2.5 py-1 font-mono text-[10px] text-[#10B981]">
+          <span class="h-1.5 w-1.5 rounded-full bg-[#10B981]"></span>
+          <span>TLS 1.3</span>
+        </span>
+      </div>
+
+      <!-- Segmented Mode Tabs ('Investor Sign In' | 'Request Access') -->
+      <div class="mt-6 grid grid-cols-2 gap-1 rounded-2xl border border-white/[0.09] bg-[#06070A]/90 p-1 font-mono text-xs">
+        <button
+          id="auth-tab-signin"
+          type="button"
+          onclick="switchAuthTab('signin')"
+          class="rounded-xl bg-[#F4F5F8] py-2.5 font-semibold text-[#06070A] transition-all"
+        >
+          Investor Sign In
+        </button>
+        <button
+          id="auth-tab-request"
+          type="button"
+          onclick="switchAuthTab('request')"
+          class="rounded-xl py-2.5 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+        >
+          Request Access
+        </button>
+      </div>
+
+      <!-- PANEL A: INVESTOR SIGN IN -->
+      <div id="auth-panel-signin" class="mt-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-display text-xl font-bold text-[#F4F5F8]">Allocator Authentication</h2>
+          <button
+            type="button"
+            onclick="fillDemoInvestorCredentials()"
+            class="rounded-lg border border-white/[0.12] bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] font-medium text-[#F4F5F8] hover:bg-white/[0.1] transition-colors"
+          >
+            Fill Demo Investor Credentials
+          </button>
+        </div>
+
+        <form id="login-form" onsubmit="handleInvestorSignIn(event)" class="space-y-4">
+          <div>
+            <label for="login-email" class="block font-mono text-[11px] uppercase tracking-wider text-[#8B909E]">
+              Institutional Email
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              required
+              placeholder="allocator@institution.io"
+              class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A]/90 px-4 py-3 font-mono text-xs text-[#F4F5F8] placeholder-[#8B909E]/50 focus:border-white/35 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label for="login-passcode" class="block font-mono text-[11px] uppercase tracking-wider text-[#8B909E]">
+              Passcode / API Token
+            </label>
+            <input
+              id="login-passcode"
+              type="password"
+              required
+              placeholder="••••••••••••••••"
+              class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A]/90 px-4 py-3 font-mono text-xs text-[#F4F5F8] placeholder-[#8B909E]/50 focus:border-white/35 focus:outline-none"
+            />
+          </div>
+
+          <!-- Security Key / 2FA Toggle -->
+          <div class="rounded-2xl border border-white/[0.08] bg-[#06070A]/75 p-3.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <svg class="h-4 w-4 text-[#10B981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span class="font-mono text-xs text-[#F4F5F8]">Hardware Security Key / 2FA</span>
+              </div>
+              <button
+                id="toggle-2fa-btn"
+                type="button"
+                role="switch"
+                aria-checked="true"
+                onclick="toggleTwoFactor()"
+                class="relative inline-flex h-5 w-9 items-center rounded-full bg-[#10B981] transition-colors focus:outline-none"
+              >
+                <span
+                  id="toggle-2fa-knob"
+                  class="inline-block h-3.5 w-3.5 translate-x-4.5 transform rounded-full bg-[#06070A] transition-transform"
+                  style="transform: translateX(18px);"
+                ></span>
+              </button>
+            </div>
+
+            <div id="twofa-code-row" class="mt-3 pt-3 border-t border-white/[0.07] flex items-center justify-between font-mono text-[11px]">
+              <span class="text-[#8B909E]">YubiKey / TOTP Challenge</span>
+              <span class="rounded bg-white/[0.06] px-2 py-0.5 text-[#10B981] tabular-nums">849 · 210 VERIFIED</span>
+            </div>
+          </div>
+
+          <!-- Handshake Progress Bar (Visible during Authentication) -->
+          <div id="auth-handshake-box" class="hidden rounded-2xl border border-[#10B981]/35 bg-[#10B981]/10 p-4 font-mono text-xs">
+            <div class="flex items-center justify-between text-[#10B981]">
+              <span id="auth-handshake-label">01 · Verifying Institutional Key...</span>
+              <span id="auth-handshake-pct" class="tabular-nums">35%</span>
+            </div>
+            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-black/50">
+              <div id="auth-handshake-bar" class="h-full w-1/3 bg-[#10B981] transition-all duration-300"></div>
+            </div>
+          </div>
+
+          <button
+            id="btn-submit-login"
+            type="submit"
+            class="w-full rounded-xl bg-[#F4F5F8] py-3.5 text-xs font-semibold text-[#06070A] shadow-[0_12px_30px_rgba(244,245,248,0.2)] hover:bg-white transition-all"
+          >
+            Authenticate &amp; Enter Workstation →
+          </button>
+        </form>
+      </div>
+
+      <!-- PANEL B: REQUEST INVESTOR ACCESS -->
+      <div id="auth-panel-request" class="hidden mt-6">
+        <h2 class="font-display text-xl font-bold text-[#F4F5F8]">Request Institutional Onboarding</h2>
+        <p class="mt-1 text-xs leading-relaxed text-[#8B909E]">
+          Submit your entity profile for KYC/AML verification and dedicated risk-ops terminal provisioning.
+        </p>
+
+        <form id="request-access-form" onsubmit="handleRequestAccess(event)" class="mt-4 space-y-3.5">
+          <div>
+            <label class="block font-mono text-[11px] uppercase tracking-wider text-[#8B909E]">Principal / Allocator Name</label>
+            <input
+              id="req-name"
+              type="text"
+              required
+              placeholder="e.g. Adrian Pratama"
+              class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A]/90 px-4 py-2.5 text-xs text-[#F4F5F8] placeholder-[#8B909E]/50 focus:border-white/35 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block font-mono text-[11px] uppercase tracking-wider text-[#8B909E]">Work Email</label>
+            <input
+              id="req-email"
+              type="email"
+              required
+              placeholder="adrian@capitalpartners.io"
+              class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A]/90 px-4 py-2.5 font-mono text-xs text-[#F4F5F8] placeholder-[#8B909E]/50 focus:border-white/35 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block font-mono text-[11px] uppercase tracking-wider text-[#8B909E]">Target Allocation Tier</label>
+            <select
+              id="req-tier"
+              class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A] px-4 py-2.5 font-mono text-xs text-[#F4F5F8] focus:border-white/35 focus:outline-none"
+            >
+              <option value="$250K – $1M">$250,000 – $1,000,000 (Accredited)</option>
+              <option value="$1M – $5M" selected>$1,000,000 – $5,000,000 (Family Office)</option>
+              <option value="$5M+ Institutional">$5,000,000+ (Institutional SMA)</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full rounded-xl bg-[#F4F5F8] py-3.5 text-xs font-semibold text-[#06070A] hover:bg-white transition-all"
+          >
+            Submit Allocation Inquiry →
+          </button>
+        </form>
+
+        <!-- Confirmation State after Submitting Request -->
+        <div id="request-access-success" class="hidden mt-4 rounded-2xl border border-[#10B981]/35 bg-[#10B981]/10 p-4 space-y-3">
+          <div class="font-mono text-xs font-semibold text-[#10B981]">✓ ONBOARDING DOSSIER REGISTERED</div>
+          <p class="text-xs leading-relaxed text-[#F4F5F8]">
+            Our institutional desk has logged your inquiry. You may inspect the live risk-ops environment immediately using our demo sandbox credentials.
+          </p>
+          <button
+            type="button"
+            onclick="switchAuthTab('signin'); fillDemoInvestorCredentials();"
+            class="w-full rounded-xl bg-[#10B981] py-2.5 text-xs font-semibold text-[#06070A] hover:opacity-95 transition-all"
+          >
+            Load Demo Credentials &amp; Sign In →
+          </button>
+        </div>
+      </div>
+
+      <p class="mt-6 border-t border-white/[0.08] pt-4 text-center font-mono text-[10px] text-[#8B909E]">
+        ENCRYPTED SESSION · ACCREDITED &amp; INSTITUTIONAL COUNTERPARTIES ONLY
+      </p>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 3: AUTHENTICATED WORKSTATION (Only Accessible After Login)       -->
+  <!-- ===================================================================== -->
+  <div id="view-workstation" class="hidden relative z-10">
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE TAB 1: LIVE TERMINAL (max-w-[1920px])                     -->
+    <!-- =================================================================== -->
+    <section id="ws-tab-terminal" class="w-full max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-10 pt-24 pb-12 space-y-7">
+
+      <!-- 1. SLIM TELEMETRY BAR + SLIDE-OVER 9-ALERT DRAWER TRIGGER -->
+      <div class="glass-card rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Symbol Switcher -->
+          <div class="inline-flex rounded-xl border border-white/[0.1] bg-[#06070A]/90 p-1 font-mono text-xs">
+            <button
+              type="button"
+              data-sym="XAUUSD"
+              onclick="selectSymbol('XAUUSD')"
+              class="sym-tab-btn rounded-lg bg-[#F4F5F8] px-4 py-1.5 font-semibold text-[#06070A] transition-all"
+            >
+              XAUUSD
+            </button>
+            <button
+              type="button"
+              data-sym="BTCUSD"
+              onclick="selectSymbol('BTCUSD')"
+              class="sym-tab-btn rounded-lg px-4 py-1.5 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+            >
+              BTCUSD
+            </button>
+          </div>
+
+          <!-- Clean Bid / Ask / Spread Strip -->
+          <div class="flex items-center gap-4 rounded-xl border border-white/[0.08] bg-[#06070A]/80 px-4 py-2 font-mono text-xs tabular-nums">
+            <span class="text-[#8B909E]">BID <strong id="top-bid" class="text-[#EF4444]">2642.67</strong></span>
+            <span class="text-white/15">|</span>
+            <span class="text-[#8B909E]">ASK <strong id="top-ask" class="text-[#10B981]">2643.03</strong></span>
+            <span class="text-white/15">|</span>
+            <span class="text-[#8B909E]">SPREAD <strong id="top-spread" class="text-[#F4F5F8]">0.36</strong></span>
+          </div>
+        </div>
+
+        <!-- Right: Regime Status & Slide-Over Incident Drawer Button -->
+        <div class="flex flex-wrap items-center gap-3 font-mono text-xs">
+          <span
+            id="term-regime-pill"
+            class="inline-flex items-center gap-2 rounded-xl border border-[#F59E0B]/35 bg-[#F59E0B]/10 px-3.5 py-2 text-[11px] font-medium text-[#F59E0B]"
+          >
+            <span id="term-regime-dot" class="h-1.5 w-1.5 rounded-full bg-[#F59E0B]"></span>
+            <span id="term-regime-text">UNKNOWN · STALE 10m</span>
+          </span>
+
+          <button
+            type="button"
+            onclick="openIncidentDrawer()"
+            class="inline-flex items-center gap-2 rounded-xl border border-[#F59E0B]/40 bg-[#F59E0B]/15 px-4 py-2 text-[11px] font-semibold text-[#F59E0B] hover:bg-[#F59E0B]/25 transition-all"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-[#F59E0B]"></span>
+            <span>9 Alert Aktif · asof 07.54.42 WIB</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 4 SPACIOUS KPI CARDS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <!-- KPI 1: EQUITY -->
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between font-mono text-xs uppercase tracking-wider text-[#8B909E]">
+            <span>EQUITY</span>
+            <span class="text-[11px] text-[#F4F5F8]/60">DEMO</span>
+          </div>
+          <div id="kpi-equity" class="mt-3 font-mono text-3xl font-semibold text-[#F4F5F8] tabular-nums">
+            $9,734.00
+          </div>
+          <div class="mt-2 font-mono text-xs text-[#8B909E] tabular-nums">
+            Start $10,042.50 · Net Balance
+          </div>
+        </div>
+
+        <!-- KPI 2: DAILY PNL -->
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between font-mono text-xs uppercase tracking-wider text-[#8B909E]">
+            <span>DAILY PNL</span>
+            <span id="kpi-daily-badge" class="text-[11px] text-[#EF4444]">LIMIT BREACHED</span>
+          </div>
+          <div id="kpi-daily-pnl" class="mt-3 font-mono text-3xl font-semibold text-[#EF4444] tabular-nums">
+            -$127.89
+          </div>
+          <div id="kpi-daily-sub" class="mt-2 font-mono text-xs text-[#8B909E] tabular-nums">
+            Hard Daily Stop: -$100.00
+          </div>
+        </div>
+
+        <!-- KPI 3: TOTAL DRAWDOWN -->
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between font-mono text-xs uppercase tracking-wider text-[#8B909E]">
+            <span>TOTAL DRAWDOWN</span>
+            <span class="text-[11px] text-[#8B909E]">CAP 5.00%</span>
+          </div>
+          <div id="kpi-dd" class="mt-3 font-mono text-3xl font-semibold text-[#EF4444] tabular-nums">
+            3.074%
+          </div>
+          <div class="mt-2 font-mono text-xs text-[#8B909E] tabular-nums">
+            Daily Drawdown: 1.279%
+          </div>
+        </div>
+
+        <!-- KPI 4: POSISI / EKSPOSUR -->
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between font-mono text-xs uppercase tracking-wider text-[#8B909E]">
+            <span>POSISI / EKSPOSUR</span>
+            <span class="text-[11px] text-[#10B981]">QUEUE CLEAN</span>
+          </div>
+          <div id="kpi-pos-exp" class="mt-3 font-mono text-3xl font-semibold text-[#F4F5F8] tabular-nums">
+            0 / $0
+          </div>
+          <div id="kpi-pos-sub" class="mt-2 font-mono text-xs text-[#8B909E] tabular-nums">
+            Pending/Sent: 0 / 0 · Margin $0 (0.0%)
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. WIDE 70/30 SPLIT (minmax(0,1fr) + 420px Right Execution Rail) -->
+      <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-7 items-start">
+
+        <!-- LEFT ~72% ANALYTICAL STAGE -->
+        <div class="space-y-7">
+
+          <!-- Large 520px Interactive Candlestick + EMA-20 + Volume Chart -->
+          <div class="glass-card rounded-2xl p-6">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-4">
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="inline-flex rounded-xl border border-white/[0.09] bg-[#06070A] p-1 font-mono text-xs">
+                  <button type="button" data-tf="1m" onclick="selectTimeframe('1m')" class="tf-tab-btn rounded-lg bg-[#F4F5F8] px-3 py-1 font-semibold text-[#06070A]">1m</button>
+                  <button type="button" data-tf="5m" onclick="selectTimeframe('5m')" class="tf-tab-btn rounded-lg px-3 py-1 text-[#8B909E] hover:text-[#F4F5F8]">5m</button>
+                  <button type="button" data-tf="15m" onclick="selectTimeframe('15m')" class="tf-tab-btn rounded-lg px-3 py-1 text-[#8B909E] hover:text-[#F4F5F8]">15m</button>
+                  <button type="button" data-tf="1h" onclick="selectTimeframe('1h')" class="tf-tab-btn rounded-lg px-3 py-1 text-[#8B909E] hover:text-[#F4F5F8]">1h</button>
+                </div>
+
+                <div class="inline-flex rounded-xl border border-white/[0.09] bg-[#06070A] p-1 font-mono text-xs">
+                  <button type="button" data-cmode="candles" onclick="selectChartMode('candles')" class="cmode-btn rounded-lg bg-white/[0.12] px-3.5 py-1 font-semibold text-[#F4F5F8]">
+                    Candlestick
+                  </button>
+                  <button type="button" data-cmode="liquidity" onclick="selectChartMode('liquidity')" class="cmode-btn rounded-lg px-3.5 py-1 text-[#8B909E] hover:text-[#F4F5F8]">
+                    Liquidity Curve
+                  </button>
+                </div>
+
+                <span id="chart-title-tag" class="font-mono text-xs font-semibold text-[#F4F5F8]">
+                  XAUUSD · 1m · EMA-20
+                </span>
+              </div>
+
+              <!-- Live OHLCV Readout -->
+              <div class="flex flex-wrap items-center gap-4 font-mono text-xs tabular-nums">
+                <span class="text-[#8B909E]">O <strong id="ohlcv-o" class="text-[#F4F5F8]">2641.20</strong></span>
+                <span class="text-[#8B909E]">H <strong id="ohlcv-h" class="text-[#10B981]">2643.50</strong></span>
+                <span class="text-[#8B909E]">L <strong id="ohlcv-l" class="text-[#EF4444]">2640.80</strong></span>
+                <span class="text-[#8B909E]">C <strong id="ohlcv-c" class="text-[#F4F5F8]">2642.85</strong></span>
+                <span class="text-[#8B909E]">V <strong id="ohlcv-v" class="text-[#8B909E]">284</strong></span>
+              </div>
+            </div>
+
+            <div class="relative h-[520px] w-full rounded-xl border border-white/[0.07] bg-[#06070A]/90 overflow-hidden select-none">
+              <canvas id="terminal-chart-canvas" class="block h-full w-full cursor-crosshair"></canvas>
+            </div>
+          </div>
+
+          <!-- Tabbed Lower Deck ('Strategi Aktif', 'System & Feed Telemetry', 'Riwayat Order') -->
+          <div class="glass-card rounded-2xl p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-4 mb-5">
+              <div class="inline-flex rounded-xl border border-white/[0.09] bg-[#06070A] p-1 font-mono text-xs">
+                <button
+                  type="button"
+                  data-deck="strategi"
+                  onclick="selectLowerDeck('strategi')"
+                  class="deck-tab-btn rounded-lg bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A]"
+                >
+                  Strategi Aktif (3)
+                </button>
+                <button
+                  type="button"
+                  data-deck="telemetry"
+                  onclick="selectLowerDeck('telemetry')"
+                  class="deck-tab-btn rounded-lg px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8]"
+                >
+                  System &amp; Feed Telemetry
+                </button>
+                <button
+                  type="button"
+                  data-deck="riwayat"
+                  onclick="selectLowerDeck('riwayat')"
+                  class="deck-tab-btn rounded-lg px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8]"
+                >
+                  Riwayat Order (<span id="deck-order-count">0</span>)
+                </button>
+              </div>
+
+              <span class="font-mono text-xs text-[#8B909E]">NODE · JKT-EDGE-01 · METRICS LIVE</span>
+            </div>
+
+            <!-- TAB 1: Strategi Aktif -->
+            <div id="deck-panel-strategi" class="space-y-3">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/80 p-5 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                      <span class="text-[#10B981] font-semibold">PAPER · ACTIVE</span>
+                      <span class="text-[#8B909E]">XAUUSD · M5</span>
+                    </div>
+                    <div class="mt-2.5 font-display text-sm font-bold text-[#F4F5F8]">
+                      London Breakout + Spread Filter v1.1.0
+                    </div>
+                    <p class="mt-1.5 text-[#8B909E] leading-relaxed">
+                      Ekspansi sesi London dengan filter spread maksimal 0.45 pips.
+                    </p>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-white/[0.07] flex justify-between font-mono tabular-nums">
+                    <span class="text-[#8B909E]">Sharpe 1.92</span>
+                    <span class="font-semibold text-[#10B981]">+$412.50</span>
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/80 p-5 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                      <span class="text-[#10B981] font-semibold">PAPER · ACTIVE</span>
+                      <span class="text-[#8B909E]">XAUUSD · M1</span>
+                    </div>
+                    <div class="mt-2.5 font-display text-sm font-bold text-[#F4F5F8]">
+                      Mean Reversion (Bollinger re-entry) v1.0.0
+                    </div>
+                    <p class="mt-1.5 text-[#8B909E] leading-relaxed">
+                      Re-entry pita standar deviasi BB(20, 2.2) pada sesi likuiditas tenang.
+                    </p>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-white/[0.07] flex justify-between font-mono tabular-nums">
+                    <span class="text-[#8B909E]">Win 64.2%</span>
+                    <span class="font-semibold text-[#EF4444]">-$127.89</span>
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/80 p-5 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                      <span class="text-[#10B981] font-semibold">PAPER · 24/7</span>
+                      <span class="text-[#8B909E]">BTCUSD · M5</span>
+                    </div>
+                    <div class="mt-2.5 font-display text-sm font-bold text-[#F4F5F8]">
+                      BTC Range Breakout 24/7 v1.0.0
+                    </div>
+                    <p class="mt-1.5 text-[#8B909E] leading-relaxed">
+                      Deteksi breakout kanal ATR 24/7 dengan proteksi gap likuiditas.
+                    </p>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-white/[0.07] flex justify-between font-mono tabular-nums">
+                    <span class="text-[#8B909E]">PF 2.18</span>
+                    <span class="font-semibold text-[#10B981]">+$289.10</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: System & Feed Telemetry -->
+            <div id="deck-panel-telemetry" class="hidden">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs tabular-nums">
+                <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/80 p-4 space-y-2">
+                  <div class="text-[11px] font-semibold text-[#F4F5F8] border-b border-white/[0.07] pb-2">API &amp; DB</div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">DB</span><span class="text-[#10B981]">ok · 67ms</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Koneksi</span><span>19 / 100</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Ukuran DB</span><span>504 MB</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">CPU / RAM</span><span class="text-[#F59E0B]">81.6% / 50.3%</span></div>
+                </div>
+
+                <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/80 p-4 space-y-2">
+                  <div class="text-[11px] font-semibold text-[#F4F5F8] border-b border-white/[0.07] pb-2">EA &amp; FEED</div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">EA Status</span><span class="text-[#EF4444]">OFFLINE (160s)</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Candle M5</span><span class="text-[#F59E0B]">15m ago</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Tick Liq</span><span class="text-[#F59E0B]">12m ago</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Spread XAU</span><span class="text-[#10B981]">0.36 / 0.36</span></div>
+                </div>
+
+                <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/80 p-4 space-y-2">
+                  <div class="text-[11px] font-semibold text-[#F4F5F8] border-b border-white/[0.07] pb-2">ORDER 24 JAM</div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Term/FAIL</span><span class="text-[#EF4444]">1112 / 572</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Fail Rate</span><span class="text-[#EF4444]">51%</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Stuck &gt;60s</span><span class="text-[#10B981]">0</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">T0→T2 p95</span><span class="text-[#F59E0B]">219,574ms</span></div>
+                </div>
+
+                <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/80 p-4 space-y-2">
+                  <div class="text-[11px] font-semibold text-[#F4F5F8] border-b border-white/[0.07] pb-2">RISIKO &amp; OPS</div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">DD Harian</span><span class="text-[#EF4444]">1.279%</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">DD Total</span><span class="text-[#EF4444]">3.074%</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Kill-Switch</span><span class="text-[#EF4444]">GLOBAL_HALT</span></div>
+                  <div class="flex justify-between"><span class="text-[#8B909E]">Backup</span><span class="text-[#10B981]">5j ago</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: Riwayat Order & Posisi Terbuka -->
+            <div id="deck-panel-riwayat" class="hidden">
+              <div id="live-positions-table-wrap" class="overflow-x-auto">
+                <div class="rounded-xl border border-white/[0.06] bg-[#06070A]/80 p-6 text-center font-mono text-xs text-[#8B909E]">
+                  Belum ada posisi terbuka. Lepas kill-switch pada panel kanan untuk mengeksekusi order simulasi.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT ~28% EXECUTION & SAFETY INTERLOCK RAIL (420px) -->
+        <div class="space-y-7">
+
+          <!-- 1. Safety Interlock Card ('TERARM · Halt Global') -->
+          <div id="safety-interlock-card" class="glass-card rounded-2xl border-[#EF4444]/40 p-6">
+            <div class="flex items-center justify-between font-mono text-xs">
+              <span class="uppercase tracking-wider text-[#EF4444]">SAFETY INTERLOCK</span>
+              <span id="interlock-ea-tag" class="rounded-lg border border-[#EF4444]/35 bg-[#EF4444]/15 px-2.5 py-1 font-semibold text-[#EF4444]">
+                EA · OFFLINE
+              </span>
+            </div>
+
+            <div class="mt-4 flex items-center gap-3">
+              <span id="interlock-dot" class="h-2.5 w-2.5 rounded-full bg-[#EF4444] pulse-crimson"></span>
+              <h2 id="interlock-heading" class="font-display text-xl font-bold text-[#F4F5F8]">
+                TERARM · Halt Global
+              </h2>
+            </div>
+
+            <p id="interlock-body" class="mt-3 text-xs leading-relaxed text-[#8B909E]">
+              Kill-switch memblokir semua order baru di risk gate. Posisi terbuka tidak terpengaruh.
+              <span class="mt-2 block font-mono text-[#EF4444]">
+                Alasan: daily drawdown limit reached (pnl -127.89 &lt;= -100.0)
+              </span>
+            </p>
+
+            <div class="mt-6">
+              <button
+                id="btn-release-checklist"
+                type="button"
+                onclick="openAckChecklistModal()"
+                class="w-full rounded-xl bg-[#F4F5F8] px-5 py-3.5 text-xs font-semibold text-[#06070A] shadow-[0_10px_28px_rgba(244,245,248,0.18)] hover:bg-white transition-all"
+              >
+                Lepas · Ack Checklist
+              </button>
+
+              <button
+                id="btn-rearm-global"
+                type="button"
+                onclick="rearmGlobalHalt()"
+                class="hidden w-full rounded-xl border border-[#EF4444]/40 bg-[#EF4444]/10 px-5 py-3.5 text-xs font-semibold text-[#EF4444] hover:bg-[#EF4444]/20 transition-all"
+              >
+                Aktifkan Kembali · Halt Global
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Order Baru Ticket (with Frosted-Glass Lock Overlay while TERARM is active) -->
+          <div class="glass-card relative overflow-hidden rounded-2xl p-6">
+            <div class="mb-5 flex items-center justify-between font-mono text-xs">
+              <span class="uppercase tracking-wider text-[#8B909E]">ORDER BARU</span>
+              <span id="ticket-state-badge" class="font-semibold text-[#EF4444]">TERKUNCI · TERARM</span>
+            </div>
+
+            <form onsubmit="submitSimulatedOrder(event)" class="space-y-4">
+              <div class="grid grid-cols-2 gap-2 rounded-xl border border-white/[0.09] bg-[#06070A] p-1 font-mono text-xs">
+                <button
+                  id="btn-side-buy"
+                  type="button"
+                  onclick="setTicketSide('BUY')"
+                  class="rounded-lg bg-[#10B981] py-2 font-semibold text-[#06070A] transition-all"
+                >
+                  Buy
+                </button>
+                <button
+                  id="btn-side-sell"
+                  type="button"
+                  onclick="setTicketSide('SELL')"
+                  class="rounded-lg py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all"
+                >
+                  Sell
+                </button>
+              </div>
+
+              <div>
+                <label class="block font-mono text-[11px] uppercase text-[#8B909E]">Lot Size</label>
+                <input
+                  id="order-lots"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max="10"
+                  value="0.20"
+                  oninput="updateTicketEstimates()"
+                  class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A] px-4 py-2.5 font-mono text-xs text-[#F4F5F8] tabular-nums focus:border-white/30 focus:outline-none"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-mono text-[11px] uppercase text-[#8B909E]">Stop Loss</label>
+                  <input
+                    id="order-sl"
+                    type="number"
+                    step="0.01"
+                    value="2635.00"
+                    class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A] px-4 py-2.5 font-mono text-xs text-[#EF4444] tabular-nums focus:border-white/30 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block font-mono text-[11px] uppercase text-[#8B909E]">Take Profit</label>
+                  <input
+                    id="order-tp"
+                    type="number"
+                    step="0.01"
+                    value="2658.00"
+                    class="mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#06070A] px-4 py-2.5 font-mono text-xs text-[#10B981] tabular-nums focus:border-white/30 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-white/[0.07] bg-[#06070A]/85 p-4 font-mono text-xs tabular-nums space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-[#8B909E]">Estimasi Margin</span>
+                  <span id="est-margin-val" class="text-[#F4F5F8]">$528.57</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-[#8B909E]">Estimasi Risiko SL</span>
+                  <span id="est-risk-val" class="text-[#EF4444]">-$157.00</span>
+                </div>
+              </div>
+
+              <button
+                id="btn-place-order"
+                type="submit"
+                class="w-full rounded-xl bg-[#10B981] py-3.5 text-xs font-semibold text-[#06070A] hover:opacity-95 transition-all"
+              >
+                Eksekusi Buy XAUUSD →
+              </button>
+            </form>
+
+            <!-- Sleek Frosted-Glass Lock Overlay -->
+            <div
+              id="ticket-frosted-lock"
+              class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#06070A]/84 p-7 text-center backdrop-blur-xl transition-opacity duration-300"
+            >
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#EF4444]/40 bg-[#EF4444]/15 text-[#EF4444]">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              </div>
+              <h4 class="mt-4 font-display text-base font-bold text-[#F4F5F8]">Order Baru Terkunci</h4>
+              <p class="mt-2 text-xs leading-relaxed text-[#8B909E]">
+                Semua order baru diblokir oleh <span class="font-mono text-[#EF4444]">TERARM</span>. Verifikasi 4 item pada <span class="font-mono text-[#F4F5F8]">Lepas · Ack Checklist</span> untuk membuka tiket eksekusi.
+              </p>
+              <button
+                type="button"
+                onclick="openAckChecklistModal()"
+                class="mt-5 rounded-xl bg-[#F4F5F8] px-5 py-2.5 text-xs font-semibold text-[#06070A] hover:bg-white transition-all"
+              >
+                Buka Ack Checklist
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. Portfolio Risk Summary -->
+          <div class="glass-card rounded-2xl p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="font-display text-base font-bold text-[#F4F5F8]">Portfolio Risk Summary</h3>
+              <span class="font-mono text-[11px] text-[#8B909E]">LIVE GATE</span>
+            </div>
+
+            <div class="divide-y divide-white/[0.07] font-mono text-xs tabular-nums">
+              <div class="py-3 flex items-center justify-between">
+                <span class="text-[#8B909E]">Open risk (worst-case)</span>
+                <span id="risk-open-wc" class="text-[#F4F5F8]">$0</span>
+              </div>
+              <div class="py-3 flex items-center justify-between">
+                <span class="text-[#8B909E]">Stress risk</span>
+                <span id="risk-stress" class="text-[#F4F5F8]">$0</span>
+              </div>
+              <div class="py-3 flex items-center justify-between">
+                <span class="text-[#8B909E]">Margin terpakai</span>
+                <span id="risk-margin-used" class="text-[#F4F5F8]">$0 (0.0%)</span>
+              </div>
+              <div class="py-3 flex items-center justify-between">
+                <span class="text-[#8B909E]">Eksposur bruto</span>
+                <span id="risk-gross-exp" class="text-[#F4F5F8]">$0</span>
+              </div>
+              <div class="pt-3 flex items-center justify-between">
+                <span class="text-[#8B909E]">Equity</span>
+                <span id="risk-equity-row" class="font-semibold text-[#F4F5F8]">$9,734.00</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE TAB 2: STRATEGY LAB (max-w-[1920px])                      -->
+    <!-- =================================================================== -->
+    <section id="ws-tab-strategy" class="hidden w-full max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-10 pt-24 pb-12 space-y-7">
+      <div class="glass-card rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="font-mono text-xs uppercase tracking-wider text-[#8B909E]">QUANTITATIVE RESEARCH &amp; WALK-FORWARD LAB</div>
+          <h2 class="mt-1 font-display text-2xl sm:text-3xl font-bold text-[#F4F5F8]">Strategy Lab &amp; Parameter Optimization</h2>
+        </div>
+        <div class="flex items-center gap-3 font-mono text-xs">
+          <span class="rounded-xl border border-[#10B981]/35 bg-[#10B981]/10 px-4 py-2 text-[#10B981]">
+            3 PAPER ENGINES ACTIVE
+          </span>
+          <button type="button" onclick="switchWorkspaceTab('terminal')" class="rounded-xl bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A]">
+            Kembali ke Terminal →
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-7">
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div>
+              <h3 class="font-display text-lg font-bold text-[#F4F5F8]">Walk-Forward Cumulative Equity Attribution</h3>
+              <p class="font-mono text-xs text-[#8B909E]">Out-of-Sample Paper &amp; Tick Replay Comparison (180 Hari)</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-4 font-mono text-xs">
+              <span class="text-[#10B981]">● London Breakout v1.1.0 (+18.4%)</span>
+              <span class="text-[#F4F5F8]">● BTC Range 24/7 v1.0.0 (+12.9%)</span>
+              <span class="text-[#EF4444]">● Mean Reversion BB v1.0.0 (+6.4%)</span>
+            </div>
+          </div>
+          <div class="relative h-[420px] w-full rounded-xl border border-white/[0.07] bg-[#06070A]/85 overflow-hidden">
+            <canvas id="strategylab-canvas" class="block h-full w-full"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 space-y-6">
+          <div>
+            <h3 class="font-display text-lg font-bold text-[#F4F5F8]">Parameter Sandbox</h3>
+            <p class="text-xs text-[#8B909E] mt-1.5 leading-relaxed">
+              Simulasikan dampak filter spread maksimal dan batas drawdown harian terhadap ekspektasi Sharpe.
+            </p>
+          </div>
+
+          <div class="space-y-5 font-mono text-xs">
+            <div>
+              <div class="flex justify-between mb-2">
+                <span class="text-[#8B909E]">Max Spread Threshold (XAUUSD)</span>
+                <span id="param-spread-val" class="text-[#F4F5F8]">0.45 pips</span>
+              </div>
+              <input
+                type="range"
+                min="0.20"
+                max="0.90"
+                step="0.05"
+                value="0.45"
+                oninput="updateLabSandbox(this.value, null)"
+                class="lumine-slider w-full"
+              />
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-2">
+                <span class="text-[#8B909E]">Daily Drawdown Kill-Switch</span>
+                <span id="param-dd-val" class="text-[#EF4444]">-$100.00</span>
+              </div>
+              <input
+                type="range"
+                min="50"
+                max="300"
+                step="25"
+                value="100"
+                oninput="updateLabSandbox(null, this.value)"
+                class="lumine-slider w-full"
+              />
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/85 p-5 font-mono text-xs tabular-nums space-y-3">
+            <div class="flex justify-between">
+              <span class="text-[#8B909E]">Projected Sharpe Ratio</span>
+              <span id="lab-proj-sharpe" class="font-semibold text-[#10B981]">1.94</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[#8B909E]">Rejected Wide-Spread Ticks</span>
+              <span id="lab-proj-reject" class="text-[#F4F5F8]">14.2%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[#8B909E]">Shadow Runner Sync</span>
+              <span class="text-[#F59E0B]">shadow_dbg (1793m lag)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE TAB 3: OPS & LOGS (max-w-[1920px])                        -->
+    <!-- =================================================================== -->
+    <section id="ws-tab-ops" class="hidden w-full max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-10 pt-24 pb-12 space-y-7">
+      <div class="glass-card rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="font-mono text-xs uppercase tracking-wider text-[#F59E0B]">INFRASTRUCTURE TELEMETRY &amp; INCIDENT DIAGNOSTICS</div>
+          <h2 class="mt-1 font-display text-2xl sm:text-3xl font-bold text-[#F4F5F8]">Ops &amp; Logs · 9 Active Operational Alerts</h2>
+        </div>
+        <div class="flex items-center gap-3 font-mono text-xs">
+          <span class="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-[#8B909E]">
+            ASOF 25 NOV 2026 07:54:42 WIB
+          </span>
+          <button type="button" onclick="switchWorkspaceTab('terminal')" class="rounded-xl bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A]">
+            Kembali ke Terminal →
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_440px] gap-7">
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-lg font-bold text-[#F4F5F8]">Daftar Lengkap Alert Aktif (9)</h3>
+            <span class="font-mono text-xs text-[#F59E0B]">SEVERITY · 3 CRITICAL / 6 WATCH</span>
+          </div>
+          <div id="ops-full-alerts-list" class="space-y-3 font-mono text-xs">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="space-y-7">
+          <div class="glass-card rounded-2xl p-6">
+            <h3 class="font-display text-lg font-bold text-[#F4F5F8] mb-4">Order Execution Latency (24 Jam)</h3>
+            <div class="space-y-3.5 font-mono text-xs tabular-nums">
+              <div class="rounded-xl border border-white/[0.07] bg-[#06070A]/80 p-4">
+                <div class="flex justify-between text-[#8B909E]">
+                  <span>T0 → T2 (p50 / p95 / p99)</span>
+                  <span class="text-[#EF4444]">SLO &gt;= 300ms</span>
+                </div>
+                <div class="mt-2 text-sm font-semibold text-[#F4F5F8]">
+                  119,169ms / 219,574ms / 270,688ms
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-white/[0.07] bg-[#06070A]/80 p-4">
+                <div class="flex justify-between text-[#8B909E]">
+                  <span>T0 → T4 (p50 / p95 / p99)</span>
+                  <span class="text-[#8B909E]">END-TO-END</span>
+                </div>
+                <div class="mt-2 text-sm font-semibold text-[#F4F5F8]">
+                  527,518ms / 1,036,957ms / 1,665,567ms
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3.5">
+                <div class="rounded-xl border border-white/[0.07] bg-[#06070A]/80 p-4">
+                  <div class="text-[#8B909E]">Terminal / FAILED</div>
+                  <div class="mt-1.5 text-base font-semibold text-[#EF4444]">1,112 / 572 (51%)</div>
+                </div>
+                <div class="rounded-xl border border-white/[0.07] bg-[#06070A]/80 p-4">
+                  <div class="text-[#8B909E]">Stuck SENT &gt; 60s</div>
+                  <div class="mt-1.5 text-base font-semibold text-[#10B981]">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6">
+            <h3 class="font-display text-lg font-bold text-[#F4F5F8] mb-4">Resource &amp; Database Telemetry</h3>
+            <div class="space-y-4 font-mono text-xs tabular-nums">
+              <div>
+                <div class="flex justify-between mb-1.5">
+                  <span class="text-[#8B909E]">CPU Load</span>
+                  <span class="text-[#F59E0B]">81.6%</span>
+                </div>
+                <div class="h-1.5 w-full rounded-full bg-white/[0.08]">
+                  <div class="h-full w-[81.6%] rounded-full bg-[#F59E0B]"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-1.5">
+                  <span class="text-[#8B909E]">RAM Usage</span>
+                  <span class="text-[#10B981]">50.3%</span>
+                </div>
+                <div class="h-1.5 w-full rounded-full bg-white/[0.08]">
+                  <div class="h-full w-[50.3%] rounded-full bg-[#10B981]"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-1.5">
+                  <span class="text-[#8B909E]">Disk / Swap</span>
+                  <span class="text-[#F4F5F8]">69.2% / 13.5%</span>
+                </div>
+                <div class="h-1.5 w-full rounded-full bg-white/[0.08]">
+                  <div class="h-full w-[69.2%] rounded-full bg-[#F4F5F8]"></div>
+                </div>
+              </div>
+
+              <div class="pt-2 flex justify-between text-[#8B909E]">
+                <span>DB Status: <strong class="text-[#10B981]">ok · 67ms</strong></span>
+                <span>Pool: <strong class="text-[#F4F5F8]">19/100 (504 MB)</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SLIDE-OVER 9-ALERT INCIDENT DRAWER (asof 07.54.42 WIB)                -->
+  <!-- ===================================================================== -->
+  <div
+    id="incident-drawer-backdrop"
+    onclick="closeIncidentDrawer(event)"
+    class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-md transition-opacity"
+  >
+    <aside
+      onclick="event.stopPropagation()"
+      class="glass-card ml-auto flex h-full w-full max-w-lg flex-col justify-between border-l border-white/[0.12] p-6 sm:p-7 overflow-y-auto"
+    >
+      <div>
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-4">
+          <div>
+            <div class="font-mono text-[11px] uppercase tracking-wider text-[#F59E0B]">
+              INCIDENT TELEMETRY DRAWER · 9 ALERT AKTIF
+            </div>
+            <h3 class="mt-1 font-display text-xl font-bold text-[#F4F5F8]">
+              Snapshot asof 07.54.42 WIB
+            </h3>
+          </div>
+          <button
+            type="button"
+            onclick="closeIncidentDrawer()"
+            class="rounded-xl border border-white/15 px-3 py-1.5 font-mono text-xs text-[#8B909E] hover:text-[#F4F5F8]"
+          >
+            ✕ Tutup
+          </button>
+        </div>
+
+        <div id="drawer-alerts-list" class="mt-5 space-y-3 font-mono text-xs">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+      <div class="mt-6 border-t border-white/[0.08] pt-4 flex items-center justify-between font-mono text-xs">
+        <span class="text-[#8B909E]">25 Nov 2026 · 07:54:42 WIB</span>
+        <button
+          type="button"
+          onclick="closeIncidentDrawer(); switchWorkspaceTab('ops');"
+          class="text-[#F4F5F8] underline underline-offset-4"
+        >
+          Buka Ops &amp; Logs →
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: 4-ITEM PRE-FLIGHT ACK CHECKLIST                                -->
+  <!-- ===================================================================== -->
+  <div
+    id="ack-checklist-modal"
+    onclick="closeAckChecklistModal(event)"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4 backdrop-blur-xl"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="glass-card w-full max-w-lg rounded-3xl p-6 sm:p-7"
+    >
+      <div class="flex items-center justify-between font-mono text-[11px]">
+        <span class="uppercase tracking-wider text-[#EF4444]">PRE-FLIGHT RISK GATE VERIFICATION</span>
+        <button type="button" onclick="closeAckChecklistModal()" class="text-[#8B909E] hover:text-[#F4F5F8]">✕</button>
+      </div>
+
+      <h3 class="mt-2 font-display text-2xl font-bold text-[#F4F5F8]">
+        Lepas · Ack Checklist
+      </h3>
+      <p class="mt-1.5 text-xs leading-relaxed text-[#8B909E]">
+        Konfirmasi seluruh 4 poin verifikasi risiko untuk melepas <span class="font-mono text-[#EF4444]">TERARM · Halt Global</span>, mengaktifkan <span class="font-mono text-[#10B981]">EA · ONLINE</span>, dan membuka eksekusi order.
+      </p>
+
+      <div class="mt-4">
+        <div class="flex justify-between font-mono text-[11px]">
+          <span class="text-[#8B909E]">Progres Verifikasi</span>
+          <span id="ack-progress-text" class="text-[#F4F5F8]">0 / 4 Selesai</span>
+        </div>
+        <div class="mt-1.5 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
+          <div id="ack-progress-fill" class="h-full w-0 bg-[#10B981] transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <div class="mt-4 space-y-2.5 text-xs">
+        <label class="flex items-start gap-3 rounded-xl border border-white/[0.08] bg-[#06070A]/85 p-3.5 cursor-pointer hover:border-white/20">
+          <input type="checkbox" class="ack-item-cb mt-0.5 h-4 w-4 accent-[#10B981]" onchange="updateAckProgress()" />
+          <span class="text-[#F4F5F8]">
+            <strong class="font-mono text-[#10B981]">01.</strong> Akui drawdown harian (<span class="font-mono text-[#EF4444]">-$127.89</span>) dan naikkan batas sesi menjadi <span class="font-mono">-$250.00</span>.
+          </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-xl border border-white/[0.08] bg-[#06070A]/85 p-3.5 cursor-pointer hover:border-white/20">
+          <input type="checkbox" class="ack-item-cb mt-0.5 h-4 w-4 accent-[#10B981]" onchange="updateAckProgress()" />
+          <span class="text-[#F4F5F8]">
+            <strong class="font-mono text-[#10B981]">02.</strong> Verifikasi sinkronisasi feed candle M1/M5 terbaru untuk <span class="font-mono">XAUUSD</span> dan <span class="font-mono">BTCUSD</span>.
+          </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-xl border border-white/[0.08] bg-[#06070A]/85 p-3.5 cursor-pointer hover:border-white/20">
+          <input type="checkbox" class="ack-item-cb mt-0.5 h-4 w-4 accent-[#10B981]" onchange="updateAckProgress()" />
+          <span class="text-[#F4F5F8]">
+            <strong class="font-mono text-[#10B981]">03.</strong> Konfirmasi latensi routing <span class="font-mono">T0→T2</span> kembali di bawah <span class="font-mono">300ms SLO</span> dan bersihkan antrean gagal.
+          </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-xl border border-white/[0.08] bg-[#06070A]/85 p-3.5 cursor-pointer hover:border-white/20">
+          <input type="checkbox" class="ack-item-cb mt-0.5 h-4 w-4 accent-[#10B981]" onchange="updateAckProgress()" />
+          <span class="text-[#F4F5F8]">
+            <strong class="font-mono text-[#10B981]">04.</strong> Pertahankan circuit breaker otomatis aktif jika drawdown sesi menyentuh batas baru.
+          </span>
+        </label>
+      </div>
+
+      <div class="mt-6 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onclick="checkAllAckItems()"
+          class="font-mono text-xs text-[#8B909E] hover:text-[#F4F5F8] underline underline-offset-4"
+        >
+          Centang Semua (4/4)
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            onclick="closeAckChecklistModal()"
+            class="rounded-xl border border-white/15 px-4 py-2 text-xs text-[#8B909E] hover:text-[#F4F5F8]"
+          >
+            Batal
+          </button>
+          <button
+            id="btn-confirm-ack"
+            type="button"
+            disabled
+            onclick="confirmReleaseGlobalHalt()"
+            class="rounded-xl bg-[#10B981] px-5 py-2 text-xs font-semibold text-[#06070A] opacity-30 cursor-not-allowed transition-all"
+          >
+            Konfirmasi &amp; Lepas →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST BANNER -->
+  <div
+    id="toast-pill"
+    class="pointer-events-none fixed bottom-6 right-6 z-50 hidden max-w-sm rounded-2xl border border-white/15 bg-[#0D0F15]/95 px-4 py-3 font-mono text-xs text-[#F4F5F8] shadow-2xl backdrop-blur-xl"
+  ></div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT: 3-VIEW ROUTER + 7-SLIDE PPT ENGINE + 7 3D SCENES + OPS    -->
+  <!-- ===================================================================== -->
+  <script>
+    /**
+     * -----------------------------------------------------------------------
+     * 1. GLOBAL APPLICATION STATE & TELEMETRY DATA
+     * -----------------------------------------------------------------------
+     */
+    const appState = {
+      // Top-Level View: 'landing' | 'login' | 'workstation'
+      topView: 'landing',
+      isAuthenticated: false,
+      operatorEmail: 'allocator@luminefund.io',
+      twoFactorEnabled: true,
+
+      // Public Landing 7-Slide State
+      currentSlide: 0,
+      totalSlides: 7,
+      slideLocked: false,
+
+      // Slide 0..6 Interactive 3D Controls
+      s1FilterMode: 'filtered', // 'filtered' | 'raw'
+      s2AiAgent: 0,
+      s3Venue: 'XAUUSD',
+      s4Gate: 0,
+      s5Strategy: 0,
+      s6Stress: 3.07,
+      s7Hub: 'ASIA',
+
+      // Authenticated Workstation State
+      workspaceTab: 'terminal', // 'terminal' | 'strategy' | 'ops'
+      halted: true,
+      symbol: 'XAUUSD',
+      timeframe: '1m',
+      chartMode: 'candles',
+      ticketSide: 'BUY',
+      equity: 9734.0,
+      dailyPnl: -127.89,
+      positions: [],
+    };
+
+    const aiAgentProfiles = [
+      {
+        title: 'ALPHA SYNTHESIS AGENT · v4.2',
+        status: 'ACTIVE',
+        params: '128M',
+        latency: '0.18ms',
+        conf: '99.4%',
+        colorHex: 0x10b981,
+        desc: 'Cross-venue tensor attention isolates institutional orderflow imbalances across XAUUSD and BTCUSD before spread expansion.',
+      },
+      {
+        title: 'REGIME CLASSIFIER · v3.8',
+        status: 'ACTIVE',
+        params: '64M',
+        latency: '0.11ms',
+        conf: '98.9%',
+        colorHex: 0xf4f5f8,
+        desc: 'Hidden-state volatility clustering classifies trending, mean-reverting, and liquidity-gap regimes across global sessions.',
+      },
+      {
+        title: 'SENTINEL RISK AI · v5.0',
+        status: 'ARMED',
+        params: '96M',
+        latency: '0.09ms',
+        conf: '99.8%',
+        colorHex: 0xef4444,
+        desc: 'Continuous tail-risk surveillance monitors drawdown velocity and triggers deterministic circuit-breaker isolation at -3.0%.',
+      },
+    ];
+
+    const symbolMeta = {
+      XAUUSD: { price: 2642.85, spread: 0.36, step: 1.35, contract: 100, sl: 2635.0, tp: 2658.0 },
+      BTCUSD: { price: 94820.5, spread: 14.5, step: 125.0, contract: 1, sl: 94100.0, tp: 96200.0 },
+    };
+
+    const exactOperationalAlerts = [
+      { code: 'EA_OFFLINE', level: 'crimson', text: '3 EA offline 160s (threshold 60s), tanpa posisi terbuka.' },
+      { code: 'LATENCY_SLO', level: 'amber', text: '3 T0→T2 p95 219574 ms >= SLO 300 ms (n=28).' },
+      { code: 'CANDLE_STALE', level: 'amber', text: '3 Candle BTCUSD:M1 terakhir 17 menit lalu (threshold 10 menit).' },
+      { code: 'CANDLE_STALE', level: 'amber', text: '3 Candle BTCUSD:M5 terakhir 20 menit lalu (threshold 10 menit).' },
+      { code: 'CANDLE_STALE', level: 'amber', text: '3 Candle XAUUSD:M1 terakhir 12 menit lalu (threshold 10 menit).' },
+      { code: 'CANDLE_STALE', level: 'amber', text: '3 Candle XAUUSD:M5 terakhir 15 menit lalu (threshold 10 menit).' },
+      { code: 'LIQUIDITY_GAP', level: 'amber', text: '3 2 gap data likuiditas XAUUSD dalam 1 jam (gap terbesar 100s).' },
+      { code: 'FAILED_RATIO', level: 'crimson', text: '3 Rasio FAILED 24 jam 51% (572/1112 terminal, watch 20%).' },
+      { code: 'RUNNER_STALE', level: 'crimson', text: '3 Paper runner shadow_dbg & shadow_lb-replay-d0 tidak update paper_state.' },
+    ];
+
+    /**
+     * -----------------------------------------------------------------------
+     * 2. THREE-VIEW ROUTER (Landing <-> Login <-> Authenticated Workstation)
+     * -----------------------------------------------------------------------
+     */
+    function setTopView(nextView) {
+      if (nextView === 'workstation' && !appState.isAuthenticated) {
+        openLoginPortal('signin');
+        return;
+      }
+
+      appState.topView = nextView;
+
+      const landingEl = document.getElementById('view-landing');
+      const loginEl = document.getElementById('view-login');
+      const wsEl = document.getElementById('view-workstation');
+
+      const headerLanding = document.getElementById('header-landing');
+      const headerWs = document.getElementById('header-workstation');
+
+      landingEl.classList.toggle('hidden', nextView !== 'landing');
+      loginEl.classList.toggle('hidden', nextView !== 'login');
+      wsEl.classList.toggle('hidden', nextView !== 'workstation');
+
+      headerLanding.classList.toggle('hidden', nextView !== 'landing');
+      headerWs.classList.toggle('hidden', nextView !== 'workstation');
+
+      if (nextView === 'landing' || nextView === 'login') {
+        document.body.style.overflow = 'hidden';
+        window.scrollTo(0, 0);
+      } else {
+        document.body.style.overflowX = 'hidden';
+        document.body.style.overflowY = 'auto';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      const stageCanvas = document.getElementById('webgl-stage');
+      if (stageCanvas) {
+        stageCanvas.style.opacity = nextView === 'workstation' ? '0.18' : '1';
+      }
+
+      if (nextView === 'workstation') {
+        switchWorkspaceTab(appState.workspaceTab);
+      }
+    }
+
+    function openLoginPortal(tabMode = 'signin') {
+      setTopView('login');
+      switchAuthTab(tabMode);
+    }
+
+    function returnToLanding() {
+      setTopView('landing');
+    }
+
+    function logoutToLanding() {
+      appState.isAuthenticated = false;
+      stopSimulatedTicks();
+      setTopView('landing');
+      goToSlide(0);
+      showToast('Session terminated. Returned to LUMINE FUND.');
+    }
+
+    function switchWorkspaceTab(tabKey) {
+      if (!appState.isAuthenticated) {
+        openLoginPortal('signin');
+        return;
+      }
+
+      appState.workspaceTab = tabKey;
+
+      ['terminal', 'strategy', 'ops'].forEach((t) => {
+        const panel = document.getElementById(`ws-tab-${t}`);
+        if (panel) panel.classList.toggle('hidden', t !== tabKey);
+      });
+
+      document.querySelectorAll('.ws-seg-btn').forEach((btn) => {
+        btn.classList.remove('bg-[#F4F5F8]', 'text-[#06070A]', 'font-semibold', 'shadow-sm');
+        btn.classList.add('text-[#8B909E]', 'font-medium');
+      });
+
+      const activeBtn = document.getElementById(`ws-nav-${tabKey}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-[#8B909E]', 'font-medium');
+        activeBtn.classList.add('bg-[#F4F5F8]', 'text-[#06070A]', 'font-semibold', 'shadow-sm');
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (tabKey === 'terminal') {
+        setTimeout(drawTerminalChart, 30);
+      } else if (tabKey === 'strategy') {
+        setTimeout(drawStrategyLabCanvas, 30);
+      }
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 3. INSTITUTIONAL LOGIN & REQUEST ACCESS PORTAL LOGIC
+     * -----------------------------------------------------------------------
+     */
+    function switchAuthTab(tab) {
+      const signinPanel = document.getElementById('auth-panel-signin');
+      const reqPanel = document.getElementById('auth-panel-request');
+      const tabSignin = document.getElementById('auth-tab-signin');
+      const tabReq = document.getElementById('auth-tab-request');
+
+      if (tab === 'signin') {
+        signinPanel.classList.remove('hidden');
+        reqPanel.classList.add('hidden');
+        tabSignin.className = 'rounded-xl bg-[#F4F5F8] py-2.5 font-semibold text-[#06070A] transition-all';
+        tabReq.className = 'rounded-xl py-2.5 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+      } else {
+        reqPanel.classList.remove('hidden');
+        signinPanel.classList.add('hidden');
+        tabReq.className = 'rounded-xl bg-[#F4F5F8] py-2.5 font-semibold text-[#06070A] transition-all';
+        tabSignin.className = 'rounded-xl py-2.5 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+      }
+    }
+
+    function fillDemoInvestorCredentials() {
+      document.getElementById('login-email').value = 'allocator@luminefund.io';
+      document.getElementById('login-passcode').value = 'LUMINE-INST-2026-KEY';
+      showToast('Demo institutional credentials populated.');
+    }
+
+    function toggleTwoFactor() {
+      appState.twoFactorEnabled = !appState.twoFactorEnabled;
+      const btn = document.getElementById('toggle-2fa-btn');
+      const knob = document.getElementById('toggle-2fa-knob');
+      const row = document.getElementById('twofa-code-row');
+
+      btn.setAttribute('aria-checked', String(appState.twoFactorEnabled));
+      if (appState.twoFactorEnabled) {
+        btn.classList.remove('bg-white/15');
+        btn.classList.add('bg-[#10B981]');
+        knob.style.transform = 'translateX(18px)';
+        row.classList.remove('hidden');
+      } else {
+        btn.classList.remove('bg-[#10B981]');
+        btn.classList.add('bg-white/15');
+        knob.style.transform = 'translateX(2px)';
+        row.classList.add('hidden');
+      }
+    }
+
+    function handleInvestorSignIn(e) {
+      e.preventDefault();
+      const emailInput = document.getElementById('login-email').value.trim();
+      if (!emailInput) return;
+
+      appState.operatorEmail = emailInput;
+
+      const submitBtn = document.getElementById('btn-submit-login');
+      const handshakeBox = document.getElementById('auth-handshake-box');
+      const handshakeLabel = document.getElementById('auth-handshake-label');
+      const handshakePct = document.getElementById('auth-handshake-pct');
+      const handshakeBar = document.getElementById('auth-handshake-bar');
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-60', 'cursor-wait');
+      handshakeBox.classList.remove('hidden');
+
+      handshakeLabel.textContent = '01 · Verifying Institutional Key...';
+      handshakePct.textContent = '35%';
+      handshakeBar.style.width = '35%';
+
+      setTimeout(() => {
+        handshakeLabel.textContent = '02 · Syncing Risk-Ops Session...';
+        handshakePct.textContent = '74%';
+        handshakeBar.style.width = '74%';
+      }, 360);
+
+      setTimeout(() => {
+        handshakeLabel.textContent = '03 · Access Granted';
+        handshakePct.textContent = '100%';
+        handshakeBar.style.width = '100%';
+      }, 720);
+
+      setTimeout(() => {
+        appState.isAuthenticated = true;
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-60', 'cursor-wait');
+        handshakeBox.classList.add('hidden');
+        handshakeBar.style.width = '35%';
+
+        const handlePart = emailInput.split('@')[0].toUpperCase().slice(0, 12);
+        document.getElementById('ws-operator-name').textContent = `OP · ${handlePart}`;
+
+        setTopView('workstation');
+        showToast(`Authenticated as ${emailInput}`);
+      }, 1050);
+    }
+
+    function handleRequestAccess(e) {
+      e.preventDefault();
+      document.getElementById('request-access-form').classList.add('hidden');
+      document.getElementById('request-access-success').classList.remove('hidden');
+      showToast('Institutional allocation inquiry submitted.');
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 4. PPT-STYLE WHEEL-LOCKED 7-SLIDE NAVIGATION ENGINE
+     * -----------------------------------------------------------------------
+     */
+    function goToSlide(targetIdx) {
+      const clamped = Math.max(0, Math.min(appState.totalSlides - 1, targetIdx));
+      if (clamped === appState.currentSlide) return;
+
+      appState.currentSlide = clamped;
+
+      // Update Slide Classes for Staggered Choreography
+      for (let i = 0; i < appState.totalSlides; i++) {
+        const slideEl = document.getElementById(`ppt-slide-${i}`);
+        if (!slideEl) continue;
+        slideEl.classList.remove('is-active', 'is-past');
+        if (i === clamped) {
+          slideEl.classList.add('is-active');
+        } else if (i < clamped) {
+          slideEl.classList.add('is-past');
+        }
+      }
+
+      // Update Ultra-Minimalist Right Indicator Ticks (No Numbers or Text)
+      document.querySelectorAll('.ppt-rail-btn').forEach((btn, idx) => {
+        const active = idx === clamped;
+        const bar = btn.querySelector('.ppt-rail-bar');
+        if (bar) {
+          bar.className = active
+            ? 'ppt-rail-bar block h-8 w-0.5 rounded-full bg-[#F4F5F8] transition-all duration-300'
+            : 'ppt-rail-bar block h-3.5 w-0.5 rounded-full bg-white/20 hover:bg-white/50 transition-all duration-300';
+        }
+      });
+
+      // Highlight matching Top Landing Navbar Topic Link
+      document.querySelectorAll('.landing-topic-btn').forEach((btn) => {
+        const slideNum = parseInt(btn.dataset.topicSlide, 10);
+        const isCurrent = slideNum === clamped;
+        btn.className = isCurrent
+          ? 'landing-topic-btn rounded-lg bg-white/[0.08] px-3 py-1.5 text-xs font-semibold text-[#F4F5F8] transition-colors'
+          : 'landing-topic-btn rounded-lg px-3 py-1.5 text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-colors';
+      });
+
+      // Sync 3D Scene Index
+      if (stage3D) {
+        stage3D.activeSlide = clamped;
+      }
+    }
+
+    function stepSlide(delta) {
+      if (appState.slideLocked) return;
+      const next = appState.currentSlide + delta;
+      if (next < 0 || next >= appState.totalSlides) return;
+
+      appState.slideLocked = true;
+      goToSlide(next);
+      setTimeout(() => {
+        appState.slideLocked = false;
+      }, 780);
+    }
+
+    function bindSlideLockListeners() {
+      // Wheel Lock on Public Landing Page
+      window.addEventListener(
+        'wheel',
+        (e) => {
+          if (appState.topView !== 'landing') return;
+          if (Math.abs(e.deltaY) < 22) return;
+          e.preventDefault();
+          stepSlide(e.deltaY > 0 ? 1 : -1);
+        },
+        { passive: false }
+      );
+
+      // Touch Swipe Lock
+      let touchStartY = 0;
+      window.addEventListener(
+        'touchstart',
+        (e) => {
+          if (appState.topView !== 'landing') return;
+          if (e.touches[0]) touchStartY = e.touches[0].clientY;
+        },
+        { passive: true }
+      );
+
+      window.addEventListener(
+        'touchend',
+        (e) => {
+          if (appState.topView !== 'landing') return;
+          if (!e.changedTouches[0]) return;
+          const dy = touchStartY - e.changedTouches[0].clientY;
+          if (Math.abs(dy) > 45) {
+            stepSlide(dy > 0 ? 1 : -1);
+          }
+        },
+        { passive: true }
+      );
+
+      // Keyboard Arrow / PageUp / PageDown Lock
+      window.addEventListener('keydown', (e) => {
+        if (appState.topView !== 'landing') return;
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+        if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+          e.preventDefault();
+          stepSlide(1);
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault();
+          stepSlide(-1);
+        }
+      });
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 5. SLIDE-SPECIFIC INTERACTIVE CONTROLS (SLIDES 1 TO 7)
+     * -----------------------------------------------------------------------
+     */
+    // Slide 1 (Hero): Optical Filter Toggle
+    function setSlide01FilterMode(mode) {
+      appState.s1FilterMode = mode;
+      const bFilt = document.getElementById('btn-filter-filtered');
+      const bRaw = document.getElementById('btn-filter-raw');
+      if (mode === 'filtered') {
+        bFilt.className = 'rounded-xl bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A] transition-all';
+        bRaw.className = 'rounded-xl px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+      } else {
+        bRaw.className = 'rounded-xl bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A] transition-all';
+        bFilt.className = 'rounded-xl px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+      }
+    }
+
+    // Slide 2 (Artificial Intelligence): Agent Selector
+    function selectAiAgent(idx) {
+      appState.s2AiAgent = idx;
+      const profile = aiAgentProfiles[idx];
+
+      document.getElementById('ai-agent-title').textContent = profile.title;
+      document.getElementById('ai-metric-params').textContent = profile.params;
+      document.getElementById('ai-metric-latency').textContent = profile.latency;
+      document.getElementById('ai-metric-conf').textContent = profile.conf;
+      document.getElementById('ai-agent-desc').textContent = profile.desc;
+
+      const statusPill = document.getElementById('ai-agent-status');
+      if (idx === 2) {
+        statusPill.className =
+          'inline-flex items-center gap-1.5 rounded-full border border-[#EF4444]/40 bg-[#EF4444]/15 px-3 py-0.5 text-[#EF4444]';
+        statusPill.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-[#EF4444] pulse-crimson"></span><span>ARMED</span>';
+      } else {
+        statusPill.className =
+          'inline-flex items-center gap-1.5 rounded-full border border-[#10B981]/35 bg-[#10B981]/10 px-3 py-0.5 text-[#10B981]';
+        statusPill.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-[#10B981] pulse-emerald"></span><span>ACTIVE</span>';
+      }
+
+      document.querySelectorAll('.ai-agent-btn').forEach((btn, i) => {
+        const active = i === idx;
+        btn.className = active
+          ? 'ai-agent-btn rounded-xl bg-[#F4F5F8] px-4 py-2.5 font-mono text-xs font-semibold text-[#06070A] transition-all'
+          : 'ai-agent-btn rounded-xl border border-white/[0.1] bg-[#0D0F15]/80 px-4 py-2.5 font-mono text-xs font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+      });
+    }
+
+    // Slide 3 (Liquidity): Venue Selector
+    const liquidityVenues = {
+      XAUUSD: {
+        title: 'XAUUSD · SPOT METALS L2',
+        spreadPill: 'SPREAD 0.36',
+        bid: '2,642.67',
+        ask: '2,643.03',
+        depth: '$42.8M',
+        gap: 0.72,
+        bids: [1.1, 1.4, 1.9, 2.5, 2.2, 3.1, 3.6, 4.1, 3.8, 4.5, 4.9, 5.2],
+        asks: [1.0, 1.5, 2.0, 2.3, 2.8, 3.0, 3.4, 3.9, 4.3, 4.6, 5.0, 5.4],
+      },
+      BTCUSD: {
+        title: 'BTCUSD · CRYPTO SPOT L2',
+        spreadPill: 'SPREAD 14.50',
+        bid: '94,813.25',
+        ask: '94,827.75',
+        depth: '$118.4M',
+        gap: 1.35,
+        bids: [0.8, 1.2, 2.4, 3.2, 2.9, 4.0, 4.8, 3.7, 5.1, 5.5, 4.9, 5.8],
+        asks: [0.9, 1.4, 2.1, 2.9, 3.5, 3.8, 4.4, 4.9, 4.2, 5.2, 5.6, 6.0],
+      },
+      EURUSD: {
+        title: 'EURUSD · INTERBANK ECN L2',
+        spreadPill: 'SPREAD 0.10 PIP',
+        bid: '1.08642',
+        ask: '1.08652',
+        depth: '$290.0M',
+        gap: 0.42,
+        bids: [1.6, 2.1, 2.8, 3.4, 3.9, 4.2, 4.6, 5.0, 5.2, 5.4, 5.6, 5.8],
+        asks: [1.5, 2.2, 2.7, 3.3, 3.8, 4.3, 4.5, 4.9, 5.1, 5.3, 5.5, 5.7],
+      },
+    };
+
+    function selectLiquidityVenue(sym) {
+      appState.s3Venue = sym;
+      const cfg = liquidityVenues[sym];
+      document.getElementById('s2-pair-title').textContent = cfg.title;
+      document.getElementById('s2-spread-pill').textContent = cfg.spreadPill;
+      document.getElementById('s2-bid-val').textContent = cfg.bid;
+      document.getElementById('s2-ask-val').textContent = cfg.ask;
+      document.getElementById('s2-depth-val').textContent = cfg.depth;
+
+      document.querySelectorAll('.s2-venue-btn').forEach((btn) => {
+        const active = btn.dataset.s2Sym === sym;
+        btn.className = active
+          ? 's2-venue-btn rounded-xl bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A] transition-all'
+          : 's2-venue-btn rounded-xl px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+      });
+    }
+
+    // Slide 4 (Pipeline): Focus Gate
+    function focusPipelineGate(gateIdx) {
+      appState.s4Gate = gateIdx;
+      document.querySelectorAll('.s3-gate-btn').forEach((btn, idx) => {
+        const active = idx === gateIdx;
+        btn.classList.toggle('opacity-75', !active);
+        btn.classList.toggle('border-white/25', active);
+        btn.classList.toggle('bg-white/[0.05]', active);
+      });
+    }
+
+    // Slide 5 (Strategies): Select Engine
+    function selectStrategyEngine(idx) {
+      appState.s5Strategy = idx;
+      document.querySelectorAll('.s4-strat-btn').forEach((btn, i) => {
+        const active = i === idx;
+        btn.classList.toggle('opacity-75', !active);
+        btn.classList.toggle('border-white/25', active);
+        btn.classList.toggle('bg-white/[0.05]', active);
+      });
+    }
+
+    // Slide 6 (Risk): Drawdown Stress Slider
+    function updateRiskStress(val) {
+      const dd = parseFloat(val);
+      appState.s6Stress = dd;
+
+      const pill = document.getElementById('s5-status-pill');
+      const readout = document.getElementById('s5-dd-readout');
+      const r1 = document.getElementById('s5-r1');
+      const r2 = document.getElementById('s5-r2');
+      const gate = document.getElementById('s5-gate');
+
+      if (dd >= 3.0) {
+        pill.className = 'rounded-full border border-[#EF4444]/40 bg-[#EF4444]/15 px-3 py-1 font-semibold text-[#EF4444]';
+        pill.textContent = 'TERARM · HALT GLOBAL';
+        readout.className = 'text-base font-semibold text-[#EF4444]';
+        readout.textContent = `-${dd.toFixed(2)}% (LOCKED)`;
+        r1.className = r2.className = gate.className = 'mt-1 font-semibold text-[#EF4444]';
+        r1.textContent = r2.textContent = 'LOCKED';
+        gate.textContent = 'BLOCKED';
+      } else if (dd >= 1.5) {
+        pill.className = 'rounded-full border border-[#F59E0B]/40 bg-[#F59E0B]/15 px-3 py-1 font-semibold text-[#F59E0B]';
+        pill.textContent = 'ELEVATED · WATCH';
+        readout.className = 'text-base font-semibold text-[#F59E0B]';
+        readout.textContent = `-${dd.toFixed(2)}% (THROTTLED)`;
+        r1.className = r2.className = gate.className = 'mt-1 font-semibold text-[#F59E0B]';
+        r1.textContent = 'ENGAGED';
+        r2.textContent = 'ACTIVE';
+        gate.textContent = '50% SIZE';
+      } else {
+        pill.className = 'rounded-full border border-[#10B981]/40 bg-[#10B981]/15 px-3 py-1 font-semibold text-[#10B981]';
+        pill.textContent = 'NOMINAL · ARMED';
+        readout.className = 'text-base font-semibold text-[#10B981]';
+        readout.textContent = `-${dd.toFixed(2)}% (NORMAL)`;
+        r1.className = r2.className = gate.className = 'mt-1 font-semibold text-[#10B981]';
+        r1.textContent = r2.textContent = 'NOMINAL';
+        gate.textContent = 'OPEN';
+      }
+    }
+
+    // Slide 7 (Investors & Global Horizon): Hub Focus
+    function focusGlobeHub(hubKey) {
+      appState.s7Hub = hubKey;
+      document.querySelectorAll('.s6-hub-btn').forEach((btn) => {
+        const active = btn.dataset.hub === hubKey;
+        btn.classList.toggle('opacity-80', !active);
+        btn.classList.toggle('border-[#10B981]/45', active);
+        btn.classList.toggle('bg-white/[0.05]', active);
+      });
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 6. 7 CONTEXT-MATCHED THREE.JS 3D SCENES + LOGIN SPHERE MODE
+     * -----------------------------------------------------------------------
+     */
+    let stage3D = null;
+
+    function initSevenContextScenes() {
+      const canvas = document.getElementById('webgl-stage');
+      if (!canvas || typeof THREE === 'undefined') return;
+
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight, false);
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x06070a, 0.028);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 180);
+      camera.position.set(0, 1.0, 12.6);
+
+      // Monochrome Studio Lighting + Emerald/Crimson Edge Highlights
+      scene.add(new THREE.AmbientLight(0xf4f5f8, 0.65));
+
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.3);
+      keyLight.position.set(6, 12, 10);
+      scene.add(keyLight);
+
+      const rimEmerald = new THREE.PointLight(0x10b981, 2.2, 32);
+      rimEmerald.position.set(-5, 3, 6);
+      scene.add(rimEmerald);
+
+      const rimCrimson = new THREE.PointLight(0xef4444, 1.7, 32);
+      rimCrimson.position.set(6, -2, 6);
+      scene.add(rimCrimson);
+
+      // Ambient Starfield
+      const starCount = 440;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        starPos[i * 3] = (Math.random() - 0.5) * 38;
+        starPos[i * 3 + 1] = (Math.random() - 0.5) * 26;
+        starPos[i * 3 + 2] = (Math.random() - 0.5) * 26;
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      const starPoints = new THREE.Points(
+        starGeo,
+        new THREE.PointsMaterial({ color: 0xf4f5f8, size: 0.045, transparent: true, opacity: 0.36 })
+      );
+      scene.add(starPoints);
+
+      // =====================================================================
+      // SCENE 0 (Slide 1 — Hero): Noise-to-Signal Optical Filter & 3D Candlesticks
+      // =====================================================================
+      const groupS0 = new THREE.Group();
+      groupS0.position.set(2.4, 0, 0);
+      scene.add(groupS0);
+
+      const filterFrame = new THREE.Group();
+      filterFrame.position.set(-0.3, 0, 0);
+      filterFrame.rotation.y = -0.25;
+      filterFrame.add(
+        new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, 5.6, 5.2),
+          new THREE.MeshStandardMaterial({
+            color: 0xf4f5f8,
+            roughness: 0.12,
+            metalness: 0.4,
+            transparent: true,
+            opacity: 0.16,
+          })
+        )
+      );
+      filterFrame.add(
+        new THREE.LineSegments(
+          new THREE.EdgesGeometry(new THREE.BoxGeometry(0.14, 5.65, 5.25)),
+          new THREE.LineBasicMaterial({ color: 0xf4f5f8, transparent: true, opacity: 0.58 })
+        )
+      );
+      groupS0.add(filterFrame);
+
+      const noiseCount = 300;
+      const noisePositions = new Float32Array(noiseCount * 3);
+      const noiseSeeds = [];
+      for (let i = 0; i < noiseCount; i++) {
+        const x = -6.0 + Math.random() * 5.5;
+        const y = (Math.random() - 0.5) * 5.2;
+        const z = (Math.random() - 0.5) * 4.6;
+        noisePositions[i * 3] = x;
+        noisePositions[i * 3 + 1] = y;
+        noisePositions[i * 3 + 2] = z;
+        noiseSeeds.push({ x, y, z, speed: 0.02 + Math.random() * 0.03, phase: Math.random() * Math.PI * 2 });
+      }
+      const noiseGeo = new THREE.BufferGeometry();
+      noiseGeo.setAttribute('position', new THREE.BufferAttribute(noisePositions, 3));
+      const noiseParticles = new THREE.Points(
+        noiseGeo,
+        new THREE.PointsMaterial({ color: 0x8b909e, size: 0.075, transparent: true, opacity: 0.78 })
+      );
+      groupS0.add(noiseParticles);
+
+      const s0Candles = [];
+      const glassBullMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        emissive: 0x10b981,
+        emissiveIntensity: 0.16,
+        roughness: 0.15,
+        metalness: 0.25,
+        transparent: true,
+        opacity: 0.24,
+      });
+      const glassBearMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        emissive: 0xef4444,
+        emissiveIntensity: 0.16,
+        roughness: 0.15,
+        metalness: 0.25,
+        transparent: true,
+        opacity: 0.22,
+      });
+      const coreBullMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.9 });
+      const coreBearMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.88 });
+
+      for (let i = 0; i < 10; i++) {
+        const isBull = i % 3 !== 1;
+        const bodyH = 0.85 + Math.abs(Math.sin(i * 0.8)) * 1.5;
+        const wickH = bodyH + 0.85;
+        const holder = new THREE.Group();
+        const bx = 0.55 + i * 0.55;
+        const by = (i - 4.5) * 0.22;
+        holder.position.set(bx, by, Math.sin(i * 0.6) * 0.5);
+
+        const outerGeo = new THREE.BoxGeometry(0.34, bodyH, 0.34);
+        holder.add(new THREE.Mesh(outerGeo, isBull ? glassBullMat : glassBearMat));
+        holder.add(
+          new THREE.LineSegments(
+            new THREE.EdgesGeometry(outerGeo),
+            new THREE.LineBasicMaterial({ color: isBull ? 0x10b981 : 0xef4444, transparent: true, opacity: 0.48 })
+          )
+        );
+        holder.add(new THREE.Mesh(new THREE.BoxGeometry(0.11, bodyH * 0.86, 0.11), isBull ? coreBullMat : coreBearMat));
+        holder.add(new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, wickH, 8), isBull ? coreBullMat : coreBearMat));
+
+        groupS0.add(holder);
+        s0Candles.push({ holder, bx, by, phase: i * 0.5 });
+      }
+
+      // =====================================================================
+      // SCENE 1 (Slide 2 — Artificial Intelligence): Multi-Agent Neural Core
+      // =====================================================================
+      const groupS1_AI = new THREE.Group();
+      groupS1_AI.position.set(2.6, 0.1, 0);
+      groupS1_AI.visible = false;
+      scene.add(groupS1_AI);
+
+      // Inner Crystalline Polyhedron
+      const neuralCoreMat = new THREE.MeshStandardMaterial({
+        color: 0xf4f5f8,
+        emissive: 0x10b981,
+        emissiveIntensity: 0.42,
+        roughness: 0.12,
+        metalness: 0.65,
+        transparent: true,
+        opacity: 0.85,
+      });
+      const neuralCoreMesh = new THREE.Mesh(new THREE.OctahedronGeometry(1.15, 1), neuralCoreMat);
+      groupS1_AI.add(neuralCoreMesh);
+
+      // Geodesic Wireframe Cage around Core
+      const neuralCageMat = new THREE.LineBasicMaterial({
+        color: 0xf4f5f8,
+        transparent: true,
+        opacity: 0.38,
+      });
+      const neuralCage = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.85, 1)),
+        neuralCageMat
+      );
+      groupS1_AI.add(neuralCage);
+
+      // Synaptic Filaments + Orbiting Tensor Nodes
+      const tensorCount = 18;
+      const tensorNodes = [];
+      const synapticFilaments = [];
+      const filamentMat = new THREE.LineBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.42,
+      });
+
+      for (let i = 0; i < tensorCount; i++) {
+        const phi = Math.acos(-1 + (2 * i) / tensorCount);
+        const theta = Math.sqrt(tensorCount * Math.PI) * phi;
+        const radius = 2.75 + (i % 3) * 0.45;
+
+        const nodeMat = new THREE.MeshStandardMaterial({
+          color: 0xf4f5f8,
+          emissive: 0x10b981,
+          emissiveIntensity: 0.35,
+          roughness: 0.2,
+          metalness: 0.5,
+        });
+        const nodeMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.14, 0), nodeMat);
+        groupS1_AI.add(nodeMesh);
+
+        // Synaptic filament line from origin to orbiting node
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+        const line = new THREE.Line(lineGeo, filamentMat);
+        groupS1_AI.add(line);
+
+        tensorNodes.push({
+          mesh: nodeMesh,
+          nodeMat,
+          phi,
+          theta,
+          radius,
+          speed: 0.35 + (i % 4) * 0.12,
+        });
+        synapticFilaments.push(lineGeo);
+      }
+
+      // =====================================================================
+      // SCENE 2 (Slide 3 — Liquidity): 3D Volumetric Bid/Ask Orderbook Canyon
+      // =====================================================================
+      const groupS2_Liquidity = new THREE.Group();
+      groupS2_Liquidity.position.set(2.4, -1.6, 0);
+      groupS2_Liquidity.rotation.set(0.32, -0.45, 0);
+      groupS2_Liquidity.visible = false;
+      scene.add(groupS2_Liquidity);
+
+      const bidBars = [];
+      const askBars = [];
+      const barGeo = new THREE.BoxGeometry(0.36, 1, 1.8);
+      barGeo.translate(0, 0.5, 0);
+
+      for (let i = 0; i < 12; i++) {
+        const bMesh = new THREE.Mesh(
+          barGeo,
+          new THREE.MeshStandardMaterial({
+            color: 0x10b981,
+            emissive: 0x10b981,
+            emissiveIntensity: 0.22,
+            roughness: 0.18,
+            transparent: true,
+            opacity: 0.42,
+          })
+        );
+        bMesh.add(
+          new THREE.LineSegments(
+            new THREE.EdgesGeometry(barGeo),
+            new THREE.LineBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.7 })
+          )
+        );
+        groupS2_Liquidity.add(bMesh);
+        bidBars.push(bMesh);
+
+        const aMesh = new THREE.Mesh(
+          barGeo,
+          new THREE.MeshStandardMaterial({
+            color: 0xef4444,
+            emissive: 0xef4444,
+            emissiveIntensity: 0.22,
+            roughness: 0.18,
+            transparent: true,
+            opacity: 0.42,
+          })
+        );
+        aMesh.add(
+          new THREE.LineSegments(
+            new THREE.EdgesGeometry(barGeo),
+            new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.7 })
+          )
+        );
+        groupS2_Liquidity.add(aMesh);
+        askBars.push(aMesh);
+      }
+
+      const canyonBeam = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, 4.5, 2.4),
+        new THREE.MeshBasicMaterial({ color: 0xf4f5f8, transparent: true, opacity: 0.55 })
+      );
+      canyonBeam.position.set(0, 2.25, 0);
+      groupS2_Liquidity.add(canyonBeam);
+
+      // =====================================================================
+      // SCENE 3 (Slide 4 — Pipeline): Three-Gate Optical Pipeline
+      // =====================================================================
+      const groupS3_Pipeline = new THREE.Group();
+      groupS3_Pipeline.position.set(2.2, 0.2, 0);
+      groupS3_Pipeline.rotation.y = -0.35;
+      groupS3_Pipeline.visible = false;
+      scene.add(groupS3_Pipeline);
+
+      const gatePositionsX = [-3.2, 0, 3.2];
+      const gateGroups = [];
+      gatePositionsX.forEach((gx, idx) => {
+        const g = new THREE.Group();
+        g.position.set(gx, 0, 0);
+
+        g.add(
+          new THREE.Mesh(
+            new THREE.BoxGeometry(0.24, 3.8, 3.2),
+            new THREE.MeshStandardMaterial({
+              color: 0xf4f5f8,
+              roughness: 0.12,
+              metalness: 0.5,
+              transparent: true,
+              opacity: 0.18,
+            })
+          )
+        );
+
+        const edgeMat = new THREE.LineBasicMaterial({
+          color: idx === 1 ? 0xef4444 : 0x10b981,
+          transparent: true,
+          opacity: 0.75,
+        });
+        g.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.26, 3.85, 3.25)), edgeMat));
+
+        const innerRing = new THREE.Mesh(
+          new THREE.TorusGeometry(1.05, 0.03, 12, 64),
+          new THREE.MeshBasicMaterial({ color: 0xf4f5f8, transparent: true, opacity: 0.65 })
+        );
+        innerRing.rotation.y = Math.PI / 2;
+        g.add(innerRing);
+
+        groupS3_Pipeline.add(g);
+        gateGroups.push({ g, innerRing, edgeMat });
+      });
+
+      const railLine = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.02, 9.6, 8),
+        new THREE.MeshBasicMaterial({ color: 0xf4f5f8, transparent: true, opacity: 0.25 })
+      );
+      railLine.rotation.z = Math.PI / 2;
+      groupS3_Pipeline.add(railLine);
+
+      const packets = [];
+      for (let p = 0; p < 18; p++) {
+        const pkt = new THREE.Mesh(
+          new THREE.SphereGeometry(0.09, 10, 10),
+          new THREE.MeshBasicMaterial({ color: p % 3 === 0 ? 0x10b981 : 0xf4f5f8 })
+        );
+        groupS3_Pipeline.add(pkt);
+        packets.push({ pkt, offset: p / 18, yOff: ((p % 5) - 2) * 0.25, zOff: ((p % 3) - 1) * 0.35 });
+      }
+
+      // =====================================================================
+      // SCENE 4 (Slide 5 — Strategies): 3D Volatility Channel & Trajectory
+      // =====================================================================
+      const groupS4_Strategies = new THREE.Group();
+      groupS4_Strategies.position.set(2.3, 0, 0);
+      groupS4_Strategies.rotation.y = -0.22;
+      groupS4_Strategies.visible = false;
+      scene.add(groupS4_Strategies);
+
+      const s4Segs = 48;
+      const upperTubeGeo = new THREE.BufferGeometry();
+      const lowerTubeGeo = new THREE.BufferGeometry();
+      const trajGeo = new THREE.BufferGeometry();
+
+      upperTubeGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((s4Segs + 1) * 3), 3));
+      lowerTubeGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((s4Segs + 1) * 3), 3));
+      trajGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((s4Segs + 1) * 3), 3));
+
+      groupS4_Strategies.add(
+        new THREE.Line(upperTubeGeo, new THREE.LineBasicMaterial({ color: 0xf4f5f8, transparent: true, opacity: 0.45 })),
+        new THREE.Line(lowerTubeGeo, new THREE.LineBasicMaterial({ color: 0xf4f5f8, transparent: true, opacity: 0.45 })),
+        new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ color: 0x10b981, linewidth: 2 }))
+      );
+
+      const ribbonGeo = new THREE.PlaneGeometry(8.5, 2.0, s4Segs, 1);
+      groupS4_Strategies.add(
+        new THREE.Mesh(
+          ribbonGeo,
+          new THREE.MeshBasicMaterial({ color: 0xf4f5f8, side: THREE.DoubleSide, transparent: true, opacity: 0.08 })
+        )
+      );
+
+      const breakoutBeacon = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0x10b981 })
+      );
+      groupS4_Strategies.add(breakoutBeacon);
+
+      // =====================================================================
+      // SCENE 5 (Slide 6 — Risk): 3D Containment Gyroscope
+      // =====================================================================
+      const groupS5_Risk = new THREE.Group();
+      groupS5_Risk.position.set(2.5, 0, 0);
+      groupS5_Risk.visible = false;
+      scene.add(groupS5_Risk);
+
+      const coreMat = new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        emissive: 0xef4444,
+        emissiveIntensity: 0.45,
+        roughness: 0.15,
+        metalness: 0.5,
+      });
+      const capitalCore = new THREE.Mesh(new THREE.IcosahedronGeometry(0.95, 1), coreMat);
+      groupS5_Risk.add(capitalCore);
+
+      const ringRadii = [1.75, 2.35, 2.95];
+      const gyroRings = [];
+      ringRadii.forEach((rad) => {
+        const rMat = new THREE.MeshStandardMaterial({
+          color: 0xf4f5f8,
+          emissive: 0xef4444,
+          emissiveIntensity: 0.25,
+          roughness: 0.15,
+          metalness: 0.65,
+          transparent: true,
+          opacity: 0.42,
+        });
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(rad, 0.085, 16, 96), rMat);
+        groupS5_Risk.add(ring);
+        gyroRings.push({ ring, rMat });
+      });
+
+      // =====================================================================
+      // SCENE 6 (Slide 7 — Investors & Global Horizon): Fresnel Earth Globe
+      // =====================================================================
+      const groupS6_Globe = new THREE.Group();
+      groupS6_Globe.position.set(2.7, -0.25, 0);
+      groupS6_Globe.visible = false;
+      scene.add(groupS6_Globe);
+
+      const globeFresnelMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uSilver: { value: new THREE.Color(0xf4f5f8) },
+          uEmerald: { value: new THREE.Color(0x10b981) },
+          uObsidian: { value: new THREE.Color(0x06070a) },
+        },
+        vertexShader: `
+          varying vec3 vNormalView;
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            vNormalView = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uSilver;
+          uniform vec3 uEmerald;
+          uniform vec3 uObsidian;
+          varying vec3 vNormalView;
+          varying vec2 vUv;
+          void main() {
+            float ndotv = clamp(dot(normalize(vNormalView), vec3(0.0, 0.0, 1.0)), 0.0, 1.0);
+            float fresnel = pow(1.0 - ndotv, 3.1);
+            float lat = smoothstep(0.96, 1.0, abs(sin(vUv.y * 56.548)));
+            float lon = smoothstep(0.96, 1.0, abs(sin(vUv.x * 113.097)));
+            float grid = max(lat, lon) * 0.22;
+            vec3 rim = mix(uEmerald, uSilver, 0.65);
+            vec3 col = uObsidian + rim * fresnel * 1.45 + uSilver * grid;
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `,
+      });
+
+      const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(2.85, 72, 72), globeFresnelMat);
+      groupS6_Globe.add(earthMesh);
+
+      const latLonToVec3 = (lat, lon, r) => {
+        const phi = ((90 - lat) * Math.PI) / 180;
+        const theta = ((lon + 180) * Math.PI) / 180;
+        return new THREE.Vector3(
+          -r * Math.sin(phi) * Math.cos(theta),
+          r * Math.cos(phi),
+          r * Math.sin(phi) * Math.sin(theta)
+        );
+      };
+
+      const vTokyo = latLonToVec3(35.68, 139.69, 2.88);
+      const vLondon = latLonToVec3(51.51, -0.13, 2.88);
+      const vNY = latLonToVec3(40.71, -74.01, 2.88);
+
+      const hubNodes = {
+        ASIA: new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 14), new THREE.MeshBasicMaterial({ color: 0x10b981 })),
+        LONDON: new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 14), new THREE.MeshBasicMaterial({ color: 0xf4f5f8 })),
+        NY: new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 14), new THREE.MeshBasicMaterial({ color: 0xf4f5f8 })),
+      };
+      hubNodes.ASIA.position.copy(vTokyo);
+      hubNodes.LONDON.position.copy(vLondon);
+      hubNodes.NY.position.copy(vNY);
+      earthMesh.add(hubNodes.ASIA, hubNodes.LONDON, hubNodes.NY);
+
+      const buildArc = (p1, p2) => {
+        const mid = p1.clone().add(p2).multiplyScalar(0.5).normalize().multiplyScalar(3.95);
+        const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+        return new THREE.Mesh(
+          new THREE.TubeGeometry(curve, 48, 0.024, 8, false),
+          new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.72 })
+        );
+      };
+      earthMesh.add(buildArc(vTokyo, vLondon), buildArc(vLondon, vNY), buildArc(vNY, vTokyo));
+
+      stage3D = {
+        renderer,
+        scene,
+        camera,
+        starPoints,
+        groups: [
+          groupS0,
+          groupS1_AI,
+          groupS2_Liquidity,
+          groupS3_Pipeline,
+          groupS4_Strategies,
+          groupS5_Risk,
+          groupS6_Globe,
+        ],
+        activeSlide: 0,
+        mouseX: 0,
+        mouseY: 0,
+        noiseGeo,
+        noiseSeeds,
+        s0Candles,
+        neuralCoreMesh,
+        neuralCoreMat,
+        neuralCage,
+        tensorNodes,
+        synapticFilaments,
+        filamentMat,
+        bidBars,
+        askBars,
+        currBids: [...liquidityVenues.XAUUSD.bids],
+        currAsks: [...liquidityVenues.XAUUSD.asks],
+        currGap: liquidityVenues.XAUUSD.gap,
+        gateGroups,
+        packets,
+        s4Segs,
+        upperTubeGeo,
+        lowerTubeGeo,
+        trajGeo,
+        ribbonGeo,
+        breakoutBeacon,
+        capitalCore,
+        coreMat,
+        gyroRings,
+        earthMesh,
+        globeFresnelMat,
+        hubNodes,
+      };
+    }
+
+    let animTime = 0;
+    function runThreeStageLoop() {
+      animTime += 0.016;
+
+      if (stage3D) {
+        // Determine which 3D scene to render:
+        // On 'landing': activeSlide (0..6)
+        // On 'login': slow-orbiting Neural + Fresnel sphere centered slightly behind card
+        // On 'workstation': subtle ambient globe
+        const isLogin = appState.topView === 'login';
+        const active = appState.topView === 'landing' ? stage3D.activeSlide : isLogin ? 1 : 6;
+
+        stage3D.groups.forEach((grp, idx) => {
+          grp.visible = idx === active;
+        });
+
+        let targetCamX = stage3D.mouseX * 0.9;
+        let targetCamY = 0.75 - stage3D.mouseY * 0.5;
+        let targetCamZ = 12.2;
+
+        if (active === 3) {
+          targetCamX += (appState.s4Gate - 1) * 1.45;
+          targetCamZ = 10.6;
+        }
+
+        stage3D.camera.position.x += (targetCamX - stage3D.camera.position.x) * 0.06;
+        stage3D.camera.position.y += (targetCamY - stage3D.camera.position.y) * 0.06;
+        stage3D.camera.position.z += (targetCamZ - stage3D.camera.position.z) * 0.06;
+        stage3D.camera.lookAt(0, 0, 0);
+
+        stage3D.starPoints.rotation.y = animTime * 0.018;
+
+        if (active === 0) {
+          // Scene 0: Noise-to-Signal Filter
+          const posAttr = stage3D.noiseGeo.attributes.position;
+          const isRaw = appState.s1FilterMode === 'raw';
+          for (let i = 0; i < stage3D.noiseSeeds.length; i++) {
+            const seed = stage3D.noiseSeeds[i];
+            seed.x += seed.speed * (isRaw ? 1.8 : 1.0);
+            if (seed.x > (isRaw ? 5.6 : -0.35)) {
+              seed.x = -6.0;
+            }
+            const turb = isRaw ? 0.85 : 0.45;
+            const y = seed.y + Math.sin(animTime * 2.5 + seed.phase) * turb;
+            const z = seed.z + Math.cos(animTime * 2.1 + seed.phase) * turb;
+            posAttr.setXYZ(i, seed.x, y, z);
+          }
+          posAttr.needsUpdate = true;
+
+          stage3D.s0Candles.forEach((c) => {
+            c.holder.visible = !isRaw;
+            c.holder.position.y = c.by + Math.sin(animTime * 1.6 + c.phase) * 0.18;
+          });
+        } else if (active === 1) {
+          // Scene 1: Artificial Intelligence Neural Core (also backs Login view smoothly)
+          const grp = stage3D.groups[1];
+          const targetX = isLogin ? 0.0 : 2.6;
+          grp.position.x += (targetX - grp.position.x) * 0.07;
+
+          const agentProfile = aiAgentProfiles[appState.s2AiAgent];
+          const targetHex = isLogin ? 0x10b981 : agentProfile.colorHex;
+          const targetColor = new THREE.Color(targetHex);
+
+          stage3D.neuralCoreMat.emissive.lerp(targetColor, 0.08);
+          stage3D.filamentMat.color.lerp(targetColor, 0.08);
+
+          const spinMult = isLogin ? 0.45 : appState.s2AiAgent === 2 ? 1.45 : 1.0;
+          stage3D.neuralCoreMesh.rotation.y += 0.012 * spinMult;
+          stage3D.neuralCoreMesh.rotation.x += 0.007 * spinMult;
+          stage3D.neuralCage.rotation.y -= 0.006 * spinMult;
+          stage3D.neuralCage.rotation.z += 0.005 * spinMult;
+
+          stage3D.tensorNodes.forEach((tn, i) => {
+            tn.nodeMat.emissive.lerp(targetColor, 0.08);
+            const angle = tn.theta + animTime * tn.speed * spinMult;
+            const rPulse = tn.radius + Math.sin(animTime * 2.2 + i) * 0.14;
+            const x = rPulse * Math.sin(tn.phi) * Math.cos(angle);
+            const y = rPulse * Math.cos(tn.phi) + Math.sin(animTime * 1.5 + i) * 0.12;
+            const z = rPulse * Math.sin(tn.phi) * Math.sin(angle);
+            tn.mesh.position.set(x, y, z);
+            tn.mesh.rotation.y += 0.02;
+
+            const lineAttr = stage3D.synapticFilaments[i].attributes.position;
+            lineAttr.setXYZ(0, 0, 0, 0);
+            lineAttr.setXYZ(1, x, y, z);
+            lineAttr.needsUpdate = true;
+          });
+        } else if (active === 2) {
+          // Scene 2: Volumetric Bid/Ask Canyon
+          const cfg = liquidityVenues[appState.s3Venue];
+          stage3D.currGap += (cfg.gap - stage3D.currGap) * 0.08;
+          for (let i = 0; i < 12; i++) {
+            stage3D.currBids[i] += (cfg.bids[i] - stage3D.currBids[i]) * 0.08;
+            stage3D.currAsks[i] += (cfg.asks[i] - stage3D.currAsks[i]) * 0.08;
+
+            const pulse = 1 + Math.sin(animTime * 2.2 + i * 0.4) * 0.05;
+            const bBar = stage3D.bidBars[i];
+            bBar.position.x = -(stage3D.currGap + i * 0.44);
+            bBar.scale.y = stage3D.currBids[i] * pulse;
+
+            const aBar = stage3D.askBars[i];
+            aBar.position.x = stage3D.currGap + i * 0.44;
+            aBar.scale.y = stage3D.currAsks[i] * pulse;
+          }
+        } else if (active === 3) {
+          // Scene 3: Three-Gate Optical Pipeline
+          stage3D.gateGroups.forEach((gg, idx) => {
+            const isFocused = idx === appState.s4Gate;
+            gg.innerRing.rotation.z += isFocused ? 0.03 : 0.008;
+            gg.g.scale.lerp(new THREE.Vector3(isFocused ? 1.12 : 0.94, isFocused ? 1.12 : 0.94, 1), 0.08);
+          });
+
+          stage3D.packets.forEach((p) => {
+            p.offset = (p.offset + 0.0065) % 1;
+            const px = -4.6 + p.offset * 9.2;
+            p.pkt.position.set(px, p.yOff * Math.sin(p.offset * Math.PI * 2), p.zOff);
+          });
+        } else if (active === 4) {
+          // Scene 4: Uncorrelated Volatility Regimes
+          const st = appState.s5Strategy;
+          const upAttr = stage3D.upperTubeGeo.attributes.position;
+          const loAttr = stage3D.lowerTubeGeo.attributes.position;
+          const trAttr = stage3D.trajGeo.attributes.position;
+          const rbAttr = stage3D.ribbonGeo.attributes.position;
+
+          for (let i = 0; i <= stage3D.s4Segs; i++) {
+            const t = i / stage3D.s4Segs;
+            const x = (t - 0.5) * 8.5;
+            let upperY = 1.0;
+            let lowerY = -1.0;
+            let trajY = 0;
+
+            if (st === 0) {
+              const squeeze = t < 0.58 ? 0.48 : 0.48 + (t - 0.58) * 3.8;
+              upperY = squeeze;
+              lowerY = -0.55;
+              trajY =
+                t < 0.58
+                  ? Math.sin(t * 26 + animTime * 2) * 0.25
+                  : 0.2 + (t - 0.58) * 5.2 + Math.sin(t * 14) * 0.14;
+            } else if (st === 1) {
+              upperY = 1.45 + Math.sin(t * 6 + animTime) * 0.22;
+              lowerY = -1.45 - Math.sin(t * 6 + animTime) * 0.22;
+              trajY = Math.sin(t * Math.PI * 4 + animTime * 1.8) * 1.28;
+            } else {
+              const step = Math.floor(t * 4) * 0.65 - 0.8;
+              upperY = step + 0.75;
+              lowerY = step - 0.55;
+              trajY = step + Math.sin(t * 32 + animTime * 2) * 0.22;
+            }
+
+            upAttr.setXYZ(i, x, upperY, 0);
+            loAttr.setXYZ(i, x, lowerY, 0);
+            trAttr.setXYZ(i, x, trajY, 0.15);
+
+            rbAttr.setXYZ(i, x, upperY, 0);
+            rbAttr.setXYZ(i + stage3D.s4Segs + 1, x, lowerY, 0);
+
+            if (i === Math.floor(stage3D.s4Segs * 0.86)) {
+              stage3D.breakoutBeacon.position.set(x, trajY, 0.2);
+            }
+          }
+          upAttr.needsUpdate = true;
+          loAttr.needsUpdate = true;
+          trAttr.needsUpdate = true;
+          rbAttr.needsUpdate = true;
+        } else if (active === 5) {
+          // Scene 5: Automated Risk Gyroscope
+          const dd = appState.s6Stress;
+          const locked = dd >= 3.0;
+          const targetHex = locked ? 0xef4444 : dd >= 1.5 ? 0xf59e0b : 0x10b981;
+          const targetColor = new THREE.Color(targetHex);
+
+          stage3D.coreMat.color.lerp(targetColor, 0.1);
+          stage3D.coreMat.emissive.lerp(targetColor, 0.1);
+          stage3D.capitalCore.rotation.y += locked ? 0.002 : 0.018;
+
+          stage3D.gyroRings.forEach((gr, idx) => {
+            gr.rMat.emissive.lerp(targetColor, 0.1);
+            if (locked) {
+              gr.ring.rotation.x += (0.25 - gr.ring.rotation.x) * 0.1;
+              gr.ring.rotation.y += (-0.35 - gr.ring.rotation.y) * 0.1;
+            } else {
+              const spd = (0.012 + dd * 0.01) * (idx % 2 === 0 ? 1 : -1);
+              gr.ring.rotation.x += spd;
+              gr.ring.rotation.y += spd * 0.8;
+            }
+          });
+        } else if (active === 6) {
+          // Scene 6: Global Fresnel Earth Globe
+          stage3D.globeFresnelMat.uniforms.uTime.value = animTime;
+          const targetRotY =
+            appState.s7Hub === 'ASIA' ? -1.15 : appState.s7Hub === 'LONDON' ? 1.35 : 2.55;
+          stage3D.earthMesh.rotation.y += (targetRotY - stage3D.earthMesh.rotation.y) * 0.05;
+          stage3D.earthMesh.rotation.x = 0.22;
+
+          Object.entries(stage3D.hubNodes).forEach(([key, mesh]) => {
+            const isSel = key === appState.s7Hub;
+            mesh.material.color.setHex(isSel ? 0x10b981 : 0xf4f5f8);
+            const sc = isSel ? 1.35 + Math.sin(animTime * 4) * 0.2 : 0.85;
+            mesh.scale.set(sc, sc, sc);
+          });
+        }
+
+        stage3D.renderer.render(stage3D.scene, stage3D.camera);
+      }
+
+      requestAnimationFrame(runThreeStageLoop);
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 7. SLIDE-OVER 9-ALERT INCIDENT DRAWER & LOWER DECK TABS
+     * -----------------------------------------------------------------------
+     */
+    function renderAllOperationalAlerts() {
+      const drawerList = document.getElementById('drawer-alerts-list');
+      const opsList = document.getElementById('ops-full-alerts-list');
+
+      const html = exactOperationalAlerts
+        .map((a, idx) => {
+          const isCrit = a.level === 'crimson';
+          const badgeStyle = isCrit
+            ? 'border-[#EF4444]/40 bg-[#EF4444]/15 text-[#EF4444]'
+            : 'border-[#F59E0B]/40 bg-[#F59E0B]/15 text-[#F59E0B]';
+          return `
+            <div class="rounded-xl border border-white/[0.08] bg-[#06070A]/85 p-4">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="rounded px-2 py-0.5 text-[10px] font-semibold border ${badgeStyle}">
+                  0${idx + 1} · ${a.code}
+                </span>
+                <span class="text-[10px] text-[#8B909E]">25 Nov 2026 07:54 WIB</span>
+              </div>
+              <p class="text-[#F4F5F8] leading-relaxed">${a.text}</p>
+            </div>
+          `;
+        })
+        .join('');
+
+      if (drawerList) drawerList.innerHTML = html;
+      if (opsList) opsList.innerHTML = html;
+    }
+
+    function openIncidentDrawer() {
+      const el = document.getElementById('incident-drawer-backdrop');
+      if (el) el.classList.remove('hidden');
+    }
+
+    function closeIncidentDrawer(e) {
+      if (e && e.target !== document.getElementById('incident-drawer-backdrop')) return;
+      const el = document.getElementById('incident-drawer-backdrop');
+      if (el) el.classList.add('hidden');
+    }
+
+    function selectLowerDeck(tabKey) {
+      ['strategi', 'telemetry', 'riwayat'].forEach((k) => {
+        const panel = document.getElementById(`deck-panel-${k}`);
+        if (panel) panel.classList.toggle('hidden', k !== tabKey);
+      });
+
+      document.querySelectorAll('.deck-tab-btn').forEach((btn) => {
+        const active = btn.dataset.deck === tabKey;
+        btn.className = active
+          ? 'deck-tab-btn rounded-lg bg-[#F4F5F8] px-4 py-2 font-semibold text-[#06070A]'
+          : 'deck-tab-btn rounded-lg px-4 py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8]';
+      });
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 8. CANDLESTICK + EMA-20 + VOLUME CHART & ORDER EXECUTION ENGINE
+     * -----------------------------------------------------------------------
+     */
+    let candlesData = [];
+    let hoverBarIndex = -1;
+    let liveTickInterval = null;
+
+    function buildCandles(sym, tf) {
+      const meta = symbolMeta[sym];
+      const count = 60;
+      const mult = tf === '1m' ? 1 : tf === '5m' ? 1.8 : tf === '15m' ? 2.7 : 4.2;
+      let cursor = meta.price - meta.step * 4.5 * mult;
+      const arr = [];
+
+      for (let i = 0; i < count; i++) {
+        const wave = Math.sin(i * 0.36 + (sym === 'XAUUSD' ? 0.7 : 2.3)) * meta.step * mult * 0.56;
+        const jitter = Math.cos(i * 0.94 + tf.length) * meta.step * mult * 0.45;
+        const open = cursor;
+        const close = i === count - 1 ? meta.price : open + wave + jitter;
+        const high = Math.max(open, close) + Math.abs(Math.sin(i * 1.3)) * meta.step * mult * 0.62;
+        const low = Math.min(open, close) - Math.abs(Math.cos(i * 1.1)) * meta.step * mult * 0.62;
+        const vol = Math.round(130 + Math.abs(Math.sin(i * 0.68)) * 320);
+
+        const totalMins = 7 * 60 + 54 - (count - 1 - i) * (tf === '1m' ? 1 : tf === '5m' ? 5 : tf === '15m' ? 15 : 60);
+        const hh = String(Math.floor((((totalMins % 1440) + 1440) % 1440) / 60)).padStart(2, '0');
+        const mm = String(((totalMins % 60) + 60) % 60).padStart(2, '0');
+
+        arr.push({
+          time: `${hh}:${mm}`,
+          open: +open.toFixed(2),
+          high: +high.toFixed(2),
+          low: +low.toFixed(2),
+          close: +close.toFixed(2),
+          vol,
+        });
+        cursor = close;
+      }
+
+      const k = 2 / 21;
+      let ema = arr[0].close;
+      arr.forEach((c, idx) => {
+        ema = idx === 0 ? c.close : c.close * k + ema * (1 - k);
+        c.ema = +ema.toFixed(2);
+      });
+
+      return arr;
+    }
+
+    function drawTerminalChart() {
+      const canvas = document.getElementById('terminal-chart-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.parentElement.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const w = rect.width;
+      const h = rect.height;
+      const padL = 18;
+      const padR = 78;
+      const padT = 24;
+      const padB = 30;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      ctx.clearRect(0, 0, w, h);
+      if (!candlesData.length) return;
+
+      const maxP = Math.max(...candlesData.map((c) => c.high));
+      const minP = Math.min(...candlesData.map((c) => c.low));
+      const span = Math.max(maxP - minP, 0.01);
+      const yMax = maxP + span * 0.08;
+      const yMin = minP - span * 0.16;
+      const toY = (v) => padT + ((yMax - v) / (yMax - yMin)) * plotH;
+      const slotW = plotW / candlesData.length;
+      const barW = Math.max(4, Math.min(slotW * 0.62, 12));
+
+      ctx.font = '10px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'left';
+      for (let g = 0; g <= 5; g++) {
+        const y = padT + (g / 5) * plotH;
+        const val = yMax - (g / 5) * (yMax - yMin);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#8B909E';
+        ctx.fillText(val.toFixed(2), w - padR + 8, y + 3.5);
+      }
+
+      if (appState.chartMode === 'liquidity') {
+        const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+        grad.addColorStop(0, 'rgba(16, 185, 129, 0.24)');
+        grad.addColorStop(1, 'rgba(6, 7, 10, 0)');
+
+        ctx.beginPath();
+        candlesData.forEach((c, i) => {
+          const cx = padL + (i + 0.5) * slotW;
+          if (i === 0) ctx.moveTo(cx, toY(c.close));
+          else ctx.lineTo(cx, toY(c.close));
+        });
+        ctx.lineTo(padL + (candlesData.length - 0.5) * slotW, h - padB);
+        ctx.lineTo(padL + 0.5 * slotW, h - padB);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.strokeStyle = '#10B981';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        candlesData.forEach((c, i) => {
+          const cx = padL + (i + 0.5) * slotW;
+          if (i === 0) ctx.moveTo(cx, toY(c.close));
+          else ctx.lineTo(cx, toY(c.close));
+        });
+        ctx.stroke();
+      } else {
+        const maxVol = Math.max(...candlesData.map((c) => c.vol));
+        candlesData.forEach((c, i) => {
+          const cx = padL + (i + 0.5) * slotW;
+          const vh = (c.vol / maxVol) * (plotH * 0.18);
+          const bull = c.close >= c.open;
+          ctx.fillStyle = bull ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+          ctx.fillRect(cx - barW / 2, h - padB - vh, barW, vh);
+        });
+
+        candlesData.forEach((c, i) => {
+          const cx = padL + (i + 0.5) * slotW;
+          const bull = c.close >= c.open;
+          const color = bull ? '#10B981' : '#EF4444';
+
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.25;
+          ctx.beginPath();
+          ctx.moveTo(cx, toY(c.high));
+          ctx.lineTo(cx, toY(c.low));
+          ctx.stroke();
+
+          const top = Math.min(toY(c.open), toY(c.close));
+          const bodyH = Math.max(Math.abs(toY(c.close) - toY(c.open)), 1.8);
+          ctx.fillStyle = color;
+          ctx.fillRect(cx - barW / 2, top, barW, bodyH);
+
+          if (i % 12 === 0) {
+            ctx.fillStyle = '#8B909E';
+            ctx.textAlign = 'center';
+            ctx.fillText(c.time, cx, h - 9);
+          }
+        });
+
+        ctx.strokeStyle = '#F4F5F8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        candlesData.forEach((c, i) => {
+          const cx = padL + (i + 0.5) * slotW;
+          if (i === 0) ctx.moveTo(cx, toY(c.ema));
+          else ctx.lineTo(cx, toY(c.ema));
+        });
+        ctx.stroke();
+      }
+
+      const last = candlesData[candlesData.length - 1];
+      const yLast = toY(last.close);
+      const isBull = last.close >= last.open;
+      ctx.save();
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = isBull ? 'rgba(16, 185, 129, 0.55)' : 'rgba(239, 68, 68, 0.55)';
+      ctx.beginPath();
+      ctx.moveTo(padL, yLast);
+      ctx.lineTo(w - padR, yLast);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = isBull ? '#10B981' : '#EF4444';
+      ctx.beginPath();
+      ctx.roundRect(w - padR + 4, yLast - 9, 70, 18, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#06070A';
+      ctx.font = '600 10px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(last.close.toFixed(2), w - padR + 8, yLast + 3.5);
+
+      if (hoverBarIndex >= 0 && hoverBarIndex < candlesData.length) {
+        const hc = candlesData[hoverBarIndex];
+        const hx = padL + (hoverBarIndex + 0.5) * slotW;
+        const hy = toY(hc.close);
+
+        ctx.save();
+        ctx.setLineDash([2, 2]);
+        ctx.strokeStyle = 'rgba(244, 245, 248, 0.45)';
+        ctx.beginPath();
+        ctx.moveTo(hx, padT);
+        ctx.lineTo(hx, h - padB);
+        ctx.moveTo(padL, hy);
+        ctx.lineTo(w - padR, hy);
+        ctx.stroke();
+        ctx.restore();
+
+        updateOhlcvReadout(hc);
+      } else {
+        updateOhlcvReadout(last);
+      }
+    }
+
+    function updateOhlcvReadout(c) {
+      document.getElementById('ohlcv-o').textContent = c.open.toFixed(2);
+      document.getElementById('ohlcv-h').textContent = c.high.toFixed(2);
+      document.getElementById('ohlcv-l').textContent = c.low.toFixed(2);
+      document.getElementById('ohlcv-c').textContent = c.close.toFixed(2);
+      document.getElementById('ohlcv-v').textContent = c.vol;
+    }
+
+    function bindTerminalChartHover() {
+      const canvas = document.getElementById('terminal-chart-canvas');
+      if (!canvas) return;
+      const handlePointer = (clientX) => {
+        const rect = canvas.getBoundingClientRect();
+        const padL = 18;
+        const padR = 78;
+        const plotW = rect.width - padL - padR;
+        const idx = Math.floor(((clientX - rect.left - padL) / plotW) * candlesData.length);
+        hoverBarIndex = idx >= 0 && idx < candlesData.length ? idx : -1;
+        drawTerminalChart();
+      };
+      canvas.addEventListener('mousemove', (e) => handlePointer(e.clientX));
+      canvas.addEventListener('mouseleave', () => {
+        hoverBarIndex = -1;
+        drawTerminalChart();
+      });
+      canvas.addEventListener(
+        'touchmove',
+        (e) => {
+          if (e.touches[0]) handlePointer(e.touches[0].clientX);
+        },
+        { passive: true }
+      );
+    }
+
+    function selectSymbol(sym) {
+      appState.symbol = sym;
+      const meta = symbolMeta[sym];
+      document.querySelectorAll('.sym-tab-btn').forEach((btn) => {
+        const active = btn.dataset.sym === sym;
+        btn.className = active
+          ? 'sym-tab-btn rounded-lg bg-[#F4F5F8] px-4 py-1.5 font-semibold text-[#06070A] transition-all'
+          : 'sym-tab-btn rounded-lg px-4 py-1.5 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+      });
+
+      document.getElementById('top-bid').textContent = (meta.price - meta.spread / 2).toFixed(2);
+      document.getElementById('top-ask').textContent = (meta.price + meta.spread / 2).toFixed(2);
+      document.getElementById('top-spread').textContent = meta.spread.toFixed(2);
+      document.getElementById('chart-title-tag').textContent = `${sym} · ${appState.timeframe} · EMA-20`;
+
+      document.getElementById('order-sl').value = meta.sl.toFixed(2);
+      document.getElementById('order-tp').value = meta.tp.toFixed(2);
+      document.getElementById('btn-place-order').textContent = `Eksekusi ${appState.ticketSide === 'BUY' ? 'Buy' : 'Sell'} ${sym} →`;
+
+      updateTicketEstimates();
+      candlesData = buildCandles(sym, appState.timeframe);
+      drawTerminalChart();
+    }
+
+    function selectTimeframe(tf) {
+      appState.timeframe = tf;
+      document.querySelectorAll('.tf-tab-btn').forEach((btn) => {
+        const active = btn.dataset.tf === tf;
+        btn.className = active
+          ? 'tf-tab-btn rounded-lg bg-[#F4F5F8] px-3 py-1 font-semibold text-[#06070A]'
+          : 'tf-tab-btn rounded-lg px-3 py-1 text-[#8B909E] hover:text-[#F4F5F8]';
+      });
+      document.getElementById('chart-title-tag').textContent = `${appState.symbol} · ${tf} · EMA-20`;
+      candlesData = buildCandles(appState.symbol, tf);
+      drawTerminalChart();
+    }
+
+    function selectChartMode(mode) {
+      appState.chartMode = mode;
+      document.querySelectorAll('.cmode-btn').forEach((btn) => {
+        const active = btn.dataset.cmode === mode;
+        btn.className = active
+          ? 'cmode-btn rounded-lg bg-white/[0.12] px-3.5 py-1 font-semibold text-[#F4F5F8]'
+          : 'cmode-btn rounded-lg px-3.5 py-1 text-[#8B909E] hover:text-[#F4F5F8]';
+      });
+      drawTerminalChart();
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 9. PRE-FLIGHT ACK CHECKLIST & SIMULATED ORDER EXECUTION
+     * -----------------------------------------------------------------------
+     */
+    function openAckChecklistModal() {
+      const m = document.getElementById('ack-checklist-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeAckChecklistModal(e) {
+      if (e && e.target !== document.getElementById('ack-checklist-modal')) return;
+      const m = document.getElementById('ack-checklist-modal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function updateAckProgress() {
+      const cbs = Array.from(document.querySelectorAll('.ack-item-cb'));
+      const count = cbs.filter((c) => c.checked).length;
+      document.getElementById('ack-progress-text').textContent = `${count} / 4 Selesai`;
+      document.getElementById('ack-progress-fill').style.width = `${(count / 4) * 100}%`;
+
+      const confirmBtn = document.getElementById('btn-confirm-ack');
+      if (count === 4) {
+        confirmBtn.disabled = false;
+        confirmBtn.className =
+          'rounded-xl bg-[#10B981] px-5 py-2 text-xs font-semibold text-[#06070A] hover:opacity-95 cursor-pointer transition-all';
+      } else {
+        confirmBtn.disabled = true;
+        confirmBtn.className =
+          'rounded-xl bg-[#10B981] px-5 py-2 text-xs font-semibold text-[#06070A] opacity-30 cursor-not-allowed transition-all';
+      }
+    }
+
+    function checkAllAckItems() {
+      document.querySelectorAll('.ack-item-cb').forEach((c) => (c.checked = true));
+      updateAckProgress();
+    }
+
+    function confirmReleaseGlobalHalt() {
+      appState.halted = false;
+      closeAckChecklistModal();
+
+      const navBadge = document.getElementById('global-ea-badge');
+      navBadge.className =
+        'hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-[#10B981]/35 bg-[#10B981]/15 px-3 py-1.5 font-semibold text-[#10B981]';
+      document.getElementById('global-ea-dot').className = 'h-2 w-2 rounded-full bg-[#10B981] pulse-emerald';
+      document.getElementById('global-ea-text').textContent = 'EA · ONLINE';
+
+      const regPill = document.getElementById('term-regime-pill');
+      regPill.className =
+        'inline-flex items-center gap-2 rounded-xl border border-[#10B981]/35 bg-[#10B981]/10 px-3.5 py-2 text-[11px] font-medium text-[#10B981]';
+      document.getElementById('term-regime-dot').className = 'h-1.5 w-1.5 rounded-full bg-[#10B981]';
+      document.getElementById('term-regime-text').textContent = 'TRENDING · FRESH';
+
+      const ksCard = document.getElementById('safety-interlock-card');
+      ksCard.classList.remove('border-[#EF4444]/40');
+      ksCard.classList.add('border-[#10B981]/40');
+
+      const eaTag = document.getElementById('interlock-ea-tag');
+      eaTag.className =
+        'rounded-lg border border-[#10B981]/35 bg-[#10B981]/15 px-2.5 py-1 font-semibold text-[#10B981]';
+      eaTag.textContent = 'EA · ONLINE';
+
+      document.getElementById('interlock-dot').className = 'h-2.5 w-2.5 rounded-full bg-[#10B981] pulse-emerald';
+      document.getElementById('interlock-heading').textContent = 'DISARMED · Risk Gate Aktif';
+      document.getElementById('interlock-body').innerHTML =
+        'Pre-flight checklist (4/4) terverifikasi. Eksekusi order dibuka dengan batas stop-loss sesi <span class="font-mono text-[#10B981]">-$250.00</span>.';
+
+      document.getElementById('btn-release-checklist').classList.add('hidden');
+      document.getElementById('btn-rearm-global').classList.remove('hidden');
+
+      document.getElementById('ticket-frosted-lock').classList.add('hidden');
+      document.getElementById('ticket-state-badge').className = 'font-semibold text-[#10B981]';
+      document.getElementById('ticket-state-badge').textContent = 'SIAP EKSEKUSI';
+
+      startSimulatedTicks();
+      showToast('Kill-switch dilepas. Status EA · ONLINE & tiket Order Baru terbuka.');
+    }
+
+    function rearmGlobalHalt() {
+      appState.halted = true;
+      stopSimulatedTicks();
+      document.querySelectorAll('.ack-item-cb').forEach((c) => (c.checked = false));
+      updateAckProgress();
+
+      const navBadge = document.getElementById('global-ea-badge');
+      navBadge.className =
+        'hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-[#EF4444]/35 bg-[#EF4444]/10 px-3 py-1.5 font-semibold text-[#EF4444]';
+      document.getElementById('global-ea-dot').className = 'h-2 w-2 rounded-full bg-[#EF4444] pulse-crimson';
+      document.getElementById('global-ea-text').textContent = 'EA · OFFLINE';
+
+      const regPill = document.getElementById('term-regime-pill');
+      regPill.className =
+        'inline-flex items-center gap-2 rounded-xl border border-[#F59E0B]/35 bg-[#F59E0B]/10 px-3.5 py-2 text-[11px] font-medium text-[#F59E0B]';
+      document.getElementById('term-regime-dot').className = 'h-1.5 w-1.5 rounded-full bg-[#F59E0B]';
+      document.getElementById('term-regime-text').textContent = 'UNKNOWN · STALE 10m';
+
+      const ksCard = document.getElementById('safety-interlock-card');
+      ksCard.classList.remove('border-[#10B981]/40');
+      ksCard.classList.add('border-[#EF4444]/40');
+
+      const eaTag = document.getElementById('interlock-ea-tag');
+      eaTag.className =
+        'rounded-lg border border-[#EF4444]/35 bg-[#EF4444]/15 px-2.5 py-1 font-semibold text-[#EF4444]';
+      eaTag.textContent = 'EA · OFFLINE';
+
+      document.getElementById('interlock-dot').className = 'h-2.5 w-2.5 rounded-full bg-[#EF4444] pulse-crimson';
+      document.getElementById('interlock-heading').textContent = 'TERARM · Halt Global';
+      document.getElementById('interlock-body').innerHTML =
+        'Kill-switch memblokir semua order baru di risk gate. Posisi terbuka tidak terpengaruh. <span class="mt-2 block font-mono text-[#EF4444]">Alasan: daily drawdown limit reached (pnl -127.89 &lt;= -100.0)</span>';
+
+      document.getElementById('btn-release-checklist').classList.remove('hidden');
+      document.getElementById('btn-rearm-global').classList.add('hidden');
+
+      document.getElementById('ticket-frosted-lock').classList.remove('hidden');
+      document.getElementById('ticket-state-badge').className = 'font-semibold text-[#EF4444]';
+      document.getElementById('ticket-state-badge').textContent = 'TERKUNCI · TERARM';
+
+      showToast('TERARM · Halt Global diaktifkan kembali.');
+    }
+
+    function setTicketSide(side) {
+      appState.ticketSide = side;
+      const buyBtn = document.getElementById('btn-side-buy');
+      const sellBtn = document.getElementById('btn-side-sell');
+      const execBtn = document.getElementById('btn-place-order');
+
+      if (side === 'BUY') {
+        buyBtn.className = 'rounded-lg bg-[#10B981] py-2 font-semibold text-[#06070A] transition-all';
+        sellBtn.className = 'rounded-lg py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+        execBtn.className =
+          'w-full rounded-xl bg-[#10B981] py-3.5 text-xs font-semibold text-[#06070A] hover:opacity-95 transition-all';
+      } else {
+        sellBtn.className = 'rounded-lg bg-[#EF4444] py-2 font-semibold text-[#F4F5F8] transition-all';
+        buyBtn.className = 'rounded-lg py-2 font-medium text-[#8B909E] hover:text-[#F4F5F8] transition-all';
+        execBtn.className =
+          'w-full rounded-xl bg-[#EF4444] py-3.5 text-xs font-semibold text-[#F4F5F8] hover:opacity-95 transition-all';
+      }
+      execBtn.textContent = `Eksekusi ${side === 'BUY' ? 'Buy' : 'Sell'} ${appState.symbol} →`;
+    }
+
+    function updateTicketEstimates() {
+      const meta = symbolMeta[appState.symbol];
+      const lots = Math.max(0.01, parseFloat(document.getElementById('order-lots').value) || 0.2);
+      const notional = lots * meta.contract * meta.price;
+      const margin = notional / 100;
+      const riskUsd = lots * (appState.symbol === 'XAUUSD' ? 785 : 720);
+
+      document.getElementById('est-margin-val').textContent = `$${margin.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+      document.getElementById('est-risk-val').textContent = `-$${riskUsd.toFixed(2)}`;
+    }
+
+    function submitSimulatedOrder(e) {
+      e.preventDefault();
+      if (appState.halted) return;
+
+      const meta = symbolMeta[appState.symbol];
+      const lots = Math.max(0.01, parseFloat(document.getElementById('order-lots').value) || 0.2);
+      const notional = lots * meta.contract * meta.price;
+      const margin = notional / 100;
+      const initPnl = +(lots * (appState.symbol === 'XAUUSD' ? 64.5 : 42.0)).toFixed(2);
+
+      appState.positions.unshift({
+        id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+        symbol: appState.symbol,
+        side: appState.ticketSide,
+        lots,
+        entry: meta.price,
+        mark: meta.price,
+        notional,
+        margin,
+        pnl: initPnl,
+      });
+
+      syncPositionsAndPortfolio();
+      selectLowerDeck('riwayat');
+      showToast(`Order tereksekusi: ${appState.ticketSide} ${lots.toFixed(2)} ${appState.symbol} @ ${meta.price.toFixed(2)}`);
+    }
+
+    function closeLivePosition(id) {
+      const idx = appState.positions.findIndex((p) => p.id === id);
+      if (idx === -1) return;
+      const [closed] = appState.positions.splice(idx, 1);
+
+      appState.equity = +(appState.equity + closed.pnl).toFixed(2);
+      appState.dailyPnl = +(appState.dailyPnl + closed.pnl).toFixed(2);
+
+      syncPositionsAndPortfolio();
+      showToast(`Posisi ${closed.symbol} ditutup (${closed.pnl >= 0 ? '+' : ''}$${closed.pnl.toFixed(2)})`);
+    }
+
+    function syncPositionsAndPortfolio() {
+      const count = appState.positions.length;
+      const floatPnl = appState.positions.reduce((s, p) => s + p.pnl, 0);
+      const totalMargin = appState.positions.reduce((s, p) => s + p.margin, 0);
+      const totalGross = appState.positions.reduce((s, p) => s + p.notional, 0);
+      const liveEquity = appState.equity + floatPnl;
+      const liveDaily = appState.dailyPnl + floatPnl;
+
+      const eqFmt = `$${liveEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('kpi-equity').textContent = eqFmt;
+      document.getElementById('risk-equity-row').textContent = eqFmt;
+
+      const dailyEl = document.getElementById('kpi-daily-pnl');
+      dailyEl.textContent = `${liveDaily >= 0 ? '+' : '-'}$${Math.abs(liveDaily).toFixed(2)}`;
+      dailyEl.className = `mt-3 font-mono text-3xl font-semibold tabular-nums ${
+        liveDaily >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]'
+      }`;
+
+      const marginPct = (totalMargin / Math.max(liveEquity, 1)) * 100;
+      const marginFmt = `$${Math.round(totalMargin).toLocaleString('en-US')} (${marginPct.toFixed(1)}%)`;
+
+      document.getElementById('kpi-pos-exp').textContent = `${count} / $${Math.round(totalGross).toLocaleString('en-US')}`;
+      document.getElementById('kpi-pos-sub').textContent = `Pending/Sent: 0 / 0 · Margin ${marginFmt}`;
+      document.getElementById('deck-order-count').textContent = count;
+
+      document.getElementById('risk-margin-used').textContent = marginFmt;
+      document.getElementById('risk-gross-exp').textContent = `$${Math.round(totalGross).toLocaleString('en-US')}`;
+      document.getElementById('risk-open-wc').textContent = count > 0 ? `-$${Math.round(totalMargin * 0.25)}` : '$0';
+      document.getElementById('risk-stress').textContent = count > 0 ? `-$${Math.round(totalMargin * 0.45)}` : '$0';
+
+      const wrap = document.getElementById('live-positions-table-wrap');
+      if (count === 0) {
+        wrap.innerHTML = `
+          <div class="rounded-xl border border-white/[0.06] bg-[#06070A]/80 p-6 text-center font-mono text-xs text-[#8B909E]">
+            Belum ada posisi terbuka. Gunakan tiket Order Baru di kanan untuk simulasi eksekusi.
+          </div>
+        `;
+      } else {
+        wrap.innerHTML = `
+          <table class="w-full text-left font-mono text-xs tabular-nums">
+            <thead>
+              <tr class="border-b border-white/[0.08] text-[10px] uppercase text-[#8B909E]">
+                <th class="pb-3">Symbol</th>
+                <th class="pb-3">Side</th>
+                <th class="pb-3">Lots</th>
+                <th class="pb-3">Entry</th>
+                <th class="pb-3">Mark</th>
+                <th class="pb-3">PnL</th>
+                <th class="pb-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/[0.06]">
+              ${appState.positions
+                .map((p) => {
+                  const sideClr = p.side === 'BUY' ? 'text-[#10B981]' : 'text-[#EF4444]';
+                  const pnlClr = p.pnl >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]';
+                  return `
+                    <tr>
+                      <td class="py-3.5 font-semibold text-[#F4F5F8]">${p.symbol}</td>
+                      <td class="py-3.5 font-semibold ${sideClr}">${p.side}</td>
+                      <td class="py-3.5 text-[#F4F5F8]">${p.lots.toFixed(2)}</td>
+                      <td class="py-3.5 text-[#8B909E]">${p.entry.toFixed(2)}</td>
+                      <td class="py-3.5 text-[#F4F5F8]">${p.mark.toFixed(2)}</td>
+                      <td class="py-3.5 font-semibold ${pnlClr}">${p.pnl >= 0 ? '+' : '-'}$${Math.abs(p.pnl).toFixed(2)}</td>
+                      <td class="py-3.5 text-right">
+                        <button
+                          type="button"
+                          onclick="closeLivePosition('${p.id}')"
+                          class="rounded-lg border border-white/15 px-3 py-1 text-[11px] text-[#F4F5F8] hover:bg-white/10"
+                        >
+                          Close
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                })
+                .join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    }
+
+    function startSimulatedTicks() {
+      if (liveTickInterval) clearInterval(liveTickInterval);
+      liveTickInterval = setInterval(() => {
+        if (appState.halted || !candlesData.length) return;
+        const meta = symbolMeta[appState.symbol];
+        const move = (Math.random() - 0.47) * meta.step * 0.4;
+        meta.price = +(meta.price + move).toFixed(2);
+
+        const last = candlesData[candlesData.length - 1];
+        last.close = meta.price;
+        last.high = Math.max(last.high, meta.price);
+        last.low = Math.min(last.low, meta.price);
+
+        document.getElementById('top-bid').textContent = (meta.price - meta.spread / 2).toFixed(2);
+        document.getElementById('top-ask').textContent = (meta.price + meta.spread / 2).toFixed(2);
+
+        appState.positions.forEach((p) => {
+          if (p.symbol === appState.symbol) {
+            p.mark = meta.price;
+            const dir = p.side === 'BUY' ? 1 : -1;
+            p.pnl = +((p.mark - p.entry) * dir * p.lots * (p.symbol === 'XAUUSD' ? 28 : 0.4)).toFixed(2);
+          }
+        });
+
+        if (appState.positions.length > 0) syncPositionsAndPortfolio();
+        if (appState.topView === 'workstation' && appState.workspaceTab === 'terminal') drawTerminalChart();
+      }, 1400);
+    }
+
+    function stopSimulatedTicks() {
+      if (liveTickInterval) clearInterval(liveTickInterval);
+      liveTickInterval = null;
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 10. STRATEGY LAB CANVAS & SANDBOX
+     * -----------------------------------------------------------------------
+     */
+    function drawStrategyLabCanvas() {
+      const canvas = document.getElementById('strategylab-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.parentElement.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const w = rect.width;
+      const h = rect.height;
+      const padL = 48;
+      const padR = 22;
+      const padT = 24;
+      const padB = 30;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      const s1 = [0, 2.4, 5.1, 7.8, 10.2, 13.4, 15.8, 18.4];
+      const s2 = [0, 1.9, 4.4, 6.2, 8.5, 10.1, 11.4, 12.9];
+      const s3 = [0, 1.4, 3.1, 4.9, 6.8, 7.9, 7.1, 6.4];
+      const days = ['D-180', 'D-150', 'D-120', 'D-90', 'D-60', 'D-30', 'D-15', 'LIVE'];
+
+      const maxV = 22;
+      const minV = -2;
+      const toX = (i) => padL + (i / (s1.length - 1)) * plotW;
+      const toY = (v) => padT + ((maxV - v) / (maxV - minV)) * plotH;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = '10px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'right';
+      [0, 5, 10, 15, 20].forEach((v) => {
+        const y = toY(v);
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+        ctx.fillStyle = '#8B909E';
+        ctx.fillText(`+${v}%`, padL - 8, y + 3.5);
+      });
+
+      ctx.textAlign = 'center';
+      days.forEach((d, i) => {
+        ctx.fillStyle = '#8B909E';
+        ctx.fillText(d, toX(i), h - 8);
+      });
+
+      const plotLine = (arr, color) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        arr.forEach((v, i) => {
+          if (i === 0) ctx.moveTo(toX(i), toY(v));
+          else ctx.lineTo(toX(i), toY(v));
+        });
+        ctx.stroke();
+      };
+
+      plotLine(s1, '#10B981');
+      plotLine(s2, '#F4F5F8');
+      plotLine(s3, '#EF4444');
+    }
+
+    function updateLabSandbox(spreadVal, ddVal) {
+      if (spreadVal !== null) {
+        document.getElementById('param-spread-val').textContent = `${parseFloat(spreadVal).toFixed(2)} pips`;
+        const sharpe = (2.25 - parseFloat(spreadVal) * 0.68).toFixed(2);
+        const rej = Math.max(2.5, (0.95 - parseFloat(spreadVal)) * 28).toFixed(1);
+        document.getElementById('lab-proj-sharpe').textContent = sharpe;
+        document.getElementById('lab-proj-reject').textContent = `${rej}%`;
+      }
+      if (ddVal !== null) {
+        document.getElementById('param-dd-val').textContent = `-$${parseInt(ddVal, 10).toFixed(2)}`;
+      }
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 11. LIVE SESSION CLOCKS & TOAST HELPER
+     * -----------------------------------------------------------------------
+     */
+    function updateSessionClocks() {
+      const now = new Date();
+      const fmtZone = (tz) =>
+        new Intl.DateTimeFormat('en-GB', {
+          timeZone: tz,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }).format(now);
+
+      const asiaEl = document.getElementById('clock-asia');
+      const lonEl = document.getElementById('clock-london');
+      const nyEl = document.getElementById('clock-ny');
+      if (asiaEl) asiaEl.textContent = `${fmtZone('Asia/Tokyo')} JST`;
+      if (lonEl) lonEl.textContent = `${fmtZone('Europe/London')} GMT`;
+      if (nyEl) nyEl.textContent = `${fmtZone('America/New_York')} EST`;
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const el = document.getElementById('toast-pill');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    /**
+     * -----------------------------------------------------------------------
+     * 12. BOOTSTRAP ON WINDOW LOAD
+     * -----------------------------------------------------------------------
+     */
+    window.onload = function () {
+      initSevenContextScenes();
+      runThreeStageLoop();
+      bindSlideLockListeners();
+
+      renderAllOperationalAlerts();
+      candlesData = buildCandles('XAUUSD', '1m');
+      bindTerminalChartHover();
+      updateTicketEstimates();
+
+      updateSessionClocks();
+      setInterval(updateSessionClocks, 1000);
+
+      window.addEventListener('mousemove', (e) => {
+        if (!stage3D) return;
+        stage3D.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+        stage3D.mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+      });
+
+      window.addEventListener('resize', () => {
+        if (stage3D) {
+          stage3D.renderer.setSize(window.innerWidth, window.innerHeight, false);
+          stage3D.camera.aspect = window.innerWidth / window.innerHeight;
+          stage3D.camera.updateProjectionMatrix();
+        }
+        if (appState.topView === 'workstation') {
+          if (appState.workspaceTab === 'terminal') drawTerminalChart();
+          if (appState.workspaceTab === 'strategy') drawStrategyLabCanvas();
+        }
+      });
+    };
+  </script>
+</body>
+</html>

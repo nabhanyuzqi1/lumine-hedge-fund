@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "results": [
+    {
+      "doc": "KEPUTUSAN_OWNER.md",
+      "ok": true,
+      "missing": [],
+      "forbidden_found": []
+    },
+    {
+      "doc": "ROLLBACK_PLAN_v2.2.md",
+      "ok": true,
+      "missing": [],
+      "forbidden_found": []
+    },
+    {
+      "doc": "RELEASE_CHECKLIST_v2.2.md",
+      "ok": true,
+      "missing": [],
+      "forbidden_found": []
+    },
+    {
+      "doc": "PRASYARAT_LIVE_v2.2.md",
+      "ok": true,
+      "missing": [],
+      "forbidden_found": []
+    },
+    {
+      "doc": "RELEASE_PACKET_v2.2.md",
+      "ok": true,
+      "missing": [],
+      "forbidden_found": []
+    }
+  ]
+}

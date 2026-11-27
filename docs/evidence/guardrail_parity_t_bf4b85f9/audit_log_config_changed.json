@@ -1,0 +1,114 @@
+[
+  {
+    "id": 716,
+    "actor": "ceo_guardrail",
+    "actor_role": "admin",
+    "action": "CONFIG_CHANGED",
+    "object": "risk_settings",
+    "details": {
+      "updates": {
+        "max_volume": 0.1,
+        "max_daily_drawdown": 292.02,
+        "max_orders_per_min": 5,
+        "kill_switch_triggers": {
+          "modes": {
+            "ea_offline": "GLOBAL_HALT",
+            "daily_drawdown": "GLOBAL_HALT",
+            "total_drawdown": "GLOBAL_HALT",
+            "position_mismatch": "GLOBAL_HALT",
+            "consecutive_failed": "STOP_NEW_ORDERS"
+          },
+          "position_mismatch": true,
+          "daily_drawdown_pct": 3.0,
+          "ea_offline_seconds": 6.0,
+          "total_drawdown_pct": 8.0,
+          "check_interval_seconds": 5.0,
+          "ea_offline_halt_seconds": 60.0,
+          "consecutive_failed_orders": 3,
+          "ea_offline_requires_positions": true
+        }
+      },
+      "previous": {
+        "max_volume": 1.0,
+        "max_daily_drawdown": 100.0,
+        "max_orders_per_min": 10,
+        "kill_switch_triggers": {
+          "modes": {
+            "ea_offline": "GLOBAL_HALT",
+            "daily_drawdown": "GLOBAL_HALT",
+            "total_drawdown": "GLOBAL_HALT",
+            "position_mismatch": "GLOBAL_HALT",
+            "consecutive_failed": "STOP_NEW_ORDERS"
+          },
+          "position_mismatch": true,
+          "daily_drawdown_pct": 10.0,
+          "ea_offline_seconds": 60.0,
+          "total_drawdown_pct": 15.0,
+          "check_interval_seconds": 5.0,
+          "ea_offline_halt_seconds": 60.0,
+          "consecutive_failed_orders": 100,
+          "ea_offline_requires_positions": true
+        }
+      }
+    },
+    "created_at": "2026-11-26T06:39:31.375520+07:00"
+  },
+  {
+    "id": 659,
+    "actor": "qa_guardrail",
+    "actor_role": "admin",
+    "action": "CONFIG_CHANGED",
+    "object": "kill_switch_triggers",
+    "details": {
+      "updates": {
+        "ea_offline_halt_seconds": 60.0
+      }
+    },
+    "created_at": "2026-11-26T02:59:32.400061+07:00"
+  },
+  {
+    "id": 657,
+    "actor": "qa_guardrail",
+    "actor_role": "admin",
+    "action": "CONFIG_CHANGED",
+    "object": "kill_switch_triggers",
+    "details": {
+      "updates": {
+        "ea_offline_halt_seconds": 45.0
+      }
+    },
+    "created_at": "2026-11-26T02:59:02.305427+07:00"
+  },
+  {
+    "id": 655,
+    "actor": "qa_guardrail",
+    "actor_role": "admin",
+    "action": "CONFIG_CHANGED",
+    "object": "risk_settings",
+    "details": {
+      "updates": {
+        "max_tick_age_s": 3.0
+      },
+      "previous": {
+        "max_tick_age_s": 3.5
+      }
+    },
+    "created_at": "2026-11-26T02:58:02.579622+07:00"
+  },
+  {
+    "id": 653,
+    "actor": "qa_guardrail",
+    "actor_role": "admin",
+    "action": "CONFIG_CHANGED",
+    "object": "risk_settings",
+    "details": {
+      "updates": {
+        "max_tick_age_s": 3.5
+      },
+      "previous": {
+        "max_tick_age_s": 3.0
+      }
+    },
+    "created_at": "2026-11-26T02:57:32.651662+07:00"
+  }
+]

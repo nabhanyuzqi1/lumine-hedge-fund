@@ -1,0 +1,35 @@
+# Fund2 Telegram alerts daemon (PRD 5.9 cron harian, D12; task FUND2-P1b hari 11).
+# Proses TERPISAH dari fund2-api: alert jalan tanpa restart service API.
+# Copy ke ~/.config/systemd/user/ lalu isi .env.alerts (token + owner id).
+[Unit]
+Description=Fund2 Telegram alerts (kill-switch, EA offline, rekap harian)
+# t_f837fe2c (F-1, insiden 25 Nov 2026 06:45 WIB): unit ini dulu menulis
+# After=lumine-hedge-fund-postgres.service — unit yang TIDAK PERNAH ADA, jadi
+# urutan terhadap Postgres tidak pernah berlaku: saat boot alert daemon start
+# bersamaan dengan Postgres. Nama unit nyata: fund2-postgres.service.
+# After= menjamin urutan start; Wants= membawanya ke transaksi yang sama
+# (bukan Requires=: Postgres mati tidak boleh ikut mematikan pemonitor).
+# Daemon tetap kebal bila Postgres telat siap: db.wait_ready (retry+backoff)
+# dan exit 75 -> systemd mengulang, bukan beku diam-diam.
+After=network-online.target fund2-postgres.service
+Wants=network-online.target fund2-postgres.service
+# exit 75 (DB belum siap) berulang tiap budget habis tidak boleh menabrak
+# start-limit systemd (yang membuat unit menyerah dan berhenti restart).
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tekka/fund2/api
+# .env = DATABASE_URL dll; .env.alerts = TELEGRAM_BOT_TOKEN + TELEGRAM_OWNER_ID
+# (secret, tidak masuk repo; lihat .env.alerts.example)
+EnvironmentFile=/home/tekka/fund2/api/.env
+EnvironmentFile=/home/tekka/fund2/api/.env.alerts
+# Daemon ini ringan (watcher serial); pool 20 default dipakai bersama 7 proses
+# lain, tidak perlu dihabiskan di sini.
+Environment=FUND2_POOL_MAX_SIZE=6
+ExecStart=/home/tekka/fund2/api/.venv/bin/python -m app.alerts
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

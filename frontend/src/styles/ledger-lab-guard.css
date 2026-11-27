@@ -1,0 +1,1094 @@
+/* Lumine Fund · ledger-lab-guard.css
+   Tata letak tiga halaman: Riwayat order (ledger), Strategy Lab, Guardrail.
+
+   Aturan main file ini:
+   1. Semua kelas baru berprefix `lld-` (ledger · lab · guardrail). Kelas lama
+      (.card, .data, .filter-btn, .gr-*, .sm-*) tetap dipakai apa adanya; file
+      ini hanya menambah struktur, tidak mengganti gaya global.
+   2. pages.css/global.css dimuat SETELAH css ini (urutan import App.jsx), jadi
+      setiap penyesuaian yang menyentuh kelas lama memakai selektor ber-prefix
+      ganda (`.lld-lab .lld-embed .card`) supaya menang karena spesifisitas,
+      bukan karena urutan.
+   3. Komponen milik worker lain (LlmAgentPanel, LlmSettingsPanel,
+      KillSwitchCard, ModeBadge) TIDAK diubah. Penyesuaian tampilannya
+      dilakukan dari container halaman (`.lld-embed` + selektor turunan).
+   4. Patokan geometry: kartu = surface #111113, border 1px zinc-800/80, radius
+      8, padding 16; sub-panel/input/header tabel = #18181b; angka tabular-nums;
+      label dan kontrol selalu di flex/grid dengan gap eksplisit. */
+
+/* ── kerangka halaman ───────────────────────────────────────────────────── */
+.lld-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* ── header bar tunggal (judul kiri · aksi kanan) ────────────────────────── */
+.lld-hdr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 14px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  min-width: 0;
+}
+
+.lld-hdr-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lld-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.lld-sub {
+  margin: 0;
+  max-width: 92ch;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.lld-hdr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ── segmen tab (status order / rentang tanggal) ─────────────────────────── */
+.lld-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-sub);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.lld-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.lld-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lld-tab.is-active {
+  background: var(--surface-3);
+  color: var(--accent-bright);
+  font-weight: 600;
+}
+
+.lld-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* tombol ekspor sejajar tinggi dengan tab (baris header tidak bergerigi) */
+.lld-export {
+  height: 34px;
+  gap: 6px;
+}
+
+/* legenda badge mode: satu baris tipis, tidak memakan lebar header bar.
+   Selektor ber-prefix ganda karena .mode-legend (pages.css) dimuat sesudah. */
+.lld-page .lld-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* ── toolbar filter: satu baris flex-wrap, label & kontrol rata baseline ── */
+.lld-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  min-width: 0;
+}
+
+.lld-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lld-field-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* kontrol setinggi 32px supaya label, select, dan segmen tanggal duduk rata */
+.lld-select {
+  height: 32px;
+  min-width: 150px;
+  max-width: 220px;
+  padding: 0 10px;
+  background: var(--surface-sub);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+}
+
+.lld-select:hover {
+  border-color: var(--text-faint);
+}
+
+.lld-select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.lld-select.is-active {
+  border-color: color-mix(in srgb, var(--emerald) 45%, var(--line-strong));
+  color: var(--accent-bright);
+}
+
+/* tinggi 32px termasuk border supaya label "Tanggal" duduk segaris dengan
+   label field lain (select 32px, tombol 32px) */
+.lld-toolbar .lld-tabs {
+  height: 32px;
+  padding: 1px;
+  background: var(--surface-sub);
+}
+
+.lld-toolbar .lld-tab {
+  height: 28px;
+  padding: 0 10px;
+}
+
+.lld-toolbar .btn {
+  height: 32px;
+  padding: 0 12px;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.lld-toolbar .lld-clear {
+  white-space: nowrap;
+}
+
+.lld-toolbar-spacer {
+  flex: 1 1 24px;
+  min-width: 0;
+}
+
+.lld-count {
+  align-self: flex-end;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 32px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.lld-count.is-on {
+  color: var(--warn);
+}
+
+/* ── kartu dasar (surface #111113 · border 1px · radius 8 · padding 16) ─── */
+.lld-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+}
+
+.lld-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.lld-card-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lld-card-title.lld-banner-title {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--warn);
+}
+
+.lld-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.lld-note code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-sub);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text);
+}
+
+.lld-meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.lld-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.lld-actions .btn {
+  flex: 0 0 auto;
+}
+
+/* ── grid 12 kolom (4/8) + grid 2 kolom items-stretch ───────────────────── */
+.lld-grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+
+.lld-span-4 {
+  grid-column: span 4;
+}
+
+.lld-span-8 {
+  grid-column: span 8;
+}
+
+.lld-span-12 {
+  grid-column: span 12;
+}
+
+.lld-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .lld-grid-12,
+  .lld-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lld-grid-12 > *,
+  .lld-two > * {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── container untuk komponen milik worker lain ──────────────────────────
+   `lld-embed` menetralkan `.card` bawaan komponen (border, latar, radius,
+   bayangan) supaya kontennya menyatu dengan kartu halaman. Tidak ada satu
+   baris pun di komponen itu yang diubah. */
+.lld-embed {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.lld-embed > .card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.lld-embed > .card:hover {
+  border-color: transparent;
+}
+
+.lld-embed > .lld-card-head {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lld-embed > .card > .card-head {
+  padding: 14px 16px;
+}
+
+/* KillSwitchCard(statusOnly): badge status + deskripsi jadi banner di dalam
+   kartu Risk Gate. Padding 18/20 bawaan dikurangi supaya setara kartu lain. */
+.lld-riskgate .killswitch {
+  margin: 0;
+  padding: 14px 16px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  display: block;
+}
+
+.lld-riskgate .kill-badges {
+  gap: 8px;
+}
+
+.lld-riskgate .kill-desc {
+  max-width: none;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lld-riskgate .kill-reason {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── Agent LLM: 6 metrik jadi metric-box (2 kolom, 3 kolom >=640px) ─────── */
+.lld-agent .llm-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px 16px 12px;
+}
+
+@media (min-width: 640px) {
+  .lld-agent .llm-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.lld-agent .llm-stats .sm-row {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 9px 10px;
+  background: var(--surface-sub);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.lld-agent .llm-stats .sm-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  line-height: 1.25;
+}
+
+.lld-agent .llm-stats .sm-value {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.lld-agent > .card > .field-hint {
+  display: block;
+  padding: 0 16px;
+  line-height: 1.5;
+}
+
+.lld-agent > .card > .btn {
+  align-self: flex-start;
+  margin: 12px 16px 16px;
+}
+
+/* ── baris setelan: judul + hint (+ badge Aktif) kiri, kontrol kanan ─────── */
+.lld-set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.lld-set-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.lld-set-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lld-set-t {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.lld-set-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.4;
+}
+
+.lld-set-ctl {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lld-ctl-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lld-set-unit {
+  min-width: 62px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* badge "Aktif" (nilai yang sedang berlaku di runtime) */
+.lld-badge-aktif {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--emerald) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--emerald) 12%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--up-strong);
+  white-space: nowrap;
+}
+
+.lld-badge-aktif strong {
+  font-weight: 600;
+  color: var(--accent-bright);
+}
+
+.lld-badge-aktif.is-drift {
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  background: var(--warn-dim);
+  color: var(--warn);
+}
+
+.lld-delta {
+  margin-left: 6px;
+  font-size: 11.5px;
+  color: var(--warn);
+}
+
+.lld-final-tag {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+/* input angka: lebar tetap, rata kanan, mono tabular.
+   Selektor diberi prefix `.lld-card` supaya menang atas `.input{width:100%}`
+   di global.css (dimuat sesudah file ini). */
+.lld-card .lld-input-num {
+  width: 128px;
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lld-core-ctl .lld-input-num {
+  width: 144px;
+}
+
+/* ── bespoke: LlmSettingsPanel di dalam container halaman ────────────────
+   Baris .gr-row bawaan = grid label/kontrol 300px. Di sini dijadikan baris
+   justify-between dengan input 128px rata kanan + satuan, sesuai pola setelan
+   halaman. Struktur state/validasi komponen tidak disentuh. */
+.lld-settings .gr-rows {
+  gap: 0;
+}
+
+.lld-settings .gr-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lld-settings .gr-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.lld-settings .gr-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lld-settings .gr-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.lld-settings .gr-ctl {
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.lld-settings .gr-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--emerald) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--emerald) 12%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--up-strong);
+  white-space: nowrap;
+}
+
+.lld-settings .gr-active strong {
+  color: var(--accent-bright);
+}
+
+.lld-settings .gr-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lld-settings .gr-edit .input {
+  width: 128px;
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lld-settings .gr-unit {
+  min-width: 62px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.lld-settings .field.ia-interval {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  max-width: none;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lld-settings .field.ia-interval > .field-label {
+  flex: 1 1 220px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.lld-settings .field.ia-interval > .field-hint,
+.lld-settings .field.ia-interval > .field-error {
+  flex: 1 1 100%;
+}
+
+.lld-settings .ia-interval .input {
+  width: 96px;
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.lld-settings .ia-interval .hf-select {
+  width: 96px;
+  min-width: 0;
+  padding: 7px 8px;
+}
+
+.lld-settings .ia-check {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.lld-settings .ops-subhead {
+  margin: 16px 0 2px;
+  font-size: 11px;
+}
+
+.lld-settings .sm-section {
+  padding: 0 0 12px;
+  border: 0;
+  gap: 6px;
+}
+
+.lld-settings .sm-row {
+  align-items: center;
+}
+
+.lld-settings .card-head {
+  padding: 0 0 12px;
+}
+
+.lld-settings .ia-prompt-wrap {
+  margin-top: 14px;
+}
+
+/* ── tabel ─────────────────────────────────────────────────────────────── */
+.lld-table-wrap {
+  overflow-x: auto;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  min-width: 0;
+}
+
+.lld-card .lld-table-wrap {
+  border-color: var(--line);
+  border-radius: 6px;
+}
+
+.lld-table {
+  width: 100%;
+  min-width: 100%;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.lld-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--surface-sub);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.lld-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.lld-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.lld-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.lld-col-nowrap {
+  white-space: nowrap;
+}
+
+.lld-col-num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.lld-col-num .req-fill {
+  align-items: flex-end;
+}
+
+/* kolom chevron memimpin baris (36px); RISK tetap kolom data paling kanan.
+   Selektor diberi prefix `.lld-table` supaya menang atas `.cell-action`
+   (text-align:right) di pages.css yang dimuat sesudah file ini. */
+.lld-table th.lld-col-chev,
+.lld-table td.lld-col-chev {
+  width: 34px;
+  padding-left: 12px;
+  padding-right: 0;
+  text-align: left;
+}
+
+/* kolom RISK: alasan penolakan harus terbaca utuh, bukan terpotong elipsis */
+.lld-table th.lld-col-risk,
+.lld-table td.lld-col-risk {
+  min-width: 220px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.lld-risk {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lld-risk .chip {
+  flex: 0 0 auto;
+}
+
+.lld-risk-reason {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.lld-risk-none {
+  color: var(--text-faint);
+}
+
+/* tabel perbandingan §I: kolom angka rata kanan, tabular */
+.lld-cmp th.lld-col-num,
+.lld-cmp td.lld-col-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.lld-cmp tr.is-drift td {
+  color: var(--warn);
+}
+
+.lld-cmp tr.is-drift td:first-child {
+  color: var(--text);
+}
+
+.lld-empty {
+  padding: 40px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+/* ── Guardrail: banner + 2FA + kartu per-field ─────────────────────────── */
+.lld-banner {
+  border-color: color-mix(in srgb, var(--warn) 42%, var(--border-subtle));
+  background:
+    linear-gradient(180deg, rgba(245, 158, 11, 0.07), transparent 62%),
+    var(--surface-1);
+}
+
+.lld-banner-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.lld-banner-list strong {
+  color: var(--text);
+}
+
+.lld-banner-list code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-sub);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text);
+}
+
+.lld-core-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .lld-core-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.lld-core-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--surface-sub);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.lld-core-rule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.4;
+}
+
+.lld-core-ctl {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lld-core-unit {
+  flex: 0 0 auto;
+  min-width: 76px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* jumlah field ganjil: kartu terakhir melebar penuh supaya tidak ada kartu
+   setengah lebar yang menggantung di baris terakhir */
+.lld-core-grid > .lld-core-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.lld-core-card .field-error {
+  font-size: 11.5px;
+}
+
+.lld-gr-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* baris aksi tetap (mode trigger): chip-chip sejajar dengan gap eksplisit */
+.lld-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 12px;
+}
+
+/* kartu perbandingan yang punya selisih: border amber, bukan warna teks */
+.lld-drift {
+  border-color: color-mix(in srgb, var(--warn) 42%, var(--border-subtle));
+}
+
+.lld-2fa .lld-card-head {
+  align-items: flex-start;
+}
+
+/* ── Strategy Lab: kartu rujukan batas llm_risk ────────────────────────── */
+.lld-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lld-key-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.lld-key-row:last-child {
+  border-bottom: 0;
+}
+
+.lld-key-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.lld-key-meta {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.lld-jump {
+  align-self: flex-start;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 2px;
+}
+
+.lld-jump:hover,
+.lld-jump:focus-visible {
+  color: var(--accent-bright);
+  border-bottom-color: var(--accent);
+}
+
+/* ── tabel riwayat: layar sedang tetap bisa digeser horizontal ─────────── */
+@media (max-width: 1100px) {
+  .lld-history .lld-table {
+    min-width: 1020px;
+  }
+}
+
+@media (max-width: 640px) {
+  .lld-hdr {
+    padding: 12px 14px;
+  }
+
+  .lld-title {
+    font-size: 18px;
+  }
+
+  .lld-select {
+    min-width: 132px;
+    max-width: none;
+  }
+
+  .lld-toolbar-spacer {
+    display: none;
+  }
+
+  .lld-toolbar .lld-count {
+    margin-left: auto;
+  }
+}
+
+/* reduced motion: tidak ada animasi kustom di halaman ini, hanya transisi
+   hover bawaan yang sudah dimatikan global */
+@media (prefers-reduced-motion: reduce) {
+  .lld-tab {
+    transition: none;
+  }
+}

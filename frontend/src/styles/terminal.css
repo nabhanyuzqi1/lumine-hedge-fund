@@ -1,0 +1,2390 @@
+/* Lumine Fund · terminal.css — tata letak halaman TERMINAL (Dashboard).
+   Semua kelas baru berprefix `term-` dan setiap aturan di-scope oleh
+   `.term-root`, jadi file ini tidak menyentuh halaman lain meski dimuat
+   sebelum/sesudah pages.css. Token & permukaan dasar tetap dari tokens.css
+   dan .card global; di sini hanya struktur, kerapatan, dan alignment.
+
+   Skala baca (workstation, bukan poster): label/metadata >= 12px, nilai &
+   baris kartu 13-14px, kontrol sentuh (tombol/input) 44-48px. Layout memakai
+   100% viewport tanpa max-width supaya chart ikut melebar di layar besar. */
+
+/* ── kerangka: grid 72/28 (kiri chart+posisi, kanan order/ringkasan) ─── */
+.term-root {
+  --term-gap: 16px;
+  /* Status sistem fixed 40px: halaman menyisakan ruangnya supaya bar tidak
+     pernah menutupi kartu terakhir. */
+  --term-sysbar-h: 40px;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: calc(var(--term-sysbar-h) + 16px);
+}
+
+/* Mobile: bottom nav aplikasi (fixed, ±56px) + bar status (44px) ada di bawah
+   viewport. Ruang bawah disisihkan supaya konten terakhir tidak tertutup dan
+   aman dari safe-area iOS. */
+@media (max-width: 768px) {
+  .term-root {
+    --term-sysbar-h: 44px;
+    --term-gap: 12px;
+    padding-bottom: calc(var(--term-sysbar-h) + 56px + env(safe-area-inset-bottom) + 16px);
+  }
+}
+
+.term-root .term-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--term-gap);
+  align-items: start;
+  margin-top: var(--term-gap);
+}
+
+.term-root .term-col-main,
+.term-root .term-col-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--term-gap);
+  min-width: 0;
+}
+
+.term-root .term-col-side > * {
+  min-width: 0;
+  margin: 0;
+  /* Jangan biarkan flex memampatkan kartu: tanpa ini, saat kolom dibatasi
+     max-height, Ringkasan mengecil dan baris statistiknya terpotong oleh
+     overflow:hidden milik kartu. Biarkan kolom yang menggulung. */
+  flex: 0 0 auto;
+  /* pages.css memberi .orderform align-self:start; di kolom kanan kartu
+   harus mengisi lebar penuh supaya sejajar kartu lain. */
+  align-self: stretch;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .term-root .term-grid {
+    /* kiri ~72% (chart melar), kanan min 380px (~28%) */
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 28%);
+  }
+
+  /* Kolom kanan (Kill-Switch + Order Baru) menempel dan menggelinding
+     sendiri, supaya tombol Beli/Jual tetap terjangkau di layar 900px
+     tinggi tanpa harus menggulir seluruh halaman. */
+  .term-root .term-col-side {
+    position: sticky;
+    top: calc(var(--term-gap) + 4px);
+    /* Tinggi kolom kanan dihitung runtime (lihat Dashboard: --term-side-max):
+       grid mulai ~150-230px dari atas, jadi 100vh dikurangi offset itu, bukan
+       sekadar gap, supaya kartu Ringkasan tidak pernah tertutup bar status. */
+    max-height: var(--term-side-max, calc(100vh - 230px - var(--term-sysbar-h) - 16px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding-right: 2px;
+  }
+}
+
+/* ── kartu: sudut & padding rapi untuk density workstation ───────────── */
+.term-root .card {
+  border-radius: var(--r);
+}
+
+.term-root .term-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.term-root .term-card .card-head,
+.term-root .term-order .card-head,
+.term-root .term-positions .card-head,
+.term-root .term-system .card-head {
+  padding: 14px 16px;
+  gap: 10px;
+}
+
+.term-root .term-card .card-title,
+.term-root .term-order .card-title,
+.term-root .term-positions .card-title,
+.term-root .term-system .card-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.term-root .term-dim {
+  color: var(--text-faint);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.term-root .term-status {
+  gap: 8px;
+}
+
+/* ── status koneksi dua nada (EA · Feed) ─────────────────────────────── */
+.term-root .term-conn {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-sub);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+.term-root .term-conn-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.term-root .term-conn-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.term-root .term-conn-sep {
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+.term-root .term-conn-part.is-on {
+  color: var(--up-strong);
+}
+
+.term-root .term-conn-part.is-wait {
+  color: var(--amber);
+}
+
+.term-root .term-conn-part.is-off {
+  color: var(--down-strong);
+}
+
+.term-root .term-conn.is-closed {
+  color: color-mix(in srgb, var(--amber) 84%, var(--text-muted));
+  border-color: color-mix(in srgb, var(--amber) 34%, transparent);
+  background: var(--warn-dim);
+}
+
+.term-root .term-conn-sub {
+  color: color-mix(in srgb, var(--amber) 62%, var(--text-faint));
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.term-root .term-tf-grp {
+  gap: 8px;
+}
+
+.term-root .term-head-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── market header: baris utama (harga/status/aksi) + baris OHLC ─────── */
+.term-root .term-hdr {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.term-root .term-hdr-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding: 13px 16px;
+  min-width: 0;
+}
+
+.term-root .term-grp {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.term-root .term-grp-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* tab simbol */
+.term-root .term-sym {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.term-root .term-sym-btn {
+  min-width: 46px;
+  min-height: 30px;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.term-root .term-sym-btn:hover {
+  color: var(--text);
+  background: var(--surface-sub);
+}
+
+/* Aktif memakai bahasa yang sama dengan tab timeframe: permukaan terangkat,
+   bukan blok putih penuh yang memecah ritme toolbar. */
+.term-root .term-sym-btn.is-active {
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+/* harga live besar */
+.term-root .term-price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-size: clamp(24px, 2vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+}
+
+.term-root .term-price.is-stale {
+  color: var(--text-faint);
+}
+
+/* badge BID / ASK / SPREAD — label di atas, angka tabular di bawah */
+.term-root .term-quote {
+  display: flex;
+  align-items: stretch;
+  background: rgba(9, 9, 11, 0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.term-root .term-q {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 12px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.term-root .term-q:last-child {
+  border-right: 0;
+}
+
+.term-root .term-q-key {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+
+.term-root .term-q-val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.term-root .term-q-val.is-bid {
+  color: var(--down-strong);
+}
+
+.term-root .term-q-val.is-ask {
+  color: var(--up-strong);
+}
+
+/* indikator sesi: aktif emerald, nonaktif muted */
+.term-root .term-sessions .sessions {
+  gap: 6px;
+}
+
+.term-root .term-sessions .session {
+  padding: 5px 10px;
+  gap: 6px;
+  border-color: var(--border-subtle);
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.term-root .term-sessions .session-on {
+  color: var(--emerald);
+  border-color: color-mix(in srgb, var(--emerald) 45%, transparent);
+  background: var(--up-dim);
+}
+
+.term-root .term-sessions .session-on i {
+  background: var(--emerald);
+}
+
+/* ── badge status pasar (GET /market/status) ─────────────────────────── */
+.term-root .term-mkt {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 30px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-sub);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+}
+
+.term-root .term-mkt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.term-root .term-mkt-label {
+  white-space: nowrap;
+}
+
+.term-root .term-mkt-sub {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  white-space: normal;
+}
+
+.term-root .term-mkt.is-open {
+  color: var(--up-strong);
+  border-color: color-mix(in srgb, var(--emerald) 45%, transparent);
+  background: var(--up-dim);
+}
+
+.term-root .term-mkt.is-open .term-mkt-sub {
+  color: color-mix(in srgb, var(--emerald) 75%, var(--text-muted));
+}
+
+/* amber redup: tanda berhenti, bukan alarm merah */
+.term-root .term-mkt.is-closed {
+  color: color-mix(in srgb, var(--amber) 82%, var(--text-muted));
+  border-color: color-mix(in srgb, var(--amber) 34%, transparent);
+  background: var(--warn-dim);
+}
+
+.term-root .term-mkt.is-closed .term-mkt-sub {
+  color: color-mix(in srgb, var(--amber) 62%, var(--text-faint));
+}
+
+.term-root .term-mkt.is-unknown {
+  color: var(--text-faint);
+  border-style: dashed;
+  background: transparent;
+}
+
+/* ── chip kill-switch di header: tenang, satu tatapan ────────────────── */
+/* Aman = emerald redup (order diizinkan). HALT = crimson redup, teks tegas.
+   Semua konsekuensi ada di dialog, bukan di layar utama. */
+.term-root .term-kill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--surface-sub);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  white-space: nowrap;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+
+.term-root .term-kill b {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.term-root .term-kill-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.term-root .term-kill.is-safe {
+  color: var(--up-strong);
+  border-color: color-mix(in srgb, var(--emerald) 38%, transparent);
+  background: var(--up-dim);
+}
+
+.term-root .term-kill.is-armed {
+  color: var(--down-strong);
+  border-color: color-mix(in srgb, var(--crimson) 46%, transparent);
+  background: var(--down-dim);
+}
+
+.term-root .term-kill:hover {
+  border-color: currentColor;
+}
+
+.term-root .term-kill-sub {
+  color: color-mix(in srgb, currentColor 72%, var(--text-faint));
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.term-root .term-kill-note {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* EnvBadge di header: metadata kecil, disembunyikan di mobile (sudah ada di
+   topbar) supaya header sticky tetap ringkas. */
+.term-root .term-env {
+  display: inline-flex;
+  min-width: 0;
+}
+
+/* readout OHLC: baris tipis di bawah baris utama header */
+.term-root .term-ohlc {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 7px 16px;
+  border-top: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-deep) 55%, transparent);
+}
+
+/* toolbar: timeframe + Live, didorong ke kanan saat ada readout OHLC */
+.term-root .term-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.term-root .term-ohlc-tag {
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+}
+
+.term-root .term-ohlc-tag.is-cursor {
+  color: var(--emerald);
+  border-color: color-mix(in srgb, var(--emerald) 45%, transparent);
+  background: var(--up-dim);
+}
+
+.term-root .term-ohlc-time {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.term-root .term-ohlc-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.term-root .term-ohlc-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.term-root .term-ohlc-key {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.term-root .term-ohlc-val {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13.5px;
+}
+
+/* selector timeframe */
+.term-root .term-tf {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.term-root .term-tf-btn {
+  min-height: 32px;
+  padding: 6px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.term-root .term-tf-btn:hover {
+  color: var(--text);
+}
+
+.term-root .term-tf-btn.is-active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* reset zoom / kembali ke live */
+.term-root .term-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-sub);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.term-root .term-reset:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.term-root .term-reset svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── chart: kartu sendiri + header tipis (status pasar di sini) ──────── */
+.term-root .term-chart-card {
+  position: relative;
+  min-width: 0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.term-root .term-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-sub);
+  min-width: 0;
+}
+
+.term-root .term-chart-title {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.term-root .term-chart-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.term-root .term-chart-last {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.term-root .term-chart-card .candlechart,
+.term-root .term-candle {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  min-height: 300px;
+}
+
+/* ── ringkasan akun: equity besar + 4 angka inti, tanpa kotak kecil ─── */
+/* Hierarki: satu angka besar (equity), satu delta harian, empat statistik
+   ringkas, satu baris konteks (regime). Jarak lega, satu aksen warna. */
+.term-root .term-sum {
+  padding: 0;
+  overflow: hidden;
+}
+
+.term-root .term-sum-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px 0;
+}
+
+.term-root .term-sum-title {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.term-root .term-sum.is-stale {
+  border-color: color-mix(in srgb, var(--amber) 26%, transparent);
+}
+
+.term-root .term-sum-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 16px 12px;
+}
+
+.term-root .term-sum-equity {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(26px, 2.4vw, 32px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.term-root .term-sum-cur {
+  margin-right: 2px;
+  color: var(--text-faint);
+  font-size: 0.62em;
+  font-weight: 500;
+  vertical-align: 0.18em;
+}
+
+.term-root .term-sum-delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.term-root .term-sum-delta.is-up {
+  color: var(--up-strong);
+}
+
+.term-root .term-sum-delta.is-down {
+  color: var(--down-strong);
+}
+
+.term-root .term-sum-delta-sub {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* empat statistik: satu deret berhairline, label kecil di atas nilai */
+.term-root .term-sum-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 14px;
+  margin: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.term-root .term-sum-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.term-root .term-sum-stat dt {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.term-root .term-sum-stat dd {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.term-root .term-sum-sub {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.term-root .term-sum-foot {
+  margin: 0;
+  padding: 0 16px 12px;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* layar sempit: 2x2 supaya angka tetap besar dan tidak terpotong */
+@media (max-width: 560px) {
+  .term-root .term-sum-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+}
+
+/* chip di halaman terminal: metadata tetap terbaca (>=12px) */
+.term-root .chip {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* baris metrik: label muted kiri, nilai tabular kanan, hairline antar baris */
+.term-root .term-rows {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 4px 0 6px;
+  margin: 0;
+}
+
+.term-root .term-risk .term-rows,
+.term-root .term-rca .term-rows {
+  padding-bottom: 0;
+}
+
+.term-root .term-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.term-root .term-row:last-child {
+  border-bottom: 0;
+}
+
+.term-root .term-row-k {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.term-root .term-row-v {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.term-root .term-row-v.is-up {
+  color: var(--up-strong);
+}
+
+.term-root .term-row-v.is-warn {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.term-root .term-row-v.is-down {
+  color: var(--down-strong);
+}
+
+.term-root .term-row-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.term-root .term-row.is-muted .term-row-v {
+  max-width: 58%;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  font-weight: 400;
+  font-style: italic;
+  white-space: normal;
+}
+
+/* sub-judul grup di dalam daftar baris (mis. Plafon portofolio) */
+.term-root .term-group {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px 7px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.term-root .term-group-src {
+  overflow: hidden;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.term-root .term-note {
+  margin: 8px 16px 10px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.term-root .term-note.is-warn {
+  color: var(--amber);
+}
+
+.term-root .term-error {
+  margin: 8px 16px;
+  color: var(--down-strong);
+  font-size: 12.5px;
+}
+
+.term-root .term-breaches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.term-root .term-breach {
+  color: var(--down-strong);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.term-root .term-foot {
+  margin: auto 0 0;
+  padding: 9px 16px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.term-root .term-regime .regime-conf-bar {
+  margin: 0 16px 10px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+/* ── kartu order: dua keadaan (baris ringkas / form penuh) ───────────── */
+/* Baris ringkas selalu terlihat: simbol, sisi, volume, tombol Order 44px.
+   Form penuh hanya dirender saat terbuka (OrderForm menyimpan preferensi di
+   localStorage 'term.order.open'). */
+.term-root .term-order {
+  margin: 0;
+  position: static;
+  padding: 0;
+  overflow: hidden;
+}
+
+.term-root .term-order-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+  min-width: 0;
+}
+
+.term-root .term-order-sum {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.term-root .term-order-sym {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.term-root .term-order-side {
+  padding: 3px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.term-root .term-order-side.is-buy {
+  color: var(--up-strong);
+  border-color: color-mix(in srgb, var(--emerald) 40%, transparent);
+  background: var(--up-dim);
+}
+
+.term-root .term-order-side.is-sell {
+  color: var(--down-strong);
+  border-color: color-mix(in srgb, var(--crimson) 40%, transparent);
+  background: var(--down-dim);
+}
+
+.term-root .term-order-vol {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.term-root .term-order-state {
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent);
+  border-radius: 4px;
+  background: var(--warn-dim);
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.term-root .term-order-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 92px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.term-root .term-order-toggle:hover {
+  border-color: var(--text-faint);
+  background: color-mix(in srgb, var(--surface-3) 70%, var(--surface-sub));
+}
+
+.term-root .term-order-toggle svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.term-root .term-order.is-open .term-order-body {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.term-root .term-order-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 13px 16px 15px;
+}
+
+.term-root .term-order-halted {
+  margin: 0;
+  padding: 0 16px 14px;
+  color: color-mix(in srgb, var(--amber) 82%, var(--text-muted));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.term-root .term-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 5px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.term-root .term-side .side-btn {
+  min-height: 44px;
+  padding: 11px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+
+.term-root .term-side .side-btn:hover {
+  color: var(--text);
+}
+
+.term-root .term-side .side-buy.is-active {
+  background: color-mix(in srgb, var(--emerald) 16%, transparent);
+  border-color: color-mix(in srgb, var(--emerald) 45%, transparent);
+  color: var(--up-strong);
+}
+
+.term-root .term-side .side-sell.is-active {
+  background: color-mix(in srgb, var(--crimson) 16%, transparent);
+  border-color: color-mix(in srgb, var(--crimson) 45%, transparent);
+  color: var(--down-strong);
+}
+
+.term-root .term-price-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.term-root .term-price-cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  min-width: 0;
+}
+
+.term-root .term-price-key {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.term-root .term-price-val {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.term-root .term-price-cell.is-on {
+  border-color: var(--line-strong);
+}
+
+.term-root .term-price-cell.is-buy {
+  border-color: color-mix(in srgb, var(--emerald) 45%, transparent);
+  background: color-mix(in srgb, var(--emerald) 8%, var(--bg-deep));
+}
+
+.term-root .term-price-cell.is-buy .term-price-val {
+  color: var(--up-strong);
+}
+
+.term-root .term-price-cell.is-sell {
+  border-color: color-mix(in srgb, var(--crimson) 45%, transparent);
+  background: color-mix(in srgb, var(--crimson) 8%, var(--bg-deep));
+}
+
+.term-root .term-price-cell.is-sell .term-price-val {
+  color: var(--down-strong);
+}
+
+.term-root .term-vol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.term-root .term-order .field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.term-root .term-unit {
+  color: var(--text-faint);
+  letter-spacing: 0.06em;
+}
+
+.term-root .term-order .input {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.term-root .term-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.term-root .term-preset {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-sub);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.term-root .term-preset:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.term-root .term-preset.is-active {
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.term-root .term-sl-tp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.term-root .term-req {
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  border-radius: 4px;
+  background: var(--warn-dim);
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.term-root .term-order .field-error {
+  color: var(--down-strong);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.term-root .term-order .riskline {
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: var(--bg-deep);
+  font-size: 13px;
+}
+
+/* pasar tutup: pesan eksplisit tepat di atas tombol Kirim */
+.term-root .term-closed-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--amber) 34%, transparent);
+  border-radius: 7px;
+  background: var(--warn-dim);
+  color: color-mix(in srgb, var(--amber) 82%, var(--text-muted));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.term-root .term-closed-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.term-root .term-cta {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.term-root .term-cta.is-buy {
+  border-color: var(--emerald);
+  background: var(--emerald);
+  color: #04120c;
+}
+
+.term-root .term-cta.is-buy:hover:not(:disabled) {
+  border-color: var(--up-strong);
+  background: var(--up-strong);
+}
+
+.term-root .term-cta.is-sell {
+  border-color: var(--crimson);
+  background: var(--crimson);
+  color: #160405;
+}
+
+.term-root .term-cta.is-sell:hover:not(:disabled) {
+  border-color: #f87171;
+  background: #f87171;
+}
+
+.term-root .term-cta:disabled {
+  opacity: 0.55;
+  filter: saturate(0.6);
+  cursor: not-allowed;
+}
+
+.term-root .term-order-foot {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.term-root .term-order.is-halted {
+  padding-bottom: 2px;
+}
+
+/* ── posisi (di bawah chart), strip bawah, status bar sistem ──────────── */
+.term-root .term-positions {
+  margin-top: 0;
+}
+
+.term-root .term-positions .card-head {
+  padding: 14px 16px;
+}
+
+.term-root .term-positions .pos-agg {
+  padding: 12px 16px 0;
+}
+
+.term-root .term-positions .pos-agg-lead {
+  font-size: 12px;
+}
+
+.term-root .term-positions .pos-strategy {
+  font-size: 13px;
+}
+
+.term-root .term-positions table.data {
+  font-size: 13.5px;
+}
+
+.term-root .term-positions table.data th {
+  padding: 9px 12px;
+  font-size: 11.5px;
+}
+
+.term-root .term-positions table.data td {
+  padding: 8px 12px;
+}
+
+.term-root .term-lower {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: var(--term-gap);
+  min-height: 0;
+}
+
+.term-root .term-legend {
+  margin: 0;
+}
+
+/* ── status sistem: satu bar tipis FULL-WIDTH FIXED di bawah viewport ── */
+/* Bukan bagian alur dokumen: bar menempel di tepi bawah layar, halaman
+   menyisakan padding-bottom setinggi bar (lihat --term-sysbar-h). Di mobile
+   bar duduk di atas bottom nav + safe-area. Panel detail: popover (desktop),
+   bottom sheet (mobile). */
+.term-sysbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: color-mix(in srgb, var(--surface-1) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.4);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.term-sysbar.is-stale {
+  border-top-color: color-mix(in srgb, var(--amber) 34%, transparent);
+}
+
+.term-sysbar-bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 24px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  text-align: left;
+  transition: background var(--dur) var(--ease);
+}
+
+.term-sysbar-bar:hover {
+  background: var(--surface-sub);
+}
+
+.term-sysbar-items {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px 18px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.term-sysitem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.term-sysdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: 0 0 auto;
+}
+
+.term-sysitem.is-ok .term-sysdot {
+  background: var(--emerald);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--emerald) 14%, transparent);
+}
+
+.term-sysitem.is-warn {
+  color: var(--amber);
+}
+
+.term-sysitem.is-warn .term-sysdot {
+  background: var(--amber);
+}
+
+.term-sysitem.is-down {
+  color: var(--down-strong);
+}
+
+.term-sysitem.is-down .term-sysdot {
+  background: var(--crimson);
+}
+
+.term-sysbar-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.term-sysbar-more svg {
+  width: 13px;
+  height: 13px;
+}
+
+.term-sysbar-stale {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+
+/* panel: desktop = popover menempel di atas bar, rata kanan padding halaman */
+.term-sysbar-panel {
+  position: absolute;
+  right: 24px;
+  bottom: calc(100% + 8px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 48px));
+  max-height: min(66vh, 560px);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-1);
+  box-shadow: var(--glass-shadow);
+  animation: term-panel-in 160ms var(--ease);
+}
+
+@keyframes term-panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.term-sys-backdrop {
+  display: none;
+}
+
+.term-sysbar-panel-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.term-sysbar-panel-head .card-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.term-sys-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.term-sys-close svg {
+  width: 15px;
+  height: 15px;
+}
+
+.term-sysbar .sm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.term-sysbar .sm-section {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-sub);
+}
+
+.term-sysbar .sm-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.term-sysbar .sm-section-head h3 {
+  margin: 0;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.term-sysbar .sm-chip {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.term-sysbar .sm-chip.is-ok {
+  border-color: color-mix(in srgb, var(--emerald) 38%, transparent);
+  background: color-mix(in srgb, var(--emerald) 10%, transparent);
+  color: var(--emerald);
+}
+
+.term-sysbar .sm-chip.is-down {
+  border-color: color-mix(in srgb, var(--crimson) 40%, transparent);
+  background: color-mix(in srgb, var(--crimson) 10%, transparent);
+  color: var(--crimson);
+}
+
+.term-sysbar .sm-chip.is-warn {
+  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+  color: var(--amber);
+}
+
+.term-sysbar .sm-rows {
+  padding: 2px 10px 3px;
+}
+
+.term-sysbar .sm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 23px;
+  padding: 3px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+
+.term-sysbar .sm-row:last-child {
+  border-bottom: 0;
+}
+
+.term-sysbar .sm-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.term-sysbar .sm-value {
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.term-sysbar .sm-value.is-ok { color: var(--emerald); }
+.term-sysbar .sm-value.is-warn { color: var(--amber); }
+.term-sysbar .sm-value.is-down { color: var(--crimson); }
+
+.term-sysbar .sm-empty {
+  margin: 0;
+  padding: 18px 16px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+}
+
+/* mobile: bar 44px di atas bottom nav; panel = bottom sheet penuh lebar */
+@media (max-width: 768px) {
+  .term-sysbar {
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: 0;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .term-sysbar-bar {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+
+  .term-sysbar-items {
+    gap: 4px 14px;
+    font-size: 11.5px;
+  }
+
+  .term-sysbar-more {
+    font-size: 12.5px;
+  }
+
+  .term-sys-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: rgba(5, 5, 6, 0.58);
+    animation: term-fade-in 160ms var(--ease);
+  }
+
+  @keyframes term-fade-in {
+    from { opacity: 0; }
+  }
+
+  .term-sysbar-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom) + 44px);
+    z-index: 1;
+    width: auto;
+    max-height: 64vh;
+    border-radius: 16px 16px 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    animation: term-sheet-in 200ms var(--ease);
+  }
+
+  .term-sysbar .sm-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .term-sysbar .sm-row {
+    min-height: 26px;
+  }
+
+  .term-sysbar .sm-label,
+  .term-sysbar .sm-value {
+    font-size: 12px;
+  }
+
+  @keyframes term-sheet-in {
+    from { opacity: 0; transform: translateY(12px); }
+  }
+}
+
+.term-root .term-foot-note {
+  margin: 12px 0 0;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+}
+
+/* ── mobile ≤768px: rasa aplikasi Android ───────────────────────────────
+   Header sticky ringkas (simbol + harga + chip status pasar + chip kill),
+   TF bisa digeser, chart penuh lebar, kartu jadi sheet rapi, kontrol sentuh
+   >=44px, jarak 12-16px, dan ruang aman di atas bottom nav. */
+@media (max-width: 768px) {
+  .term-root .term-hdr {
+    position: sticky;
+    top: var(--topbar-h);
+    z-index: 30;
+    border-radius: 0 0 12px 12px;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    background: color-mix(in srgb, var(--surface-1) 96%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+  }
+
+  .term-root .term-hdr-main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'sym price'
+      'status status';
+    align-items: center;
+    gap: 8px 10px;
+    padding: 8px 12px;
+  }
+
+  .term-root .term-sym-grp { grid-area: sym; }
+  .term-root .term-price-grp { grid-area: price; justify-content: flex-end; gap: 6px; }
+  .term-root .term-status { grid-area: status; gap: 8px; min-width: 0; }
+
+  /* Ringkas: bid/ask/spread, readout OHLC, env badge, tombol Live, dan label
+     grup tidak perlu di layar sekecil ini (angka yang sama ada di form order,
+     chart, dan panel detail). */
+  .term-root .term-grp-label,
+  .term-root .term-quote,
+  .term-root .term-ohlc-tag,
+  .term-root .term-ohlc-time,
+  .term-root .term-ohlc-cells,
+  .term-root .term-env,
+  .term-root .term-reset {
+    display: none;
+  }
+
+  /* strip TF: baris tipis di bawah chip, bisa digeser (@media sentuh) */
+  .term-root .term-ohlc {
+    padding: 0 8px 8px;
+    border-top: 0;
+    background: transparent;
+  }
+
+  .term-root .term-tools {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .term-root .term-sym { padding: 2px; border-radius: 8px; }
+  .term-root .term-sym-btn { min-height: 32px; padding: 6px 11px; font-size: 11.5px; }
+  .term-root .term-price { font-size: 28px; }
+  .term-root .term-status .term-mkt { min-height: 32px; padding: 5px 10px; font-size: 11.5px; }
+  .term-root .term-mkt-sub { display: none; }
+  .term-root .term-kill { min-height: 32px; padding: 6px 10px; }
+
+  .term-root .term-tf {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .term-root .term-tf::-webkit-scrollbar { display: none; }
+
+  .term-root .term-tf-btn {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+
+  /* Grid 1 kolom: kartu masuk sebagai sheet dengan urutan app
+     (chart -> order -> ringkasan -> posisi), tanpa pembungkus kolom. */
+  .term-root .term-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--term-gap);
+    margin-top: var(--term-gap);
+  }
+
+  .term-root .term-col-main,
+  .term-root .term-col-side {
+    display: contents;
+  }
+
+  .term-root .term-chart-card { order: 1; }
+  /* Dock (posisi/pending) selalu di bawah chart: chart dulu yang penuh. */
+  .term-root .term-col-main > .dock { order: 2; }
+  .term-root .term-order { order: 3; }
+  .term-root .term-sum { order: 3; }
+  .term-root .term-positions { order: 4; }
+
+  .term-root .card-head { padding: 12px 14px; }
+
+  .term-root .term-chart-head { padding: 9px 12px; gap: 6px 10px; }
+  .term-root .term-chart-title { font-size: 12.5px; }
+  .term-root .term-chart-last { font-size: 11.5px; }
+  .term-root .term-chart-card .candlechart,
+  .term-root .term-candle { min-height: 300px; }
+
+  .term-root .term-order-body { gap: 12px; padding: 12px 14px 14px; }
+  /* saat dibuka, kartu digeser ke bawah header sticky (scrollIntoView) */
+  .term-root .term-order { scroll-margin-top: calc(var(--topbar-h) + 190px); }
+  .term-root .term-order-bar { padding: 8px 10px 8px 14px; }
+  .term-root .term-order-toggle { min-height: 44px; }
+  .term-root .term-order .input { min-height: 44px; font-size: 14px; }
+  .term-root .term-side .side-btn { min-height: 44px; }
+  .term-root .term-preset { min-height: 40px; padding: 8px 14px; }
+  .term-root .term-cta { min-height: 48px; }
+
+  .term-root .term-sum-head { padding: 12px 14px 0; }
+  .term-root .term-sum-hero { padding: 8px 14px 12px; }
+  .term-root .term-sum-stats { padding: 12px 14px; }
+  .term-root .term-sum-foot { padding: 0 14px 12px; }
+
+  .term-root .term-positions .card-head { padding: 12px 14px; }
+  .term-root .term-positions .pos-agg { padding: 10px 14px 0; }
+}
+
+/* Layar pendek (laptop 1366x768): form order dirapatkan tapi TIDAK di bawah
+   44px, supaya tombol Kirim tetap terjangkau tanpa melanggar target sentuh. */
+@media (min-width: 1024px) and (max-height: 940px) {
+  .term-root .term-order-body {
+    gap: 10px;
+    padding: 12px 14px 14px;
+  }
+
+  .term-root .term-price-cell {
+    padding: 8px 11px;
+  }
+
+  .term-root .term-order .input {
+    min-height: 44px;
+    padding: 10px 11px;
+  }
+
+  .term-root .term-preset {
+    min-height: 30px;
+    padding: 4px 10px;
+  }
+
+  .term-root .term-order .riskline {
+    padding: 8px 11px;
+  }
+
+  .term-root .term-cta {
+    min-height: 46px;
+  }
+
+  .term-root .term-order-foot {
+    display: none;
+  }
+}
+
+/* Di layar pendek, pasangan BID/ASK/SPREAD di dalam kartu order duplikat
+   dari header (sudah tampil besar di atas); sembunyikan supaya tombol
+   Kirim order ikut masuk ke viewport. */
+@media (min-width: 1024px) and (max-height: 940px) {
+  .term-root .term-order .term-price-pair {
+    display: none;
+  }
+}
+
+/* Warisan dashboard lama menyembunyikan .orderform di <=768px
+   (`.dashboard .orderform`). Di halaman Terminal, kartu order adalah aksi
+   utama dan harus tetap ada di mobile; selector di-scope lebih spesifik
+   agar menang dari aturan warisan itu. */
+@media (max-width: 768px) {
+  .term-root .term-col-side .orderform {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ── alert: satu baris ringkas + panel yang bisa dibuka ───────────────── */
+/* Hanya dirender saat ada alert (atau koneksi alert putus): tanpa alert,
+   halaman tidak menyisakan ruang kosong sama sekali. */
+.term-root .term-alert {
+  margin: 12px 0 0;
+  border: 1px solid color-mix(in srgb, var(--amber) 30%, transparent);
+  border-radius: 10px;
+  background: var(--alert-bg);
+  color: var(--alert-text);
+  overflow: hidden;
+}
+
+.term-root .term-alert.is-sev1 {
+  border-color: color-mix(in srgb, var(--crimson) 45%, transparent);
+  background: color-mix(in srgb, var(--crimson) 12%, transparent);
+  color: #fecaca;
+}
+
+.term-root .term-alert.is-sev2 {
+  border-color: color-mix(in srgb, var(--amber) 42%, transparent);
+  background: var(--warn-dim);
+}
+
+.term-root .term-alert.is-stale {
+  border-style: dashed;
+}
+
+.term-root .term-alert-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.term-root .term-alert-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.term-root .term-alert-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.term-root .term-alert-text b {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.term-root .term-alert-first {
+  color: color-mix(in srgb, currentColor 82%, var(--text-faint));
+  font-weight: 500;
+}
+
+.term-root .term-alert-chev {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  color: color-mix(in srgb, currentColor 65%, var(--text-faint));
+}
+
+/* animasi buka/tutup halus: grid 0fr -> 1fr, tanpa mengukur tinggi di JS */
+.term-root .term-alert-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms var(--ease);
+}
+
+.term-root .term-alert-wrap.is-open {
+  grid-template-rows: 1fr;
+}
+
+.term-root .term-alert-list {
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.term-root .term-alert-item {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.term-root .term-alert-sev {
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.term-root .term-alert-sev.sev-1 {
+  background: color-mix(in srgb, var(--crimson) 82%, black);
+  color: #fff;
+}
+
+.term-root .term-alert-sev.sev-2 {
+  background: color-mix(in srgb, var(--crimson) 40%, black);
+  color: #fff;
+}
+
+.term-root .term-alert-sev.sev-3 {
+  background: color-mix(in srgb, var(--amber) 30%, black);
+  color: var(--alert-text);
+}
+
+.term-root .term-alert-sev.sev-4 {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+.term-root .term-alert-what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.term-root .term-alert-time {
+  color: color-mix(in srgb, currentColor 60%, var(--text-faint));
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* satu baris saja (tanpa daftar): koneksi alert putus */
+.term-root .term-alert-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.term-root .term-alert-msg .term-alert-text {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.term-root .term-alert-msg .term-alert-sub {
+  min-width: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--alert-text) 72%, var(--text-faint));
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .term-root .term-alert { margin-top: 10px; border-radius: 12px; }
+  .term-root .term-alert-btn { min-height: 44px; padding: 9px 12px; }
+  .term-root .term-alert-item { grid-template-columns: 54px minmax(0, 1fr); }
+  .term-root .term-alert-time { grid-column: 2; }
+}
+
+
+/* ═══ Panel kanan bisa di-hide (chart selebar TradingView) ═══════════════
+   Tombol di toolbar kanan. Grid kembali satu kolom; chart memakai seluruh
+   lebar halaman tanpa menyisakan gutter kolom ticket. */
+.term-root .term-side-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+
+.term-root .term-side-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+
+.term-root .term-side-toggle:hover {
+  color: var(--text);
+  border-color: var(--border-strong, var(--line));
+}
+
+.term-root .term-side-toggle.is-on {
+  color: var(--emerald);
+  border-color: color-mix(in srgb, var(--emerald) 38%, transparent);
+  background: var(--up-dim);
+}
+
+@media (min-width: 1024px) {
+  /* Ticket lebih sempit dari sebelumnya (380-28%) supaya chart lebih lebar. */
+  .term-root .term-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(316px, 356px);
+  }
+
+  .term-root .term-grid.is-side-hidden {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Chip kill-switch versi header: kecil, tenang, satu baris. */
+.term-root .term-kill--hdr {
+  min-height: 26px;
+  padding: 2px 9px 2px 8px;
+  gap: 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.term-root .term-kill--hdr b {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+}
+
+.term-root .term-kill--hdr .term-kill-dot {
+  width: 5px;
+  height: 5px;
+}
+
+.term-root .term-kill-state {
+  margin-left: 2px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--crimson) 22%, transparent);
+  color: var(--down-strong);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+/* Ringkasan portofolio versi ringkas: di atas ticket, bukan hero besar. */
+.term-root .term-sum.is-compact .term-sum-head {
+  padding: 10px 12px 0;
+}
+
+.term-root .term-sum.is-compact .term-sum-title {
+  font-size: 10.5px;
+}
+
+.term-root .term-sum.is-compact .term-sum-hero {
+  padding: 6px 12px 10px;
+  gap: 8px;
+}
+
+.term-root .term-sum.is-compact .term-sum-equity {
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.term-root .term-sum.is-compact .term-sum-cur {
+  font-size: 10.5px;
+}
+
+.term-root .term-sum.is-compact .term-sum-delta {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+.term-root .term-sum.is-compact .term-sum-delta-sub {
+  display: none;
+}
+
+.term-root .term-sum.is-compact .term-sum-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  padding: 9px 12px 11px;
+}
+
+.term-root .term-sum.is-compact .term-sum-stat dt {
+  font-size: 10px;
+}
+
+.term-root .term-sum.is-compact .term-sum-stat dd {
+  font-size: 12px;
+}
+
+.term-root .term-sum.is-compact .term-sum-sub,
+.term-root .term-sum.is-compact .term-sum-foot {
+  display: none;
+}
+
+/* Sesi likuiditas di bar status: kecil, menyatu dengan metrik sistem. */
+.term-sysseps {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.term-syssep {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.term-syssep i {
+  width: 4px;
+  height: 4px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.term-syssep.is-on {
+  color: var(--emerald);
+}
+
+.term-syssep.is-on i {
+  opacity: 1;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--emerald) 16%, transparent);
+}
+
+@media (max-width: 900px) {
+  .term-sysseps {
+    display: none;
+  }
+}
+
+/* ── Baris estimasi order: P | L | RR, satu baris, warna mengikuti tema ──── */
+.term-risk-line {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-deep);
+}
+
+.term-risk-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px 9px;
+}
+
+.term-risk-cell + .term-risk-cell {
+  border-left: 1px solid var(--line);
+}
+
+.term-risk-k {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.term-risk-cell b {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

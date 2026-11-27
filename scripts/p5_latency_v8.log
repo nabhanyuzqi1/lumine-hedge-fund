@@ -1,0 +1,42 @@
+[07:11:53] login ok, csrf ok
+[07:11:53] resume: 0 sampel v8 existing
+[07:11:53] synthetic EA antar-burst start
+[07:11:54] pre-flight OK; lanjut burst 1/25
+[07:13:54] burst 1/25 (p5-latency-gate-v8-b01) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 2, ditolak: 0, timeout: 0)
+   total sampel v8: 8/200
+[07:13:54] flatten http 200 requested=5
+[07:13:54] flatten http 200 requested=3
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[07:17:33] flatten http 200 requested=1
+[07:19:41] burst 2/25 (p5-latency-gate-v8-b02) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 2, ditolak: 0, timeout: 0)
+   total sampel v8: 16/200
+[07:19:41] flatten http 200 requested=6
+[07:19:42] flatten http 200 requested=3
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s
+  [r1] belum bersih (pending=1, open=3); tunggu 15s

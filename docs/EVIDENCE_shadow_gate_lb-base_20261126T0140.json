@@ -1,0 +1,43 @@
+{
+ "label": "lb-base",
+ "run": {
+  "run_id": "e0e8f9f3-7e40-4466-86f3-d08355669177",
+  "strategy_id": "london_breakout",
+  "strategy_version": "1.0.0",
+  "symbol": "XAUUSD",
+  "timeframe": "M5",
+  "status": "RUNNING",
+  "params_hash": "44136fa355b3678a",
+  "code_commit": "7c02c7c",
+  "period_start": "None",
+  "period_end": "2026-11-26 01:39:37.403601+07:00",
+  "first_signal": null,
+  "last_signal": null
+ },
+ "checks": {
+  "enough_signals": false
+ },
+ "metrics": {
+  "signals": 0,
+  "closed": 0,
+  "wins": 0,
+  "losses": 0,
+  "profit_factor": null,
+  "expectancy_usd": null,
+  "total_sim_pnl_usd": 0.0,
+  "total_sim_cost_usd": 0.0,
+  "rejected": 0,
+  "regime_blocked": 0,
+  "supervisor_critical": null,
+  "signals_per_day": 0.0,
+  "days": 0.0,
+  "leakage_signals": 0
+ },
+ "owner_approval": {
+  "approved": false,
+  "note": "data belum cukup untuk dinilai"
+ },
+ "regime_distribution": {},
+ "verdict": "INSUFFICIENT",
+ "reason": "sinyal 0 < minimum 10"
+}

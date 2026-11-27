@@ -1,0 +1,83 @@
+{
+ "id": "c1261181-02d1-43d8-8268-a0361781ddea",
+ "command_id": "1d57b07c-7d33-4dd1-ad84-7305e6262609",
+ "user_id": 13,
+ "symbol": "XAUUSD",
+ "side": "BUY",
+ "volume": 0.01,
+ "sl": 3561.11,
+ "tp": 3569.11,
+ "status": "RISK_PASS",
+ "price_requested": 3563.68,
+ "ticket": null,
+ "price_filled": null,
+ "fail_reason": null,
+ "strategy": "manual",
+ "created_at": "2026-11-25T01:07:57.731055+07:00",
+ "updated_at": "2026-11-25T01:07:57.731055+07:00",
+ "sent_at": null,
+ "delivered_at": null,
+ "resolved_at": null,
+ "action": "OPEN",
+ "events": [
+  {
+   "id": 302,
+   "from_status": null,
+   "to_status": "RECEIVED",
+   "payload": {
+    "source": "api",
+    "username": "ui_d6_qa"
+   },
+   "created_at": "2026-11-25T01:07:57.731055+07:00"
+  },
+  {
+   "id": 303,
+   "from_status": "RECEIVED",
+   "to_status": "RISK_PASS",
+   "payload": {
+    "risk": "pass",
+    "reasons": [],
+    "portfolio": {
+     "equity": 9869.18,
+     "limits": {
+      "stress": {
+       "gap_pct": 0.5,
+       "slippage_usd": 0.35,
+       "spread_multiplier": 3.0
+      },
+      "enabled": true,
+      "leverage": 100.0,
+      "max_feed_age_s": 60.0,
+      "max_open_risk_pct": 2.0,
+      "max_symbol_risk_pct": 1.0,
+      "stress_max_risk_pct": 3.0,
+      "max_total_volume_lot": 0.3,
+      "commission_per_lot_usd": 7.0,
+      "max_risk_per_trade_pct": 0.5,
+      "max_margin_utilization_pct": 20.0
+     },
+     "per_symbol": {
+      "XAUUSD": {
+       "risk_usd": 3.5199999999994542,
+       "stress_usd": 22.0574999999988,
+       "volume_lot": 0.01,
+       "exposure_usd": 3563.5,
+       "unverified_spec": false
+      }
+     },
+     "sent_orders": 0,
+     "unbounded_sl": 0,
+     "open_risk_usd": 3.5199999999994542,
+     "open_positions": 0,
+     "pending_orders": 0,
+     "margin_used_usd": 35.635,
+     "stress_risk_usd": 22.0574999999988,
+     "total_volume_lot": 0.01,
+     "gross_exposure_usd": 3563.5,
+     "margin_utilization_pct": 0.3610735643690762
+    }
+   },
+   "created_at": "2026-11-25T01:07:57.731055+07:00"
+  }
+ ]
+}

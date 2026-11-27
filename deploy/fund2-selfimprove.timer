@@ -1,0 +1,10 @@
+# Trigger mingguan untuk fund2-selfimprove.service (Senin 07:30 WIB).
+[Unit]
+Description=Self-improve mingguan (Senin 07:30 WIB)
+
+[Timer]
+OnCalendar=Mon *-*-* 07:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,52 @@
+{
+  "task": "t_eb648747",
+  "round": "2 (re-test penuh UI pada build baru pasca-fix)",
+  "date": "2026-11-22",
+  "build": {
+    "served_asset": "index-5c1vHCt-.js",
+    "dist_built": "2026-11-22 04:16",
+    "uvicorn_pid": 1896128,
+    "uvicorn_started": "2026-11-22 04:08 WIB",
+    "last_commit_before_start": "e792011 (03:25)",
+    "fresh_build_verified": true
+  },
+  "coverage": {
+    "desktop": ["Chrome 1440x900 (CDP)", "Firefox 160.0 real window 1280x768"],
+    "mobile": "Chrome device emulation 390x844 + touch (setara Chrome DevTools)",
+    "browserstack": "TIDAK dijalankan (tanpa kredensial akun di environment) - deviasi dicatat"
+  },
+  "checks": [
+    {"id": "F1", "area": "Login membuka aplikasi", "result": "PASS", "detail": "password salah -> 'invalid credentials'; login benar -> Dashboard terbuka, tombol tidak stuck 'Memeriksa' (Chrome + Firefox)"},
+    {"id": "F2", "area": "Dashboard tidak white-screen dengan posisi", "result": "PASS", "detail": "posisi nyata (open_price 2000.0, profit 2.0, sl/tp null) render: BELI 0.10 / 2000.00 / SL . / TP . / +$2.00; normalizePosition + guard null bekerja (Chrome + Firefox)"},
+    {"id": "F3", "area": "Service live build baru", "result": "PASS", "detail": "uvicorn 04:08 > commit terakhir 03:25; GET /strategies 401 JSON (endpoint ada); asset served = dist 04:16"},
+    {"id": "F4", "area": "Kill-switch + status EA di Dashboard", "result": "PASS", "detail": "hold-to-arm -> 'TERARM · order baru diblokir' + audit ACTIVATE id46 (dashboard, qa_ui_r2); form order jadi notice halted saat armed; release -> 'AMAN' + audit RELEASE id47; badge EA ONLINE saat heartbeat fresh, OFFLINE + harga '.....' saat stale (fallback benar)"},
+    {"id": "F5", "area": "Riwayat: CSV + event log + label", "result": "PASS", "detail": "CSV terunduh (BOM + delimiter ';', ikut filter); event log lazy-load per order (RECEIVED->FAILED + alasan); side BELI/JUAL benar; entry dari price_filled (null -> .); SL/TP null -> ."},
+    {"id": "F6", "area": "Strategy Lab daftar strategi + mode", "result": "PASS", "detail": "london_breakout tampil (statistik jujur 0 trades/balance 10000); toggle Paper->Live->Paper via UI benar (refleks SSE); KillSwitchCard shared"},
+    {"id": "T1", "area": "Form order SL/TP wajib + arah + konfirmasi", "result": "PASS", "detail": "kosong -> error wajib; arah salah -> error arah; dialog konfirmasi rekap + risiko maks $50.05; order nyata tidak dikirim (pasar tutup; E2E order dibuktikan t_ef2f49c6)"},
+    {"id": "T2", "area": "Live price + spread", "result": "PASS", "detail": "XAUUSD 3537.68 mid, ask 3537.90, spread 0.43 = ask-bid (konsisten); SSE tick 7 event/6dtk saat EA aktif; chart menggambar <=2 dtk setelah login, stabil 30 dtk"},
+    {"id": "T3", "area": "Auth HMAC bridge", "result": "PASS", "detail": "unauth 401; signature salah 401; EA ONLINE saat heartbeat fresh; kontrak penuh diverifikasi t_ef2f49c6 + Direktur"},
+    {"id": "T4", "area": "Mobile 4 halaman", "result": "PASS", "detail": "tanpa overflow horizontal (scrollWidth=390=clientWidth di semua halaman); bottomnav muncul; tabel Riwayat scroll dalam wrapper (569>360)"},
+    {"id": "T5", "area": "Console errors", "result": "PASS", "detail": "0 error console di semua halaman & interaksi (hook __qa_errors)"}
+  ],
+  "new_findings": [
+    {"id": "F7", "severity": "minor", "area": "frontend+API", "detail": "'Posisi terbuka' menampilkan posisi CLOSED: GET /positions mengembalikan semua status, UI tidak filter; chip '1 aktif' menghitung posisi closed; tombol 'Tutup' tampil utk posisi closed; kolom ORDER kosong (order_id null, ticket 601 tak dipakai)"},
+    {"id": "F8", "severity": "minor", "area": "UX", "detail": "chart tanpa empty-state: di luar jam pasar canvas kosong tanpa pesan; data chart murni SSE ring buffer (maks 320 tick), tanpa histori"},
+    {"id": "F9", "severity": "minor", "area": "UX mobile", "detail": "Riwayat mobile: tabel scroll horizontal dlm wrapper tanpa hint visual (UUID terpotong tanpa ellipsis); konten scroll di belakang bottomnav tanpa padding-bottom; margin tabel asimetris"},
+    {"id": "F10", "severity": "minor", "area": "kosmetik", "detail": "Strategy Lab: label '10000' (curve[0] & terakhir) di canvas EquityCurve tampak melayang saat kurva flat/single-point"},
+    {"id": "OBS-1", "severity": "environment", "area": "bukan regresi UI", "detail": "EA bridge berhenti heartbeat ~04:50 WIB (ea_last_seen_age_s 429s @ 04:57; MT5 hidup CPU ~50%); UI menampilkan EA OFFLINE + harga '.....' dgn benar. MT5 dilindungi, tidak di-restart QA. Follow-up: cek kesehatan EA/bridge (backend/devops)"}
+  ],
+  "deviations": ["BrowserStack free tier tidak dijalankan (tanpa kredensial akun di environment); mobile memakai emulasi CDP"],
+  "cleanup": {
+    "qa_user_deleted": "qa_ui_r2",
+    "kill_switch_final": "inactive",
+    "strategy_mode_final": "paper",
+    "new_live_orders": 0,
+    "recorder_touched": false
+  },
+  "evidence": {
+    "report": "~/fund2/docs/QA_P1b_UI_R2.md",
+    "shots": 21,
+    "videos": ["login.mp4 10s", "dashboard.mp4 9s", "riwayat.mp4 10s", "lab.mp4 4s", "mobile_dashboard.mp4 6s", "firefox_flow.mp4 120s"],
+    "csv": "fund2-riwayat-20261122-0442.csv"
+  }
+}

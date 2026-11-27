@@ -1,0 +1,186 @@
+[11:19:03] login ok, csrf ok
+[11:19:03] resume: 48 sampel v10 existing
+[11:19:03] synthetic EA antar-burst start
+[11:19:03] pre-flight OK; lanjut burst 7/25
+[11:22:26] burst 7/25 (p5-latency-gate-v10-b07) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 3, ditolak: 0, timeout: 0)
+   total sampel v10: 56/200
+[11:22:26] flatten http 200 requested=5
+[11:22:27] flatten http 200 requested=4
+[11:24:34] burst 8/25 (p5-latency-gate-v10-b08) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 0, ditolak: 0, timeout: 0)
+   total sampel v10: 64/200
+[11:24:34] flatten http 200 requested=9
+[11:24:35] flatten http 200 requested=7
+  [r1] belum bersih (pending=0, open=2); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  [r1] belum bersih (pending=0, open=5); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[11:28:14] flatten http 200 requested=5
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  [r2] belum bersih (pending=0, open=4); tunggu 15s
+  rounds 2/4 belum siap; ulangi flatten
+[11:31:52] flatten http 200 requested=4
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  [r3] belum bersih (pending=0, open=2); tunggu 15s
+  rounds 3/4 belum siap; ulangi flatten
+[11:35:31] flatten http 200 requested=2
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  [r4] belum bersih (pending=0, open=1); tunggu 15s
+  rounds 4/4 belum siap; ulangi flatten
+[11:39:09] burst 9: state tidak siap; lewati
+[11:39:09] flatten http 200 requested=1
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+[11:41:58] burst 10/25 (p5-latency-gate-v10-b10) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 4, ditolak: 0, timeout: 0)
+   total sampel v10: 72/200
+[11:41:58] flatten http 200 requested=4
+[11:41:59] flatten http 200 requested=4
+[11:46:08] burst 11/25 (p5-latency-gate-v10-b11) exit=1 Selesai: 8 sampel ditulis ke order_events (terminal T4: 7, lengkap T0..T4: 7, ditolak: 0, timeout: 1)
+   total sampel v10: 80/200
+    Selesai: 8 sampel ditulis ke order_events (terminal T4: 7, lengkap T0..T4: 7, ditolak: 0, timeout: 1)
+[11:46:08] flatten http 200 requested=3
+[11:46:08] flatten http 200 requested=2
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  rounds 2/4 belum siap; ulangi flatten
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  [r3] belum bersih (pending=1, open=0); tunggu 15s
+  rounds 3/4 belum siap; ulangi flatten
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+  [r4] belum bersih (pending=1, open=0); tunggu 15s
+[12:01:16] burst 12/25 (p5-latency-gate-v10-b12) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 88/200
+[12:01:16] flatten http 200 requested=0
+[12:03:16] burst 13/25 (p5-latency-gate-v10-b13) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 96/200
+[12:03:16] flatten http 200 requested=0
+[12:05:17] burst 14/25 (p5-latency-gate-v10-b14) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 104/200
+[12:05:17] flatten http 200 requested=0
+[12:07:17] burst 15/25 (p5-latency-gate-v10-b15) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 112/200
+[12:07:17] flatten http 200 requested=0
+[12:09:17] burst 16/25 (p5-latency-gate-v10-b16) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 120/200
+[12:09:17] flatten http 200 requested=0
+[12:11:18] burst 17/25 (p5-latency-gate-v10-b17) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 128/200
+[12:11:18] flatten http 200 requested=0
+[12:13:18] burst 18/25 (p5-latency-gate-v10-b18) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 136/200
+[12:13:18] flatten http 200 requested=0
+[12:15:18] burst 19/25 (p5-latency-gate-v10-b19) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 144/200
+[12:15:18] flatten http 200 requested=0
+[12:17:18] burst 20/25 (p5-latency-gate-v10-b20) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 152/200
+[12:17:18] flatten http 200 requested=0
+[12:19:18] burst 21/25 (p5-latency-gate-v10-b21) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 160/200
+[12:19:18] flatten http 200 requested=0
+[12:21:18] burst 22/25 (p5-latency-gate-v10-b22) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 168/200
+[12:21:18] flatten http 200 requested=0
+[12:23:18] burst 23/25 (p5-latency-gate-v10-b23) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 176/200
+[12:23:18] flatten http 200 requested=0
+[12:25:18] burst 24/25 (p5-latency-gate-v10-b24) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 184/200
+[12:25:18] flatten http 200 requested=0
+[12:27:18] burst 25/25 (p5-latency-gate-v10-b25) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+   total sampel v10: 192/200
+[12:27:18] flatten http 200 requested=0
+SELESAI total waktu 4095s; burst=25 sampel=192 ditolak=0

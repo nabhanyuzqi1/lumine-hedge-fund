@@ -1,0 +1,38 @@
+[07:28:34] login ok, csrf ok
+[07:28:34] resume: 0 sampel v9 existing
+[07:28:34] synthetic EA antar-burst start
+[07:28:35] flatten http 200 requested=2
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+[07:32:13] pre-flight OK; lanjut burst 1/25
+[07:34:34] burst 1/25 (p5-latency-gate-v9-b01) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 1, ditolak: 0, timeout: 0)
+   total sampel v9: 8/200
+[07:34:34] flatten http 200 requested=7
+[07:34:35] flatten http 200 requested=6
+  [r1] belum bersih (pending=1, open=0); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=5); tunggu 15s
+  [r1] belum bersih (pending=1, open=0); tunggu 15s
+  [r1] belum bersih (pending=1, open=0); tunggu 15s
+  [r1] belum bersih (pending=1, open=0); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten

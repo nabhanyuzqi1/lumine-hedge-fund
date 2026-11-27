@@ -1,0 +1,14 @@
+[Unit]
+Description=Fund2 guardrail drift watch harian (05:10 UTC = 12:10 WIB)
+Documentation=file:/home/tekka/fund2/docs/KEPUTUSAN_OWNER.md
+After=network-online.target fund2-postgres.service
+
+[Timer]
+OnCalendar=*-*-* 05:10:00 UTC
+Persistent=true
+AccuracySec=1min
+RandomizedDelaySec=120
+Unit=fund2-guardrail-watch.service
+
+[Install]
+WantedBy=timers.target

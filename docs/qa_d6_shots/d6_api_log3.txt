@@ -1,0 +1,11 @@
+login+2fa: 200 {'ok': True, 'window_minutes': 5.0}
+price from regime candle close: None
+[ks_activate] HTTP 200 {"active": true, "mode": "STOP_NEW_ORDERS", "strategy": null, "reason": "QA D6 toll7 stop_entry ui_d6_qa", "source": "dashboard", "actor": "ui_d6_qa", "activated_at": "2026-11-24T18:07:34.790537+00:00"}
+  ks state now: {"active": true, "mode": "STOP_NEW_ORDERS", "strategy": null, "reason": "QA D6 toll7 stop_entry ui_d6_qa", "source": "dashboard", "actor": "ui_d6_qa", "activated_at": "2026-11-24T18:07:34.790537+00:00"}
+  newest ks events:
+    2026-11-25T01:07:34.799096+07:00 ACTIVATE STOP_NEW_ORDERS actor= ui_d6_qa source= dashboard
+    2026-11-25T01:07:08.547135+07:00 RELEASE GLOBAL_HALT actor= ui_d6_qa source= dashboard
+    2026-11-25T01:06:30.510943+07:00 ACTIVATE GLOBAL_HALT actor= auto source= auto:sev_credential_compromise
+    2026-11-25T01:06:16.001054+07:00 RELEASE STOP_NEW_ORDERS actor= ui_d6_qa source= dashboard
+[ks_release] HTTP 200 {"active": false, "mode": null, "strategy": null, "reason": null, "source": null, "actor": null, "activated_at": null}
+  ks final: {"active": false, "mode": null, "strategy": null, "reason": null, "source": null, "actor": null, "activated_at": null}

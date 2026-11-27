@@ -1,0 +1,11 @@
+[Unit]
+Description=Fund2 daily backup (pg_dump + config + parquet, age-encrypted, offsite R2)
+After=network-online.target fund2-postgres.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tekka
+ExecStart=/home/tekka/fund2/scripts/fund2_backup.sh daily
+TimeoutStartSec=1800
+# hasil backup dipakai alert Telegram (fund2-alerts membaca log JSON terbaru)

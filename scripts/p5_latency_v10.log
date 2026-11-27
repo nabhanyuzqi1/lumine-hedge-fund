@@ -1,0 +1,32 @@
+[07:38:58] login ok, csrf ok
+[07:38:58] resume: 0 sampel v10 existing
+[07:38:58] synthetic EA antar-burst start
+[07:38:58] pre-flight OK; lanjut burst 1/25
+[07:40:58] burst 1/25 (p5-latency-gate-v10-b01) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   total sampel v10: 0/200
+   burst 1 SEMUA order ditolak (8/8); strike 1/2
+      order 1/8 ditolak (http 422): ['daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 2/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 3/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 4/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 5/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 6/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 7/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+      order 8/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)', 'daily drawdown limit reached (pnl -127.89 <= -100.0)']
+    Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+[07:40:59] flatten http 200 requested=0
+[07:40:59] release kill-switch http 200 {'state': {'active': False, 'mode': None, 'strategy': None, 'reason': None, 'source': None, 'actor': None, 'activated_at
+[07:43:01] burst 2/25 (p5-latency-gate-v10-b02) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   total sampel v10: 0/200
+   burst 2 SEMUA order ditolak (8/8); strike 2/2
+ABORT: gate memblokir semua order -- stop, jangan spam.
+SELESAI total waktu 243s; burst=2 sampel=0 ditolak=16
+[supervisor] driver exit rc=0 pada 07:43:01, attempt 1
+[supervisor] selesai: phase=done
+[supervisor] keluar pada 07:43:01 setelah 0 restart
+[00:02:45] login ok, csrf ok
+[00:02:45] resume: 256 sampel v10 existing
+SELESAI: target sampel sudah tercapai
+[supervisor] driver exit rc=0 pada 00:02:45, attempt 1
+[supervisor] selesai: phase=done
+[supervisor] keluar pada 00:02:45 setelah 0 restart

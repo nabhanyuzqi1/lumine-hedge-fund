@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Secrets
+.env
+.env.alerts
+.env.llm
+
+# Frontend build
+frontend/node_modules/
+frontend/dist/
+
+# EA build artifacts
+ea/*.ex5
+data/ea_v0/
+
+# HFM runtime data (recorder P0)
+data/hfm_recording/
+
+# artefak runtime & data besar (23 Nov)
+data/pg/
+data/parquet/
+data/ml_models/
+data/dukascopy/
+data/features/
+data/quality/
+data/fund2.db
+data/kanban_watch_state.json
+api/.coverage
+api/uv.lock
+
+# --- runtime artifacts: jangan pernah di-commit ---
+data/.s.PGSQL.*
+data/.s.PGSQL.*.lock
+data/pg.log
+data/postmaster.pid
+data/pg_stat_tmp/
+data/pg_wal/
+data/pg_xlog/
+api/.cache/
+scripts/*.log
+scripts/*_status.json
+
+# Binaries runtime (wine/postgres) — ada di disk, tidak di repo
+runtime/
+data/*.log
+data/*.json
+data/.s.PGSQL.*
+data/parquet/
+docs/*.log
+legacy-v1-scripts/

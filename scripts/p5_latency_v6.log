@@ -1,0 +1,22 @@
+[05:40:27] login ok, csrf ok
+[05:40:27] synthetic EA persisten start
+[05:40:28] flatten http 200 requested=2
+  halt aktif tapi belum bersih (pending=2, open=2); tidak di-release
+[05:42:27] burst 1/25 (p5-latency-gate-v6-b01) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   burst 1 SEMUA order ditolak (8/8); strike 1/2
+      order 1/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+      order 2/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+      order 3/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+      order 4/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+      order 5/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+      order 6/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+      order 7/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+      order 8/8 ditolak (http 422): ['kill-switch aktif (mode: GLOBAL_HALT)']
+    Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+[05:42:27] flatten http 200 requested=2
+[05:42:28] flatten http 200 requested=1
+  halt aktif tapi belum bersih (pending=1, open=1); tidak di-release
+[05:44:26] burst 2/25 (p5-latency-gate-v6-b02) exit=1 Selesai: 0 sampel ditulis ke order_events (terminal T4: 0, lengkap T0..T4: 0, ditolak: 8, timeout: 0)
+   burst 2 SEMUA order ditolak (8/8); strike 2/2
+ABORT: gate portofolio memblokir semua order -- stop, jangan spam.
+SELESAI total waktu 239s

@@ -1,0 +1,76 @@
+/* Lumine Fund · chart.css — wadah CandleChart (lightweight-charts).
+   Chart mengisi wadah absolut supaya ResizeObserver mengikuti layout halaman
+   tanpa mengubah tinggi chart saat data masuk. */
+
+.candlechart {
+  position: relative;
+  width: 100%;
+  /* Tinggi nyata datang dari prop (inline height). min-height hanya lantai
+     supaya chart tidak pernah kolaps; 300px = tinggi chart mobile. */
+  min-height: 300px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.candlechart-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* status loading / kosong / error menutup area chart */
+.candlechart-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: var(--surface-1);
+}
+
+.candlechart-state.is-error {
+  color: var(--down-strong);
+}
+
+.candlechart-retry {
+  font-size: 12px;
+  border: 1px solid var(--line-strong);
+}
+
+/* pemberitahuan TF belum tersedia (fallback), di atas chart */
+.candlechart-note {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  max-width: calc(100% - 16px);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--alert-border);
+  background: var(--alert-bg);
+  color: var(--alert-text);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* indikator saat memuat batch historis (geser ke kiri) */
+.candlechart-more {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(9, 9, 11, 0.82);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}

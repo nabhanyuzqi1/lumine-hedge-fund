@@ -1,0 +1,246 @@
+{
+  "timestamp": "2026-11-22 05:20:59",
+  "target": "http://127.0.0.1:3110",
+  "results": [
+    {
+      "area": "sesi",
+      "check": "login_ok",
+      "ok": true,
+      "detail": "POST /auth/login -> 200"
+    },
+    {
+      "area": "sesi",
+      "check": "cookie_flags",
+      "ok": true,
+      "detail": "{\"httponly\": true, \"samesite=strict\": true, \"max-age=86400\": true, \"path=/\": true}"
+    },
+    {
+      "area": "sesi",
+      "check": "cookie_secure_absent",
+      "ok": null,
+      "detail": "Secure belum diset (loopback P1); WAJIB flip saat cutover domain (PRD 7)"
+    },
+    {
+      "area": "sesi",
+      "check": "auth_me_ok",
+      "ok": true,
+      "detail": "GET /auth/me -> 200"
+    },
+    {
+      "area": "sesi",
+      "check": "session_ttl_24h",
+      "ok": true,
+      "detail": "expires-created = 24.00 jam"
+    },
+    {
+      "area": "sesi",
+      "check": "session_token_hashed",
+      "ok": true,
+      "detail": "token_hash = sha256(cookie token), bukan plaintext"
+    },
+    {
+      "area": "sesi",
+      "check": "orders_no_session_401",
+      "ok": true,
+      "detail": "GET /orders tanpa sesi -> 401"
+    },
+    {
+      "area": "sesi",
+      "check": "orders_csrf_403",
+      "ok": true,
+      "detail": "POST /orders sesi tanpa CSRF -> 403; baris order dibuat: 0"
+    },
+    {
+      "area": "sesi",
+      "check": "logout_invalidates",
+      "ok": true,
+      "detail": "logout -> 200; /auth/me setelahnya -> 401"
+    },
+    {
+      "area": "sesi",
+      "check": "logout_db_row_deleted",
+      "ok": true,
+      "detail": "sisa sesi user QA di DB: 0"
+    },
+    {
+      "area": "sesi",
+      "check": "expired_session_401",
+      "ok": true,
+      "detail": "GET /auth/me dengan sesi kedaluwarsa -> 401"
+    },
+    {
+      "area": "sesi",
+      "check": "relogin_ok",
+      "ok": true,
+      "detail": "login ulang -> 200"
+    },
+    {
+      "area": "hmac",
+      "check": "no_auth_401",
+      "ok": true,
+      "detail": "GET /bridge/poll tanpa auth -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "bearer_wrong_401",
+      "ok": true,
+      "detail": "Bearer salah -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "bearer_valid_ok",
+      "ok": true,
+      "detail": "Bearer legacy /bridge/heartbeat -> 200 (kontrak lama lestari)"
+    },
+    {
+      "area": "hmac",
+      "check": "hmac_valid_heartbeat_200",
+      "ok": true,
+      "detail": "POST /bridge/heartbeat HMAC valid -> 200 {\"ok\":true,\"ts\":1795299533658} (ronde 1: 405)"
+    },
+    {
+      "area": "hmac",
+      "check": "hmac_valid_tick_batch_200",
+      "ok": true,
+      "detail": "POST /bridge/tick batch {symbol,ticks} -> 200 {\"ok\":true,\"ticks\":2} (ronde 1: 422)"
+    },
+    {
+      "area": "hmac",
+      "check": "hmac_valid_poll_200",
+      "ok": true,
+      "detail": "GET /bridge/poll?timeout_s=0 HMAC valid -> 200"
+    },
+    {
+      "area": "hmac",
+      "check": "invalid_signature_401",
+      "ok": true,
+      "detail": "signature salah -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "stale_timestamp_401",
+      "ok": true,
+      "detail": "timestamp -30s (di luar toleransi 5s) -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "future_timestamp_401",
+      "ok": true,
+      "detail": "timestamp +30s -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "nonce_reuse_401",
+      "ok": true,
+      "detail": "nonce dipakai 2x: ke-1 -> 200, ke-2 -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "missing_headers_401",
+      "ok": true,
+      "detail": "tanpa header X-Fund2-* -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "nonce_too_short_401",
+      "ok": true,
+      "detail": "nonce 3 char (<8) -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "nonce_non_hex_401",
+      "ok": true,
+      "detail": "nonce non-heks -> 401"
+    },
+    {
+      "area": "hmac",
+      "check": "secret_env_not_in_repo",
+      "ok": true,
+      "detail": "secret ditemukan di file repo (di luar .env): 0; perm .env = 0o600"
+    },
+    {
+      "area": "rate_order",
+      "check": "arm_killswitch",
+      "ok": true,
+      "detail": "POST /kill-switch STOP_NEW_ORDERS -> 200 active=True"
+    },
+    {
+      "area": "rate_order",
+      "check": "orders_all_rejected_422",
+      "ok": true,
+      "detail": "12 POST /orders -> [422, 422, 422, 422, 422, 422, 422, 422, 422, 422, 422, 422]"
+    },
+    {
+      "area": "rate_order",
+      "check": "order_rate_limit_triggered",
+      "ok": true,
+      "detail": "2/12 order memuat alasan 'order rate limit exceeded' (baris ke-11+; max_orders_per_min=10); 12/12 memuat alasan kill-switch"
+    },
+    {
+      "area": "rate_order",
+      "check": "rejected_not_broker_failed",
+      "ok": true,
+      "detail": "12/12 order FAILED karena risk gate (payload risk=rejected) - tidak menyentuh streak FAILED / tidak dikirim ke broker"
+    },
+    {
+      "area": "rate_order",
+      "check": "release_killswitch",
+      "ok": true,
+      "detail": "POST /kill-switch/release -> 200 active=False"
+    },
+    {
+      "area": "rate_order",
+      "check": "failed_streak_unchanged",
+      "ok": true,
+      "detail": "consecutive_failed: sebelum=0 sesudah=0"
+    },
+    {
+      "area": "rate_login",
+      "check": "login_rate_limit_429",
+      "ok": true,
+      "detail": "11 login salah -> [401, 401, 401, 401, 401, 401, 401, 401, 401, 401, 429] (429 pada percobaan ke-11, batas 10/60s)"
+    },
+    {
+      "area": "rate_login",
+      "check": "login_recovery_after_window",
+      "ok": true,
+      "detail": "login benar setelah jendela lewat -> 200"
+    },
+    {
+      "area": "password",
+      "check": "bcrypt_cost12",
+      "ok": true,
+      "detail": "prefix hash: $2b$12$"
+    },
+    {
+      "area": "password",
+      "check": "prd_argon2_note",
+      "ok": null,
+      "detail": "PRD 7 menyebut argon2; implementasi bcrypt cost 12 (adaptive, standar kuat) - catatan deviasi minor, bukan regresi"
+    },
+    {
+      "area": "telegram",
+      "check": "bot_channel_live",
+      "ok": null,
+      "detail": "TELEGRAM_BOT_TOKEN/OWNER_ID belum diset di api/.env -> channel perintah 2FA Telegram belum aktif live (in-process 9/9 PASS di kartu t_d6ce138b; channel alert fund2-alerts terpisah dan aktif)"
+    },
+    {
+      "area": "telegram",
+      "check": "sensitive_action_csrf_403",
+      "ok": true,
+      "detail": "POST /kill-switch tanpa CSRF (sesi saja) -> 403"
+    },
+    {
+      "area": "telegram",
+      "check": "flatten_needs_confirm_400",
+      "ok": true,
+      "detail": "STOP_AND_FLATTEN tanpa confirm -> 400 {\"detail\":\"STOP_AND_FLATTEN akan menutup SEMUA posisi terbuka di harga pasar saa"
+    },
+    {
+      "area": "telegram",
+      "check": "sensitive_action_audited",
+      "ok": true,
+      "detail": "audit ACTIVATE tercatat: {'action': 'ACTIVATE', 'source': 'dashboard', 'actor': 'qa_r2sec'}"
+    }
+  ]
+}

@@ -1,0 +1,883 @@
+/* Pusat Pengaturan (4 sub-tab). Semua aturan di-scope ke .sh-page supaya tidak
+   menimpa halaman lain. Prinsip tata letak: full-width, kartu lega, label
+   12-13px, nilai/input 14px, kontrol setinggi 44px, jarak antar blok 16px. */
+
+.sh-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  display: block;
+}
+
+.sh-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.sh-head-main {
+  min-width: 0;
+}
+
+.sh-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.sh-sub {
+  margin: 0;
+  max-width: 78ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.sh-head-chips {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sh-head-note {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.sh-lead {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.sh-panel {
+  min-width: 0;
+}
+
+/* ── grid & kartu ─────────────────────────────────────────────────────── */
+
+.sh-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.sh-grid > * {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .sh-grid-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sh-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--glass-highlight);
+}
+
+.sh-card.is-alert {
+  border-color: color-mix(in srgb, var(--down) 45%, transparent);
+}
+
+.sh-card.is-danger {
+  border-color: color-mix(in srgb, var(--down) 32%, transparent);
+}
+
+.sh-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 20px 0;
+}
+
+.sh-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.sh-card-note {
+  margin: 8px 20px 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.sh-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 20px 20px;
+  min-width: 0;
+}
+
+/* ── field: label + nilai aktif di kiri, input di kanan ──────────────── */
+
+.sh-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sh-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  min-width: 0;
+}
+
+.sh-field-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sh-field-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sh-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.sh-active {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.sh-delta {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+.sh-field-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.sh-field-err {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--down-strong);
+}
+
+.sh-ctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sh-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.sh-input::placeholder {
+  color: var(--text-faint);
+}
+
+.sh-input:focus {
+  outline: none;
+  border-color: var(--accent-bright);
+}
+
+.sh-input.is-error {
+  border-color: var(--down);
+}
+
+.sh-unit {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.sh-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  min-width: 0;
+}
+
+.sh-field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* ── pilih pola jadwal simbol (segmented) ────────────────────────────── */
+
+.sh-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-deep);
+}
+
+.sh-seg-btn {
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sh-seg-btn:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.sh-seg-btn.is-on {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sh-seg-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sh-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sh-day {
+  min-width: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.sh-day.is-on {
+  border-color: var(--accent-bright);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sh-day:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ── saklar ──────────────────────────────────────────────────────────── */
+
+.sh-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sh-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sh-switch-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-3);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.sh-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.sh-switch.is-on .sh-switch-track {
+  background: var(--up-dim);
+  border-color: color-mix(in srgb, var(--up) 50%, transparent);
+}
+
+.sh-switch.is-on .sh-switch-thumb {
+  transform: translateX(20px);
+  background: var(--up-strong);
+}
+
+.sh-switch-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── tombol & aksi ───────────────────────────────────────────────────── */
+
+.sh-page .btn {
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+.sh-page .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.sh-btn {
+  min-height: 44px;
+}
+
+.sh-saved {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.sh-danger-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.sh-btn-danger,
+.sh-btn-release {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sh-btn-danger {
+  background: var(--down-dim);
+  border-color: color-mix(in srgb, var(--down) 45%, transparent);
+}
+
+.sh-btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--down) 22%, transparent);
+}
+
+.sh-btn-release:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sh-btn-danger:disabled,
+.sh-btn-release:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sh-danger-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--down-strong);
+}
+
+.sh-btn-release .sh-danger-title {
+  color: var(--text);
+}
+
+.sh-danger-sub {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ── pill status ─────────────────────────────────────────────────────── */
+
+.sh-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.sh-pill.is-up {
+  color: var(--up-strong);
+  border-color: color-mix(in srgb, var(--up) 40%, transparent);
+  background: var(--up-dim);
+}
+
+.sh-pill.is-down {
+  color: var(--down-strong);
+  border-color: color-mix(in srgb, var(--down) 40%, transparent);
+  background: var(--down-dim);
+}
+
+.sh-pill.is-warn {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  background: var(--warn-dim);
+}
+
+/* ── pasangan label-nilai ────────────────────────────────────────────── */
+
+.sh-meta-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sh-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sh-meta:last-child {
+  border-bottom: 0;
+}
+
+.sh-meta-k {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.sh-meta-v {
+  font-size: 14px;
+  color: var(--text);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.sh-status-line {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+/* ── checklist recovery ──────────────────────────────────────────────── */
+
+.sh-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sh-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  min-width: 0;
+}
+
+.sh-check-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sh-check.ok .sh-check-mark {
+  background: var(--up-dim);
+  color: var(--up-strong);
+}
+
+.sh-check.todo .sh-check-mark {
+  background: var(--warn-dim);
+  color: var(--warn);
+}
+
+.sh-check-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sh-check-label {
+  font-size: 13.5px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.sh-check-detail {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ── tabel ───────────────────────────────────────────────────────────── */
+
+.sh-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.sh-table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.sh-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.sh-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.sh-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sh-new {
+  color: var(--up-strong);
+}
+
+.sh-sessions td:nth-child(1) {
+  white-space: nowrap;
+}
+
+/* ── prompt ──────────────────────────────────────────────────────────── */
+
+.sh-prompt {
+  width: 100%;
+  min-height: 320px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.sh-prompt:focus {
+  outline: none;
+  border-color: var(--accent-bright);
+}
+
+/* ── daftar event kalender ───────────────────────────────────────────── */
+
+.sh-events {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sh-event {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  min-width: 0;
+}
+
+.sh-event-time {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sh-event-title {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.sh-event-meta {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.sh-event .sh-switch {
+  margin-left: auto;
+}
+
+/* ── riwayat perubahan ───────────────────────────────────────────────── */
+
+.sh-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sh-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sh-history-time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.sh-history-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  min-width: 0;
+  font-size: 13.5px;
+}
+
+.sh-history-flow {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.sh-history-actor {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ── catatan terkunci & pesan kosong ─────────────────────────────────── */
+
+.sh-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.sh-locked svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--text-faint);
+}
+
+.sh-empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-faint);
+}
+
+/* ── dialog ──────────────────────────────────────────────────────────── */
+
+.sh-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sh-diff-title {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ── responsif ───────────────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .sh-title {
+    font-size: 21px;
+  }
+
+  .sh-card-head {
+    padding: 16px 16px 0;
+  }
+
+  .sh-card-note {
+    margin: 8px 16px 0;
+  }
+
+  .sh-card-body {
+    padding: 14px 16px 16px;
+  }
+
+  .sh-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .sh-ctl {
+    width: 100%;
+  }
+
+  .sh-switch-row {
+    flex-wrap: wrap;
+  }
+
+  .sh-meta {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sh-meta-v {
+    text-align: left;
+  }
+
+  .sh-history-actor {
+    margin-left: 0;
+  }
+}

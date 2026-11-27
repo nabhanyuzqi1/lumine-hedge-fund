@@ -1,0 +1,17 @@
+[Unit]
+Description=Fund2 guardrail drift watch (§I.4): gate runtime vs KEPUTUSAN_OWNER §I + alert Telegram
+Documentation=file:/home/tekka/fund2/docs/KEPUTUSAN_OWNER.md
+After=network-online.target fund2-postgres.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/tekka/fund2
+ExecStart=/home/tekka/fund2/api/.venv/bin/python /home/tekka/fund2/scripts/check_guardrail_runtime.py
+TimeoutStartSec=300
+Nice=10
+IOSchedulingClass=idle
+# rc=2 (drift/open terdeteksi) adalah HASIL SAH: alert Telegram + log JSON
+# sudah dikirim skrip. Tanpa ini unit merah tiap hari dan sinyal asli hilang.
+# rc=1 (gate tidak bisa dijalankan, mis. DB down) tetap failure supaya terlihat.
+SuccessExitStatus=2

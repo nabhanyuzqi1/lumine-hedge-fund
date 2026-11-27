@@ -1,0 +1,111 @@
+[10:47:07] login ok, csrf ok
+[10:47:07] resume: 32 sampel v10 existing
+[10:47:07] synthetic EA antar-burst start
+[10:47:08] flatten http 200 requested=2
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  [r1] belum bersih (pending=0, open=1); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[10:50:47] flatten http 200 requested=1
+[10:50:55] pre-flight OK; lanjut burst 5/25
+[10:54:55] burst 5/25 (p5-latency-gate-v10-b05) exit=1 Selesai: 8 sampel ditulis ke order_events (terminal T4: 7, lengkap T0..T4: 6, ditolak: 0, timeout: 1)
+   total sampel v10: 40/200
+    Selesai: 8 sampel ditulis ke order_events (terminal T4: 7, lengkap T0..T4: 6, ditolak: 0, timeout: 1)
+[10:54:55] flatten http 200 requested=1
+[10:54:55] flatten http 200 requested=1
+  [r1] belum bersih (pending=2, open=0); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=1); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  [r1] belum bersih (pending=1, open=2); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[10:58:34] flatten http 200 requested=2
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  rounds 2/4 belum siap; ulangi flatten
+[11:02:12] flatten http 200 requested=1
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  [r3] belum bersih (pending=0, open=1); tunggu 15s
+  rounds 3/4 belum siap; ulangi flatten
+[11:05:51] flatten http 200 requested=1
+[11:05:59] release kill-switch http 200 {'state': {'active': False, 'mode': None, 'strategy': None, 'reason': None, 'source': None, 'actor': None, 'activated_at
+[11:08:01] burst 6/25 (p5-latency-gate-v10-b06) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 2, ditolak: 0, timeout: 0)
+   total sampel v10: 48/200
+[11:08:01] flatten http 200 requested=6
+[11:08:02] flatten http 200 requested=3
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  [r1] belum bersih (pending=1, open=4); tunggu 15s
+  rounds 1/4 belum siap; ulangi flatten
+[11:11:40] flatten http 200 requested=4
+  [r2] belum bersih (pending=1, open=0); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=2); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  [r2] belum bersih (pending=1, open=1); tunggu 15s
+  rounds 2/4 belum siap; ulangi flatten
+[11:15:19] flatten http 200 requested=1

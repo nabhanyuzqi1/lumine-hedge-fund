@@ -1,0 +1,19 @@
+# Fund2 paper runner (multi-strategy, PAPER mode — never sends orders to broker).
+# Supervisi + auto-restart: proses sebelumnya dijalankan manual dan mati tanpa
+# restart saat weekend (temuan F-3 QA_P2_paritas.md, task t_b93726cd).
+# Copy ke ~/.config/systemd/user/ lalu: systemctl --user daemon-reload
+#                                       systemctl --user enable --now fund2-paper-runner
+[Unit]
+Description=Fund2 paper runner (multi-strategy, PAPER mode)
+After=network.target fund2-postgres.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tekka/fund2/api
+EnvironmentFile=/home/tekka/fund2/api/.env
+ExecStart=/home/tekka/fund2/api/.venv/bin/python -m paper.runner
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

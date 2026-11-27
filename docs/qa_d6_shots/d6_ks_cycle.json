@@ -1,0 +1,281 @@
+[
+ {
+  "action": "ACTIVATE",
+  "mode": "STOP_NEW_ORDERS",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "ui_d6_qa",
+  "reason": "QA D6 toll7 stop_entry ui_d6_qa",
+  "details": {
+   "previous": {
+    "mode": null,
+    "actor": null,
+    "active": false,
+    "reason": null,
+    "source": null,
+    "strategy": null,
+    "activated_at": null
+   }
+  },
+  "created_at": "2026-11-25T01:07:34.799096+07:00"
+ },
+ {
+  "action": "RELEASE",
+  "mode": "GLOBAL_HALT",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "ui_d6_qa",
+  "reason": "SEV-1 credential_compromise: 1 penguncian akun admin setelah login gagal beruntun.",
+  "details": {
+   "previous": {
+    "mode": "GLOBAL_HALT",
+    "actor": "auto",
+    "active": true,
+    "reason": "SEV-1 credential_compromise: 1 penguncian akun admin setelah login gagal beruntun.",
+    "source": "auto:sev_credential_compromise",
+    "strategy": null,
+    "activated_at": "2026-11-24T18:06:30.506966+00:00"
+   },
+   "checklist_ack": true
+  },
+  "created_at": "2026-11-25T01:07:08.547135+07:00"
+ },
+ {
+  "action": "ACTIVATE",
+  "mode": "GLOBAL_HALT",
+  "strategy": null,
+  "source": "auto:sev_credential_compromise",
+  "actor": "auto",
+  "reason": "SEV-1 credential_compromise: 1 penguncian akun admin setelah login gagal beruntun.",
+  "details": {
+   "previous": {
+    "mode": null,
+    "actor": null,
+    "active": false,
+    "reason": null,
+    "source": null,
+    "strategy": null,
+    "activated_at": null
+   }
+  },
+  "created_at": "2026-11-25T01:06:30.510943+07:00"
+ },
+ {
+  "action": "RELEASE",
+  "mode": "STOP_NEW_ORDERS",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "ui_d6_qa",
+  "reason": null,
+  "details": {
+   "previous": {
+    "mode": "STOP_NEW_ORDERS",
+    "actor": "admin",
+    "active": true,
+    "reason": null,
+    "source": "dashboard",
+    "strategy": null,
+    "activated_at": "2026-11-24T17:57:54.879772+00:00"
+   },
+   "checklist_ack": false
+  },
+  "created_at": "2026-11-25T01:06:16.001054+07:00"
+ },
+ {
+  "action": "FLATTEN_REQUEST",
+  "mode": null,
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "ui_d6_qa",
+  "reason": "flatten 3 posisi",
+  "details": {
+   "orders": [
+    {
+     "side": "SELL",
+     "symbol": "XAUUSD",
+     "volume": 0.01,
+     "order_id": "04be78ee-96ef-4cf8-9be0-13ec750f9eba",
+     "command_id": "95ca54a5-d20f-476c-be05-6c43733833b8",
+     "position_ticket": 511203882
+    },
+    {
+     "side": "SELL",
+     "symbol": "XAUUSD",
+     "volume": 0.05,
+     "order_id": "857ffcfd-50c1-4ea2-97ae-b8b41898c943",
+     "command_id": "d52bd127-111d-4f1a-b920-00dcd10be82d",
+     "position_ticket": 511231493
+    },
+    {
+     "side": "SELL",
+     "symbol": "XAUUSD",
+     "volume": 0.02,
+     "order_id": "2a89b1d1-5205-44fc-8316-601b8432ea85",
+     "command_id": "fa20dbf6-8ca5-4706-9ee3-6acc4346b905",
+     "position_ticket": 511240691
+    }
+   ]
+  },
+  "created_at": "2026-11-25T01:06:15.963614+07:00"
+ },
+ {
+  "action": "FLATTEN_REQUEST",
+  "mode": null,
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "ui_d6_qa",
+  "reason": "flatten 3 posisi",
+  "details": {
+   "orders": [
+    {
+     "side": "SELL",
+     "symbol": "XAUUSD",
+     "volume": 0.01,
+     "order_id": "882a61b4-f6d1-4bb7-91cb-028da7bf846c",
+     "command_id": "075f7bab-69a3-4ad5-afe8-a49c95c66865",
+     "position_ticket": 511203882
+    },
+    {
+     "side": "SELL",
+     "symbol": "XAUUSD",
+     "volume": 0.05,
+     "order_id": "8116e52b-8241-44f7-9969-d26c6ecae04a",
+     "command_id": "68fb13b5-5fd1-4b0a-8592-61ddf4411b0d",
+     "position_ticket": 511231493
+    },
+    {
+     "side": "SELL",
+     "symbol": "XAUUSD",
+     "volume": 0.02,
+     "order_id": "38b5f5c3-0944-4ec7-be0c-691502d51555",
+     "command_id": "90539846-e07f-487f-a5b2-79106e0a1874",
+     "position_ticket": 511240691
+    }
+   ]
+  },
+  "created_at": "2026-11-25T01:06:15.943187+07:00"
+ },
+ {
+  "action": "ACTIVATE",
+  "mode": "STOP_NEW_ORDERS",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "admin",
+  "reason": null,
+  "details": {
+   "previous": {
+    "mode": null,
+    "actor": null,
+    "active": false,
+    "reason": null,
+    "source": null,
+    "strategy": null,
+    "activated_at": null
+   }
+  },
+  "created_at": "2026-11-25T00:57:54.888814+07:00"
+ },
+ {
+  "action": "RELEASE",
+  "mode": "STOP_NEW_ORDERS",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "admin",
+  "reason": null,
+  "details": {
+   "previous": {
+    "mode": "STOP_NEW_ORDERS",
+    "actor": "admin",
+    "active": true,
+    "reason": null,
+    "source": "dashboard",
+    "strategy": null,
+    "activated_at": "2026-11-24T16:56:54.781176+00:00"
+   },
+   "checklist_ack": false
+  },
+  "created_at": "2026-11-25T00:01:14.709808+07:00"
+ },
+ {
+  "action": "ACTIVATE",
+  "mode": "STOP_NEW_ORDERS",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "admin",
+  "reason": null,
+  "details": {
+   "previous": {
+    "mode": null,
+    "actor": null,
+    "active": false,
+    "reason": null,
+    "source": null,
+    "strategy": null,
+    "activated_at": null
+   }
+  },
+  "created_at": "2026-11-24T23:56:54.790570+07:00"
+ },
+ {
+  "action": "RELEASE",
+  "mode": "STOP_NEW_ORDERS",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "admin",
+  "reason": "UI-D4 QA verify stop_entry E2E (DEMO)",
+  "details": {
+   "previous": {
+    "mode": "STOP_NEW_ORDERS",
+    "actor": "admin",
+    "active": true,
+    "reason": "UI-D4 QA verify stop_entry E2E (DEMO)",
+    "source": "dashboard",
+    "strategy": null,
+    "activated_at": "2026-11-24T16:55:03.534944+00:00"
+   },
+   "checklist_ack": true
+  },
+  "created_at": "2026-11-24T23:55:03.711273+07:00"
+ },
+ {
+  "action": "ACTIVATE",
+  "mode": "STOP_NEW_ORDERS",
+  "strategy": null,
+  "source": "dashboard",
+  "actor": "admin",
+  "reason": "UI-D4 QA verify stop_entry E2E (DEMO)",
+  "details": {
+   "previous": {
+    "mode": null,
+    "actor": null,
+    "active": false,
+    "reason": null,
+    "source": null,
+    "strategy": null,
+    "activated_at": null
+   }
+  },
+  "created_at": "2026-11-24T23:55:03.538976+07:00"
+ },
+ {
+  "action": "RELEASE",
+  "mode": "GLOBAL_HALT",
+  "strategy": null,
+  "source": "llm3-e2e",
+  "actor": "hf-backend:t_d9e6b2a3",
+  "reason": "SL distance 174.54 exceeds max 15.0 for XAUUSD; trade risk 174.54 exceeds 0.5% of equity (49.32); daily drawdown limit reached (pnl -136.54 <= -100.0); LLM daily order limit exceeded (max 20/day)",
+  "details": {
+   "previous": {
+    "mode": "GLOBAL_HALT",
+    "actor": "auto",
+    "active": true,
+    "reason": "SL distance 174.54 exceeds max 15.0 for XAUUSD; trade risk 174.54 exceeds 0.5% of equity (49.32); daily drawdown limit reached (pnl -136.54 <= -100.0); LLM daily order limit exceeded (max 20/day)",
+    "source": "auto:daily_drawdown_risk_gate",
+    "strategy": null,
+    "activated_at": "2026-11-24T16:49:21.999423+00:00"
+   },
+   "checklist_ack": true
+  },
+  "created_at": "2026-11-24T23:51:10.782194+07:00"
+ }
+]

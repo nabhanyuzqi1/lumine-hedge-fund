@@ -1,0 +1,37 @@
+{
+ "settings": {
+  "bridge_token": "v7M5WJ7jo-hJxMCfy_G-gk6TpJli_qtopwhAkKPW0J4",
+  "halted": false,
+  "kill_switch": {
+   "mode": null,
+   "actor": null,
+   "active": false,
+   "reason": null,
+   "source": null,
+   "strategy": null,
+   "activated_at": null
+  },
+  "kill_switch_triggers": null,
+  "paused_strategies": [],
+  "strategy_mode_london_breakout": "paper"
+ },
+ "bridge_token_present": true,
+ "orders_count": 30,
+ "last_order_created_at": "2026-11-23 10:50:50",
+ "sessions_count": 14,
+ "kill_switch_events_count": 10,
+ "users": [
+  {
+   "id": 2,
+   "username": "svc-recorder"
+  },
+  {
+   "id": 3,
+   "username": "e2e_btc_v2"
+  },
+  {
+   "id": 7,
+   "username": "demo_mp1"
+  }
+ ]
+}

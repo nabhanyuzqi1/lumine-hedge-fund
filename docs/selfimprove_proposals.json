@@ -1,0 +1,61 @@
+[
+  {
+    "id": "w47-p1-lb-minsl5",
+    "title": "London Breakout M5 v1.1: floor jarak SL 5.0 USD",
+    "hypothesis": "Loss beruntun Oct 2025-Jan 2026 diduga akibat SL terlalu sempit (stop-hunt); floor 5.0 USD diharapkan memangkas frekuensi SL kena noise.",
+    "change": {
+      "strategy_id": "london_breakout",
+      "version": "1.1.0",
+      "symbol": "XAUUSD",
+      "tf": "M5",
+      "params": {"min_sl_distance_usd": 5.0},
+      "mode": "paper"
+    },
+    "backtest": {
+      "source": "report",
+      "path": "docs/wf_selfimprove_r1_probe.json",
+      "side": "candidate",
+      "baseline_side": "baseline"
+    },
+    "criteria": {}
+  },
+  {
+    "id": "w47-p2-mr-numstd3",
+    "title": "Mean Reversion M5 v1.1: band lebar num_std 3.0",
+    "hypothesis": "Window latih 6 bulan terakhir (Jul-Des 2026) konsisten memilih num_std=3.0 dengan expectancy latih positif; uji konfigurasi itu dipaksa pada 6 window uji terakhir sebagai kandidat evaluasi paper.",
+    "change": {
+      "strategy_id": "mean_reversion",
+      "version": "1.1.0",
+      "symbol": "XAUUSD",
+      "tf": "M5",
+      "params": {"num_std": 3.0, "min_rr": 1.0, "reentry_buffer_usd": 0.1},
+      "mode": "paper"
+    },
+    "backtest": {
+      "source": "walkforward",
+      "grid": {"num_std": [3.0], "min_rr": [1.0], "reentry_buffer_usd": [0.1]},
+      "train_months": 6,
+      "test_months": 1,
+      "last_n_windows": 6
+    },
+    "criteria": {"min_trades": 15}
+  },
+  {
+    "id": "w47-p3-mlgbm-paper",
+    "title": "ML LightGBM triple-barrier (ml_gbm) v1.0.0: registrasi paper",
+    "hypothesis": "Run walk-forward ml_gbm (18 window uji terpilih, biaya terkalibrasi) LULUS semua kriteria gate P2 yang dideklarasikan: net +256.50 USD, PF 2.311, expectancy positif, max DD 1.69%, 51 trade, hanya 3/18 window dengan PF<1. Parameter yang diusulkan = pilihan window latih terakhir (sl_mult 1.0, rr 1.0, threshold 0.55). Usulan: registrasi versi + flag enabled mode PAPER untuk evaluasi menuju gerbang P3 (paper >=20 hari, >=100 trade).",
+    "change": {
+      "strategy_id": "ml_gbm",
+      "version": "1.0.0",
+      "symbol": "XAUUSD",
+      "tf": "M5",
+      "params": {"sl_mult": 1.0, "rr": 1.0, "threshold": 0.55},
+      "mode": "paper"
+    },
+    "backtest": {
+      "source": "registry",
+      "run_id": "cab7e9ed-8291-4779-92d9-a75636a1182e"
+    },
+    "criteria": {}
+  }
+]

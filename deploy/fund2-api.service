@@ -1,0 +1,14 @@
+[Unit]
+Description=Fund2 API (FastAPI, port 3110)
+After=network.target lumine-hedge-fund-postgres.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tekka/fund2/api
+EnvironmentFile=/home/tekka/fund2/api/.env
+ExecStart=/home/tekka/fund2/api/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 3110 --timeout-graceful-shutdown 10
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

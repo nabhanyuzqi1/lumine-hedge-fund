@@ -1,0 +1,74 @@
+{
+  "daily_start_balance": {
+    "value": 9733.86,
+    "updated_at": "2026-11-21T12:54:30.132596+07:00"
+  },
+  "exposure_max_usd": {
+    "value": 107370.0,
+    "updated_at": "2026-11-23T15:55:25.818729+07:00"
+  },
+  "kill_switch_triggers": {
+    "value": {
+      "modes": {
+        "ea_offline": "GLOBAL_HALT",
+        "daily_drawdown": "GLOBAL_HALT",
+        "total_drawdown": "GLOBAL_HALT",
+        "position_mismatch": "GLOBAL_HALT",
+        "consecutive_failed": "STOP_NEW_ORDERS"
+      },
+      "position_mismatch": true,
+      "daily_drawdown_pct": 3.0,
+      "ea_offline_seconds": 6.0,
+      "total_drawdown_pct": 8.0,
+      "check_interval_seconds": 5.0,
+      "ea_offline_halt_seconds": 60.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_requires_positions": true
+    },
+    "updated_at": "2026-11-26T06:39:31.371724+07:00"
+  },
+  "max_daily_drawdown": {
+    "value": 292.02,
+    "updated_at": "2026-11-26T06:39:31.367958+07:00"
+  },
+  "max_orders_per_min": {
+    "value": 5,
+    "updated_at": "2026-11-26T06:39:31.364183+07:00"
+  },
+  "max_spread": {
+    "value": 0.5,
+    "updated_at": "2026-11-24T02:01:15.144225+07:00"
+  },
+  "max_tick_age_s": {
+    "value": 3.0,
+    "updated_at": "2026-11-26T02:58:02.577721+07:00"
+  },
+  "max_volume": {
+    "value": 0.1,
+    "updated_at": "2026-11-26T06:39:31.357983+07:00"
+  },
+  "portfolio_risk": {
+    "value": {
+      "stress": {
+        "gap_pct": 0.5,
+        "slippage_usd": 0.35,
+        "spread_multiplier": 3.0
+      },
+      "enabled": true,
+      "leverage": 100.0,
+      "max_feed_age_s": 60.0,
+      "max_open_risk_pct": 2.0,
+      "max_symbol_risk_pct": 1.0,
+      "stress_max_risk_pct": 3.0,
+      "max_total_volume_lot": 0.3,
+      "commission_per_lot_usd": 7.0,
+      "max_risk_per_trade_pct": 0.5,
+      "max_margin_utilization_pct": 20.0
+    },
+    "updated_at": "2026-11-24T00:53:56.258142+07:00"
+  },
+  "risk_per_trade_pct": {
+    "value": 0.5,
+    "updated_at": "2026-11-23T15:55:25.818729+07:00"
+  }
+}

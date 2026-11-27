@@ -1,0 +1,36 @@
+login+2fa: 200 {'ok': True, 'window_minutes': 5.0}
+[audit] HTTP 200: [{'id': 203, 'created_at': '2026-11-25T01:07:08.419811+07:00', 'actor': 'ui_d6_qa', 'actor_role': 'admin', 'action': '2FA_CHALLENGE_OK', 'object': None, 'details': {}, 'ip': '127.0.0.1'}, {'id': 202, 'created_at': '2026-11-25T01:07:08.236096+07:00', 'actor': 'ui_d6_qa', 'actor_role': 'admin', 'actio
+    2026-11-25T01:07:08.419811+07:00 ui_d6_qa 2FA_CHALLENGE_OK None
+    2026-11-25T01:07:08.236096+07:00 ui_d6_qa LOGIN_SUCCESS None
+    2026-11-25T01:06:12.526247+07:00 ui_d6_qa 2FA_CHALLENGE_OK None
+    2026-11-25T01:06:12.517686+07:00 ui_d6_qa 2FA_CHALLENGE_FAILED None
+    2026-11-25T01:06:12.314578+07:00 ui_d6_qa LOGIN_SUCCESS None
+    2026-11-25T01:06:11.345701+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:06:11.001227+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:06:10.648724+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:06:10.276670+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:01:05.305691+07:00 qa_ops_ui LOGIN_FAILED None
+current price proxy: None
+[approvals] HTTP 200: {"approvals": [{"id": 6, "version": "1.1.0", "stage": "ROLLBACK", "decision": "APPROVED", "reviewer": "admin", "rationale": "QA D6 gate 5: verifikasi rollback ke versi approved", "evidence": {"to_version": "1.1.0", "from_version": "1.0.0", "rolled_back_at": "2026-11-24T17:57:02.055144+00:00", "position_policy": "MANAGE_AS_IS", "open_positions_touched": false}, "created_at": "2026-11-25T00:57:02.051141+07:00"}, {"id": 5, "version": "1.1.0", "stage": "OWNER_APPROVAL", "decision": "APPROVED", "reviewer": "admin", "rationale": "QA D6: approve seed versi uji (local dev, bukan keputusan rilis)", "evidence": {}, "created_at": "2026-11-25T00:52:23.534897+07:00"}, {"id": 4, "version": "1.1.0", "stage": "PAPER_REVIEW", "decision": "APPROVED", "reviewer": "admin", "rationale": "QA D6: approve seed versi uji (local dev, bukan keputusan rilis)", "evidence": {}, "created_at": "2026-11-25T00:51:48.663902+07:00"}, {"id": 3, "version": "1.1.0", "stage": "SHADOW_REVIEW", "decision": "APPROVED", "reviewer": "admin", "rationale": "QA D6: approve seed versi uji (local dev, bukan keputusan rilis)", "evidence": {}, "created_at": "2026-11-25T00:48:21.169323+07:00"}, {"id": 2, "version": "1.1.0", "stage": 
+[rollback] HTTP 403: {"detail": "hanya owner yang boleh memutuskan/deploy usulan"}
+[ks_activate] HTTP 200: {"state": {"active": true, "mode": "GLOBAL_HALT", "strategy": null, "reason": "SEV-1 credential_compromise: 1 penguncian akun admin setelah login gagal beruntun.", "source": "auto:sev_credential_compromise", "actor": "auto", "activated_at": "2026-11-24T18:06:30.506966+00:00"}}
+[ks_flatten] HTTP 200: {"flatten": {"requested": 0, "orders": []}}
+[ks_release] HTTP 200: {"state": {"active": false, "mode": null, "strategy": null, "reason": null, "source": null, "actor": null, "activated_at": null}}
+  ks final state: {"active": false, "mode": null, "strategy": null, "reason": null, "source": null, "actor": null, "activated_at": null}
+    2026-11-25T01:07:08.547135+07:00 RELEASE GLOBAL_HALT actor= ui_d6_qa source= dashboard reason= SEV-1 credential_compromise: 1 penguncian akun admin setelah login gagal beruntun.
+    2026-11-25T01:06:30.510943+07:00 ACTIVATE GLOBAL_HALT actor= auto source= auto:sev_credential_compromise reason= SEV-1 credential_compromise: 1 penguncian akun admin setelah login gagal beruntun.
+    2026-11-25T01:06:16.001054+07:00 RELEASE STOP_NEW_ORDERS actor= ui_d6_qa source= dashboard reason= None
+    2026-11-25T01:06:15.963614+07:00 FLATTEN_REQUEST None actor= ui_d6_qa source= dashboard reason= flatten 3 posisi
+    2026-11-25T01:06:15.943187+07:00 FLATTEN_REQUEST None actor= ui_d6_qa source= dashboard reason= flatten 3 posisi
+    2026-11-25T00:57:54.888814+07:00 ACTIVATE STOP_NEW_ORDERS actor= admin source= dashboard reason= None
+  audit top 10:
+    2026-11-25T01:07:08.419811+07:00 ui_d6_qa 2FA_CHALLENGE_OK None
+    2026-11-25T01:07:08.236096+07:00 ui_d6_qa LOGIN_SUCCESS None
+    2026-11-25T01:06:12.526247+07:00 ui_d6_qa 2FA_CHALLENGE_OK None
+    2026-11-25T01:06:12.517686+07:00 ui_d6_qa 2FA_CHALLENGE_FAILED None
+    2026-11-25T01:06:12.314578+07:00 ui_d6_qa LOGIN_SUCCESS None
+    2026-11-25T01:06:11.345701+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:06:11.001227+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:06:10.648724+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:06:10.276670+07:00 qac LOGIN_FAILED None
+    2026-11-25T01:01:05.305691+07:00 qa_ops_ui LOGIN_FAILED None

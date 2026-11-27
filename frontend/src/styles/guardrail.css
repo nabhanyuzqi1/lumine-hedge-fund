@@ -1,0 +1,427 @@
+/* ── Halaman admin Guardrail Risiko (PRD v2.2 §14/§18, kartu t_2d1f6d33) ──
+   Dipisah dari pages.css supaya aturan halaman ini terbaca utuh.
+
+   Dua hal yang menentukan bentuknya:
+   1. `.card` di design system ini TIDAK membawa padding (padding hanya di
+      `.card-head`), jadi badan kartu memakai `.gr-body`. Tanpa itu teks
+      menempel ke border.
+   2. Setiap baris guardrail = label + hint di kiri, lalu satu blok kontrol di
+      kanan berisi "Aktif: <nilai>" di atas input nilai BARU. Input sengaja
+      kosong (placeholder = nilai aktif) supaya operator tidak melihat dua
+      angka kembar dan bingung mana yang sedang diubah. */
+
+.guardrail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.guardrail .card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.gr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px 16px;
+}
+
+.gr-body > p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.gr-note {
+  font-size: 12.5px;
+}
+
+/* Peringatan nilai final (§I KEPUTUSAN_OWNER) sengaja diberi aksen emas:
+   satu-satunya bagian halaman yang harus dibaca sebelum mengubah angka. */
+.gr-warn {
+  padding: 16px 18px;
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--glass-border));
+}
+
+.gr-warn-title {
+  color: var(--warn);
+}
+
+.gr-warn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.gr-warn-list strong {
+  color: var(--text);
+}
+
+.gr-warn-list code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.gr-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.gr-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: 4px 24px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.gr-row:last-child {
+  padding-bottom: 4px;
+  border-bottom: none;
+}
+
+.gr-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.gr-hint {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.gr-ctl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.gr-active {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gr-active strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Nilai yang sudah diketik tapi belum disimpan: satu-satunya angka berwarna
+   emas di baris, jadi mata langsung menemukan "yang akan berubah". */
+.gr-delta {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--gold-bright);
+}
+
+/* Peringatan drift runtime vs angka final KEPUTUSAN_OWNER.md §I. */
+.gr-drift-card {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--glass-border));
+}
+
+/* pages.css memuat aturan `.chip` SETELAH global.css, sehingga varian
+   `.chip-gold`/`.chip-up` kalah cascade di bundle. Untuk chip peringatan di
+   kartu ini warna warnanya diatur ulang di sini (spesifisitas lebih tinggi,
+   tidak mengubah komponen lain). */
+.gr-drift-card .card-head .chip {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  background: var(--warn-dim);
+}
+
+.gr-drift-table td,
+.gr-drift-table th {
+  vertical-align: top;
+}
+
+/* Kolom angka rata kanan; header-nya ikut supaya sejajar dengan nilai. */
+.gr-drift-table th:nth-child(2),
+.gr-drift-table th:nth-child(3),
+.gr-drift-table td:last-child,
+.gr-drift-table th:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gr-final-tag {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+.gr-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.gr-edit .input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: right;
+}
+
+.gr-edit .input::placeholder {
+  color: var(--text-faint);
+  opacity: 0.65;
+}
+
+.gr-unit {
+  flex-shrink: 0;
+  min-width: 78px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.gr-row-err {
+  grid-column: 1 / -1;
+}
+
+.gr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.gr-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+/* Diff di dalam dialog konfirmasi: tabel kecil, angka rata kanan, nilai baru
+   emas. Tabel bisa di-scroll horizontal di layar sempit. */
+.gr-diff {
+  margin: 2px 0 12px;
+  overflow-x: auto;
+}
+
+.gr-diff-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.gr-diff table.data {
+  font-size: 12.5px;
+}
+
+.gr-diff table.data th,
+.gr-diff table.data td {
+  padding: 8px 10px;
+}
+
+.gr-new {
+  font-weight: 600;
+  color: var(--gold-bright);
+}
+
+.gr-pass {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+  .gr-row {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 4px 16px;
+  }
+}
+
+@media (max-width: 620px) {
+  .gr-row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 8px;
+  }
+
+  .gr-ctl {
+    align-items: stretch;
+  }
+
+  .gr-active {
+    text-align: left;
+    white-space: normal;
+  }
+
+  .gr-edit .input {
+    text-align: left;
+  }
+
+  .gr-unit {
+    min-width: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   IA-MERGE (kartu t_f412fd48): tautan silang antar halaman + panel setelan
+   agent LLM di Strategy Lab. Semua memakai token palet final (near-black +
+   hijau/merah/amber) supaya tidak ada warna keras yang lolos.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.ia-crosslink {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--gold-dim);
+  text-underline-offset: 3px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ia-crosslink:hover,
+.ia-crosslink:focus-visible {
+  text-decoration-color: currentColor;
+  color: var(--gold-bright);
+}
+
+.ia-crosslink:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Daftar "di luar halaman ini" (Ops): satu baris per pemilik aksi. */
+.ia-scope-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia-scope-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.06));
+}
+
+.ia-scope-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.ia-scope-t {
+  color: var(--text);
+  font-weight: 600;
+  min-width: 180px;
+}
+
+.ia-scope-d {
+  color: var(--text-muted);
+  flex: 1 1 320px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+/* Layout form setelan agent: input + satuan sebaris. */
+.ia-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ia-interval {
+  max-width: 420px;
+}
+
+.ia-interval .ia-inline {
+  flex-wrap: nowrap;
+}
+
+.ia-interval .input {
+  min-width: 96px;
+}
+
+.ia-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.ia-check input[type='checkbox'] {
+  margin-top: 2px;
+  accent-color: var(--up);
+  width: 16px;
+  height: 16px;
+}
+
+.ia-prompt-wrap {
+  margin-top: 16px;
+  border-top: 1px solid var(--line, rgba(255, 255, 255, 0.06));
+  padding-top: 12px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.ia-prompt-wrap summary {
+  cursor: pointer;
+  color: var(--text);
+}
+
+.ia-prompt {
+  margin: 10px 0 0;
+  padding: 12px;
+  max-height: 320px;
+  overflow: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .ia-scope-t {
+    min-width: 0;
+  }
+
+  .ia-interval {
+    max-width: none;
+  }
+}

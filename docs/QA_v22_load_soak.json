@@ -1,0 +1,33 @@
+{
+  "phase_load": {
+    "requests": 2000,
+    "concurrency": 20,
+    "wall_s": 11.4,
+    "rps": 175.4,
+    "p50_ms": 97.7,
+    "p95_ms": 303.8,
+    "p99_ms": 353.1,
+    "max_ms": 573.8,
+    "status_counts": {
+      "401": 419,
+      "200": 1389,
+      "422": 192
+    },
+    "errors_5xx_or_exc": 0,
+    "error_samples": []
+  },
+  "phase_soak": {
+    "duration_s": 30.0,
+    "requests": 5463,
+    "rps": 182.1,
+    "p50_ms": 3.5,
+    "p95_ms": 12.8,
+    "p99_ms": 17.3,
+    "errors_5xx_or_exc": 0,
+    "latency_first_half_ms": 5.49,
+    "latency_second_half_ms": 5.77,
+    "latency_drift_ratio": 1.05
+  },
+  "generated_at": "2026-11-23T17:34:14+0700",
+  "note": "in-process ASGITransport, isolated DB, bukan angka produksi"
+}

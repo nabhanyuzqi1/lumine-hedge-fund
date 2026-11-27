@@ -1,0 +1,11 @@
+{
+  "bundle_js": "index-DxKywzhm.js",
+  "bundle_js_sha256": "b56204b5de906c86",
+  "bundle_css": "index-DL-DhjD5.css",
+  "bundle_js_kill_switch_triggers_hits": 0,
+  "screenshots": {
+    "ops": "/home/tekka/.hermes/kanban/boards/deskrpg-da0b82b192024c709c4e12675baf3afe/workspaces/t_f412fd48/dist_ops_scope_1280.png",
+    "lab": "/home/tekka/.hermes/kanban/boards/deskrpg-da0b82b192024c709c4e12675baf3afe/workspaces/t_f412fd48/dist_lab_llm_1280.png",
+    "guardrail": "/home/tekka/.hermes/kanban/boards/deskrpg-da0b82b192024c709c4e12675baf3afe/workspaces/t_f412fd48/dist_guardrail_llm_1280.png"
+  }
+}

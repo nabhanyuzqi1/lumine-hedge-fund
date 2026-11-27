@@ -1,0 +1,70 @@
+{
+  "simulasi": "orphan-position-mismatch -> halt -> snapshot -> artifact -> reconcile -> resume (t_f2v22a17)",
+  "ts": "2026-11-24T23:53:20+00:00",
+  "db": "fund2_test_sim_20261124235320_13503",
+  "steps": [
+    {
+      "step": "0",
+      "name": "login admin (sesi + CSRF)",
+      "status": "PASS",
+      "detail": {
+        "http": 200
+      }
+    },
+    {
+      "step": "1",
+      "name": "trigger T2 mismatch -> auto GLOBAL_HALT",
+      "status": "PASS",
+      "detail": {
+        "closed": [
+          9001
+        ],
+        "mode": "GLOBAL_HALT",
+        "source": "auto:position_mismatch",
+        "reason": "reconciler: 1 posisi hilang dari snapshot broker tanpa penutupan yang bisa dijelaskan: [9001]"
+      }
+    },
+    {
+      "step": "2",
+      "name": "snapshot DB (posisi + kill_switch_events)",
+      "status": "PASS",
+      "detail": {
+        "open_positions": 0,
+        "events": 1
+      }
+    },
+    {
+      "step": "3",
+      "name": "rollback artifact: manifest backup sha256 + restore drill terakhir",
+      "status": "PASS",
+      "detail": {
+        "verify_rc": 0,
+        "verify_tail": [
+          "2026-11-24T23:53:25Z VERIFY OK: semua file di manifest cocok"
+        ],
+        "latest_restore_drill": "/home/tekka/fund2-backups/drill/20261124T201416Z/restore-drill-20261124T201416Z.md"
+      }
+    },
+    {
+      "step": "4",
+      "name": "reconcile: 0 order tanpa event + trigger append-only aktif",
+      "status": "PASS",
+      "detail": {
+        "orders_without_events": 0,
+        "append_only_triggers": 2
+      }
+    },
+    {
+      "step": "5",
+      "name": "owner approve resume: 2FA challenge + checklist_ack -> release",
+      "status": "PASS",
+      "detail": {
+        "challenge_http": 200,
+        "release_http": 200,
+        "active_after": false,
+        "mode_after": null
+      }
+    }
+  ],
+  "verdict": "LULUS"
+}

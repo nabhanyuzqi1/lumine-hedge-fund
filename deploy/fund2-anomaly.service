@@ -1,0 +1,14 @@
+[Unit]
+Description=Fund2 anomaly detector harian (latensi, spread, FAILED ratio)
+After=fund2-alerts.service fund2-postgres.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/tekka/fund2/api
+EnvironmentFile=/home/tekka/fund2/api/.env
+EnvironmentFile=/home/tekka/fund2/api/.env.alerts
+ExecStart=/home/tekka/fund2/api/.venv/bin/python -m app.anomaly --send
+Restart=no
+
+[Install]
+WantedBy=timers.target

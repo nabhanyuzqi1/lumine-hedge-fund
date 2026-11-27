@@ -1,0 +1,9 @@
+[Unit]
+Description=Fund2 spread profile harian (00:15 UTC, setelah hari UTC selesai)
+
+[Timer]
+OnCalendar=*-*-* 00:15:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

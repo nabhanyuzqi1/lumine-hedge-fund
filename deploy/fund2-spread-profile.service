@@ -1,0 +1,9 @@
+[Unit]
+Description=Fund2 spread profile harian + kalibrasi biaya BTC (PRD 5.2, t_f2mp4)
+After=fund2-postgres.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/tekka/fund2
+ExecStart=/home/tekka/fund2/api/.venv/bin/python scripts/spread_profile.py
+ExecStart=/home/tekka/fund2/api/.venv/bin/python scripts/calibrate_btc_cost.py --fetch

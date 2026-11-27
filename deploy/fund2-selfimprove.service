@@ -1,0 +1,13 @@
+# Self-improvement loop mingguan (PRD v2.1 §5.9, P4): analisa event log +
+# usulan + backtest otomatis + laporan Telegram owner.
+# Copy ke ~/.config/systemd/user/ lalu: systemctl --user daemon-reload
+#                                       systemctl --user enable --now fund2-selfimprove.timer
+[Unit]
+Description=Fund2 self-improve mingguan (Senin 07:30 WIB)
+After=network.target fund2-postgres.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/tekka/fund2/api
+EnvironmentFile=/home/tekka/fund2/api/.env
+ExecStart=/home/tekka/fund2/api/.venv/bin/python -m app.self_improve run

@@ -1,0 +1,19 @@
+[12:31:07] login ok, csrf ok
+[12:31:07] mulai: sampel valid T0-T2 = 137/200
+[12:33:06] burst 26 (p5-latency-gate-v10-b26) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:33:06]   sampel valid T0-T2: 145/200
+[12:35:05] burst 27 (p5-latency-gate-v10-b27) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:35:05]   sampel valid T0-T2: 153/200
+[12:37:04] burst 28 (p5-latency-gate-v10-b28) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:37:04]   sampel valid T0-T2: 161/200
+[12:39:03] burst 29 (p5-latency-gate-v10-b29) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:39:03]   sampel valid T0-T2: 169/200
+[12:41:02] burst 30 (p5-latency-gate-v10-b30) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:41:02]   sampel valid T0-T2: 177/200
+[12:43:01] burst 31 (p5-latency-gate-v10-b31) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:43:01]   sampel valid T0-T2: 185/200
+[12:45:00] burst 32 (p5-latency-gate-v10-b32) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:45:00]   sampel valid T0-T2: 193/200
+[12:46:59] burst 33 (p5-latency-gate-v10-b33) exit=0 Selesai: 8 sampel ditulis ke order_events (terminal T4: 8, lengkap T0..T4: 8, ditolak: 0, timeout: 0)
+[12:46:59]   sampel valid T0-T2: 201/200
+[12:47:00] SELESAI extend: valid=201/200 phase=done

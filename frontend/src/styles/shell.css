@@ -1,0 +1,17 @@
+/* Lumine Fund · shell.css — elemen chrome yang dipakai lintas halaman.
+   Catatan: strip alert lama (grid 1/2/4 kolom) sudah dipensiunkan; alert
+   Terminal kini satu baris ringkas yang di-scope `.term-root` dan tinggal di
+   terminal.css. File ini menyisakan chrome global yang masih dipakai. */
+
+/* ── ticker harga di navbar: angka tabular, tidak bergeser tiap tick ── */
+.topbar .liveprice {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-size: 13px;
+}
+
+@media (max-width: 1080px) {
+  .topbar .liveprice-label {
+    display: none;
+  }
+}

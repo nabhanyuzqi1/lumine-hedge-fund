@@ -1,0 +1,199 @@
+{
+  "generated_at": "2026-11-26T06:39:39+0700",
+  "task": "t_128a9dee",
+  "db_target": "postgresql://127.0.0.1:5433/fund2",
+  "docs": {
+    "present": {
+      "RELEASE_PACKET_v2.2.md": {
+        "exists": true,
+        "bytes": 11473,
+        "marker_found": true
+      },
+      "CANARY_PLAN_v2.2.md": {
+        "exists": true,
+        "bytes": 9037,
+        "marker_found": true
+      },
+      "GENERAL_RELEASE_PLAN_v2.2.md": {
+        "exists": true,
+        "bytes": 6157,
+        "marker_found": true
+      },
+      "ROLLBACK_PLAN_v2.2.md": {
+        "exists": true,
+        "bytes": 10668,
+        "marker_found": true
+      },
+      "CHECKLIST_ROLLBACK_v2.2.md": {
+        "exists": true,
+        "bytes": 3763,
+        "marker_found": true
+      },
+      "ARTEFAK_RILIS_v2.2.md": {
+        "exists": true,
+        "bytes": 6192,
+        "marker_found": true
+      },
+      "RISK_REGISTER_v2.2.md": {
+        "exists": true,
+        "bytes": 24084,
+        "marker_found": true
+      },
+      "LOAD_SOAK_v2.2.md": {
+        "exists": true,
+        "bytes": 5785,
+        "marker_found": true
+      },
+      "OBSERVABILITY_v2.2.md": {
+        "exists": true,
+        "bytes": 3878,
+        "marker_found": true
+      },
+      "RUNBOOK_v2.2.md": {
+        "exists": true,
+        "bytes": 17642,
+        "marker_found": true
+      },
+      "PRASYARAT_LIVE_v2.2.md": {
+        "exists": true,
+        "bytes": 13746,
+        "marker_found": true
+      },
+      "RELEASE_CHECKLIST_v2.2.md": {
+        "exists": true,
+        "bytes": 12995,
+        "marker_found": true
+      },
+      "DR_v2.2.md": {
+        "exists": true,
+        "bytes": 7355,
+        "marker_found": true
+      },
+      "INCIDENT_PLAYBOOK_v2.2.md": {
+        "exists": true,
+        "bytes": 4762,
+        "marker_found": true
+      }
+    },
+    "missing": [],
+    "pass": true
+  },
+  "git": {
+    "head": "53649b9",
+    "branch": "master",
+    "dirty": true,
+    "dirty_files": [
+      "M .gitignore",
+      " M api/paper/feed.py",
+      "D  data/.s.PGSQL.5433.lock",
+      "D  data/pg.log",
+      " M deploy/fund2-candle-rollup.service",
+      " M docs/RELEASE_CHECKLIST_v2.2.md",
+      " M docs/RELEASE_PACKET_v2.2.md",
+      " M docs/ROLLBACK_PLAN_v2.2.md",
+      " M docs/RUNBOOK_v2.2.md",
+      " M frontend/src/components/KillSwitchCard.jsx"
+    ],
+    "tags": [],
+    "has_release_tag": false,
+    "pass_clean": false
+  },
+  "health": {
+    "ok": true,
+    "env": "demo",
+    "raw": {
+      "ok": true,
+      "subscribers": 2,
+      "env": "demo"
+    },
+    "pass": true
+  },
+  "services": {
+    "units": {
+      "fund2-api": "active",
+      "fund2-postgres": "active",
+      "fund2-alerts": "active",
+      "fund2-paper-runner": "active",
+      "fund2-llm-agent": "active",
+      "fund2-hfm-recorder": "active",
+      "fund2-shadow-runner": "active",
+      "fund2-candle-rollup": "active"
+    },
+    "pass": true
+  },
+  "db": {
+    "settings_actual": {
+      "max_volume": 0.1,
+      "max_orders_per_min": 5,
+      "daily_drawdown_pct": 3.0,
+      "max_daily_drawdown": 292.02,
+      "total_drawdown_pct": 8.0,
+      "consecutive_failed_orders": 3,
+      "ea_offline_seconds": 6.0,
+      "ea_offline_halt_seconds": 60.0,
+      "max_total_volume_lot": 0.3,
+      "max_risk_per_trade_pct": 0.5,
+      "max_spread": 0.5,
+      "max_tick_age_s": 3.0,
+      "max_feed_age_s": 60.0,
+      "daily_start_balance": 9733.86,
+      "max_daily_drawdown_ceiling": 292.02
+    },
+    "guardrail_drift": [],
+    "guardrail_open": [],
+    "kill_switch_active": false,
+    "halted": false,
+    "strategy_mode_ml_gbm": "paper",
+    "alembic_db": "m013",
+    "alembic_head_line": "m013 (head)",
+    "alembic_sync": true,
+    "live_indicators_off": true,
+    "guardrails_pass": true
+  },
+  "backup": {
+    "file": "backup-20261125T043315Z.json",
+    "status": "ok",
+    "offsite": 1,
+    "age_hours": 19.1,
+    "sha256": "637b8b44b6c68d3b",
+    "pass": true
+  },
+  "pytest": {
+    "file": "QA_v22_pytest_25nov_fix_run2.log",
+    "tail": " in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.\n    util.warn_deprecated(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1127 passed, 1 warning in 773.39s (0:12:53)",
+    "has_passed": true,
+    "has_failed": false,
+    "pass": true
+  },
+  "soak": {
+    "file": "QA_v22_soak_extended_20261125T215716Z.json",
+    "duration_s": 360.0,
+    "requests": 32848,
+    "p95_ms": 220.8,
+    "rss_growth_pct": 5.9,
+    "errors": 0,
+    "criteria": {
+      "zero_5xx": true,
+      "rss_growth_le_20pct": true,
+      "p95_drift_le_1_5x": true,
+      "no_error_burst": true
+    },
+    "pass": true
+  },
+  "gates": {
+    "paket_dokumen": true,
+    "git_bersih_dan_tag": false,
+    "runtime_demo_env": true,
+    "layanan_inti_aktif": true,
+    "live_off": true,
+    "guardrails_sesuai_policy": true,
+    "schema_sync": true,
+    "backup_segar": true,
+    "pytest_penuh_lulus": true,
+    "soak_extended_lulus": true
+  },
+  "verdict": "PAKET BELUM SIAP RILIS",
+  "no_go_reasons": [
+    "git_bersih_dan_tag"
+  ]
+}
