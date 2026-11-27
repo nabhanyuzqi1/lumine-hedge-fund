@@ -1084,3 +1084,18 @@ export async function requestIntrospection({ scope, refKey = '' }) {
   if (!res.ok) throw await f1Error(res, 'introspeksi on-demand')
   return res.json()
 }
+
+/* ── Ledger paper (tab "Paper" di Riwayat & Log) ───────────────────────────
+   GET /paper-orders membaca tabel paper_orders (runner simulasi). Trade paper
+   tidak pernah dikirim ke broker, jadi sengaja TIDAK muncul di GET /orders;
+   panel Paper yang membuatnya bisa ditelusuri. 401 -> sesi habis. */
+export async function fetchPaperOrders({ limit = 200, strategy, status } = {}) {
+  const params = new URLSearchParams()
+  params.set('limit', String(limit))
+  if (strategy) params.set('strategy', strategy)
+  if (status) params.set('status', status)
+  const res = await fetch(`/paper-orders?${params.toString()}`, { credentials: 'include' })
+  if (res.status === 401) { setAuthed(false); throw new Error('Sesi berakhir, login ulang') }
+  if (!res.ok) throw new Error(`Gagal memuat ledger paper (HTTP ${res.status})`)
+  return res.json()
+}

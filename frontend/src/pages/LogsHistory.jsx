@@ -16,12 +16,14 @@ import AuditPanel from '../components/history-log/AuditPanel'
 import KillSwitchPanel from '../components/history-log/KillSwitchPanel'
 import OrderDrawer from '../components/history-log/OrderDrawer'
 import OrdersPanel from '../components/history-log/OrdersPanel'
+import PaperPanel from '../components/history-log/PaperPanel'
 // Filter bar Riwayat memakai kelas lld- (satu sumber gaya dengan halaman lama).
 import '../styles/ledger-lab-guard.css'
 import '../styles/logs-history.css'
 
 const TABS = [
   { id: 'order', label: 'Riwayat order' },
+  { id: 'paper', label: 'Trade paper' },
   { id: 'killswitch', label: 'Event kill-switch' },
   { id: 'audit', label: 'Audit & sesi' },
 ]
@@ -94,7 +96,7 @@ export default function LogsHistory() {
       <header className="lh-head">
         <div className="lh-head-main">
           <h1 className="lh-title">Riwayat &amp; Log</h1>
-          <p className="lh-sub">Buku besar order, kejadian kill-switch, dan jejak audit akun dalam satu halaman.</p>
+          <p className="lh-sub">Buku besar order live, trade paper (simulasi runner), kejadian kill-switch, dan jejak audit akun dalam satu halaman.</p>
         </div>
         <div className="lh-head-meta">
           <span className="lh-chip">{orders.length} order</span>
@@ -116,6 +118,7 @@ export default function LogsHistory() {
       {tab === 'order' && (
         <OrdersPanel orders={orders} selectedId={selected?.id ?? null} onOpenOrder={openOrder} />
       )}
+      {tab === 'paper' && <PaperPanel />}
       {tab === 'killswitch' && <KillSwitchPanel killSwitch={liveKillSwitch} />}
       {tab === 'audit' && <AuditPanel />}
 

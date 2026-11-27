@@ -832,6 +832,48 @@ async def list_orders(limit: int = 50, user: dict = Depends(get_current_user)):
     return out
 
 
+@router.get("/paper-orders")
+async def list_paper_orders(limit: int = 100, strategy: str | None = None,
+                            status: str | None = None,
+                            user: dict = Depends(get_current_user)):
+    """Buku besar PAPER (tabel paper_orders) — trade simulasi runner.
+
+    Trade paper tidak pernah dikirim ke broker, jadi memang tidak muncul di
+    GET /orders (ledger live). Tab "Paper" di Riwayat & Log membaca endpoint
+    ini supaya P&L yang tampil di Strategy Lab bisa ditelusuri per trade.
+    Read-only; filter opsional strategy/status.
+    """
+    clauses = ["mode = 'PAPER'"]
+    args: list = []
+    if strategy:
+        clauses.append("strategy = %s")
+        args.append(strategy)
+    if status:
+        clauses.append("status = %s")
+        args.append(status.upper())
+    args.append(min(max(limit, 1), 500))
+    async with db.pool().connection() as conn:
+        rows = await fetchall(
+            conn,
+            f"""
+            SELECT id, strategy, symbol, side, volume, sl, tp, status,
+                   entry_price, exit_price, profit, reason, risk_decision,
+                   opened_at, closed_at, created_at, run_id
+            FROM paper_orders WHERE {' AND '.join(clauses)}
+            ORDER BY created_at DESC LIMIT %s
+            """,
+            tuple(args),
+        )
+    out = []
+    for r in rows:
+        row = dict(r)
+        for k in ("volume", "sl", "tp", "entry_price", "exit_price", "profit"):
+            if row.get(k) is not None:
+                row[k] = float(row[k])
+        out.append(row)
+    return out
+
+
 @router.get("/orders/{order_id}")
 async def get_order(order_id: str, user: dict = Depends(get_current_user)):
     async with db.pool().connection() as conn:

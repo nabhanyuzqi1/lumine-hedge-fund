@@ -1014,3 +1014,57 @@
     font-size: 15px;
   }
 }
+
+/* ── sub-tab Paper (ledger paper_orders) ───────────────────────────────────
+   Trade paper tidak masuk ledger live, jadi punya panel sendiri: catatan
+   singkat, strip ringkasan (chip), lalu tabel per trade. Warna P/L memakai
+   token up/down yang sama dengan sisa aplikasi. */
+.lh-page .lh-paper-note {
+  margin: 0;
+  max-width: 82ch;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.lh-page .lh-paper-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lh-page .lh-pnl {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.lh-page .lh-pnl.is-up {
+  color: var(--up-strong);
+}
+
+.lh-page .lh-pnl.is-down {
+  color: var(--down-strong);
+}
+
+.lh-page .lh-chip.lh-pnl.is-up,
+.lh-page .lh-chip.lh-pnl.is-down {
+  border-color: currentColor;
+}
+
+.lh-page .lh-status.is-warn {
+  border-color: color-mix(in srgb, var(--warn) 34%, var(--line));
+  background: var(--warn-dim);
+  color: var(--warn);
+}
+
+.lh-page .lh-col-reason {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.lh-page .lh-error {
+  margin: 0;
+  color: var(--down-strong);
+}
