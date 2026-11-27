@@ -1296,6 +1296,21 @@ async def _run_parallel_pipeline(http: httpx.AsyncClient, auth: dict | None, ctx
             http, ctx, evidence, symbol=symbol, base=base, key=key, model=cfg["fallback"],
             **stage_kwargs,
         )
+    # Evidence synthesizer: peran ini dulu tidak pernah dicatat sehingga UI
+    # selalu menampilkan "Idle" walau siklus berjalan. Catat state nyatanya.
+    synth_evidence = {
+        "state": "ok" if synth.get("data") else "error",
+        "model": synth.get("model") or cfg["synth"],
+        "latency_ms": synth.get("latency_ms"),
+        "prompt_tokens": synth.get("prompt_tokens"),
+        "completion_tokens": synth.get("completion_tokens"),
+        "prompt_cache_hit_tokens": synth.get("prompt_cache_hit_tokens"),
+        "prompt_cache_miss_tokens": synth.get("prompt_cache_miss_tokens"),
+        "data": synth.get("data"),
+        "error": synth.get("error") or (None if synth.get("data") else "synthesizer tanpa data"),
+    }
+    await on_update("synth", synth_evidence)
+
     wall_ms = int((time.monotonic() - wall_started) * 1000)
     tok_in = sum(int(r.get("prompt_tokens") or 0) for r in evidence.values()) + int(synth.get("prompt_tokens") or 0)
     tok_out = sum(int(r.get("completion_tokens") or 0) for r in evidence.values()) + int(synth.get("completion_tokens") or 0)

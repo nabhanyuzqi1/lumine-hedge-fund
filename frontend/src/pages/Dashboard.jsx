@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import CandleChart from '../components/CandleChart'
 import OrderForm from '../components/OrderForm'
+import AgentStream from '../components/terminal/AgentStream'
 import SystemMetrics from '../components/SystemMetrics'
 import AccountRiskSummary from '../components/RegimeCard'
 import AlertsStrip from '../components/AlertsStrip'
@@ -425,6 +426,7 @@ export default function Dashboard() {
           <aside className="term-col-side" id="term-side" aria-label="Ringkasan akun dan tiket order">
             <AccountRiskSummary symbol={symbol} compact />
             <OrderForm />
+            <AgentStream />
           </aside>
         )}
       </div>

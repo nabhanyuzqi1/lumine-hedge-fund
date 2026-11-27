@@ -1015,6 +1015,11 @@ export function fetchVersion() {
 // {model,state,latency_ms}}}|null, env_model} (t_2a1fbf01, t_0ff73490).
 // Katalog diambil server dari endpoint LLM, `roles_saved` hanya override owner,
 // `last_cycle` dari evidence AGENT_EVIDENCE (model yang benar-benar dipakai).
+// Kesimpulan siklus agent untuk panel stream read-only di Terminal.
+export function getAgentConclusions(limit = 12) {
+  return f1Get(`/llm-agent/conclusions?limit=${limit}`, 'kesimpulan agent')
+}
+
 export function getAgentModels() {
   return f1Get('/llm-agent/models', 'katalog model agent')
 }

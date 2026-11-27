@@ -926,6 +926,9 @@ def summarise(role: str, res: dict) -> str:
         return f"technical: {data.get('trend', {}).get('h1', '?')} h1, setup {setup.get('side', 'none')}, conf {data.get('confidence')}"
     if role == "macro":
         return f"macro: event_risk {data.get('event_risk')}, regime {data.get('regime')}, aman {((data.get('trade_window') or {}).get('aman'))}"
+    if role == "synth":
+        return (f"synth: {data.get('kind') or data.get('action') or 'hold'} "
+                f"{data.get('symbol') or ''}, conf {data.get('confidence')}").strip()
     if role == "sentiment":
         return (f"sentiment: {data.get('sentiment')}, crowding {data.get('crowding')}, "
                 f"conf {data.get('confidence')}")

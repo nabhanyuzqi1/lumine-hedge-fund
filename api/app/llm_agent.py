@@ -598,7 +598,7 @@ class AgentEvidenceBody(BaseModel):
 
     cycle_id: str = Field(min_length=8, max_length=64)
     symbol: str = Field(min_length=3, max_length=20)
-    role: Literal["technical", "macro", "sentiment", "portfolio"]
+    role: Literal["technical", "macro", "sentiment", "portfolio", "synth"]
     state: Literal["ok", "error", "timeout"]
     model: Optional[str] = Field(default=None, max_length=100)
     latency_ms: Optional[int] = None
@@ -641,7 +641,7 @@ def _llm_env(name: str) -> str:
 
 # Validasi utama ada di skema (Literal) supaya payload salah ditolak sebelum
 # handler; tuple ini dipertahankan sebagai jaring kedua untuk pemanggil internal.
-_EVIDENCE_ROLES = ("technical", "macro", "sentiment", "portfolio")
+_EVIDENCE_ROLES = ("technical", "macro", "sentiment", "portfolio", "synth")
 _EVIDENCE_STATES = ("ok", "error", "timeout")
 
 
@@ -649,7 +649,7 @@ _EVIDENCE_STATES = ("ok", "error", "timeout")
 async def create_evidence(body: AgentEvidenceBody, user: dict = Depends(require_csrf)):
     """Catat evidence satu specialist + broadcast SSE (append-only)."""
     if body.role not in _EVIDENCE_ROLES:
-        raise HTTPException(422, "role harus technical | macro | sentiment | portfolio")
+        raise HTTPException(422, "role harus technical | macro | sentiment | portfolio | synth")
     if body.state not in _EVIDENCE_STATES:
         raise HTTPException(422, "state harus ok | error | timeout")
     conf = 0.0
@@ -783,6 +783,70 @@ async def _last_role_cycle() -> dict | None:
             at = created
         symbol = symbol or row["symbol"]
     return {"cycle_id": cycle_id, "at": at, "symbol": symbol, "roles": roles}
+
+
+@router.get("/conclusions")
+async def agent_conclusions(limit: int = 12, user: dict = Depends(require_csrf)):
+    """Kesimpulan siklus agent untuk panel stream read-only di Terminal.
+
+    Hanya keputusan akhir (order/hold/close/cut/sl/be/tp) yang dikirim, bukan
+    evidence specialist: panel ini untuk dipantau, bukan untuk dibaca teknis.
+    """
+    limit = max(1, min(int(limit), 50))
+    async with db.pool().connection() as conn:
+        rows = await fetchall(
+            conn,
+            """
+            SELECT e.created_at,
+                   e.decision->>'symbol'     AS symbol,
+                   e.decision->>'kind'       AS kind,
+                   e.decision->>'action'     AS action,
+                   e.decision->>'confidence' AS confidence,
+                   e.decision->>'reasoning'  AS reasoning,
+                   e.decision->>'model'      AS model,
+                   e.payload->>'cycle_id'    AS cycle_id
+            FROM order_events e
+            WHERE e.decision IS NOT NULL
+              AND e.decision->>'kind' IN ('order','hold','close','cut','sl','be','tp')
+            ORDER BY e.id DESC
+            LIMIT %s
+            """,
+            (limit,),
+        )
+        settings = await db.get_settings()
+    interval_s, interval_source = effective_interval(settings)
+    items = []
+    for row in rows:
+        text = (row["reasoning"] or "").strip().replace("\n", " ")
+        # Kesimpulan saja: potong ke dua kalimat / 240 karakter.
+        parts = [p.strip() for p in text.split(". ") if p.strip()]
+        short = ". ".join(parts[:2])
+        if len(short) > 240:
+            cut = short[:240]
+            space = cut.rfind(" ")
+            short = (cut[:space] if space > 160 else cut).rstrip(" ,;:.") + "…"
+        conf = row["confidence"]
+        try:
+            conf = float(conf) if conf is not None else None
+        except (TypeError, ValueError):
+            conf = None
+        items.append({
+            "at": row["created_at"].isoformat() if row["created_at"] else None,
+            "symbol": row["symbol"],
+            "kind": row["kind"],
+            "action": row["action"],
+            "confidence": conf,
+            "summary": short or None,
+            "model": row["model"],
+            "cycle_id": row["cycle_id"],
+        })
+    return {
+        "items": items,
+        "last_at": items[0]["at"] if items else None,
+        "pause": llm_risk.normalize_pause(settings.get("llm_agent_pause")),
+        "interval_s": interval_s,
+        "source": interval_source,
+    }
 
 
 @router.get("/models")
