@@ -1306,7 +1306,7 @@ async def _run_parallel_pipeline(http: httpx.AsyncClient, auth: dict | None, ctx
         "completion_tokens": synth.get("completion_tokens"),
         "prompt_cache_hit_tokens": synth.get("prompt_cache_hit_tokens"),
         "prompt_cache_miss_tokens": synth.get("prompt_cache_miss_tokens"),
-        "data": synth.get("data"),
+        "data": ({**(synth.get("data") or {}), "symbol": symbol} if synth.get("data") else None),
         "error": synth.get("error") or (None if synth.get("data") else "synthesizer tanpa data"),
     }
     await on_update("synth", synth_evidence)
