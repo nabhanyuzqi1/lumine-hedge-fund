@@ -60,17 +60,17 @@ export default function PaperPanel() {
   }), [rows, strategy, status])
 
   const summary = useMemo(() => {
-    const closed = rows.filter((row) => row.status === 'CLOSED')
+    const closed = filtered.filter((row) => row.status === 'CLOSED')
     const net = closed.reduce((total, row) => total + (row.profit ?? 0), 0)
     const wins = closed.filter((row) => (row.profit ?? 0) > 0).length
     return {
       closed: closed.length,
-      open: rows.filter((row) => row.status === 'OPEN').length,
-      rejected: rows.filter((row) => row.status === 'REJECTED').length,
+      open: filtered.filter((row) => row.status === 'OPEN').length,
+      rejected: filtered.filter((row) => row.status === 'REJECTED').length,
       net,
       winrate: closed.length ? Math.round((wins / closed.length) * 100) : null,
     }
-  }, [rows])
+  }, [filtered])
 
   const hasFilters = strategy !== 'semua' || status !== 'semua'
 
